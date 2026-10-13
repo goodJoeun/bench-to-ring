@@ -33,19 +33,19 @@ export function currentExpectedMinutes(c: Career): number {
 /** 나이별 기본 성장량 (능력치당, 시즌당) */
 export function ageBase(age: number): number {
   const t: Record<number, number> = {
-    16: 4.5, 17: 4.5, 18: 4, 19: 3.5, 20: 3, 21: 2.8, 22: 2.4, 23: 2, 24: 1.6, 25: 1.2,
-    26: 0.8, 27: 0.5, 28: 0.2, 29: 0, 30: -0.5, 31: -0.9, 32: -1.3, 33: -1.8, 34: -2.3,
+    16: 3, 17: 3, 18: 3, 19: 3, 20: 2.9, 21: 2.8, 22: 2.6, 23: 2.3, 24: 1.9, 25: 1.4,
+    26: 0.9, 27: 0.5, 28: 0.2, 29: 0, 30: -0.5, 31: -0.9, 32: -1.3, 33: -1.8, 34: -2.3,
   };
   if (age >= 35) return -3 - (age - 35) * 0.3;
-  return t[age] ?? 4.5;
+  return t[age] ?? 3;
 }
 
-/** 리그별 연봉 (억 원) */
+/** 리그별 연봉 (억 원). NBA 최저 연봉 ≈ 17억, 최고 ≈ 800억 */
 const SALARY: Record<ProLeagueKey, (o: number) => number> = {
-  gbl: (o) => clamp(12 * Math.pow(1.25, o - 70), 15, 650),
-  cont: (o) => clamp(2 * Math.pow(1.2, o - 64), 2, 45),
-  court: (o) => clamp(1.2 * Math.pow(1.18, o - 60), 1, 12),
-  dev: () => 0.6,
+  nba: (o) => clamp(12 * Math.pow(1.25, o - 70), 17, 800),
+  euro: (o) => clamp(2 * Math.pow(1.2, o - 64), 2, 55),
+  kbl: (o) => clamp(1 * Math.pow(1.17, o - 60), 0.7, 9),
+  gleague: () => 0.6,
 };
 export const salaryFor = (lg: ProLeagueKey, o: number): number => SALARY[lg](o);
 

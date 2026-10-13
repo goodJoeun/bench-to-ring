@@ -1,7 +1,7 @@
 import { POS_KEYS } from "./data";
 import type { CareerSummary, PosKey } from "./types";
 
-/** GBL MVP 횟수 → 최고 오버롤 → 개인상 → 통산 득점 */
+/** NBA MVP 횟수 → 최고 오버롤 → 개인상 → 통산 득점 */
 export function compareCareers(a: CareerSummary, b: CareerSummary): number {
   return b.mvp - a.mvp || b.peak - a.peak || b.personal - a.personal || b.pts - a.pts;
 }

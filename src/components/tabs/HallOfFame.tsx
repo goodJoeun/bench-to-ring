@@ -13,7 +13,7 @@ export function HallOfFame({ hall }: { hall: CareerSummary[] }) {
     <section className="panel">
       <h2 className="sec">명예의 전당</h2>
       <p className="hint">
-        이 브라우저에서 은퇴한 선수들이에요. GBL MVP 횟수 → 최고 오버롤 → 개인상 → 통산 득점 순으로 줄을 세워요.
+        이 브라우저에서 은퇴한 선수들이에요. NBA MVP 횟수 → 최고 오버롤 → 개인상 → 통산 득점 순으로 줄을 세워요.
       </p>
       <div className="best5">
         {bestFive(hall).map(({ pos, career }) => (

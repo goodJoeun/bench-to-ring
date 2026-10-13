@@ -1,4 +1,4 @@
-import { ATTRS, LEAGUES, NATIONS, POS, ROLE_RANK, SCORING_TITLE } from "./data";
+import { ATTRS, CONTINENTAL_CUP, LEAGUES, NATIONS, POS, ROLE_RANK, SCORING_TITLE } from "./data";
 import { addNews, giveAward } from "./log";
 import { runOffseason } from "./offseason";
 import { chance, random, ri, rnd } from "./random";
@@ -105,13 +105,13 @@ export function simulateSeason(c: Career): SeasonRecord {
     const sh = L.short;
     const impact = (ovr0 - L.avg + (p.trait === "승부사" ? 1 : 0)) * clamp(min / 30, 0, 1.15) + rnd(-2.5, 2.5);
     if (gp >= L.games * 0.6) {
-      if (impact >= 12 && chance(sigmoid((impact - 13) / 1.2) * (wp >= 0.55 ? 1 : 0.35)))
-        giveAward(c, lg === "gbl" ? "mvp_gbl" : "mvp", `${sh} MVP`, rec);
+      if (impact >= 13 && chance(sigmoid((impact - 15.5) / 1.2) * (wp >= 0.55 ? 1 : 0.3)))
+        giveAward(c, lg === "nba" ? "mvp_nba" : "mvp", `${sh} MVP`, rec);
       if (L.pro && impact >= 5 && chance(sigmoid((impact - 7) / 1.4))) giveAward(c, "allstar", `${sh} 올스타`, rec);
-      if (impact >= 9 && chance(sigmoid((impact - 11) / 1.3)))
-        giveAward(c, "allleague", `${sh} ${L.pro ? "올퍼스트팀" : "베스트5"}`, rec);
+      if (impact >= 9 && chance(sigmoid((impact - 11.5) / 1.3)))
+        giveAward(c, "allleague", lg === "nba" ? "올-NBA 퍼스트팀" : `${sh} 베스트5`, rec);
       if (L.pro && c.proSeasons === 0 && impact >= 0 && chance(sigmoid((impact - 2.5) / 1.5)))
-        giveAward(c, "roy", `${sh} 신인왕`, rec);
+        giveAward(c, "roy", lg === "nba" ? "NBA 올해의 신인" : `${sh} 신인왕`, rec);
       if (p.attrs.def - L.avg >= 13 && min >= 24 && chance(0.45)) giveAward(c, "dpoy", `${sh} 올해의 수비수`, rec);
       if (pts >= SCORING_TITLE[lg] && chance(0.6)) giveAward(c, "scoring", `${sh} 득점왕`, rec);
       if (L.pro && min >= 18 && min < 26 && impact >= 3 && chance(0.4)) giveAward(c, "sixth", `${sh} 식스맨상`, rec);
@@ -152,8 +152,24 @@ function nationalTeam(c: Career, rec: SeasonRecord, ov0: number, gp: number, tag
   if (c.age < 19 || gp <= 0 || ov0 < N.threshold) return;
   const first = !c.nat.caps;
   c.nat.caps += ri(4, 9);
-  const ev = rec.year % 4 === 0 ? "올림픽" : rec.year % 4 === 2 ? "세계선수권" : "대륙선수권";
-  const eff = N.str + (ev === "대륙선수권" ? N.continentalBonus : 0) + (ov0 - N.threshold) / 5;
+  // 올림픽(2028, 2032…), FIBA 월드컵(2027, 2031…), 대륙컵(2029…), 아시안게임(2026, 2030…)
+  const cycle = rec.year % 4;
+  let ev: string;
+  let bonus = 0;
+  if (cycle === 0) ev = "올림픽";
+  else if (cycle === 3) ev = "FIBA 농구 월드컵";
+  else if (cycle === 1) {
+    ev = CONTINENTAL_CUP[N.region];
+    bonus = N.continentalBonus;
+  } else if (N.region === "asia" && N.name !== "호주") {
+    ev = "아시안게임";
+    bonus = N.continentalBonus + 0.5;
+  } else ev = "FIBA 월드컵 예선";
+  if (ev === "FIBA 월드컵 예선") {
+    addNews(c, tag, "good", `${first ? "국가대표 첫 발탁! " : "국가대표 소집 · "}${c.p.nat} 대표로 ${ev}에 나섰어요.`);
+    return;
+  }
+  const eff = N.str + bonus + (ov0 - N.threshold) / 5;
   const r = random();
   let medal: "금" | "은" | "동" | null = null;
   if (r < sigmoid((eff - 9) / 1.1)) medal = "금";
@@ -186,17 +202,18 @@ function grow(c: Career, min: number, rating: number, tag: string): void {
     if (t === "대기만성" && age <= 32) tf = 0.5;
     if (t === "강철몸") tf = 0.7;
   }
-  // 잠재력까지 남은 여유가 클수록 빨리 커요.
-  const headroom = base > 0 ? clamp((p.pot - ov) / 6, 0.08, 1.5) : 1;
-  // 출전 시간: 10대는 영향이 작고, 성인은 크게 받아요.
-  const minutesFactor = age < 19 ? 0.8 + 0.2 * Math.min(1, min / 20) : Math.min(1.1, 0.45 + 0.65 * Math.min(1, min / 26));
+  // 잠재력까지 남은 여유가 클수록 빨리 커요. 잠재력에 가까워질수록 한 칸 올리기가 어려워져요.
+  const headroom = base > 0 ? clamp((p.pot - ov) / 7, 0.05, 1.7) : 1;
+  // 출전 시간: 10대는 영향이 작고, 성인은 크게 받아요. 주전급(28분)이어야 제대로 커요.
+  const minutesFactor =
+    age < 19 ? 0.75 + 0.25 * Math.min(1, min / 20) : Math.min(1.05, 0.35 + 0.7 * Math.min(1, min / 28));
   const perf = rating >= 7.5 ? 1.1 : 1;
   const decline: Record<AttrKey, number> = { ath: 1.6, sht: 0.7, iq: 0.25, hdl: 0.9, def: 1.1, reb: 1 };
   const delta: Partial<Record<AttrKey, number>> = {};
   for (const [k] of ATTRS) {
-    const focus = c.focus === "bal" ? 1 : c.focus === "rest" ? 0.7 : c.focus === k ? 1.8 : 0.85;
+    const focus = c.focus === "bal" ? 1 : c.focus === "rest" ? 0.6 : c.focus === k ? 1.5 : 0.85;
     let g: number;
-    if (base > 0) g = base * headroom * minutesFactor * tf * perf * focus * rnd(0.6, 1.4);
+    if (base > 0) g = base * headroom * minutesFactor * tf * perf * focus * rnd(0.55, 1.4);
     else {
       g = base * tf * decline[k] * rnd(0.6, 1.4);
       if (c.focus === k) g *= 0.6;
@@ -207,9 +224,9 @@ function grow(c: Career, min: number, rating: number, tag: string): void {
     delta[k] = Math.round(p.attrs[k]) - Math.round(old);
   }
   c.lastDelta = delta;
-  if (age >= 19 && min < 12 && base > 0 && c.stage !== "hs") {
+  if (age >= 19 && min < 15 && base > 0 && c.stage !== "hs") {
     const before = p.pot;
-    p.pot = Math.max(Math.round(ovrOf(p.attrs, p.pos)) + 1, p.pot - ri(1, 2));
+    p.pot = Math.max(Math.round(ovrOf(p.attrs, p.pos)) + 1, p.pot - ri(1, min < 8 ? 3 : 2));
     if (p.pot < before) addNews(c, tag, "bad", "출전 시간이 부족해 성장 한계가 조금 낮아졌어요.");
   }
   c.health = clamp(c.health + (c.focus === "rest" ? 15 : 8) - (age > 28 ? (age - 28) * 1.6 : 0), 15, 100);

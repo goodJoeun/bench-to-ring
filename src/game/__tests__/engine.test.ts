@@ -102,6 +102,26 @@ describe("저장 코드", () => {
   });
 });
 
+describe("예전 저장 파일", () => {
+  it("v1(가상 리그) 저장 코드를 실제 리그 키로 바꿔서 불러와요", () => {
+    setRandom(seeded(11));
+    const c = createCareer({ name: "옛 저장", num: 3, nat: "대한민국", pos: "PG", path: "abroad" }, generateCandidates("PG")[0], "old");
+    simulateSeason(c);
+    const v1 = JSON.parse(JSON.stringify(c).replace('"v":2', '"v":1'));
+    v1.team.lg = "court";
+    v1.hist[0].lg = "gbl";
+    v1.awards = { mvp_gbl: 2, ring: 1 };
+    v1.awardLog = [{ y: 2027, k: "mvp_gbl", n: "GBL MVP" }];
+    const code = btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(v1))));
+    const loaded = decodeSave(code)!;
+    expect(loaded.v).toBe(2);
+    expect(loaded.team?.lg).toBe("kbl");
+    expect(loaded.hist[0].lg).toBe("nba");
+    expect(loaded.awards).toEqual({ mvp_nba: 2, ring: 1 });
+    expect(loaded.awardLog[0].k).toBe("mvp_nba");
+  });
+});
+
 describe("명예의 전당 순위", () => {
   it("네 항목이 모두 같으면 공동 순위예요", () => {
     const base = { mvp: 1, peak: 90, personal: 5, pts: 10000 } as CareerSummary;

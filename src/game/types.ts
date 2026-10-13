@@ -2,8 +2,10 @@ export type AttrKey = "sht" | "hdl" | "def" | "reb" | "ath" | "iq";
 export type Attrs = Record<AttrKey, number>;
 
 export type PosKey = "PG" | "SG" | "SF" | "PF" | "C";
-export type LeagueKey = "hs" | "kcol" | "ucol" | "court" | "dev" | "cont" | "gbl";
-export type ProLeagueKey = "court" | "dev" | "cont" | "gbl";
+/** hs 고교, kuniv 국내 대학(U-리그), ncaa 미국 대학, kbl, gleague NBA G리그, euro 유로리그, nba */
+export type LeagueKey = "hs" | "kuniv" | "ncaa" | "kbl" | "gleague" | "euro" | "nba";
+export type ProLeagueKey = "kbl" | "gleague" | "euro" | "nba";
+export type Region = "asia" | "europe" | "americas";
 export type CareerPath = "abroad" | "domestic";
 export type Stage = "hs" | "college" | "pro" | "free" | "retired";
 export type FocusKey = "bal" | AttrKey | "rest";
@@ -13,7 +15,7 @@ export type Role = "에이스" | "주전" | "식스맨" | "로테이션" | "벤�
 export type NewsType = "info" | "good" | "bad" | "award" | "big" | "move";
 
 export type AwardKey =
-  | "mvp_gbl"
+  | "mvp_nba"
   | "ring"
   | "fmvp"
   | "mvp"
@@ -55,7 +57,9 @@ export interface Nation {
   str: number;
   /** 국가대표 발탁 기준 오버롤 */
   threshold: number;
-  /** 대륙선수권 보너스 */
+  /** FIBA 대륙컵 지역 (호주는 아시아컵에 나가요) */
+  region: Region;
+  /** 대륙컵에서 더해지는 전력 */
   continentalBonus: number;
 }
 
@@ -109,7 +113,7 @@ export interface SeasonRecord {
 export type Action =
   | { k: "school"; lg: LeagueKey; team: Team; walk?: boolean }
   | { k: "stay" }
-  | { k: "draft"; d: "gbl" | "court" }
+  | { k: "draft"; d: "nba" | "kbl" }
   | { k: "sign"; lg: ProLeagueKey; team: Team; years: number; salary: number }
   | { k: "skip" }
   | { k: "pos"; pos: PosKey }
@@ -198,7 +202,7 @@ export interface CareerSummary {
 }
 
 export interface Career {
-  v: 1;
+  v: 2;
   id: string;
   p: Player;
   age: number;

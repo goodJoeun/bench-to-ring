@@ -10,7 +10,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "벤치에서 반지까지",
-  description: "고교 벤치 멤버로 시작해 드래프트, 주전, 올스타를 거쳐 MVP와 우승 반지에 도전하는 농구 커리어 게임.",
+  description: "고교 벤치 멤버로 시작해 KBL과 NBA를 거쳐 MVP와 우승 반지에 도전하는 농구 커리어 게임.",
 };
 
 export const viewport: Viewport = {

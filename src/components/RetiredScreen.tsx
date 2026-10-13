@@ -12,7 +12,7 @@ export function RetiredScreen({ career: c, hall }: { career: Career; hall: Caree
   const color = c.team?.color ?? "#5A6577";
   const tiles: [string, string | number][] = [
     ["최고 오버롤", s.peak],
-    ["GBL MVP", s.mvp],
+    ["NBA MVP", s.mvp],
     ["우승 반지", s.rings],
     ["개인상", s.personal],
     ["프로 시즌", s.seasons],

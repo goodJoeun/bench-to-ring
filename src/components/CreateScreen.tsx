@@ -7,8 +7,8 @@ import { ImportForm } from "./ImportForm";
 import { Sprite } from "./Sprite";
 
 const PATHS: [CareerPath, string, string][] = [
-  ["abroad", "해외 경로", "고교 → 해외 대학 → GBL 드래프트"],
-  ["domestic", "국내 경로", "고교 → 국내 대학 → 코트리그 → 해외 도전"],
+  ["abroad", "해외 경로", "고교 → NCAA → NBA 드래프트"],
+  ["domestic", "국내 경로", "고교 → U-리그 → KBL → NBA·유로리그 도전"],
 ];
 
 function CandidateCard({ cand, pos, index, selected }: { cand: Candidate; pos: PosKey; index: number; selected: boolean }) {

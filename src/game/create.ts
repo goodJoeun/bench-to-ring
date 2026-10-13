@@ -51,7 +51,7 @@ export function generateCandidate(pos: PosKey, archIndex: number): Candidate {
   }
   const [h0, h1] = POS[pos].h;
   const hFinal = ri(h0, h1);
-  const pot = Math.round(triangular(64, 98, 79));
+  const pot = Math.round(triangular(58, 98, 73));
   const shown = pot + ri(-5, 5);
   const grade: Grade = shown >= 90 ? "S" : shown >= 83 ? "A" : shown >= 76 ? "B" : shown >= 70 ? "C" : "D";
   return {
@@ -74,7 +74,7 @@ export function generateCandidates(pos: PosKey): Candidate[] {
 
 export function createCareer(input: NewCareerInput, cand: Candidate, id = String(Date.now())): Career {
   const c: Career = {
-    v: 1,
+    v: 2,
     id,
     p: {
       ...cand,

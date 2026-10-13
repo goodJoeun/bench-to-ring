@@ -1,5 +1,5 @@
 import { POS, POS_GROWTH, TRAITS } from "./data";
-import { flavorEvent, forcedRetirement, gblOffer, resolveQueue, retirementPrompt } from "./decisions";
+import { flavorEvent, forcedRetirement, nbaOffer, resolveQueue, retirementPrompt } from "./decisions";
 import { addNews, pickTeam, setTeam } from "./log";
 import { chance, ri, rnd } from "./random";
 import { ovr, ovrOf } from "./ratings";
@@ -63,7 +63,7 @@ export function runOffseason(c: Career, finishedYear: number): void {
     c.contract.years--;
     if (c.contract.years <= 0) q.push({ lazy: "fa" });
     else {
-      const offer = chance(0.6) ? gblOffer(c) : null;
+      const offer = chance(0.6) ? nbaOffer(c) : null;
       if (offer) q.push(offer);
       else if (chance(0.08)) {
         const lg = c.team.lg;

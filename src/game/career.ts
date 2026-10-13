@@ -14,7 +14,7 @@ export function legacyOf(o: Omit<CareerSummary, "legacy">): string {
     Math.max(0, o.peak - 70) * 2 +
     o.pts / 1500;
   if (!o.seasons) return "코트를 사랑한 선수";
-  if (score >= 160) return "역대 최고 논쟁의 주인공";
+  if (score >= 200 && o.mvp >= 3) return "역대 최고 논쟁의 주인공";
   if (score >= 95) return "명예의 전당 헌액";
   if (score >= 55) return "리그의 레전드";
   if (score >= 28) return "올스타급 커리어";
@@ -33,7 +33,7 @@ export function careerSummary(c: Career): CareerSummary {
     num: c.p.num,
     pos: c.p.pos,
     nat: c.p.nat,
-    mvp: c.awards.mvp_gbl ?? 0,
+    mvp: c.awards.mvp_nba ?? 0,
     rings: c.awards.ring ?? 0,
     personal: PERSONAL_AWARDS.reduce((t, k) => t + (c.awards[k] ?? 0), 0),
     peak: c.peakOvr,
