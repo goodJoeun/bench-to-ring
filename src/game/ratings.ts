@@ -1,0 +1,75 @@
+import { ATTRS, LEAGUES, POS } from "./data";
+import type { Attrs, Career, LeagueKey, Player, PosKey, ProLeagueKey, Role } from "./types";
+import { clamp } from "./util";
+
+/** 포지션 가중평균 오버롤 (반올림 전) */
+export function ovrOf(a: Attrs, pos: PosKey): number {
+  const w = POS[pos].w;
+  let s = 0;
+  for (const [k] of ATTRS) s += a[k] * w[k];
+  return s;
+}
+
+export const ovr = (p: Player): number => Math.round(ovrOf(p.attrs, p.pos));
+
+export function roleOf(min: number): Role {
+  if (min >= 33) return "에이스";
+  if (min >= 26) return "주전";
+  if (min >= 20) return "식스맨";
+  if (min >= 12) return "로테이션";
+  if (min >= 5) return "벤치";
+  return "엔드 오브 벤치";
+}
+
+/** 해당 리그에서 예상되는 경기당 출전 시간(분) */
+export function expectedMinutes(c: Career, lg: LeagueKey, extra = 0): number {
+  return clamp(18 + (ovrOf(c.p.attrs, c.p.pos) - LEAGUES[lg].avg + extra) * 1.7, 1.5, 38);
+}
+
+export function currentExpectedMinutes(c: Career): number {
+  return c.team ? expectedMinutes(c, c.team.lg, c.trust) : 0;
+}
+
+/** 나이별 기본 성장량 (능력치당, 시즌당) */
+export function ageBase(age: number): number {
+  const t: Record<number, number> = {
+    16: 4.5, 17: 4.5, 18: 4, 19: 3.5, 20: 3, 21: 2.8, 22: 2.4, 23: 2, 24: 1.6, 25: 1.2,
+    26: 0.8, 27: 0.5, 28: 0.2, 29: 0, 30: -0.5, 31: -0.9, 32: -1.3, 33: -1.8, 34: -2.3,
+  };
+  if (age >= 35) return -3 - (age - 35) * 0.3;
+  return t[age] ?? 4.5;
+}
+
+/** 리그별 연봉 (억 원) */
+const SALARY: Record<ProLeagueKey, (o: number) => number> = {
+  gbl: (o) => clamp(12 * Math.pow(1.25, o - 70), 15, 650),
+  cont: (o) => clamp(2 * Math.pow(1.2, o - 64), 2, 45),
+  court: (o) => clamp(1.2 * Math.pow(1.18, o - 60), 1, 12),
+  dev: () => 0.6,
+};
+export const salaryFor = (lg: ProLeagueKey, o: number): number => SALARY[lg](o);
+
+/** 스카우트 잠재력 추정 범위. 나이가 들수록 좁아져요. */
+export function potentialRange(c: Career): string {
+  const p = c.p;
+  const u = Math.max(1, Math.round(9 - (c.age - 16) * 1.1));
+  const o = ovr(p);
+  const lo = clamp(Math.round(p.pot - u + c.potOff), o, 99);
+  const hi = clamp(Math.max(Math.round(p.pot + u + c.potOff), o), o, 99);
+  return lo >= hi ? String(hi) : `${lo}–${hi}`;
+}
+
+export function stageLabel(c: Career): string {
+  switch (c.stage) {
+    case "hs":
+      return c.schoolYear > 3 ? "고교 졸업" : `고${c.schoolYear}`;
+    case "college":
+      return `대학 ${Math.min(4, c.collegeYears + 1)}학년`;
+    case "pro":
+      return `프로 ${c.proSeasons + 1}년차`;
+    case "free":
+      return "무소속";
+    default:
+      return "";
+  }
+}
