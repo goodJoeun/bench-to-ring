@@ -5,7 +5,7 @@ export function AttributesPanel({ career: c }: { career: Career }) {
   const p = c.p;
   const w = POS[p.pos].w;
   return (
-    <section className="panel">
+    <section className="panel attrs">
       <div className="head">
         <h2 className="sec">능력치</h2>
         <span className="label">

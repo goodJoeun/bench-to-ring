@@ -75,7 +75,28 @@ export function SeasonLoading({ career: c }: { career: Career }) {
           <Sprite skin={c.p.skin} hair={c.p.hair} color={color} label="" className="sprite sim-sprite" />
           <span className="sim-shadow" />
         </div>
-        <span className="label">{hasTeam ? `${rec.team} · ${league?.short}` : "무소속 · 개인 훈련"}</span>
+        {hasTeam && total > 0 && (
+          <div className="sim-score" aria-hidden="true">
+            <span>
+              <small>경기</small>
+              <b>
+                {played}
+                <em>/{total}</em>
+              </b>
+            </span>
+            <i />
+            <span>
+              <small>승</small>
+              <b>{wins}</b>
+            </span>
+            <i />
+            <span>
+              <small>패</small>
+              <b>{played - wins}</b>
+            </span>
+          </div>
+        )}
+        <span className="sim-team">{hasTeam ? `${rec.team} · ${league?.short}` : "무소속 · 개인 훈련"}</span>
         <h2 id="sim-title">{rec.year} 시즌 진행 중</h2>
         <p className="sim-phase" role="status" aria-live="polite">
           {phase.label}
@@ -84,25 +105,6 @@ export function SeasonLoading({ career: c }: { career: Career }) {
         <div className="sim-bar" role="progressbar" aria-label="시즌 진행률" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(t * 100)}>
           <div className="sim-fill" style={{ width: `${t * 100}%` }} />
         </div>
-        {hasTeam && total > 0 && (
-          <div className="sim-score" aria-hidden="true">
-            <div>
-              <span className="k">경기</span>
-              <span className="v">
-                {played}
-                <small>/{total}</small>
-              </span>
-            </div>
-            <div>
-              <span className="k">승</span>
-              <span className="v">{wins}</span>
-            </div>
-            <div>
-              <span className="k">패</span>
-              <span className="v">{played - wins}</span>
-            </div>
-          </div>
-        )}
         <button type="button" ref={skipRef} className="sim-skip" onClick={() => gameActions.finishSimulation()}>
           건너뛰기
         </button>

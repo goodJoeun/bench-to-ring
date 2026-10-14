@@ -10,7 +10,8 @@ function focusHint(c: Career): string {
   return `${name} 성장이 1.8배로 빨라지고, 나머지는 조금 느려져요.`;
 }
 
-/** 오프시즌 결정이 남아 있으면 결정 카드를, 아니면 훈련 초점과 시즌 진행 버튼을 보여줘요. */
+/** 오프시즌 결정이 남아 있으면 결정 카드를, 아니면 훈련 초점과 시즌 진행 버튼을 보여줘요.
+ *  휴대폰에서는 시즌 진행 버튼이 하단 탭 바 위에 고정돼요. */
 export function ActionPanel({ career: c, onAdvance }: { career: Career; onAdvance: () => void }) {
   const decision = currentDecision(c);
 
@@ -39,16 +40,18 @@ export function ActionPanel({ career: c, onAdvance }: { career: Career; onAdvanc
     : "무소속 · 개인 훈련 시즌";
 
   return (
-    <section className="panel">
-      <span className="label">이번 시즌 훈련 초점</span>
-      <div className="chips" role="group" aria-label="훈련 초점">
-        {FOCUS.map(([k, name]) => (
-          <button type="button" key={k} className="chip" aria-pressed={c.focus === k} onClick={() => gameActions.setFocus(k)}>
-            {name}
-          </button>
-        ))}
+    <section className="panel train">
+      <div className="train-body">
+        <span className="label">이번 시즌 훈련 초점</span>
+        <div className="chips" role="group" aria-label="훈련 초점">
+          {FOCUS.map(([k, name]) => (
+            <button type="button" key={k} className="chip" aria-pressed={c.focus === k} onClick={() => gameActions.setFocus(k)}>
+              {name}
+            </button>
+          ))}
+        </div>
+        <p className="hint">{focusHint(c)}</p>
       </div>
-      <p className="hint">{focusHint(c)}</p>
       <button
         type="button"
         className="advance"
