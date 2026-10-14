@@ -3,10 +3,29 @@ import { retire } from "./career";
 import { currentDecision, resolveQueue } from "./decisions";
 import { runDraft } from "./draft";
 import { addNews, offseasonTag, setTeam } from "./log";
-import { shuffle } from "./random";
+import { chance, shuffle } from "./random";
 import { ovr } from "./ratings";
-import type { Action, Career } from "./types";
+import type { Action, Boost, Career } from "./types";
 import { clamp, money } from "./util";
+
+/** 이벤트 효과를 적용하고 소식을 남겨요. */
+function applyBoost(c: Career, b: Boost, tag: string): void {
+  const p = c.p;
+  let msg = b.msg ?? "";
+  if (b.attrs) for (const k of ATTR_KEYS) if (b.attrs[k]) p.attrs[k] = clamp(p.attrs[k] + (b.attrs[k] ?? 0), 20, 99);
+  if (b.rand && b.amt) {
+    const keys = shuffle(ATTR_KEYS).slice(0, b.rand);
+    for (const k of keys) p.attrs[k] = clamp(p.attrs[k] + b.amt, 20, 99);
+    msg += ` ${keys.map((k) => SHORT[k]).join("·")} +${b.amt}`;
+  }
+  if (b.health) c.health = clamp(c.health + b.health, 15, 100);
+  if (b.money) c.earnings = Math.max(0, c.earnings + b.money);
+  if (b.trust) c.trust = clamp(c.trust + b.trust, -3, 4);
+  if (b.agency) c.perks.agency = true;
+  if (b.trainer) c.perks.trainer = b.trainer;
+  c.peakOvr = Math.max(c.peakOvr, ovr(p));
+  if (msg) addNews(c, tag, b.t ?? "good", msg.trim());
+}
 
 export function applyAction(c: Career, a: Action): void {
   const p = c.p;
@@ -55,21 +74,12 @@ export function applyAction(c: Career, a: Action): void {
       addNews(c, tag, "good", `${POS[old].name}에서 ${POS[a.pos].name}로 포지션을 바꿨어요.`);
       break;
     }
-    case "boost": {
-      let msg = a.msg ?? "";
-      if (a.attrs) for (const k of ATTR_KEYS) if (a.attrs[k]) p.attrs[k] = clamp(p.attrs[k] + (a.attrs[k] ?? 0), 20, 99);
-      if (a.rand && a.amt) {
-        const keys = shuffle(ATTR_KEYS).slice(0, a.rand);
-        for (const k of keys) p.attrs[k] = clamp(p.attrs[k] + a.amt, 20, 99);
-        msg += ` ${keys.map((k) => SHORT[k]).join("·")} +${a.amt}`;
-      }
-      if (a.health) c.health = clamp(c.health + a.health, 15, 100);
-      if (a.money) c.earnings += a.money;
-      if (a.trust) c.trust = clamp(c.trust + a.trust, -3, 4);
-      c.peakOvr = Math.max(c.peakOvr, ovr(p));
-      if (msg) addNews(c, tag, "good", msg.trim());
+    case "boost":
+      applyBoost(c, a, tag);
       break;
-    }
+    case "gamble":
+      applyBoost(c, chance(a.p) ? a.win : a.lose, tag);
+      break;
     case "retire":
       retire(c);
       break;

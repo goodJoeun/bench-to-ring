@@ -111,6 +111,8 @@ export function createCareer(input: NewCareerInput, cand: Candidate, id = String
     posAsked: {},
     draft: null,
     summary: null,
+    events: {},
+    perks: {},
   };
   const t = pickTeam("hs");
   setTeam(c, "hs", t);

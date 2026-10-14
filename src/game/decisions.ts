@@ -1,9 +1,9 @@
-import { LEAGUES, SHORT } from "./data";
+import { LEAGUES } from "./data";
 import { pickTeam } from "./log";
-import { pick, ri, rnd } from "./random";
+import { ri, rnd } from "./random";
 import { expectedMinutes, ovr, ovrOf, roleOf, salaryFor } from "./ratings";
 import type { Career, CurrentTeam, Decision, DecisionOption, ProLeagueKey, Team } from "./types";
-import { clamp, money, roundSalary } from "./util";
+import { money, roundSalary } from "./util";
 
 /* ---------- 드래프트 평가 ---------- */
 
@@ -107,7 +107,9 @@ export function collegeSeasonEnd(c: Career): Decision {
 /* ---------- 계약 제안 ---------- */
 
 function offerOption(c: Career, lg: ProLeagueKey, t: Team, years: number, sal: number, note?: string): DecisionOption {
-  const s = roundSalary(sal * rnd(0.9, 1.1));
+  // 대형 에이전시가 있으면 협상에서 10% 더 받아요. 최저 연봉 계약은 그대로예요.
+  const agent = c.perks.agency && note !== "최저 연봉" ? 1.1 : 1;
+  const s = roundSalary(sal * rnd(0.9, 1.1) * agent);
   return {
     label: t.name,
     sub: `${LEAGUES[lg].name} · ${years}년 · 연봉 ${money(s)} · 예상 역할 ${roleOf(expectedMinutes(c, lg))}`,
@@ -212,60 +214,6 @@ export function forcedRetirement(): Decision {
     body: "마흔. 이제 코트를 떠날 때예요.",
     opts: [{ label: "은퇴식 하기", sub: "커리어를 마무리하고 기록을 남겨요", tag: "은퇴", act: { k: "retire" } }],
   };
-}
-
-/* ---------- 오프시즌 이벤트 ---------- */
-
-export function flavorEvent(c: Career): Decision {
-  const o = ovr(c.p);
-  const list: Decision[] = [
-    {
-      title: "여름 스킬 캠프 초청",
-      body: "유명 트레이너의 3주 집중 캠프에 초대받았어요. 강도가 꽤 높아요.",
-      opts: [
-        { label: "캠프 참가", sub: "무작위 능력치 2개 +1 · 건강 -6", act: { k: "boost", rand: 2, amt: 1, health: -6, msg: "스킬 캠프를 완주했어요." } },
-        { label: "푹 쉬기", sub: "건강 +8", act: { k: "boost", health: 8, msg: "여름 내내 몸을 회복했어요." } },
-      ],
-    },
-    {
-      title: "새벽 슈팅 루틴",
-      body: "매일 새벽 슈팅 500개. 루틴을 시작할까요?",
-      opts: [
-        { label: "시작한다", sub: `${SHORT.sht} +2 · 건강 -4`, act: { k: "boost", attrs: { sht: 2 }, health: -4, msg: "새벽 슈팅 루틴이 몸에 붙었어요." } },
-        { label: "평소대로", sub: "변화 없음", act: { k: "none" } },
-      ],
-    },
-    {
-      title: "필름 세션 제안",
-      body: "코치가 매주 경기 영상을 함께 분석하자고 해요.",
-      opts: [
-        { label: "함께 한다", sub: "BQ +2", act: { k: "boost", attrs: { iq: 2 }, msg: "경기를 보는 눈이 넓어졌어요." } },
-        { label: "웨이트에 집중", sub: "운동능력 +1", act: { k: "boost", attrs: { ath: 1 }, msg: "웨이트로 몸을 키웠어요." } },
-      ],
-    },
-  ];
-  if (c.stage === "pro" && o >= 72) {
-    const pay = roundSalary(clamp(o - 70, 1, 20) * 1.5);
-    list.push({
-      title: "광고 모델 제안",
-      body: "스포츠 브랜드에서 광고 촬영을 제안했어요.",
-      opts: [
-        { label: "수락", sub: `수입 +${money(pay)} · 건강 -3`, act: { k: "boost", money: pay, health: -3, msg: "광고 촬영을 마쳤어요." } },
-        { label: "거절하고 훈련", sub: "코치 신뢰 상승", act: { k: "boost", trust: 1, msg: "시즌 준비에만 집중했어요." } },
-      ],
-    });
-  }
-  if (c.stage === "pro" && c.age <= 24) {
-    list.push({
-      title: "베테랑의 개인 레슨",
-      body: "팀 베테랑이 여름 개인 훈련을 함께하자고 해요.",
-      opts: [
-        { label: "따라간다", sub: "BQ +1 · 수비 +1", act: { k: "boost", attrs: { iq: 1, def: 1 }, msg: "베테랑에게 프로의 습관을 배웠어요." } },
-        { label: "혼자 훈련", sub: "변화 없음", act: { k: "none" } },
-      ],
-    });
-  }
-  return pick(list);
 }
 
 /** 대기열 맨 앞의 지연 결정을 지금 능력치로 만들어요. 화면을 그리기 전에 호출해요. */

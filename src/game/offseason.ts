@@ -1,5 +1,6 @@
 import { POS, POS_GROWTH, TRAITS } from "./data";
-import { flavorEvent, forcedRetirement, nbaOffer, resolveQueue, retirementPrompt } from "./decisions";
+import { forcedRetirement, nbaOffer, resolveQueue, retirementPrompt } from "./decisions";
+import { lifeEvent } from "./events";
 import { addNews, pickTeam, setTeam } from "./log";
 import { chance, ri, rnd } from "./random";
 import { ovr, ovrOf } from "./ratings";
@@ -77,7 +78,11 @@ export function runOffseason(c: Career, finishedYear: number): void {
     }
   } else if (c.stage === "free") q.push({ lazy: "faFree" });
 
-  if (chance(0.35)) q.push(flavorEvent(c));
+  // 농구 밖의 생활 이벤트 (학교 축제, 시험, 에이전시, 트레이너…)
+  if (chance(0.45)) {
+    const ev = lifeEvent(c);
+    if (ev) q.push(ev);
+  }
   c.queue = q;
   resolveQueue(c);
 }

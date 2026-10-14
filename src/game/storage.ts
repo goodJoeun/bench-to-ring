@@ -66,6 +66,8 @@ function normalize(c: Career): Career {
   c.posAsked ??= {};
   c.awardLog ??= [];
   c.lastDelta ??= {};
+  c.events ??= {};
+  c.perks ??= {};
   return c;
 }
 

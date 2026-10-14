@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   ATTR_KEYS,
   POS_KEYS,
+  applyAction,
   chooseOption,
   createCareer,
   currentDecision,
@@ -15,6 +16,7 @@ import {
   type Career,
   type CareerSummary,
 } from "@/game";
+import { lifeEvent } from "@/game/events";
 import { decodeSave, encodeSave } from "@/game/storage";
 
 afterEach(() => resetRandom());
@@ -119,6 +121,52 @@ describe("예전 저장 파일", () => {
     expect(loaded.hist[0].lg).toBe("nba");
     expect(loaded.awards).toEqual({ mvp_nba: 2, ring: 1 });
     expect(loaded.awardLog[0].k).toBe("mvp_nba");
+  });
+});
+
+describe("생활 이벤트", () => {
+  /** 해마다 이벤트를 하나씩 뽑아 제목을 모아요. */
+  function draw(c: Career, years: number): string[] {
+    const titles: string[] = [];
+    for (let y = 0; y < years; y++) {
+      const d = lifeEvent(c);
+      if (d) {
+        expect(d.opts.length).toBeGreaterThanOrEqual(2);
+        for (const o of d.opts) expect(o.sub, `${d.title} · ${o.label}`).toBeTruthy();
+        titles.push(d.title);
+      }
+      c.year++;
+    }
+    return titles;
+  }
+
+  it("한 번뿐인 이벤트는 다시 나오지 않고, 같은 이벤트는 3년 안에 반복되지 않아요", () => {
+    setRandom(seeded(5));
+    for (const stage of ["hs", "college", "pro", "free"] as const) {
+      const c = createCareer({ name: "생활", num: 7, nat: "대한민국", pos: "SG", path: "abroad" }, generateCandidates("SG")[0], stage);
+      c.stage = stage;
+      if (stage === "pro") c.contract = { years: 3, salary: 20 };
+      if (stage === "free") c.team = null;
+      const titles = draw(c, 60);
+      expect(titles.length).toBeGreaterThan(10);
+      expect(titles.filter((t) => t === "부모님의 걱정").length).toBeLessThanOrEqual(1);
+      expect(titles.filter((t) => t === "에이전시 이적 제안").length).toBeLessThanOrEqual(1);
+      for (let i = 0; i < titles.length; i++) expect(titles.slice(i + 1, i + 3)).not.toContain(titles[i]);
+    }
+  });
+
+  it("에이전시와 트레이너 효과는 커리어에 남고, 예전 저장에는 빈 값으로 채워져요", () => {
+    setRandom(seeded(8));
+    const c = createCareer({ name: "효과", num: 9, nat: "대한민국", pos: "C", path: "domestic" }, generateCandidates("C")[2], "perk");
+    applyAction(c, { k: "boost", agency: true, trainer: "def", money: -1 });
+    expect(c.perks).toEqual({ agency: true, trainer: "def" });
+    expect(c.earnings).toBe(0);
+    const old = JSON.parse(JSON.stringify(c));
+    delete old.events;
+    delete old.perks;
+    const loaded = decodeSave(JSON.stringify(old))!;
+    expect(loaded.events).toEqual({});
+    expect(loaded.perks).toEqual({});
   });
 });
 

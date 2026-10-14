@@ -117,18 +117,36 @@ export type Action =
   | { k: "sign"; lg: ProLeagueKey; team: Team; years: number; salary: number }
   | { k: "skip" }
   | { k: "pos"; pos: PosKey }
-  | {
-      k: "boost";
-      attrs?: Partial<Attrs>;
-      rand?: number;
-      amt?: number;
-      health?: number;
-      money?: number;
-      trust?: number;
-      msg?: string;
-    }
+  | ({ k: "boost" } & Boost)
+  /** 확률 p로 win, 아니면 lose 효과가 나요. */
+  | { k: "gamble"; p: number; win: Boost; lose: Boost }
   | { k: "retire" }
   | { k: "none" };
+
+/** 이벤트 선택지가 주는 효과. 모든 값은 선택이에요. */
+export interface Boost {
+  attrs?: Partial<Attrs>;
+  /** 무작위 능력치 rand개를 amt만큼 */
+  rand?: number;
+  amt?: number;
+  health?: number;
+  /** 수입(+) 또는 비용(-), 억 단위 */
+  money?: number;
+  trust?: number;
+  /** 대형 에이전시와 계약: 이후 연봉 제안이 올라요. */
+  agency?: boolean;
+  /** 전담 트레이너: 이 능력치가 매 시즌 조금 더 잘 커요. */
+  trainer?: AttrKey;
+  msg?: string;
+  /** 소식 종류. 기본은 good */
+  t?: NewsType;
+}
+
+/** 이벤트로 얻은 지속 효과 */
+export interface Perks {
+  agency?: boolean;
+  trainer?: AttrKey;
+}
 
 export interface DecisionOption {
   label: string;
@@ -232,6 +250,9 @@ export interface Career {
   posAsked: Partial<Record<PosKey, 1>>;
   draft: DraftInfo | null;
   summary: CareerSummary | null;
+  /** 생활 이벤트 id → 마지막으로 겪은 시즌 연도 */
+  events: Record<string, number>;
+  perks: Perks;
 }
 
 export interface NewCareerInput {

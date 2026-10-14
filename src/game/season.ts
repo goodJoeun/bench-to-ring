@@ -218,6 +218,8 @@ function grow(c: Career, min: number, rating: number, tag: string): void {
       g = base * tf * decline[k] * rnd(0.6, 1.4);
       if (c.focus === k) g *= 0.6;
     }
+    // 전담 트레이너: 맡은 능력치는 조금 더 크고, 노화로 떨어질 때는 덜 떨어져요.
+    if (c.perks.trainer === k) g *= g > 0 ? 1.15 : 0.8;
     if (k === "iq" && age >= 24 && age <= 33) g += 0.5;
     const old = p.attrs[k];
     p.attrs[k] = clamp(old + g, 20, 99);
