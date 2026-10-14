@@ -35,7 +35,10 @@ src/
 │  ├─ Game.tsx          화면 전환 (선수 생성 / 커리어 / 은퇴)
 │  ├─ CreateScreen.tsx  선수 생성
 │  ├─ GameScreen.tsx    커리어 진행 화면
-│  ├─ ActionPanel.tsx   훈련 초점, 시즌 진행, 오프시즌 결정
+│  ├─ ActionPanel.tsx   시즌 진행 버튼, 시즌 계획·오프시즌 결정 시트
+│  ├─ Sheet.tsx         아래에서 올라오는 선택 시트
+│  ├─ Toast.tsx         결정 결과 알림
+│  ├─ SeasonLoading.tsx 시즌 진행 로딩 화면
 │  ├─ Sprite.tsx        Canvas 도트 캐릭터
 │  └─ tabs/             시즌 · 기록 · 트로피 · 명예의 전당 · 설정 탭
 ├─ lib/

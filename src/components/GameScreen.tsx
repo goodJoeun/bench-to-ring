@@ -33,9 +33,10 @@ interface GameScreenProps {
   hall: CareerSummary[];
   tab: TabKey;
   onTab: (k: TabKey) => void;
+  simulating: boolean;
 }
 
-export function GameScreen({ career, hall, tab, onTab }: GameScreenProps) {
+export function GameScreen({ career, hall, tab, onTab, simulating }: GameScreenProps) {
   const pending = career.queue.length > 0;
 
   return (
@@ -43,7 +44,7 @@ export function GameScreen({ career, hall, tab, onTab }: GameScreenProps) {
       <div className="col-l">
         <CourtCard career={career} />
         <Scoreboard career={career} />
-        <ActionPanel career={career} onAdvance={() => onTab("season")} />
+        <ActionPanel career={career} simulating={simulating} onAdvance={() => onTab("season")} />
       </div>
       <div className="col-r">
         <AttributesPanel career={career} />

@@ -3,6 +3,7 @@ import {
   canRetire,
   chooseOption,
   createCareer,
+  currentDecision,
   generateCandidates,
   resolveQueue,
   retire,
@@ -12,6 +13,7 @@ import {
   type CareerPath,
   type CareerSummary,
   type FocusKey,
+  type NewsItem,
   type PosKey,
 } from "@/game";
 import { decodeSave, loadCareer, loadHall, saveCareer, saveHall } from "@/game/storage";
@@ -36,6 +38,13 @@ export interface GameSnapshot {
   hall: CareerSummary[];
   /** 시즌 진행 로딩 화면을 보여주는 중인지. 결과는 이미 계산·저장돼 있어요. */
   simulating: boolean;
+  /** 화면 아래에 잠깐 떴다 사라지는 알림 */
+  toast: Toast | null;
+}
+
+export interface Toast {
+  id: number;
+  msg: string;
 }
 
 const REROLLS = 3;
@@ -51,7 +60,7 @@ const emptyDraft = (): CreationDraft => ({
   rerolls: REROLLS,
 });
 
-const SERVER_SNAPSHOT: GameSnapshot = { ready: false, career: null, draft: emptyDraft(), hall: [], simulating: false };
+const SERVER_SNAPSHOT: GameSnapshot = { ready: false, career: null, draft: emptyDraft(), hall: [], simulating: false, toast: null };
 
 let snapshot: GameSnapshot = SERVER_SNAPSHOT;
 const listeners = new Set<() => void>();
@@ -71,12 +80,23 @@ function ensureLoaded(): void {
   if (snapshot.ready || typeof window === "undefined") return;
   const career = loadCareer();
   if (career) resolveQueue(career);
-  snapshot = { ready: true, career, draft: freshDraft(), hall: loadHall(), simulating: false };
+  snapshot = { ready: true, career, draft: freshDraft(), hall: loadHall(), simulating: false, toast: null };
 }
 
 function set(patch: Partial<GameSnapshot>): void {
   snapshot = { ...snapshot, ...patch };
   listeners.forEach((l) => l());
+}
+
+let toastId = 0;
+const toast = (msg: string): Toast => ({ id: ++toastId, msg });
+
+/** before 이후에 새로 쌓인 소식 중 가장 최근 것 */
+function latestNewsSince(before: NewsItem | undefined, c: Career): string | null {
+  const first = c.news[0];
+  if (!first) return null;
+  if (before && first.w === before.w && first.t === before.t && first.m === before.m) return null;
+  return first.m;
 }
 
 /** 커리어 복사본에 엔진 함수를 적용하고 저장해요. 은퇴하면 명예의 전당에도 올려요. */
@@ -139,13 +159,27 @@ export const gameActions = {
     mutate(simulateSeason);
     set({ simulating: true });
   },
+  /** 로딩 화면을 닫고 시즌 결과를 알림으로 보여줘요. */
   finishSimulation() {
-    set({ simulating: false });
+    const r = snapshot.career?.last;
+    const msg = r ? `${r.year} 시즌 종료 · ${r.lg ? `${r.w}승 ${r.l}패 · ` : ""}${r.result}` : null;
+    set({ simulating: false, toast: msg ? toast(msg) : snapshot.toast });
   },
+  /** 결정을 고르고, 그 결과로 생긴 소식을 알림으로 띄워요. */
   choose(index: number) {
+    const c0 = snapshot.career;
+    if (!c0) return;
+    const label = currentDecision(c0)?.opts[index]?.label;
+    const before = c0.news[0];
     mutate((c) => {
       chooseOption(c, index);
     });
+    const after = snapshot.career;
+    const msg = (after && latestNewsSince(before, after)) ?? (label ? `'${label}'을(를) 골랐어요` : null);
+    if (msg) set({ toast: toast(msg) });
+  },
+  dismissToast(id: number) {
+    if (snapshot.toast?.id === id) set({ toast: null });
   },
   retire() {
     mutate((c) => {
