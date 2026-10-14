@@ -34,6 +34,8 @@ export interface GameSnapshot {
   career: Career | null;
   draft: CreationDraft;
   hall: CareerSummary[];
+  /** 시즌 진행 로딩 화면을 보여주는 중인지. 결과는 이미 계산·저장돼 있어요. */
+  simulating: boolean;
 }
 
 const REROLLS = 3;
@@ -49,7 +51,7 @@ const emptyDraft = (): CreationDraft => ({
   rerolls: REROLLS,
 });
 
-const SERVER_SNAPSHOT: GameSnapshot = { ready: false, career: null, draft: emptyDraft(), hall: [] };
+const SERVER_SNAPSHOT: GameSnapshot = { ready: false, career: null, draft: emptyDraft(), hall: [], simulating: false };
 
 let snapshot: GameSnapshot = SERVER_SNAPSHOT;
 const listeners = new Set<() => void>();
@@ -69,7 +71,7 @@ function ensureLoaded(): void {
   if (snapshot.ready || typeof window === "undefined") return;
   const career = loadCareer();
   if (career) resolveQueue(career);
-  snapshot = { ready: true, career, draft: freshDraft(), hall: loadHall() };
+  snapshot = { ready: true, career, draft: freshDraft(), hall: loadHall(), simulating: false };
 }
 
 function set(patch: Partial<GameSnapshot>): void {
@@ -135,6 +137,10 @@ export const gameActions = {
   advanceSeason() {
     if (!snapshot.career || snapshot.career.queue.length) return;
     mutate(simulateSeason);
+    set({ simulating: true });
+  },
+  finishSimulation() {
+    set({ simulating: false });
   },
   choose(index: number) {
     mutate((c) => {
