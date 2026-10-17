@@ -1,8 +1,8 @@
 import { ARCHETYPES, ATTR_KEYS, HAIRS, POS, SKINS, START_YEAR, TRAIT_KEYS } from "./data";
 import { addNews, pickTeam, setTeam } from "./log";
-import { pick, ri, rnd, triangular } from "./random";
+import { pick, ri, rnd, shuffle, triangular } from "./random";
 import { ovrOf } from "./ratings";
-import type { AttrKey, Attrs, Candidate, Career, Grade, NewCareerInput, PosKey } from "./types";
+import type { Archetype, AttrKey, Attrs, Candidate, Career, Grade, NewCareerInput, PosKey } from "./types";
 import { clamp, r1 } from "./util";
 
 export const START_OVR = 45;
@@ -70,9 +70,15 @@ export function generateCandidate(pos: PosKey, archIndex: number): Candidate {
 
 const CANDIDATE_COUNT = 3;
 
-/** 고른 플레이 유형으로 후보 세 명을 뽑아요. 키·잠재력·특성은 저마다 달라요. */
-export function generateCandidates(pos: PosKey, archIndex = 0): Candidate[] {
-  return Array.from({ length: CANDIDATE_COUNT }, () => generateCandidate(pos, archIndex));
+/** 후보 세 명을 뽑아요. 플레이 유형은 포지션의 유형 중에서 서로 겹치지 않게 무작위로 정해져요. */
+export function generateCandidates(pos: PosKey): Candidate[] {
+  const archs = shuffle(ARCHETYPES[pos].map((_, i) => i)).slice(0, CANDIDATE_COUNT);
+  return archs.map((i) => generateCandidate(pos, i));
+}
+
+/** 후보에 저장된 유형 이름으로 플레이 유형 정보를 찾아요. */
+export function archetypeOf(pos: PosKey, name: string): Archetype | undefined {
+  return ARCHETYPES[pos].find((a) => a.name === name);
 }
 
 export function createCareer(input: NewCareerInput, cand: Candidate, id = String(Date.now())): Career {

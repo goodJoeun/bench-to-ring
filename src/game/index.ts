@@ -4,7 +4,7 @@
  */
 export * from "./types";
 export * from "./data";
-export { generateCandidate, generateCandidates, createCareer, START_OVR, START_TOTAL } from "./create";
+export { archetypeOf, generateCandidate, generateCandidates, createCareer, START_OVR, START_TOTAL } from "./create";
 export { simulateSeason } from "./season";
 export { chooseOption, applyAction } from "./actions";
 export { currentDecision, resolveQueue } from "./decisions";

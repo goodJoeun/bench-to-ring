@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
-  ARCHETYPES,
   ATTR_KEYS,
   NATIONS,
   POS,
   POS_KEYS,
   SHORT,
+  archetypeOf,
   ovrOf,
   type Archetype,
   type AttrKey,
@@ -36,59 +36,84 @@ function strengthsOf(arch: Archetype): string {
     .join(" · ");
 }
 
-function ArchetypeSheet({ pos, index, chosen, onClose }: { pos: PosKey; index: number; chosen: boolean; onClose: () => void }) {
-  const arch = ARCHETYPES[pos][index];
+/** 유형 이름 옆 ⓘ 버튼. 마우스를 올리거나 누르면 강점과 대표 선수를 보여줘요. */
+function ArchetypeTip({ arch }: { arch: Archetype }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  const id = useId();
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
   return (
-    <Sheet labelledBy="arch-title" onClose={onClose}>
-      <span className="sheet-kicker">
-        {pos} {POS[pos].name} · 플레이 유형
-      </span>
-      <h2 id="arch-title">{arch.name}</h2>
-      <p className="sheet-desc">{arch.desc}</p>
-      <p className="arch-str">
-        강점 <b>{strengthsOf(arch)}</b>
-      </p>
-      <dl className="arch-ex">
-        <div>
-          <dt>KBL</dt>
-          <dd>{arch.kbl.join(" · ")}</dd>
-        </div>
-        <div>
-          <dt>NBA</dt>
-          <dd>{arch.nba.join(" · ")}</dd>
-        </div>
-      </dl>
+    // 툴팁을 눌러도 카드가 선택되지 않게 클릭을 여기서 멈춰요.
+    <span ref={ref} className="tip-wrap" data-open={open || undefined} onClick={(e) => e.stopPropagation()}>
       <button
         type="button"
-        className="sheet-go"
-        onClick={() => {
-          gameActions.chooseArchetype(index);
-          onClose();
-        }}
+        className="tip-btn"
+        aria-label={`${arch.name} 설명 보기`}
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen((o) => !o)}
       >
-        {chosen ? "이 유형으로 계속" : "이 유형 선택"}
+        i
       </button>
-      <button type="button" className="sheet-later" onClick={onClose}>
-        닫기
-      </button>
-    </Sheet>
+      <span id={id} className="tip" role="tooltip">
+        <span className="tip-row">
+          <b>강점</b>
+          {strengthsOf(arch)}
+        </span>
+        <span className="tip-row">
+          <b>KBL</b>
+          {arch.kbl.join(" · ")}
+        </span>
+        <span className="tip-row">
+          <b>NBA</b>
+          {arch.nba.join(" · ")}
+        </span>
+      </span>
+    </span>
   );
 }
 
 function CandidateCard({ cand, pos, index, selected }: { cand: Candidate; pos: PosKey; index: number; selected: boolean }) {
   const w = POS[pos].w;
+  const arch = archetypeOf(pos, cand.arch);
   return (
-    <button type="button" className="cand" aria-pressed={selected} onClick={() => gameActions.editDraft({ selected: index })}>
+    // 카드 아무 곳이나 눌러 고를 수 있어요. 키보드로는 오른쪽 위 후보 버튼을 써요.
+    <div className="cand" data-selected={selected || undefined} onClick={() => gameActions.editDraft({ selected: index })}>
       <span className="floor">
         <span className="key" />
         <Sprite skin={cand.skin} hair={cand.hair} color="#2453A6" scale={4} label={`${cand.arch} 후보 도트 캐릭터`} />
-        <span className="pick">{selected ? "선택됨" : `후보 ${index + 1}`}</span>
+        <button
+          type="button"
+          className="pick"
+          aria-pressed={selected}
+          aria-label={`후보 ${index + 1} ${cand.arch} 선택`}
+        >
+          {selected ? "선택됨" : `후보 ${index + 1}`}
+        </button>
       </span>
       <span className="cbody">
         <span className="crow">
-          <span className="arch">{cand.arch}</span>
+          <span className="arch-name">
+            <span className="arch">{cand.arch}</span>
+            {arch && <ArchetypeTip arch={arch} />}
+          </span>
           <span className="covr">OVR {Math.round(ovrOf(cand.attrs, pos))}</span>
         </span>
+        {arch && <span className="cdesc">{arch.desc}</span>}
         <span className="cmeta">
           <span>키 {cand.h}cm</span>
           <span>윙스팬 {cand.h + cand.wsd}cm</span>
@@ -115,12 +140,66 @@ function CandidateCard({ cand, pos, index, selected }: { cand: Candidate; pos: P
           ))}
         </span>
       </span>
-    </button>
+    </div>
+  );
+}
+
+function ConfirmStartSheet({ draft, onClose }: { draft: CreationDraft; onClose: () => void }) {
+  const cand = draft.candidates[draft.selected];
+  if (!cand) return null;
+  const name = draft.name.trim() || "무명의 루키";
+  const path = PATHS.find(([k]) => k === draft.path);
+  return (
+    <Sheet labelledBy="confirm-title" onClose={onClose}>
+      <span className="sheet-kicker">커리어 시작 확인</span>
+      <h2 id="confirm-title">{name} 선수로 시작할까요?</h2>
+      <p className="sheet-desc">시작하면 포지션과 후보는 바꿀 수 없어요.</p>
+      <dl className="confirm-sum">
+        <div>
+          <dt>포지션</dt>
+          <dd>
+            {draft.pos} {POS[draft.pos].name}
+          </dd>
+        </div>
+        <div>
+          <dt>플레이 유형</dt>
+          <dd>{cand.arch}</dd>
+        </div>
+        <div>
+          <dt>등번호 · 국적</dt>
+          <dd>
+            #{draft.num || 0} · {draft.nat}
+          </dd>
+        </div>
+        <div>
+          <dt>커리어 경로</dt>
+          <dd>{path?.[1]}</dd>
+        </div>
+        <div>
+          <dt>키 · 윙스팬</dt>
+          <dd>
+            {cand.h}cm · {cand.h + cand.wsd}cm
+          </dd>
+        </div>
+        <div>
+          <dt>오버롤 · 스카우트 등급</dt>
+          <dd>
+            {Math.round(ovrOf(cand.attrs, draft.pos))} · {cand.grade}
+          </dd>
+        </div>
+      </dl>
+      <button type="button" className="sheet-go" onClick={gameActions.startCareer}>
+        커리어 시작
+      </button>
+      <button type="button" className="sheet-later" onClick={onClose}>
+        다시 고를게요
+      </button>
+    </Sheet>
   );
 }
 
 export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: CareerSummary[] }) {
-  const [infoIndex, setInfoIndex] = useState<number | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   return (
     <>
       <section className="intro">
@@ -197,24 +276,6 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
         </div>
 
         <div className="field">
-          <span className="label">플레이 유형</span>
-          <div className="archs" role="group" aria-label="플레이 유형">
-            {ARCHETYPES[draft.pos].map((a, i) => (
-              <div className="arch-opt" key={a.name}>
-                <button type="button" className="arch-pick" aria-pressed={draft.arch === i} onClick={() => gameActions.chooseArchetype(i)}>
-                  <b>{a.name}</b>
-                  <span>{strengthsOf(a)}</span>
-                </button>
-                <button type="button" className="arch-info" aria-label={`${a.name} 설명 보기`} onClick={() => setInfoIndex(i)}>
-                  설명 보기
-                </button>
-              </div>
-            ))}
-          </div>
-          <p className="hint">유형에 따라 후보의 능력치 분포가 달라져요. 오버롤과 능력치 합은 같아요.</p>
-        </div>
-
-        <div className="field">
           <span className="label">커리어 경로</span>
           <div className="seg path" role="group" aria-label="커리어 경로">
             {PATHS.map(([k, title, sub]) => (
@@ -229,7 +290,7 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
 
         <div className="field">
           <div className="flabel-row">
-            <span className="label">후보 선수 · 모두 오버롤 45, 능력치 합 240, 16세 기준</span>
+            <span className="label">후보 선수 · 모두 오버롤 45, 능력치 합 240, 16세 기준 · 플레이 유형은 무작위</span>
             <button type="button" className="btn" disabled={!draft.rerolls} onClick={gameActions.reroll}>
               후보 다시 뽑기 · {draft.rerolls}회 남음
             </button>
@@ -242,7 +303,7 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
           <p className="hint">스카우트 등급은 잠재력 추정치예요. 실제 잠재력과 숨겨진 성장 특성은 뛰어봐야 알 수 있어요.</p>
         </div>
 
-        <button type="button" className="start" onClick={gameActions.startCareer}>
+        <button type="button" className="start" onClick={() => setConfirmOpen(true)}>
           이 선수로 커리어 시작
         </button>
       </section>
@@ -252,15 +313,7 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
         <ImportForm placeholder="다른 기기에서 복사한 저장 코드를 붙여넣으세요" />
       </section>
 
-      {infoIndex !== null && (
-        <ArchetypeSheet
-          key={`${draft.pos}-${infoIndex}`}
-          pos={draft.pos}
-          index={infoIndex}
-          chosen={draft.arch === infoIndex}
-          onClose={() => setInfoIndex(null)}
-        />
-      )}
+      {confirmOpen && <ConfirmStartSheet draft={draft} onClose={() => setConfirmOpen(false)} />}
 
       {hall.length > 0 && (
         <div className="resume">

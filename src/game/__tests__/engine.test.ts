@@ -7,6 +7,7 @@ import {
   chooseOption,
   createCareer,
   currentDecision,
+  generateCandidate,
   generateCandidates,
   ovrOf,
   rankHall,
@@ -47,12 +48,25 @@ describe("후보 선수", () => {
     setRandom(seeded(7));
     for (let i = 0; i < 40; i++) {
       for (const pos of POS_KEYS) {
-        for (const cand of ARCHETYPES[pos].flatMap((_, a) => generateCandidates(pos, a))) {
+        for (const cand of ARCHETYPES[pos].map((_, a) => generateCandidate(pos, a))) {
           const sum = ATTR_KEYS.reduce((t, k) => t + cand.attrs[k], 0);
           expect(sum).toBe(240);
           expect(Math.round(ovrOf(cand.attrs, pos))).toBe(45);
         }
       }
+    }
+  });
+
+  it("후보 세 명은 서로 다른 플레이 유형을 무작위로 받아요", () => {
+    setRandom(seeded(11));
+    for (const pos of POS_KEYS) {
+      const seen = new Set<string>();
+      for (let i = 0; i < 30; i++) {
+        const names = generateCandidates(pos).map((c) => c.arch);
+        expect(new Set(names).size).toBe(3);
+        names.forEach((n) => seen.add(n));
+      }
+      expect(seen.size).toBe(ARCHETYPES[pos].length);
     }
   });
 });
@@ -64,7 +78,7 @@ describe("커리어 시뮬레이션", () => {
     const summaries: CareerSummary[] = [];
     for (let i = 0; i < 300; i++) {
       const pos = POS_KEYS[i % POS_KEYS.length];
-      const cand = generateCandidates(pos, i % ARCHETYPES[pos].length)[0];
+      const cand = generateCandidate(pos, i % ARCHETYPES[pos].length);
       const c = createCareer(
         { name: `테스트${i}`, num: i % 100, nat: "대한민국", pos, path: i % 2 ? "abroad" : "domestic" },
         cand,
