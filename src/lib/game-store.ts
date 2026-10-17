@@ -24,6 +24,8 @@ export interface CreationDraft {
   num: string;
   nat: string;
   pos: PosKey;
+  /** 고른 플레이 유형 (ARCHETYPES[pos]의 인덱스) */
+  arch: number;
   path: CareerPath;
   candidates: Candidate[];
   selected: number;
@@ -54,6 +56,7 @@ const emptyDraft = (): CreationDraft => ({
   num: "",
   nat: "대한민국",
   pos: "SG",
+  arch: 0,
   path: "abroad",
   candidates: [],
   selected: 0,
@@ -70,7 +73,7 @@ function freshDraft(prev?: CreationDraft): CreationDraft {
   return {
     ...base,
     num: base.num || String(Math.floor(Math.random() * 100)),
-    candidates: generateCandidates(base.pos),
+    candidates: generateCandidates(base.pos, base.arch),
     selected: 0,
     rerolls: REROLLS,
   };
@@ -134,12 +137,17 @@ export const gameActions = {
     set({ draft: { ...snapshot.draft, ...patch } });
   },
   choosePosition(pos: PosKey) {
-    set({ draft: { ...snapshot.draft, pos, candidates: generateCandidates(pos), selected: 0 } });
+    set({ draft: { ...snapshot.draft, pos, arch: 0, candidates: generateCandidates(pos, 0), selected: 0 } });
+  },
+  chooseArchetype(arch: number) {
+    const d = snapshot.draft;
+    if (d.arch === arch) return;
+    set({ draft: { ...d, arch, candidates: generateCandidates(d.pos, arch), selected: 0 } });
   },
   reroll() {
     const d = snapshot.draft;
     if (d.rerolls <= 0) return;
-    set({ draft: { ...d, candidates: generateCandidates(d.pos), selected: 0, rerolls: d.rerolls - 1 } });
+    set({ draft: { ...d, candidates: generateCandidates(d.pos, d.arch), selected: 0, rerolls: d.rerolls - 1 } });
   },
   startCareer() {
     const d = snapshot.draft;

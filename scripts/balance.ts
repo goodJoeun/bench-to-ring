@@ -3,7 +3,7 @@
  * 실행: npx vitest run scripts/balance.ts  (또는 npm run balance)
  */
 import { test } from "vitest";
-import { POS_KEYS, chooseOption, createCareer, currentDecision, generateCandidates, ovrOf, seeded, setRandom, simulateSeason } from "@/game";
+import { ARCHETYPES, POS_KEYS, chooseOption, createCareer, currentDecision, generateCandidates, ovrOf, seeded, setRandom, simulateSeason } from "@/game";
 
 const N = 600;
 const pct = (arr: number[], p: number) => arr[Math.min(arr.length - 1, Math.floor(arr.length * p))];
@@ -19,7 +19,7 @@ test("balance report", () => {
   let mvpPlayers = 0;
   for (let i = 0; i < N; i++) {
     const pos = POS_KEYS[i % 5];
-    const c = createCareer({ name: "b", num: 1, nat: "대한민국", pos, path: i % 2 ? "abroad" : "domestic" }, generateCandidates(pos)[i % 3], `b${i}`);
+    const c = createCareer({ name: "b", num: 1, nat: "대한민국", pos, path: i % 2 ? "abroad" : "domestic" }, generateCandidates(pos, i % ARCHETYPES[pos].length)[0], `b${i}`);
     let steps = 0;
     while (c.stage !== "retired" && steps++ < 200) {
       if (c.queue.length) chooseOption(c, Math.floor(rand() * currentDecision(c)!.opts.length));

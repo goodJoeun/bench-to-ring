@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  ARCHETYPES,
   ATTR_KEYS,
   POS_KEYS,
   applyAction,
@@ -42,11 +43,11 @@ function playToRetirement(c: Career, rand: () => number): number {
 }
 
 describe("후보 선수", () => {
-  it("모든 포지션에서 능력치 합 240, 오버롤 45로 시작해요", () => {
+  it("모든 포지션·플레이 유형에서 능력치 합 240, 오버롤 45로 시작해요", () => {
     setRandom(seeded(7));
     for (let i = 0; i < 40; i++) {
       for (const pos of POS_KEYS) {
-        for (const cand of generateCandidates(pos)) {
+        for (const cand of ARCHETYPES[pos].flatMap((_, a) => generateCandidates(pos, a))) {
           const sum = ATTR_KEYS.reduce((t, k) => t + cand.attrs[k], 0);
           expect(sum).toBe(240);
           expect(Math.round(ovrOf(cand.attrs, pos))).toBe(45);
@@ -63,7 +64,7 @@ describe("커리어 시뮬레이션", () => {
     const summaries: CareerSummary[] = [];
     for (let i = 0; i < 300; i++) {
       const pos = POS_KEYS[i % POS_KEYS.length];
-      const cand = generateCandidates(pos)[i % 3];
+      const cand = generateCandidates(pos, i % ARCHETYPES[pos].length)[0];
       const c = createCareer(
         { name: `테스트${i}`, num: i % 100, nat: "대한민국", pos, path: i % 2 ? "abroad" : "domestic" },
         cand,

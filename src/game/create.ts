@@ -68,8 +68,11 @@ export function generateCandidate(pos: PosKey, archIndex: number): Candidate {
   };
 }
 
-export function generateCandidates(pos: PosKey): Candidate[] {
-  return ARCHETYPES[pos].map((_, i) => generateCandidate(pos, i));
+const CANDIDATE_COUNT = 3;
+
+/** 고른 플레이 유형으로 후보 세 명을 뽑아요. 키·잠재력·특성은 저마다 달라요. */
+export function generateCandidates(pos: PosKey, archIndex = 0): Candidate[] {
+  return Array.from({ length: CANDIDATE_COUNT }, () => generateCandidate(pos, archIndex));
 }
 
 export function createCareer(input: NewCareerInput, cand: Candidate, id = String(Date.now())): Career {

@@ -63,6 +63,18 @@ export interface Nation {
   continentalBonus: number;
 }
 
+/** 선수 생성 때 고르는 플레이 유형 */
+export interface Archetype {
+  name: string;
+  /** 후보 능력치에 곱하는 배수 */
+  e: Partial<Attrs>;
+  /** 한두 문장 설명 */
+  desc: string;
+  /** 이 유형으로 유명했던 선수 */
+  kbl: string[];
+  nba: string[];
+}
+
 export interface Candidate {
   arch: string;
   attrs: Attrs;
