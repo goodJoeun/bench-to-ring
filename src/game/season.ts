@@ -1,5 +1,6 @@
-import { ATTRS, CONTINENTAL_CUP, LEAGUES, NATIONS, POS, ROLE_RANK, SCORING_TITLE } from "./data";
+import { ATTRS, LEAGUES, POS, ROLE_RANK, SCORING_TITLE } from "./data";
 import { addNews, giveAward } from "./log";
+import { nationalCallUp } from "./national";
 import { runOffseason } from "./offseason";
 import { chance, random, ri, rnd } from "./random";
 import { ageBase, ovr, ovrOf, roleOf } from "./ratings";
@@ -16,6 +17,7 @@ export function simulateSeason(c: Career): SeasonRecord {
   let rec: SeasonRecord;
   let min = 0;
   let rating = 6;
+  let played = 0;
 
   if (c.stage === "free" || !c.team) {
     rec = {
@@ -130,12 +132,14 @@ export function simulateSeason(c: Career): SeasonRecord {
     if (prev && prev.team === rec.team && prev.role !== "-" && ROLE_RANK[role] > ROLE_RANK[prev.role])
       addNews(c, tag, "good", `팀 내 역할이 ${role}(으)로 올라섰어요.`);
     rec.awards.forEach((n) => addNews(c, tag, "award", `수상 · ${n}`));
-    nationalTeam(c, rec, ov0, gp, tag);
+    played = gp;
     if (L.pro) c.proSeasons++;
   }
 
   grow(c, min, rating, tag);
   rec.ovr1 = ovr(p);
+  // 시즌이 끝난 여름의 국가대표 대회. 성장까지 반영한 오버롤로 발탁해요.
+  const call = nationalCallUp(c, rec.ovr1, played, yr);
   c.peakOvr = Math.max(c.peakOvr, rec.ovr1);
   c.trust = c.team ? clamp((rating - 6.3) * 1.4, -3, 4) : 0;
   if (c.contract) c.earnings += c.contract.salary;
@@ -143,48 +147,8 @@ export function simulateSeason(c: Career): SeasonRecord {
   c.last = rec;
   c.age++;
   c.year++;
-  runOffseason(c, yr);
+  runOffseason(c, yr, call);
   return rec;
-}
-
-function nationalTeam(c: Career, rec: SeasonRecord, ov0: number, gp: number, tag: string): void {
-  const N = NATIONS.find((n) => n.name === c.p.nat) ?? NATIONS[0];
-  if (c.age < 19 || gp <= 0 || ov0 < N.threshold) return;
-  const first = !c.nat.caps;
-  c.nat.caps += ri(4, 9);
-  // 올림픽(2028, 2032…), FIBA 월드컵(2027, 2031…), 대륙컵(2029…), 아시안게임(2026, 2030…)
-  const cycle = rec.year % 4;
-  let ev: string;
-  let bonus = 0;
-  if (cycle === 0) ev = "올림픽";
-  else if (cycle === 3) ev = "FIBA 농구 월드컵";
-  else if (cycle === 1) {
-    ev = CONTINENTAL_CUP[N.region];
-    bonus = N.continentalBonus;
-  } else if (N.region === "asia" && N.name !== "호주") {
-    ev = "아시안게임";
-    bonus = N.continentalBonus + 0.5;
-  } else ev = "FIBA 월드컵 예선";
-  if (ev === "FIBA 월드컵 예선") {
-    addNews(c, tag, "good", `${first ? "국가대표 첫 발탁! " : "국가대표 소집 · "}${c.p.nat} 대표로 ${ev}에 나섰어요.`);
-    return;
-  }
-  const eff = N.str + bonus + (ov0 - N.threshold) / 5;
-  const r = random();
-  let medal: "금" | "은" | "동" | null = null;
-  if (r < sigmoid((eff - 9) / 1.1)) medal = "금";
-  else if (r < sigmoid((eff - 8) / 1.1)) medal = "은";
-  else if (r < sigmoid((eff - 7) / 1.1)) medal = "동";
-  if (medal) {
-    const key = medal === "금" ? "nat_gold" : medal === "은" ? "nat_silver" : "nat_bronze";
-    giveAward(c, key, `${ev} ${medal}메달`, rec);
-  }
-  addNews(
-    c,
-    tag,
-    medal ? "award" : "good",
-    `${first ? "국가대표 첫 발탁! " : "국가대표 소집 · "}${c.p.nat} 대표로 ${ev} 출전${medal ? ` · ${medal}메달` : " · 메달 획득 실패"}`,
-  );
 }
 
 function grow(c: Career, min: number, rating: number, tag: string): void {

@@ -4,16 +4,19 @@ import { lifeEvent } from "./events";
 import { addNews, pickTeam, setTeam } from "./log";
 import { chance, ri, rnd } from "./random";
 import { ovr, ovrOf } from "./ratings";
-import type { Career, QueueItem } from "./types";
+import type { Career, Decision, QueueItem } from "./types";
 import { r1 } from "./util";
 
 export const RETIRE_AGE = 40;
 
-/** 시즌이 끝난 뒤(나이·연도는 이미 1 늘어난 상태) 몸의 변화와 결정 대기열을 만들어요. */
-export function runOffseason(c: Career, finishedYear: number): void {
+/**
+ * 시즌이 끝난 뒤(나이·연도는 이미 1 늘어난 상태) 몸의 변화와 결정 대기열을 만들어요.
+ * natCall은 이번 여름 국가대표 발탁 결정으로, 있으면 맨 앞에 와요.
+ */
+export function runOffseason(c: Career, finishedYear: number, natCall: Decision | null = null): void {
   const p = c.p;
   const tag = `${finishedYear} 오프시즌`;
-  const q: QueueItem[] = [];
+  const q: QueueItem[] = natCall ? [natCall] : [];
 
   // 키 성장
   if (c.age <= 20 && p.h < p.hFinal) p.h += Math.min(p.hFinal - p.h, ri(1, 4));

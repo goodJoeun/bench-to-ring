@@ -1,5 +1,40 @@
-import { PERSONAL_AWARDS } from "./data";
+import { LEAGUES, PERSONAL_AWARDS } from "./data";
 import type { Career, CareerSummary } from "./types";
+
+export interface TitleEntry {
+  year: number;
+  age: number | null;
+  /** 대회 이름: NBA 우승, 고교 전국대회 우승, 아시안게임 금메달… */
+  name: string;
+  /** 우승한 팀: 소속팀 또는 국가대표팀 */
+  team: string;
+  /** 리그 이름 (국가대표는 null) */
+  league: string | null;
+  kind: "pro" | "amateur" | "nat";
+  fmvp: boolean;
+}
+
+/** 우승 기록을 연도순으로. 어느 팀에서, 어느 리그에서 우승했는지 시즌 기록과 맞춰 찾아요. */
+export function titleHistory(c: Career): TitleEntry[] {
+  const fmvpYears = new Set(c.awardLog.filter((a) => a.k === "fmvp").map((a) => a.y));
+  return c.awardLog
+    .filter((a) => a.k === "ring" || a.k === "title" || a.k === "nat_gold")
+    .map((a) => {
+      const rec = c.hist.find((h) => h.year === a.y);
+      const nat = a.k === "nat_gold";
+      return {
+        year: a.y,
+        age: rec?.age ?? null,
+        // 국가대표 메달 이름엔 연도가 붙어 있어서 떼어내요. 연도는 따로 보여줘요.
+        name: nat ? a.n.replace(/^\d{4} /, "") : a.n,
+        team: nat ? `${c.p.nat} 대표팀` : rec?.team ?? "-",
+        league: !nat && rec?.lg ? LEAGUES[rec.lg].name : null,
+        kind: nat ? "nat" : a.k === "ring" ? "pro" : "amateur",
+        fmvp: !nat && fmvpYears.has(a.y),
+      } satisfies TitleEntry;
+    })
+    .sort((x, y) => x.year - y.year);
+}
 
 export function legacyOf(o: Omit<CareerSummary, "legacy">): string {
   const a = o.awards;

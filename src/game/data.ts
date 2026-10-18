@@ -8,7 +8,6 @@ import type {
   LeagueKey,
   Nation,
   PosKey,
-  Region,
   Role,
   Trait,
 } from "./types";
@@ -287,23 +286,17 @@ export const TRAITS: Record<Trait, string> = {
 export const TRAIT_KEYS = Object.keys(TRAITS) as Trait[];
 
 export const NATIONS: Nation[] = [
-  { name: "대한민국", str: 2, threshold: 64, region: "asia", continentalBonus: 3 },
-  { name: "일본", str: 2, threshold: 64, region: "asia", continentalBonus: 3 },
-  { name: "필리핀", str: 2, threshold: 63, region: "asia", continentalBonus: 3 },
-  { name: "중국", str: 3, threshold: 66, region: "asia", continentalBonus: 3 },
-  { name: "호주", str: 5, threshold: 72, region: "asia", continentalBonus: 3 },
-  { name: "캐나다", str: 7, threshold: 79, region: "americas", continentalBonus: 2 },
-  { name: "미국", str: 10, threshold: 86, region: "americas", continentalBonus: 1 },
-  { name: "프랑스", str: 7, threshold: 79, region: "europe", continentalBonus: 1 },
-  { name: "스페인", str: 6, threshold: 77, region: "europe", continentalBonus: 1 },
-  { name: "세르비아", str: 6, threshold: 77, region: "europe", continentalBonus: 1 },
+  { name: "대한민국", power: 66, threshold: 64, region: "asia" },
+  { name: "일본", power: 70, threshold: 64, region: "asia" },
+  { name: "필리핀", power: 67, threshold: 63, region: "asia" },
+  { name: "중국", power: 71, threshold: 66, region: "asia" },
+  { name: "호주", power: 82, threshold: 72, region: "asia" },
+  { name: "캐나다", power: 85, threshold: 79, region: "americas" },
+  { name: "미국", power: 95, threshold: 86, region: "americas" },
+  { name: "프랑스", power: 85, threshold: 79, region: "europe" },
+  { name: "스페인", power: 84, threshold: 77, region: "europe" },
+  { name: "세르비아", power: 86, threshold: 77, region: "europe" },
 ];
-
-export const CONTINENTAL_CUP: Record<Region, string> = {
-  asia: "FIBA 아시아컵",
-  europe: "유로바스켓",
-  americas: "FIBA 아메리컵",
-};
 
 export const LEAGUES: Record<LeagueKey, League> = {
   hs: { name: "고교농구", short: "고교", avg: 50, games: 24, pro: false },

@@ -53,15 +53,15 @@ export interface League {
 
 export interface Nation {
   name: string;
-  /** 국가 전력 (1~10) */
-  str: number;
+  /** 선수를 뺀 대표팀 전력 (대략 FIBA 랭킹 순, 미국 95 ~ 약체 55) */
+  power: number;
   /** 국가대표 발탁 기준 오버롤 */
   threshold: number;
   /** FIBA 대륙컵 지역 (호주는 아시아컵에 나가요) */
   region: Region;
-  /** 대륙컵에서 더해지는 전력 */
-  continentalBonus: number;
 }
+
+export type NatEventKey = "olympics" | "worldcup" | "wcq" | "asiacup" | "eurobasket" | "americup" | "asiangames";
 
 /** 선수 생성 때 고르는 플레이 유형 */
 export interface Archetype {
@@ -133,6 +133,8 @@ export type Action =
   /** 확률 p로 win, 아니면 lose 효과가 나요. */
   | { k: "gamble"; p: number; win: Boost; lose: Boost }
   | { k: "retire" }
+  /** 국가대표 대회 합류(join) 또는 불참 */
+  | { k: "national"; ev: NatEventKey; year: number; join: boolean }
   | { k: "none" };
 
 /** 이벤트 선택지가 주는 효과. 모든 값은 선택이에요. */
@@ -251,7 +253,11 @@ export interface Career {
   hist: SeasonRecord[];
   awards: Partial<Record<AwardKey, number>>;
   awardLog: AwardEntry[];
-  nat: { caps: number };
+  nat: {
+    caps: number;
+    /** 월드컵 예선 결과: y년 월드컵 본선 진출 여부 */
+    wcq?: { y: number; ok: boolean };
+  };
   earnings: number;
   peakOvr: number;
   queue: QueueItem[];

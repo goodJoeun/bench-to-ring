@@ -6,9 +6,10 @@ export * from "./types";
 export * from "./data";
 export { archetypeOf, generateCandidate, generateCandidates, createCareer, START_OVR, START_TOTAL } from "./create";
 export { simulateSeason } from "./season";
+export { NAT_EVENTS, natEventFor, simulateTournament, teamPower } from "./national";
 export { chooseOption, applyAction } from "./actions";
 export { currentDecision, resolveQueue } from "./decisions";
-export { careerSummary, retire, canRetire, legacyOf } from "./career";
+export { careerSummary, retire, canRetire, legacyOf, titleHistory, type TitleEntry } from "./career";
 export { rankHall, bestFive, compareCareers } from "./hall";
 export {
   ovr,

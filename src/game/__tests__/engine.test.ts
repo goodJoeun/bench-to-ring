@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   ARCHETYPES,
   ATTR_KEYS,
+  NATIONS,
   POS_KEYS,
   applyAction,
   chooseOption,
@@ -15,10 +16,14 @@ import {
   seeded,
   setRandom,
   simulateSeason,
+  simulateTournament,
+  teamPower,
+  titleHistory,
   type Career,
   type CareerSummary,
 } from "@/game";
 import { lifeEvent } from "@/game/events";
+import { nationalCallUp } from "@/game/national";
 import { decodeSave, encodeSave } from "@/game/storage";
 
 afterEach(() => resetRandom());
@@ -197,6 +202,88 @@ describe("명예의 전당 순위", () => {
       ["c", 1],
       ["a", 2],
       ["b", 2],
+    ]);
+  });
+});
+
+describe("국가대표", () => {
+  const nation = (name: string) => NATIONS.find((n) => n.name === name)!;
+  /** n번 치러 금·메달 비율을 세요. */
+  function odds(name: string, ev: "olympics" | "worldcup" | "asiangames", o: number, n = 2000) {
+    let gold = 0;
+    let medal = 0;
+    for (let i = 0; i < n; i++) {
+      const r = simulateTournament(ev, nation(name), teamPower(nation(name), ev, o));
+      if (r.medal === "금") gold++;
+      if (r.medal) medal++;
+    }
+    return { gold: gold / n, medal: medal / n };
+  }
+
+  it("약체국은 스타가 있어도 올림픽·월드컵 메달이 거의 없고, 강호와 지역 대회는 현실적인 확률이에요", () => {
+    setRandom(seeded(31));
+    expect(odds("대한민국", "olympics", 85).medal).toBeLessThan(0.01);
+    expect(odds("대한민국", "worldcup", 85).medal).toBeLessThan(0.02);
+    const ag = odds("대한민국", "asiangames", 70);
+    expect(ag.gold).toBeGreaterThan(0.05);
+    expect(ag.gold).toBeLessThan(0.35);
+    expect(odds("미국", "olympics", 88).gold).toBeGreaterThan(0.6);
+  });
+
+  it("발탁되면 대회마다 합류·불참을 고르고, 합류하면 출전 기록과 결과 소식이 남아요", () => {
+    setRandom(seeded(32));
+    const make = () => {
+      const c = createCareer({ name: "대표", num: 5, nat: "대한민국", pos: "PG", path: "domestic" }, generateCandidates("PG")[0], "nat");
+      c.age = 24;
+      return c;
+    };
+    const c = make();
+    expect(nationalCallUp(c, 60, 40, 2030)).toBeNull();
+    expect(nationalCallUp(c, 70, 0, 2030)).toBeNull();
+    const d = nationalCallUp(c, 70, 40, 2030)!;
+    expect(d.title).toContain("2030 아시안게임");
+    expect(d.opts.map((o) => o.act.k)).toEqual(["national", "national"]);
+
+    applyAction(c, d.opts[0].act);
+    expect(c.nat.caps).toBeGreaterThanOrEqual(3);
+    expect(c.news[0].m).toContain("아시안게임 출전");
+
+    const skip = make();
+    skip.health = 80;
+    applyAction(skip, d.opts[1].act);
+    expect(skip.nat.caps).toBe(0);
+    expect(skip.health).toBe(86);
+    expect(skip.news[0].m).toContain("불참");
+  });
+
+  it("월드컵 예선 결과가 다음 해 월드컵 본선 진출을 정해요", () => {
+    setRandom(seeded(33));
+    const c = createCareer({ name: "예선", num: 6, nat: "프랑스", pos: "SF", path: "abroad" }, generateCandidates("SF")[0], "wcq");
+    c.age = 25;
+    applyAction(c, { k: "national", ev: "wcq", year: 2030, join: true });
+    expect(c.nat.wcq?.y).toBe(2031);
+    c.nat.wcq = { y: 2031, ok: false };
+    applyAction(c, { k: "national", ev: "worldcup", year: 2031, join: true });
+    expect(c.news[0].m).toContain("본선 진출 실패");
+  });
+});
+
+describe("우승 기록", () => {
+  it("어느 해, 어느 팀·리그에서 우승했는지와 파이널 MVP를 함께 보여줘요", () => {
+    const c = createCareer({ name: "반지", num: 1, nat: "대한민국", pos: "SG", path: "abroad" }, generateCandidates("SG")[0], "ring");
+    const rec = (year: number, team: string, lg: "hs" | "nba") =>
+      ({ year, age: year - 2011, team, lg, pro: lg === "nba", awards: [] }) as unknown as Career["hist"][number];
+    c.hist.push(rec(2028, "휘문고", "hs"), rec(2036, "보스턴 셀틱스", "nba"));
+    c.awardLog.push(
+      { y: 2036, k: "fmvp", n: "NBA 파이널 MVP" },
+      { y: 2036, k: "ring", n: "NBA 우승" },
+      { y: 2028, k: "title", n: "고교 전국대회 우승" },
+      { y: 2030, k: "nat_gold", n: "2030 아시안게임 금메달" },
+    );
+    expect(titleHistory(c)).toEqual([
+      { year: 2028, age: 17, name: "고교 전국대회 우승", team: "휘문고", league: "고교농구", kind: "amateur", fmvp: false },
+      { year: 2030, age: null, name: "아시안게임 금메달", team: "대한민국 대표팀", league: null, kind: "nat", fmvp: false },
+      { year: 2036, age: 25, name: "NBA 우승", team: "보스턴 셀틱스", league: "NBA", kind: "pro", fmvp: true },
     ]);
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { AWARDS, money, type Career, type CareerSummary } from "@/game";
+import { AWARDS, money, titleHistory, type Career, type CareerSummary } from "@/game";
 import { gameActions } from "@/lib/game-store";
 import { Sprite } from "./Sprite";
 import { HallOfFame } from "./tabs/HallOfFame";
@@ -10,6 +10,7 @@ export function RetiredScreen({ career: c, hall }: { career: Career; hall: Caree
   if (!s) return null;
   const p = c.p;
   const color = c.team?.color ?? "#5A6577";
+  const titles = titleHistory(c);
   const tiles: [string, string | number][] = [
     ["최고 오버롤", s.peak],
     ["NBA MVP", s.mvp],
@@ -57,6 +58,30 @@ export function RetiredScreen({ career: c, hall }: { career: Career; hall: Caree
           ))}
         </div>
         <p className="hint">거쳐간 팀 · {s.teams.join(" → ")}</p>
+      </section>
+
+      <section className="panel">
+        <h2 className="sec">우승 기록 · {titles.length}회</h2>
+        {titles.length ? (
+          <ol className="titles">
+            {titles.map((t, i) => (
+              <li key={`${t.year}-${t.name}-${i}`} className="title-row" data-kind={t.kind}>
+                <span className="ty">{t.year}</span>
+                <span className="tb">
+                  <b>{t.name}</b>
+                  <span>
+                    {t.team}
+                    {t.league && ` · ${t.league}`}
+                    {t.age !== null && ` · ${t.age}세`}
+                  </span>
+                </span>
+                {t.fmvp && <span className="aw">파이널 MVP</span>}
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="hint">우승 경험 없이 커리어를 마쳤어요.</p>
+        )}
         {!s.seasons && <p className="hint">프로 무대 기록이 없어 명예의 전당에는 오르지 않아요.</p>}
       </section>
 
