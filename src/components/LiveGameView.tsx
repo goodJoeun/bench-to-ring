@@ -2,13 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { LiveGame } from "@/game";
+import { reducedMotion } from "./Popup";
 
 /** 한 플레이를 보여주는 간격(ms). 빠르게는 3배속이에요. */
 const STEP_MS = 120;
 const FAST_MS = 40;
 const LOG_LINES = 6;
-
-export const reducedMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /**
  * 결승전 문자 중계. 결과는 이미 정해져 있고, 이 화면은 플레이를 하나씩 빠르게 흘려 보여줘요.

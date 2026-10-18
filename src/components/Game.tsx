@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useGame } from "@/lib/game-store";
 import { CreateScreen } from "./CreateScreen";
+import { DraftLoading } from "./DraftLoading";
 import { GameScreen, type TabKey } from "./GameScreen";
 import { RetiredScreen } from "./RetiredScreen";
 import { SeasonLoading } from "./SeasonLoading";
@@ -10,7 +11,7 @@ import { Toast } from "./Toast";
 import { TournamentLoading } from "./TournamentLoading";
 
 export function Game() {
-  const { ready, career, draft, hall, simulating, tournament, toast } = useGame();
+  const { ready, career, draft, hall, simulating, tournament, drafting, toast } = useGame();
   // 탭은 커리어마다 홈에서 시작해요.
   const [view, setView] = useState<{ id: string | null; tab: TabKey }>({ id: null, tab: "season" });
   const tab = career && view.id === career.id ? view.tab : "season";
@@ -26,7 +27,7 @@ export function Game() {
   if (!ready) body = <p className="boot">커리어를 불러오고 있어요…</p>;
   else if (!career) body = <CreateScreen draft={draft} hall={hall} />;
   else if (career.stage === "retired") body = <RetiredScreen career={career} hall={hall} />;
-  else body = <GameScreen career={career} hall={hall} tab={tab} onTab={openTab} simulating={simulating || tournament} />;
+  else body = <GameScreen career={career} hall={hall} tab={tab} onTab={openTab} simulating={simulating || tournament || drafting} />;
 
   return (
     <>
@@ -60,6 +61,7 @@ export function Game() {
       {body}
       {simulating && career && <SeasonLoading career={career} />}
       {tournament && career && <TournamentLoading career={career} />}
+      {drafting && career?.draftShow && <DraftLoading career={career} show={career.draftShow} />}
       <Toast toast={toast} />
       <p className="foot">
         비공식 팬 게임이에요. 리그·구단·대회 명칭의 권리는 각 권리자에게 있어요. 진행 내용은 이 브라우저에만 저장되니,

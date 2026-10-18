@@ -71,6 +71,7 @@ function normalize(c: Career): Career {
   c.mil ??= { s: "none" };
   c.natLog ??= [];
   c.live ??= null;
+  c.draftShow ??= null;
   return c;
 }
 

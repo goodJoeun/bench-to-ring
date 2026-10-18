@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ARMY, LEAGUES, SANGMU, type Career } from "@/game";
 import { gameActions } from "@/lib/game-store";
 import { LiveGameView } from "./LiveGameView";
-import { Sprite } from "./Sprite";
+import { Popup, PopupHero } from "./Popup";
 
 const DURATION = 3200;
 const REDUCED_DURATION = 900;
@@ -87,11 +87,9 @@ export function SeasonLoading({ career: c }: { career: Career }) {
 
   if (watching && final)
     return (
-      <div className="sim" role="dialog" aria-modal="true" aria-label={final.title}>
-        <div className="sim-card">
-          <LiveGameView game={final} onDone={() => gameActions.finishSimulation()} />
-        </div>
-      </div>
+      <Popup label={final.title}>
+        <LiveGameView game={final} onDone={() => gameActions.finishSimulation()} />
+      </Popup>
     );
 
   const hasTeam = rec.lg !== null;
@@ -106,12 +104,16 @@ export function SeasonLoading({ career: c }: { career: Career }) {
   const showScore = (hasTeam || rec.mil === "sangmu") && total > 0;
 
   return (
-    <div className="sim" role="dialog" aria-modal="true" aria-labelledby="sim-title">
-      <div className="sim-card">
-        <div className="sim-court" aria-hidden="true">
-          <Sprite skin={c.p.skin} hair={c.p.hair} color={color} label="" className="sprite sim-sprite" />
-          <span className="sim-shadow" />
-        </div>
+    <Popup labelledBy="sim-title">
+      <PopupHero
+        player={c.p}
+        color={color}
+        team={rec.mil ? rec.team : hasTeam ? `${rec.team} · ${league?.short}` : "무소속 · 개인 훈련"}
+        title={`${rec.year} 시즌 진행 중`}
+        titleId="sim-title"
+        status={phase.label}
+        busy
+      >
         {showScore && (
           <div className="sim-score" aria-hidden="true">
             <span>
@@ -133,21 +135,13 @@ export function SeasonLoading({ career: c }: { career: Career }) {
             </span>
           </div>
         )}
-        <span className="sim-team">
-          {rec.mil ? rec.team : hasTeam ? `${rec.team} · ${league?.short}` : "무소속 · 개인 훈련"}
-        </span>
-        <h2 id="sim-title">{rec.year} 시즌 진행 중</h2>
-        <p className="sim-phase" role="status" aria-live="polite">
-          {phase.label}
-          <span className="dots" aria-hidden="true" />
-        </p>
-        <div className="sim-bar" role="progressbar" aria-label="시즌 진행률" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(t * 100)}>
-          <div className="sim-fill" style={{ width: `${t * 100}%` }} />
-        </div>
-        <button type="button" ref={skipRef} className="sim-skip" onClick={() => gameActions.finishSimulation()}>
-          건너뛰기
-        </button>
+      </PopupHero>
+      <div className="sim-bar" role="progressbar" aria-label="시즌 진행률" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(t * 100)}>
+        <div className="sim-fill" style={{ width: `${t * 100}%` }} />
       </div>
-    </div>
+      <button type="button" ref={skipRef} className="sim-skip" onClick={() => gameActions.finishSimulation()}>
+        건너뛰기
+      </button>
+    </Popup>
   );
 }

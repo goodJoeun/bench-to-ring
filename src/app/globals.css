@@ -327,6 +327,17 @@ textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize
 .tour-games .tg-pts{font-size:12px;color:var(--sim-soft)}
 .tour-story{margin:8px 0 0;font-size:14px;line-height:1.5;color:var(--sim-soft)}
 .tour-story b{color:#FFD66B}
+/* 드래프트 진행: 최근 지명이 위에서부터 쌓여요. 내 이름이 불리면 금색으로 빛나요. */
+.draft-note{margin:0;font-size:13px;font-weight:700;color:#FFD66B}
+.draft-picks{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;min-height:172px}
+.draft-picks li{display:grid;grid-template-columns:28px minmax(0,1.2fr) minmax(0,1fr);align-items:center;gap:8px;padding:7px 12px;border-radius:10px;
+  background:rgba(255,255,255,.08);box-shadow:inset 4px 0 0 var(--tc);font-size:13px;text-align:left;animation:rise .25s ease-out both}
+.draft-picks .dp-no{font-family:var(--f-num);font-weight:700;font-size:15px;color:var(--sim-lbl);font-variant-numeric:tabular-nums}
+.draft-picks .dp-team{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.draft-picks .dp-who{color:var(--sim-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.draft-picks li[data-mine]{background:rgba(255,214,107,.18);outline:2px solid #FFD66B;animation:rise .25s ease-out both,glow 1.2s ease-in-out .25s 2}
+.draft-picks li[data-mine] .dp-who{color:#FFD66B;font-weight:800}
+@keyframes glow{50%{background:rgba(255,214,107,.34)}}
 /* 결승 문자 중계 */
 .live{display:flex;flex-direction:column;gap:12px;text-align:left}
 .live-title{font-size:13px;font-weight:700;color:var(--sim-lbl);text-align:center}
@@ -360,7 +371,7 @@ textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize
 @keyframes dribble{from{transform:translateY(0)}to{transform:translateY(-6px)}}
 @keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
-@media (prefers-reduced-motion:reduce){.tabc,.sim,.sim-sprite,.sim-phase .dots::after,.scrim,.sheet,.toast,.tour-games li{animation:none}}
+@media (prefers-reduced-motion:reduce){.tabc,.sim,.sim-sprite,.sim-phase .dots::after,.scrim,.sheet,.toast,.tour-games li,.draft-picks li{animation:none}}
 
 /* 눌렀을 때 손끝에 반응이 오게 */
 .advance:active,.start:active,.choice:active,.cand:active,.btn:active,.sheet-go:active{transform:scale(.98)}

@@ -22,7 +22,7 @@ export const nbaPick = (score: number): number => Math.max(1, Math.round(60 - (s
 /** KBL 신인드래프트: 2라운드 전체 1~20순위, 21 이상이면 미지명 */
 export const kblPick = (score: number): number => Math.max(1, Math.round(20 - (score - 54) * 1.3));
 
-function projectNba(c: Career): string {
+export function projectNba(c: Career): string {
   const pk = nbaPick(nbaDraftScore(c, 0));
   if (pk <= 3) return "1라운드 최상위";
   if (pk <= 12) return "1라운드 상위";
@@ -31,7 +31,7 @@ function projectNba(c: Career): string {
   return "지명 불확실";
 }
 
-function projectKbl(c: Career): string {
+export function projectKbl(c: Career): string {
   const pk = kblPick(kblDraftScore(c, 0));
   if (pk <= 3) return "1라운드 최상위";
   if (pk <= 10) return "1라운드";

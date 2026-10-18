@@ -287,6 +287,30 @@ export interface DraftInfo {
   year: number;
 }
 
+/** 드래프트 진행 화면에 보여줄 지명 순서. 결과는 이미 정해져 있어요. */
+export interface DraftShow {
+  /** 2030 NBA 드래프트 */
+  name: string;
+  /** 내 선수가 뽑힌 순위. 미지명이면 null */
+  mine: number | null;
+  /** 스카우트 예상: 1라운드 상위… */
+  proj: string;
+  /** 스카우트가 예상한 지명 범위. 이 구간에서는 지명을 천천히 보여줘요. */
+  range: [number, number];
+  /** 한 라운드 지명 수 */
+  roundSize: number;
+  picks: DraftPick[];
+}
+
+export interface DraftPick {
+  no: number;
+  team: string;
+  color: string;
+  /** 뽑힌 선수: "C · 듀크대". 내 선수는 이름 */
+  who: string;
+  mine?: boolean;
+}
+
 export interface Contract {
   years: number;
   salary: number;
@@ -361,6 +385,8 @@ export interface Career {
   natLog: NatTournament[];
   /** 아직 보지 않은 결승전 중계. 보여준 뒤에도 다음 결승 전까지 남아 있어요. */
   live: LiveGame | null;
+  /** 가장 최근 드래프트의 지명 순서 */
+  draftShow: DraftShow | null;
 }
 
 export interface NewCareerInput {

@@ -293,6 +293,44 @@ describe("우승 기록", () => {
   });
 });
 
+describe("드래프트 진행", () => {
+  const prospect = (attr: number) => {
+    const c = createCareer({ name: "드래프티", num: 1, nat: "대한민국", pos: "SG", path: "abroad" }, generateCandidates("SG")[0], "dr");
+    for (const k of ATTR_KEYS) c.p.attrs[k] = attr;
+    c.age = 21;
+    c.year = 2032;
+    c.stage = "college";
+    return c;
+  };
+
+  it("지명되면 그 순위에 지명한 팀과 내 이름이 있고, 라운드마다 모든 팀이 한 번씩 뽑아요", () => {
+    setRandom(seeded(11));
+    for (const [d, size, teams] of [["nba", 60, 30], ["kbl", 20, 10]] as const) {
+      const c = prospect(d === "nba" ? 74 : 62);
+      applyAction(c, { k: "draft", d });
+      const show = c.draftShow!;
+      expect(show.name).toBe(`2031 ${d === "nba" ? "NBA 드래프트" : "KBL 신인드래프트"}`);
+      expect(show.picks).toHaveLength(size);
+      expect(show.mine).toBe(c.draft!.pick);
+      const mine = show.picks[show.mine! - 1];
+      expect(mine).toMatchObject({ no: c.draft!.pick, team: c.team!.name, who: "드래프티", mine: true });
+      expect(show.picks.filter((p) => p.mine)).toHaveLength(1);
+      for (const r of [show.picks.slice(0, teams), show.picks.slice(teams)]) expect(new Set(r.map((p) => p.team)).size).toBe(teams);
+      expect(show.range[0]).toBeLessThanOrEqual(show.range[1]);
+    }
+  });
+
+  it("미지명이면 끝까지 다른 선수만 불리고, 미지명 결정이 기다려요", () => {
+    setRandom(seeded(12));
+    const c = prospect(40);
+    applyAction(c, { k: "draft", d: "nba" });
+    expect(c.draftShow).toMatchObject({ mine: null });
+    expect(c.draftShow!.picks.some((p) => p.mine)).toBe(false);
+    expect(c.draftShow!.picks.every((p) => /^(PG|SG|SF|PF|C) · /.test(p.who))).toBe(true);
+    expect(c.queue[0]).toMatchObject({ title: "지명받지 못했어요" });
+  });
+});
+
 describe("기록 리더보드", () => {
   const board = RECORD_BOARDS.find((b) => b.group === "kbl" && b.stat === "pts")!;
 
