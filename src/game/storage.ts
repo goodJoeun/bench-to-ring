@@ -1,4 +1,7 @@
-import type { Career, CareerSummary } from "./types";
+import { ATTR_KEYS } from "./data";
+import { ovrOf } from "./ratings";
+import type { Action, AttrKey, Attrs, Boost, Career, CareerSummary, PosKey } from "./types";
+import { clamp } from "./util";
 
 const SAVE_KEY = "b2r-save-v1";
 const HALL_KEY = "b2r-hall-v1";
@@ -59,6 +62,58 @@ function upgrade(o: unknown): Career | null {
   return c.v === 2 ? (o as Career) : null;
 }
 
+/** 리바운드 능력치가 있던 때의 포지션 가중치. 예전 저장의 오버롤을 다시 계산할 때만 써요. */
+const OLD_WEIGHTS: Record<PosKey, Record<string, number>> = {
+  PG: { sht: 0.22, hdl: 0.32, def: 0.14, reb: 0.04, ath: 0.14, iq: 0.14 },
+  SG: { sht: 0.34, hdl: 0.18, def: 0.16, reb: 0.05, ath: 0.15, iq: 0.12 },
+  SF: { sht: 0.24, hdl: 0.14, def: 0.2, reb: 0.12, ath: 0.18, iq: 0.12 },
+  PF: { sht: 0.14, hdl: 0.08, def: 0.22, reb: 0.26, ath: 0.18, iq: 0.12 },
+  C: { sht: 0.06, hdl: 0.06, def: 0.26, reb: 0.32, ath: 0.18, iq: 0.12 },
+};
+
+/** 예전 키를 새 능력치로: 리바운드는 수비(박스아웃)로, 핸들링·패스는 그대로 볼 핸들링으로 */
+const oldKey = (k: string): AttrKey => (k === "reb" ? "def" : (k as AttrKey));
+
+function migrateBoost(b: Boost | undefined): void {
+  if (!b) return;
+  if (b.trainer) b.trainer = oldKey(b.trainer);
+  if (b.attrs && "reb" in b.attrs) {
+    const old = b.attrs as Record<string, number>;
+    old.def = (old.def ?? 0) + old.reb;
+    delete old.reb;
+  }
+}
+
+/**
+ * 리바운드가 빠지고 핸들링·패스가 볼 핸들링과 패스로 나뉘기 전의 능력치를 바꿔요.
+ * 패스는 예전 핸들링·패스 값에서 시작하고, 모든 능력치를 같은 만큼 옮겨 예전 오버롤을 지켜요.
+ */
+function migrateAttrs(c: Career): void {
+  const old = c.p.attrs as unknown as Record<string, number>;
+  if (!("reb" in old) && "pas" in old) return;
+  const oldOvr = Object.entries(OLD_WEIGHTS[c.p.pos]).reduce((t, [k, w]) => t + (old[k] ?? 0) * w, 0);
+  const a = {} as Attrs;
+  for (const k of ATTR_KEYS) a[k] = old[k === "pas" ? "hdl" : k] ?? 40;
+  const shift = oldOvr - ovrOf(a, c.p.pos);
+  for (const k of ATTR_KEYS) a[k] = clamp(a[k] + shift, 20, 99);
+  c.p.attrs = a;
+  const d = c.lastDelta as Record<string, number>;
+  c.lastDelta = { sht: d.sht, hdl: d.hdl, pas: d.hdl, def: d.def, iq: d.iq, ath: d.ath };
+  if ((c.focus as string) === "reb") c.focus = "bal";
+  if (c.perks.trainer) c.perks.trainer = oldKey(c.perks.trainer);
+  // 대기 중인 이벤트 선택지에 남은 예전 키
+  for (const q of c.queue)
+    if ("opts" in q)
+      for (const o of q.opts) {
+        const act: Action = o.act;
+        if (act.k === "boost") migrateBoost(act);
+        if (act.k === "gamble") {
+          migrateBoost(act.win);
+          migrateBoost(act.lose);
+        }
+      }
+}
+
 /** 예전 저장 파일에 빠진 필드를 채워요. */
 function normalize(c: Career): Career {
   c.queue ??= [];
@@ -72,6 +127,7 @@ function normalize(c: Career): Career {
   c.natLog ??= [];
   c.live ??= null;
   c.draftShow ??= null;
+  migrateAttrs(c);
   return c;
 }
 

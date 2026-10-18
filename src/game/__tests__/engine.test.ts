@@ -18,10 +18,14 @@ import {
   resetRandom,
   seeded,
   setRandom,
+  START_CAP,
+  START_MIN,
+  SPIKE_CAP,
   simulateSeason,
   simulateTournament,
   teamPower,
   titleHistory,
+  type AttrKey,
   type Career,
   type CareerSummary,
 } from "@/game";
@@ -54,17 +58,42 @@ function playToRetirement(c: Career, rand: () => number): number {
 }
 
 describe("후보 선수", () => {
-  it("모든 포지션·플레이 유형에서 능력치 합 240, 오버롤 45로 시작해요", () => {
+  it("모든 포지션·플레이 유형에서 오버롤 45로 시작하고, 유형이 키우는 능력치가 상위권이에요", () => {
     setRandom(seeded(7));
+    let miss = 0;
+    let total = 0;
     for (let i = 0; i < 40; i++) {
       for (const pos of POS_KEYS) {
-        for (const cand of ARCHETYPES[pos].map((_, a) => generateCandidate(pos, a))) {
-          const sum = ATTR_KEYS.reduce((t, k) => t + cand.attrs[k], 0);
-          expect(sum).toBe(240);
+        ARCHETYPES[pos].forEach((arch, a) => {
+          const cand = generateCandidate(pos, a);
           expect(Math.round(ovrOf(cand.attrs, pos))).toBe(45);
+          for (const k of ATTR_KEYS) expect(cand.attrs[k]).toBeGreaterThanOrEqual(START_MIN);
+          const top = (Object.entries(arch.e) as [AttrKey, number][]).sort((x, y) => y[1] - x[1])[0][0];
+          const higher = ATTR_KEYS.filter((k) => cand.attrs[k] > cand.attrs[top]).length;
+          if (higher > 2) miss++;
+          total++;
+        });
+      }
+    }
+    expect(miss / total).toBeLessThan(0.05);
+  });
+
+  it("능력치 하나가 55를 넘는 후보는 아주 드물고, 넘어도 60까지예요", () => {
+    setRandom(seeded(8));
+    let spiked = 0;
+    let total = 0;
+    for (let i = 0; i < 100; i++) {
+      for (const pos of POS_KEYS) {
+        for (const cand of ARCHETYPES[pos].map((_, a) => generateCandidate(pos, a))) {
+          const high = ATTR_KEYS.filter((k) => cand.attrs[k] > START_CAP);
+          expect(high.length).toBeLessThanOrEqual(1);
+          for (const k of ATTR_KEYS) expect(cand.attrs[k]).toBeLessThanOrEqual(SPIKE_CAP);
+          if (high.length) spiked++;
+          total++;
         }
       }
     }
+    expect(spiked / total).toBeLessThan(0.03);
   });
 
   it("후보 세 명은 서로 다른 플레이 유형을 무작위로 받아요", () => {
@@ -130,6 +159,29 @@ describe("저장 코드", () => {
 });
 
 describe("예전 저장 파일", () => {
+  it("리바운드·핸들링 능력치를 슛·볼 핸들링·패스·수비·BQ·운동능력으로 바꾸고 예전 오버롤을 지켜요", () => {
+    setRandom(seeded(21));
+    const c = createCareer({ name: "옛 능력치", num: 4, nat: "대한민국", pos: "C", path: "domestic" }, generateCandidates("C")[0], "attrs");
+    const old = JSON.parse(JSON.stringify(c));
+    old.p.attrs = { sht: 30, hdl: 34, def: 60, reb: 70, ath: 55, iq: 40 };
+    old.lastDelta = { sht: 1, hdl: 2, def: 0, reb: 3, ath: -1, iq: 1 };
+    old.focus = "reb";
+    old.perks = { trainer: "reb" };
+    old.queue = [{ title: "이벤트", body: "", opts: [{ label: "훈련", act: { k: "boost", attrs: { reb: 2 } } }] }];
+    const m = decodeSave(JSON.stringify(old))!;
+    expect(Object.keys(m.p.attrs).sort()).toEqual([...ATTR_KEYS].sort());
+    // 예전 센터 가중치로 계산한 오버롤
+    const oldOvr = 30 * 0.06 + 34 * 0.06 + 60 * 0.26 + 70 * 0.32 + 55 * 0.18 + 40 * 0.12;
+    expect(ovrOf(m.p.attrs, "C")).toBeCloseTo(oldOvr, 5);
+    expect(m.p.attrs.pas).toBeCloseTo(m.p.attrs.hdl, 5);
+    expect(m.lastDelta).toMatchObject({ hdl: 2, pas: 2 });
+    expect(m.focus).toBe("bal");
+    expect(m.perks.trainer).toBe("def");
+    expect(m.queue[0]).toMatchObject({ opts: [{ act: { k: "boost", attrs: { def: 2 } } }] });
+    // 이미 새 능력치인 저장은 그대로예요.
+    expect(decodeSave(encodeSave(m))!.p.attrs).toEqual(m.p.attrs);
+  });
+
   it("v1(가상 리그) 저장 코드를 실제 리그 키로 바꿔서 불러와요", () => {
     setRandom(seeded(11));
     const c = createCareer({ name: "옛 저장", num: 3, nat: "대한민국", pos: "PG", path: "abroad" }, generateCandidates("PG")[0], "old");
@@ -425,7 +477,7 @@ describe("병역", () => {
   it("상무에 가면 D리그를 뛰고, 전역하면 원래 팀과 계약 그대로 돌아와 시즌 중반에 합류해요", () => {
     setRandom(seeded(41));
     const c = soldier();
-    for (const k of ["sht", "hdl", "def", "reb", "ath", "iq"] as const) c.p.attrs[k] = 80;
+    for (const k of ATTR_KEYS) c.p.attrs[k] = 80;
     c.hist.push({ gp: 50 } as Career["hist"][number]);
     c.queue = [militaryDecision(c)!, { lazy: "fa" }];
     chooseOption(c, 0);
@@ -464,7 +516,7 @@ describe("병역", () => {
     let exempt = 0;
     for (let i = 0; i < 60 && !exempt; i++) {
       const c = soldier();
-      for (const k of ["sht", "hdl", "def", "reb", "ath", "iq"] as const) c.p.attrs[k] = 90;
+      for (const k of ATTR_KEYS) c.p.attrs[k] = 90;
       c.queue = [militaryDecision(c)!];
       const t = runNationalTeam(c, "asiangames", 2030, true);
       if (t.medal === "금") {

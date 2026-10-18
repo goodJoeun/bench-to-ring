@@ -9,6 +9,10 @@ import { ageBase, ovr, ovrOf, roleOf } from "./ratings";
 import type { AttrKey, Career, LeagueKey, SeasonRecord } from "./types";
 import { clamp, r1, sigmoid } from "./util";
 
+/** MVP 문턱: 이 영향력에서 수상 확률이 절반이에요. NBA는 시작 능력치가 고르게 바뀐 뒤 예전 수상 빈도에 맞춰 올렸어요. */
+const MVP_AT = 15.5;
+const NBA_MVP_AT = 16.5;
+
 /** 한 시즌을 치르고, 성장시키고, 오프시즌 결정까지 만들어요. */
 export function simulateSeason(c: Career): SeasonRecord {
   const p = c.p;
@@ -85,8 +89,9 @@ export function simulateSeason(c: Career): SeasonRecord {
     const vr = p.trait === "꾸준함" ? 0.05 : 0.1;
     const st = (v: number) => (gp ? r1(Math.max(0, v * f * rnd(1 - vr, 1 + vr))) : 0);
     const pts = st(2 + 0.38 * (e.sht - 25) + 0.16 * (e.ath - 25) + 0.1 * (e.hdl - 25));
-    const reb = st(1 + 0.22 * (e.reb - 25) + 0.15 * hd + 0.05 * (e.ath - 25) + 0.05 * wsd);
-    const ast = st(0.5 + 0.22 * (e.hdl - 25) + 0.06 * (e.iq - 25));
+    // 리바운드는 따로 능력치가 없어요. 키·윙스팬이 가장 크고, 운동능력·수비(박스아웃)·BQ(자리 잡기)가 더해요.
+    const reb = st(1 + 0.3 * hd + 0.1 * wsd + 0.08 * (e.ath - 25) + 0.07 * (e.def - 25) + 0.04 * (e.iq - 25));
+    const ast = st(0.5 + 0.2 * (e.pas - 25) + 0.04 * (e.hdl - 25) + 0.06 * (e.iq - 25));
     const stl = st(0.4 + 0.035 * (e.def - 25) + 0.02 * (e.ath - 25) + 0.02 * wsd);
     const blk = st(0.1 + 0.03 * (e.def - 25) + 0.05 * Math.max(0, hd + wsd * 0.5));
     const fg = gp ? r1(clamp(0.4 + 0.003 * (e.sht - 50) + 0.004 * Math.max(0, hd) + rnd(-0.02, 0.02), 0.33, 0.64) * 100) : 0;
@@ -123,7 +128,8 @@ export function simulateSeason(c: Career): SeasonRecord {
     const sh = L.short;
     const impact = (ovr0 - L.avg + (p.trait === "승부사" ? 1 : 0)) * clamp(min / 30, 0, 1.15) + rnd(-2.5, 2.5);
     if (gp >= L.games * 0.6) {
-      if (impact >= 13 && chance(sigmoid((impact - 15.5) / 1.2) * (wp >= 0.55 ? 1 : 0.3)))
+      const mvpAt = lg === "nba" ? NBA_MVP_AT : MVP_AT;
+      if (impact >= mvpAt - 2.5 && chance(sigmoid((impact - mvpAt) / 1.2) * (wp >= 0.55 ? 1 : 0.3)))
         giveAward(c, lg === "nba" ? "mvp_nba" : "mvp", `${sh} MVP`, rec);
       if (L.pro && impact >= 5 && chance(sigmoid((impact - 7) / 1.4))) giveAward(c, "allstar", `${sh} 올스타`, rec);
       if (impact >= 9 && chance(sigmoid((impact - 11.5) / 1.3)))
@@ -229,7 +235,7 @@ function grow(c: Career, min: number, rating: number, tag: string): void {
   const minutesFactor =
     age < 19 ? 0.75 + 0.25 * Math.min(1, min / 20) : Math.min(1.05, 0.35 + 0.7 * Math.min(1, min / 28));
   const perf = rating >= 7.5 ? 1.1 : 1;
-  const decline: Record<AttrKey, number> = { ath: 1.6, sht: 0.7, iq: 0.25, hdl: 0.9, def: 1.1, reb: 1 };
+  const decline: Record<AttrKey, number> = { ath: 1.6, sht: 0.7, iq: 0.25, hdl: 0.9, pas: 0.5, def: 1.1 };
   const delta: Partial<Record<AttrKey, number>> = {};
   for (const [k] of ATTRS) {
     const focus = c.focus === "bal" ? 1 : c.focus === "rest" ? 0.6 : c.focus === k ? 1.5 : 0.85;

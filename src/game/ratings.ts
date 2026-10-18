@@ -1,5 +1,5 @@
 import { ATTRS, LEAGUES, POS } from "./data";
-import type { Attrs, Career, LeagueKey, Player, PosKey, ProLeagueKey, Role } from "./types";
+import type { AttrKey, Attrs, Career, LeagueKey, Player, PosKey, ProLeagueKey, Role } from "./types";
 import { clamp } from "./util";
 
 /** 포지션 가중평균 오버롤 (반올림 전) */
@@ -11,6 +11,9 @@ export function ovrOf(a: Attrs, pos: PosKey): number {
 }
 
 export const ovr = (p: Player): number => Math.round(ovrOf(p.attrs, p.pos));
+
+/** 포지션 핵심 능력치: 오버롤 가중치가 큰 능력치 (화면에 ● 표시) */
+export const isCoreAttr = (pos: PosKey, k: AttrKey): boolean => POS[pos].w[k] >= 0.18;
 
 export function roleOf(min: number): Role {
   if (min >= 33) return "에이스";

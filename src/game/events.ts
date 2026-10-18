@@ -59,7 +59,8 @@ const salary = (c: Career) => c.contract?.salary ?? 1;
 const TRAINERS: [AttrKey, string][] = [
   ["ath", "피지컬 전문 트레이너"],
   ["sht", "슈팅 전문 코치"],
-  ["hdl", "스킬 트레이너"],
+  ["hdl", "볼 핸들링 트레이너"],
+  ["pas", "플레이메이킹 코치"],
   ["def", "수비 전문 코치"],
 ];
 

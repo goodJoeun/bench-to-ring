@@ -15,32 +15,32 @@ import type {
 export const START_YEAR = 2027;
 
 export const ATTRS: ReadonlyArray<readonly [AttrKey, string]> = [
-  ["sht", "슈팅"],
-  ["hdl", "핸들링·패스"],
+  ["sht", "슛"],
+  ["hdl", "볼 핸들링"],
+  ["pas", "패스"],
   ["def", "수비"],
-  ["reb", "리바운드"],
-  ["ath", "운동능력"],
   ["iq", "BQ"],
+  ["ath", "운동능력"],
 ];
 export const ATTR_KEYS: AttrKey[] = ATTRS.map(([k]) => k);
 export const SHORT: Record<AttrKey, string> = {
-  sht: "슈팅",
-  hdl: "핸들링",
+  sht: "슛",
+  hdl: "볼 핸들링",
+  pas: "패스",
   def: "수비",
-  reb: "리바운드",
-  ath: "운동능력",
   iq: "BQ",
+  ath: "운동능력",
 };
 
 export const POS_KEYS: PosKey[] = ["PG", "SG", "SF", "PF", "C"];
 
-/** 포지션별 오버롤 가중치(합 1.0)와 성인 키 범위(cm) */
+/** 포지션별 오버롤 가중치(합 1.0)와 성인 키 범위(cm). 리바운드는 따로 없고 키·수비·운동능력에서 나와요. */
 export const POS: Record<PosKey, { name: string; w: Attrs; h: [number, number] }> = {
-  PG: { name: "포인트가드", w: { sht: 0.22, hdl: 0.32, def: 0.14, reb: 0.04, ath: 0.14, iq: 0.14 }, h: [178, 191] },
-  SG: { name: "슈팅가드", w: { sht: 0.34, hdl: 0.18, def: 0.16, reb: 0.05, ath: 0.15, iq: 0.12 }, h: [185, 198] },
-  SF: { name: "스몰포워드", w: { sht: 0.24, hdl: 0.14, def: 0.2, reb: 0.12, ath: 0.18, iq: 0.12 }, h: [193, 204] },
-  PF: { name: "파워포워드", w: { sht: 0.14, hdl: 0.08, def: 0.22, reb: 0.26, ath: 0.18, iq: 0.12 }, h: [199, 208] },
-  C: { name: "센터", w: { sht: 0.06, hdl: 0.06, def: 0.26, reb: 0.32, ath: 0.18, iq: 0.12 }, h: [203, 216] },
+  PG: { name: "포인트가드", w: { sht: 0.22, hdl: 0.18, pas: 0.18, def: 0.14, iq: 0.14, ath: 0.14 }, h: [178, 191] },
+  SG: { name: "슈팅가드", w: { sht: 0.34, hdl: 0.14, pas: 0.08, def: 0.17, iq: 0.12, ath: 0.15 }, h: [185, 198] },
+  SF: { name: "스몰포워드", w: { sht: 0.24, hdl: 0.1, pas: 0.08, def: 0.24, iq: 0.12, ath: 0.22 }, h: [193, 204] },
+  PF: { name: "파워포워드", w: { sht: 0.16, hdl: 0.06, pas: 0.08, def: 0.3, iq: 0.16, ath: 0.24 }, h: [199, 208] },
+  C: { name: "센터", w: { sht: 0.1, hdl: 0.04, pas: 0.08, def: 0.34, iq: 0.16, ath: 0.28 }, h: [203, 216] },
 };
 
 /** 다음 포지션과 전환을 제안하는 키 */
@@ -56,7 +56,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
   PG: [
     {
       name: "플로어 제너럴",
-      e: { hdl: 1.35, iq: 1.3 },
+      e: { pas: 1.35, iq: 1.3 },
       desc: "코트 위의 감독. 템포를 조절하고 동료의 슛 찬스를 만들어 경기를 지휘해요.",
       kbl: ["이상민", "강동희"],
       nba: ["크리스 폴", "존 스탁턴"],
@@ -77,7 +77,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     },
     {
       name: "패스 마스터",
-      e: { hdl: 1.5, ath: 1.1 },
+      e: { pas: 1.5, hdl: 1.1 },
       desc: "노룩·비하인드 패스로 속공을 이끄는 패서. 어시스트로 팀 공격을 살려요.",
       kbl: ["김승현", "주희정"],
       nba: ["스티브 내쉬", "제이슨 키드"],
@@ -91,7 +91,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     },
     {
       name: "빅 가드",
-      e: { reb: 1.3, hdl: 1.2, ath: 1.1 },
+      e: { pas: 1.25, def: 1.2, ath: 1.1 },
       desc: "큰 키와 힘으로 미스매치를 만들고 리바운드까지 걷어내는 대형 가드예요.",
       kbl: ["이대성"],
       nba: ["매직 존슨", "러셀 웨스트브룩"],
@@ -135,7 +135,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     },
     {
       name: "콤보 가드",
-      e: { hdl: 1.35, sht: 1.15 },
+      e: { hdl: 1.3, pas: 1.15, sht: 1.1 },
       desc: "1번과 2번을 오가며 득점과 경기 운영을 함께 맡는 다재다능한 가드예요.",
       kbl: ["전태풍"],
       nba: ["제임스 하든", "마누 지노빌리"],
@@ -151,14 +151,14 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     },
     {
       name: "포인트 포워드",
-      e: { hdl: 1.4, iq: 1.2 },
+      e: { pas: 1.4, iq: 1.2 },
       desc: "포워드 사이즈로 공을 운반하고 패스를 뿌리는 장신 플레이메이커예요.",
       kbl: ["최준용"],
       nba: ["르브론 제임스", "스카티 피펜"],
     },
     {
       name: "하이플라이어",
-      e: { ath: 1.5, reb: 1.1 },
+      e: { ath: 1.5, def: 1.1 },
       desc: "압도적인 점프력으로 앨리웁과 덩크를 꽂아 분위기를 바꾸는 운동능력형이에요.",
       kbl: ["송교창"],
       nba: ["빈스 카터", "도미니크 윌킨스"],
@@ -179,7 +179,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     },
     {
       name: "글루 가이",
-      e: { iq: 1.35, def: 1.1, reb: 1.1 },
+      e: { iq: 1.35, def: 1.1, pas: 1.1 },
       desc: "기록보다 팀을 먼저 생각하는 살림꾼. 빈자리를 채워 승리를 만들어요.",
       kbl: ["추승균"],
       nba: ["셰인 배티어", "안드레 이궈달라"],
@@ -195,35 +195,35 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     },
     {
       name: "파워 포워드",
-      e: { reb: 1.25, ath: 1.25 },
+      e: { ath: 1.25, sht: 1.15, def: 1.1 },
       desc: "힘과 몸싸움으로 골밑을 장악하는 정통 4번이에요.",
       kbl: ["조니 맥도웰"],
       nba: ["칼 말론", "찰스 바클리"],
     },
     {
       name: "수비형 빅",
-      e: { def: 1.4, reb: 1.15 },
+      e: { def: 1.45, iq: 1.1 },
       desc: "도움 수비와 스위치로 팀 수비의 기둥이 되는 빅맨이에요.",
       kbl: ["이승현", "최부경"],
       nba: ["케빈 가넷", "벤 월러스"],
     },
     {
       name: "하이포스트 플레이메이커",
-      e: { hdl: 1.35, iq: 1.3 },
+      e: { pas: 1.35, iq: 1.3 },
       desc: "자유투 라인 근처에서 공을 받아 컷인하는 동료를 찾아주는 패싱 빅맨이에요.",
       kbl: ["현주엽"],
       nba: ["크리스 웨버", "드레이먼드 그린"],
     },
     {
       name: "에너지 빅",
-      e: { ath: 1.45, reb: 1.15 },
+      e: { ath: 1.45, def: 1.15 },
       desc: "탄력 넘치는 덩크와 허슬 플레이로 벤치와 관중을 깨우는 빅맨이에요.",
       kbl: ["김종규", "전희철"],
       nba: ["블레이크 그리핀", "숀 켐프"],
     },
     {
       name: "리바운드 머신",
-      e: { reb: 1.5, def: 1.1 },
+      e: { ath: 1.35, def: 1.25, iq: 1.05 },
       desc: "공이 떨어지는 자리를 먼저 읽고 공수 리바운드를 쓸어 담는 빅맨이에요.",
       kbl: ["라건아"],
       nba: ["데니스 로드맨", "케빈 러브"],
@@ -239,21 +239,21 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     },
     {
       name: "포스트 스코어러",
-      e: { sht: 1.3, reb: 1.2, iq: 1.1 },
+      e: { sht: 1.3, ath: 1.15, iq: 1.1 },
       desc: "로포스트에서 훅슛과 풋워크로 꾸준히 점수를 쌓는 정통 센터예요.",
       kbl: ["오세근"],
       nba: ["하킴 올라주원", "조엘 엠비드"],
     },
     {
       name: "패싱 센터",
-      e: { hdl: 1.5, iq: 1.35 },
+      e: { pas: 1.5, iq: 1.35 },
       desc: "센터 자리에서 공격을 조립하는 장신 패서. 팀 전체를 살려요.",
       kbl: ["함지훈"],
       nba: ["니콜라 요키치", "도만타스 사보니스"],
     },
     {
       name: "파워 센터",
-      e: { reb: 1.35, ath: 1.2 },
+      e: { ath: 1.35, def: 1.2 },
       desc: "압도적인 체격으로 골밑을 밀고 들어가 상대 빅맨을 무력화하는 센터예요.",
       kbl: ["하승진"],
       nba: ["샤킬 오닐", "드와이트 하워드"],
@@ -437,12 +437,12 @@ export const HAIRS = ["#1B1B1B", "#3B2A1E", "#6B4A2E", "#B8914F", "#2B2B44"];
 
 export const FOCUS: ReadonlyArray<readonly [FocusKey, string]> = [
   ["bal", "균형"],
-  ["sht", "슈팅"],
-  ["hdl", "핸들링·패스"],
+  ["sht", "슛"],
+  ["hdl", "볼 핸들링"],
+  ["pas", "패스"],
   ["def", "수비"],
-  ["reb", "리바운드"],
-  ["ath", "운동능력"],
   ["iq", "BQ"],
+  ["ath", "운동능력"],
   ["rest", "회복"],
 ];
 

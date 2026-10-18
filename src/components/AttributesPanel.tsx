@@ -1,9 +1,8 @@
-import { ATTRS, POS, money, type Career } from "@/game";
+import { ATTRS, POS, isCoreAttr, money, type Career } from "@/game";
 import { Radar } from "./Radar";
 
 export function AttributesPanel({ career: c }: { career: Career }) {
   const p = c.p;
-  const w = POS[p.pos].w;
   return (
     <section className="panel attrs">
       <div className="head">
@@ -22,7 +21,7 @@ export function AttributesPanel({ career: c }: { career: Career }) {
               <div className="ar" key={k}>
                 <span className="n">
                   {name}
-                  {w[k] >= 0.2 && (
+                  {isCoreAttr(p.pos, k) && (
                     <span className="core" title="포지션 핵심 능력치">
                       ●
                     </span>

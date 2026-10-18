@@ -1,4 +1,4 @@
-export type AttrKey = "sht" | "hdl" | "def" | "reb" | "ath" | "iq";
+export type AttrKey = "sht" | "hdl" | "pas" | "def" | "iq" | "ath";
 export type Attrs = Record<AttrKey, number>;
 
 export type PosKey = "PG" | "SG" | "SF" | "PF" | "C";

@@ -125,7 +125,7 @@ export function serviceSeason(
     return { rec, min: rec.min, rating: rec.rating, grow: true };
   }
   // 현역: 농구를 거의 못 해요. 운동능력과 슛 감각이 많이 떨어지고, 경기 이해도는 그대로예요.
-  const drop: Record<AttrKey, number> = { ath: 1.3, sht: 1.1, hdl: 0.9, def: 0.8, reb: 0.6, iq: 0.15 };
+  const drop: Record<AttrKey, number> = { ath: 1.3, sht: 1.1, hdl: 0.9, pas: 0.6, def: 0.8, iq: 0.15 };
   const delta: Partial<Record<AttrKey, number>> = {};
   for (const k of ATTR_KEYS) {
     const old = c.p.attrs[k];

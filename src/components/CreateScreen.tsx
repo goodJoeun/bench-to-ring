@@ -8,6 +8,7 @@ import {
   POS_KEYS,
   SHORT,
   archetypeOf,
+  isCoreAttr,
   ovrOf,
   type Archetype,
   type AttrKey,
@@ -88,7 +89,6 @@ function ArchetypeTip({ arch }: { arch: Archetype }) {
 }
 
 function CandidateCard({ cand, pos, index, selected }: { cand: Candidate; pos: PosKey; index: number; selected: boolean }) {
-  const w = POS[pos].w;
   const arch = archetypeOf(pos, cand.arch);
   return (
     // 카드 아무 곳이나 눌러 고를 수 있어요. 키보드로는 오른쪽 위 후보 버튼을 써요.
@@ -126,7 +126,7 @@ function CandidateCard({ cand, pos, index, selected }: { cand: Candidate; pos: P
             <span className="mb" key={k}>
               <span>
                 {SHORT[k]}
-                {w[k] >= 0.2 && (
+                {isCoreAttr(pos, k) && (
                   <span className="core" aria-label="핵심">
                     ●
                   </span>
@@ -290,7 +290,7 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
 
         <div className="field">
           <div className="flabel-row">
-            <span className="label">후보 선수 · 모두 오버롤 45, 능력치 합 240, 16세 기준 · 플레이 유형은 무작위</span>
+            <span className="label">후보 선수 · 모두 오버롤 45, 시작 능력치 55 이하, 16세 기준 · 플레이 유형은 무작위</span>
             <button type="button" className="btn" disabled={!draft.rerolls} onClick={gameActions.reroll}>
               후보 다시 뽑기 · {draft.rerolls}회 남음
             </button>

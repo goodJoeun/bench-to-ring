@@ -4,7 +4,16 @@
  */
 export * from "./types";
 export * from "./data";
-export { archetypeOf, generateCandidate, generateCandidates, createCareer, START_OVR, START_TOTAL } from "./create";
+export {
+  archetypeOf,
+  generateCandidate,
+  generateCandidates,
+  createCareer,
+  START_OVR,
+  START_MIN,
+  START_CAP,
+  SPIKE_CAP,
+} from "./create";
 export { simulateSeason } from "./season";
 export { NAT_EVENTS, natColor, natEventFor, simulateTournament, teamPower } from "./national";
 export { ARMY, ENLIST_DEADLINE, SANGMU, militaryDecision, owesService } from "./military";
@@ -27,6 +36,7 @@ export {
 export {
   ovr,
   ovrOf,
+  isCoreAttr,
   roleOf,
   expectedMinutes,
   currentExpectedMinutes,

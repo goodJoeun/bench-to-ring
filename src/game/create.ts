@@ -1,53 +1,53 @@
 import { ARCHETYPES, ATTR_KEYS, HAIRS, POS, SKINS, START_YEAR, TRAIT_KEYS } from "./data";
 import { addNews, pickTeam, setTeam } from "./log";
-import { pick, ri, rnd, shuffle, triangular } from "./random";
+import { chance, pick, ri, rnd, shuffle, triangular } from "./random";
 import { ovrOf } from "./ratings";
 import type { Archetype, AttrKey, Attrs, Candidate, Career, Grade, NewCareerInput, PosKey } from "./types";
 import { clamp, r1 } from "./util";
 
 export const START_OVR = 45;
-export const START_TOTAL = 240;
+/** 시작 능력치 범위. 55를 넘는 능력치는 아주 드물게(SPIKE_CHANCE) 한 개만 60까지 나와요. */
+export const START_MIN = 22;
+export const START_CAP = 55;
+export const SPIKE_CAP = 60;
+const SPIKE_CHANCE = 0.03;
 
-/** 후보 선수 한 명. 능력치 합 240, 오버롤 45에 맞춰요. */
+/**
+ * 후보 선수 한 명. 포지션과 플레이 유형이 정한 능력치 모양을 그대로 키우거나 줄여 오버롤 45에 맞추고,
+ * 한 능력치만 튀지 않게 55에서 막아요. 막힌 몫은 나머지 능력치가 모양대로 나눠 가져요.
+ */
 export function generateCandidate(pos: PosKey, archIndex: number): Candidate {
   const arch = ARCHETYPES[pos][archIndex];
   const w = POS[pos].w;
   const raw = {} as Attrs;
-  let sum = 0;
-  for (const k of ATTR_KEYS) {
-    raw[k] = (0.55 + w[k] * 2.4) * (arch.e[k] ?? 1) * rnd(0.88, 1.12);
-    sum += raw[k];
-  }
+  // 플레이 유형 배수는 1.6제곱해서 써요. 포지션 가중치가 낮은 능력치를 키우는 유형(패싱 센터 등)도 강점이 드러나요.
+  for (const k of ATTR_KEYS) raw[k] = (0.55 + w[k] * 2.4) * (arch.e[k] ?? 1) ** 1.6 * rnd(0.88, 1.12);
+  const cap = {} as Attrs;
+  for (const k of ATTR_KEYS) cap[k] = START_CAP;
+  if (chance(SPIKE_CHANCE)) cap[ATTR_KEYS.reduce((m, k) => (raw[k] > raw[m] ? k : m))] = SPIKE_CAP;
+
+  // 상한·하한에 닿은 능력치는 그 자리에 묶고, 나머지를 같은 배율로 키워 오버롤 45를 맞춰요.
   const a = {} as Attrs;
-  let total = 0;
-  for (const k of ATTR_KEYS) {
-    a[k] = clamp(Math.round((raw[k] / sum) * START_TOTAL), 22, 70);
-    total += a[k];
+  const fixed = new Map<AttrKey, number>();
+  for (let guard = 0; guard < ATTR_KEYS.length + 1; guard++) {
+    const free = ATTR_KEYS.filter((k) => !fixed.has(k));
+    const need = START_OVR - [...fixed].reduce((t, [k, v]) => t + w[k] * v, 0);
+    const scale = need / free.reduce((t, k) => t + w[k] * raw[k], 0);
+    for (const k of free) a[k] = raw[k] * scale;
+    for (const [k, v] of fixed) a[k] = v;
+    const over = free.find((k) => a[k] > cap[k]) ?? free.find((k) => a[k] < START_MIN);
+    if (!over) break;
+    fixed.set(over, a[over] > cap[over] ? cap[over] : START_MIN);
   }
-  let diff = START_TOTAL - total;
-  for (let guard = 0; diff !== 0 && guard < 600; guard++) {
-    const k = pick(ATTR_KEYS);
-    if (diff > 0 && a[k] < 70) {
-      a[k]++;
-      diff--;
-    } else if (diff < 0 && a[k] > 22) {
-      a[k]--;
-      diff++;
-    }
-  }
-  // 합계는 그대로 두고, 가중치가 다른 두 능력치 사이에서 1씩 옮겨 오버롤을 45로 맞춰요.
-  for (let i = 0; i < 500; i++) {
+  for (const k of ATTR_KEYS) a[k] = clamp(Math.round(a[k]), START_MIN, cap[k]);
+  // 반올림으로 생긴 차이는 모양이 큰 능력치부터 1씩 고쳐요.
+  const byShape = [...ATTR_KEYS].sort((x, y) => raw[y] - raw[x]);
+  for (let i = 0; i < 60; i++) {
     const o = Math.round(ovrOf(a, pos));
     if (o === START_OVR) break;
-    const up = o < START_OVR;
-    const moves: [AttrKey, AttrKey][] = [];
-    for (const from of ATTR_KEYS)
-      for (const to of ATTR_KEYS)
-        if (a[from] > 22 && a[to] < 76 && (up ? w[to] > w[from] : w[to] < w[from])) moves.push([from, to]);
-    if (!moves.length) break;
-    const [from, to] = pick(moves);
-    a[from]--;
-    a[to]++;
+    const k = o < START_OVR ? byShape.find((x) => a[x] < cap[x]) : [...byShape].reverse().find((x) => a[x] > START_MIN);
+    if (!k) break;
+    a[k] += o < START_OVR ? 1 : -1;
   }
   const [h0, h1] = POS[pos].h;
   const hFinal = ri(h0, h1);
