@@ -14,6 +14,10 @@ test("balance report", () => {
   const at18: number[] = [];
   const at22: number[] = [];
   const peaks: number[] = [];
+  const peakAges: number[] = [];
+  /** 나이별 시즌 성장량 (오프시즌 보너스를 뺀 ovr1 - ovr0) */
+  const gains: Record<number, number[]> = {};
+  const GAIN_AGES = [19, 20, 21, 22, 23, 24, 25, 26, 27];
   let topLeague = 0;
   let mvps = 0;
   let mvpPlayers = 0;
@@ -30,13 +34,18 @@ test("balance report", () => {
       }
     }
     peaks.push(c.peakOvr);
+    peakAges.push(c.hist.find((h) => h.ovr1 === c.peakOvr)?.age ?? 0);
+    for (const h of c.hist) if (GAIN_AGES.includes(h.age)) (gains[h.age] ??= []).push(h.ovr1 - h.ovr0);
     const top = Object.keys(c.awards).find((k) => k.startsWith("mvp_"));
     if (c.hist.some((h) => h.lg && ["gbl", "nba"].includes(h.lg))) topLeague++;
     const m = top ? c.awards[top as keyof typeof c.awards] ?? 0 : 0;
     mvps += m;
     if (m) mvpPlayers++;
   }
-  for (const a of [at18, at22, peaks]) a.sort((x, y) => x - y);
+  for (const a of [at18, at22, peaks, peakAges]) a.sort((x, y) => x - y);
+  const avg = (a: number[]) => a.reduce((t, x) => t + x, 0) / a.length;
+  const gainRow = (label: string, f: (a: number[]) => string) =>
+    `${label.padEnd(10)} ${GAIN_AGES.map((age) => `${age}:${f(gains[age] ?? [0]).padStart(5)}`).join(" ")}`;
   const row = (name: string, a: number[]) =>
     `${name.padEnd(10)} p10 ${pct(a, 0.1)}  p50 ${pct(a, 0.5)}  p90 ${pct(a, 0.9)}  max ${a[a.length - 1]}`;
   console.log(
@@ -44,6 +53,9 @@ test("balance report", () => {
       row("OVR@18", at18),
       row("OVR@22", at22),
       row("peak", peaks),
+      row("peak age", peakAges),
+      gainRow("ΔOVR avg", (a) => avg(a).toFixed(2)),
+      gainRow("ΔOVR<=1", (a) => `${Math.round((a.filter((x) => x <= 1).length / a.length) * 100)}%`),
       `top league ${((topLeague / N) * 100).toFixed(1)}%  MVP players ${((mvpPlayers / N) * 100).toFixed(1)}%  MVPs ${mvps}`,
     ].join("\n"),
   );

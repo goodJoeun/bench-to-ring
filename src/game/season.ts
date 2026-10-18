@@ -202,8 +202,10 @@ function grow(c: Career, min: number, rating: number, tag: string): void {
     if (t === "대기만성" && age <= 32) tf = 0.5;
     if (t === "강철몸") tf = 0.7;
   }
-  // 잠재력까지 남은 여유가 클수록 빨리 커요. 잠재력에 가까워질수록 한 칸 올리기가 어려워져요.
-  const headroom = base > 0 ? clamp((p.pot - ov) / 7, 0.05, 1.7) : 1;
+  // 잠재력까지 남은 여유가 클수록 빨리 커요. 잠재력에 가까워져도 0.3배는 남겨 20대 중반까지 조금씩 크고,
+  // 잠재력에 닿으면 거의 멈춰요.
+  const gap = p.pot - ov;
+  const headroom = base <= 0 ? 1 : gap <= 0 ? 0.05 : clamp(0.3 + gap / 8, 0.3, 1.7);
   // 출전 시간: 10대는 영향이 작고, 성인은 크게 받아요. 주전급(28분)이어야 제대로 커요.
   const minutesFactor =
     age < 19 ? 0.75 + 0.25 * Math.min(1, min / 20) : Math.min(1.05, 0.35 + 0.7 * Math.min(1, min / 28));
