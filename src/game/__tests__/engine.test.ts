@@ -21,6 +21,9 @@ import {
   START_CAP,
   START_MIN,
   SPIKE_CAP,
+  TEAMS,
+  bodyOf,
+  startCap,
   simulateSeason,
   simulateTournament,
   teamPower,
@@ -94,6 +97,46 @@ describe("후보 선수", () => {
       }
     }
     expect(spiked / total).toBeLessThan(0.03);
+  });
+
+  it("유형마다 주특기는 55, 강점은 50까지 시작해 같은 능력치라도 유형별로 차이가 나요", () => {
+    setRandom(seeded(9));
+    for (const pos of POS_KEYS)
+      ARCHETYPES[pos].forEach((arch, a) => {
+        for (let i = 0; i < 60; i++) {
+          const cand = generateCandidate(pos, a);
+          const over = ATTR_KEYS.filter((k) => cand.attrs[k] > startCap(arch, k));
+          // 아주 드물게 가장 강한 능력치 하나만 5 더 열려요.
+          expect(over.length).toBeLessThanOrEqual(1);
+          for (const k of over) expect(cand.attrs[k]).toBeLessThanOrEqual(startCap(arch, k) + 5);
+        }
+      });
+    const avgShot = (pos: "SG", name: string) => {
+      const a = ARCHETYPES[pos].findIndex((x) => x.name === name);
+      let t = 0;
+      for (let i = 0; i < 100; i++) t += generateCandidate(pos, a).attrs.sht;
+      return t / 100;
+    };
+    expect(avgShot("SG", "퓨어 슈터") - avgShot("SG", "아이솔레이션 스코어러")).toBeGreaterThanOrEqual(4);
+  });
+
+  it("유형마다 어울리는 키와 윙스팬으로 시작하고, 16세에는 성인 키까지 조금 남아 있어요", () => {
+    setRandom(seeded(10));
+    for (const pos of POS_KEYS)
+      ARCHETYPES[pos].forEach((arch, a) => {
+        const body = bodyOf(pos, arch);
+        for (let i = 0; i < 30; i++) {
+          const cand = generateCandidate(pos, a);
+          expect(cand.hFinal).toBeGreaterThanOrEqual(body.h[0]);
+          expect(cand.hFinal).toBeLessThanOrEqual(body.h[1]);
+          expect(cand.hFinal - cand.h).toBeGreaterThanOrEqual(2);
+          expect(cand.hFinal - cand.h).toBeLessThanOrEqual(6);
+          expect(cand.wsd).toBeGreaterThanOrEqual(body.wsd[0]);
+          expect(cand.wsd).toBeLessThanOrEqual(body.wsd[1]);
+        }
+      });
+    const big = ARCHETYPES.PG.find((x) => x.name === "빅 가드")!;
+    expect(bodyOf("PG", big).h[0]).toBeGreaterThanOrEqual(189);
   });
 
   it("후보 세 명은 서로 다른 플레이 유형을 무작위로 받아요", () => {
@@ -342,6 +385,20 @@ describe("우승 기록", () => {
       { year: 2030, age: null, name: "아시안게임 금메달", team: "대한민국 대표팀", league: null, kind: "nat", fmvp: false },
       { year: 2036, age: 25, name: "NBA 우승", team: "보스턴 셀틱스", league: "NBA", kind: "pro", fmvp: true },
     ]);
+  });
+});
+
+describe("커리어 시작", () => {
+  it("고른 고등학교로 입학하고, 고르지 않으면 고교 중 하나로 정해져요", () => {
+    setRandom(seeded(4));
+    const input = { name: "입학", num: 5, nat: "대한민국", pos: "PG" as const, path: "domestic" as const };
+    const chosen = createCareer({ ...input, school: "휘문고" }, generateCandidates("PG")[0], "s1");
+    expect(chosen.team).toMatchObject({ lg: "hs", name: "휘문고" });
+    expect(chosen.news[0].m).toContain("휘문고");
+    for (const school of [undefined, "없는 학교"]) {
+      const c = createCareer({ ...input, school }, generateCandidates("PG")[0], "s2");
+      expect(TEAMS.hs.map(([n]) => n)).toContain(c.team!.name);
+    }
   });
 });
 

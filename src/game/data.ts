@@ -51,7 +51,11 @@ export const POS_GROWTH: Partial<Record<PosKey, [PosKey, number]>> = {
   PF: ["C", 211],
 };
 
-/** 포지션별 플레이 유형. e는 후보를 만들 때 능력치에 곱하는 배수예요. */
+/**
+ * 포지션별 플레이 유형. e는 후보를 만들 때 능력치에 곱하는 배수이고, 배수가 시작 능력치 상한도 정해요:
+ * 1.45 이상은 주특기(55까지), 1.25 이상은 강점(50까지), 1.1 이상은 보조(47까지), 나머지는 45까지.
+ * body는 이 유형에 어울리는 성인 키와 윙스팬(키 대비 cm) 범위예요. 없으면 포지션 기본값을 써요.
+ */
 export const ARCHETYPES: Record<PosKey, Archetype[]> = {
   PG: [
     {
@@ -71,6 +75,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "락다운 가드",
       e: { def: 1.45, ath: 1.2 },
+      body: { h: [183, 191], wsd: [4, 11] },
       desc: "상대 에이스 가드를 끈질기게 막고 스틸로 흐름을 끊는 수비형 가드예요.",
       kbl: ["양동근", "박찬희"],
       nba: ["게리 페이튼", "즈루 할러데이"],
@@ -85,6 +90,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "스피드 가드",
       e: { ath: 1.45, hdl: 1.2 },
+      body: { h: [178, 186] },
       desc: "폭발적인 첫 스텝으로 수비를 찢고 들어가 속공과 레이업을 마무리해요.",
       kbl: ["김선형"],
       nba: ["데릭 로즈", "디애런 팍스"],
@@ -92,6 +98,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "빅 가드",
       e: { pas: 1.25, def: 1.2, ath: 1.1 },
+      body: { h: [189, 194], wsd: [3, 10] },
       desc: "큰 키와 힘으로 미스매치를 만들고 리바운드까지 걷어내는 대형 가드예요.",
       kbl: ["이대성"],
       nba: ["매직 존슨", "러셀 웨스트브룩"],
@@ -108,6 +115,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "오프볼 무버",
       e: { sht: 1.35, ath: 1.2 },
+      body: { h: [185, 193] },
       desc: "쉬지 않고 스크린을 돌아 나와 공을 받자마자 던지는 움직이는 슈터예요.",
       kbl: ["조성민", "전성현"],
       nba: ["레지 밀러", "클레이 톰슨"],
@@ -115,6 +123,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "슬래셔",
       e: { ath: 1.45, hdl: 1.15 },
+      body: { wsd: [3, 11] },
       desc: "돌파로 림을 공략해 파울과 앤드원을 얻어내는 공격형 가드예요.",
       kbl: ["허웅"],
       nba: ["드웨인 웨이드", "자 모란트"],
@@ -122,6 +131,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "3&D 윙",
       e: { sht: 1.2, def: 1.35 },
+      body: { h: [190, 198], wsd: [4, 11] },
       desc: "코너 3점과 끈질긴 대인 수비. 어느 팀에나 필요한 롤 플레이어예요.",
       kbl: ["문성곤"],
       nba: ["대니 그린", "켄타비우스 콜드웰-포프"],
@@ -136,6 +146,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "콤보 가드",
       e: { hdl: 1.3, pas: 1.15, sht: 1.1 },
+      body: { h: [185, 192] },
       desc: "1번과 2번을 오가며 득점과 경기 운영을 함께 맡는 다재다능한 가드예요.",
       kbl: ["전태풍"],
       nba: ["제임스 하든", "마누 지노빌리"],
@@ -145,6 +156,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "투웨이 포워드",
       e: { def: 1.3, sht: 1.2 },
+      body: { h: [197, 204], wsd: [4, 11] },
       desc: "공격과 수비 모두 상대 에이스와 맞붙는 공수 겸장 포워드예요.",
       kbl: ["안영준"],
       nba: ["카와이 레너드", "폴 조지"],
@@ -152,6 +164,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "포인트 포워드",
       e: { pas: 1.4, iq: 1.2 },
+      body: { h: [198, 204] },
       desc: "포워드 사이즈로 공을 운반하고 패스를 뿌리는 장신 플레이메이커예요.",
       kbl: ["최준용"],
       nba: ["르브론 제임스", "스카티 피펜"],
@@ -159,13 +172,14 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "하이플라이어",
       e: { ath: 1.5, def: 1.1 },
+      body: { h: [193, 200], wsd: [3, 11] },
       desc: "압도적인 점프력으로 앨리웁과 덩크를 꽂아 분위기를 바꾸는 운동능력형이에요.",
       kbl: ["송교창"],
       nba: ["빈스 카터", "도미니크 윌킨스"],
     },
     {
       name: "스코어링 포워드",
-      e: { sht: 1.4, hdl: 1.15 },
+      e: { sht: 1.45, hdl: 1.15 },
       desc: "어느 위치에서든 슛을 던질 수 있는 득점형 포워드. 팀의 1옵션이에요.",
       kbl: ["문태영", "애런 헤인즈"],
       nba: ["케빈 듀란트", "카멜로 앤서니"],
@@ -173,6 +187,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "락다운 윙",
       e: { def: 1.5, ath: 1.15 },
+      body: { wsd: [6, 12] },
       desc: "상대 주득점원을 전담 마크하는 수비 스페셜리스트예요.",
       kbl: ["양희종"],
       nba: ["브루스 보웬", "론 아테스트"],
@@ -189,6 +204,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "스트레치 빅",
       e: { sht: 1.5, iq: 1.1 },
+      body: { h: [203, 208] },
       desc: "외곽슛으로 상대 빅맨을 밖으로 끌어내 골밑 공간을 여는 장신 슈터예요.",
       kbl: ["문태종"],
       nba: ["덕 노비츠키", "라샤드 루이스"],
@@ -196,6 +212,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "파워 포워드",
       e: { ath: 1.25, sht: 1.15, def: 1.1 },
+      body: { h: [199, 205], wsd: [2, 9] },
       desc: "힘과 몸싸움으로 골밑을 장악하는 정통 4번이에요.",
       kbl: ["조니 맥도웰"],
       nba: ["칼 말론", "찰스 바클리"],
@@ -203,6 +220,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "수비형 빅",
       e: { def: 1.45, iq: 1.1 },
+      body: { wsd: [6, 12] },
       desc: "도움 수비와 스위치로 팀 수비의 기둥이 되는 빅맨이에요.",
       kbl: ["이승현", "최부경"],
       nba: ["케빈 가넷", "벤 월러스"],
@@ -217,6 +235,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "에너지 빅",
       e: { ath: 1.45, def: 1.15 },
+      body: { h: [199, 204], wsd: [4, 11] },
       desc: "탄력 넘치는 덩크와 허슬 플레이로 벤치와 관중을 깨우는 빅맨이에요.",
       kbl: ["김종규", "전희철"],
       nba: ["블레이크 그리핀", "숀 켐프"],
@@ -224,6 +243,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "리바운드 머신",
       e: { ath: 1.35, def: 1.25, iq: 1.05 },
+      body: { wsd: [6, 12] },
       desc: "공이 떨어지는 자리를 먼저 읽고 공수 리바운드를 쓸어 담는 빅맨이에요.",
       kbl: ["라건아"],
       nba: ["데니스 로드맨", "케빈 러브"],
@@ -232,7 +252,8 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
   C: [
     {
       name: "림 프로텍터",
-      e: { def: 1.4, ath: 1.15 },
+      e: { def: 1.45, ath: 1.15 },
+      body: { h: [208, 216], wsd: [7, 13] },
       desc: "블록슛과 위치 선정으로 골밑을 지키는 수비형 센터예요.",
       kbl: ["김주성"],
       nba: ["디켐베 무톰보", "루디 고베어"],
@@ -240,6 +261,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "포스트 스코어러",
       e: { sht: 1.3, ath: 1.15, iq: 1.1 },
+      body: { h: [205, 213] },
       desc: "로포스트에서 훅슛과 풋워크로 꾸준히 점수를 쌓는 정통 센터예요.",
       kbl: ["오세근"],
       nba: ["하킴 올라주원", "조엘 엠비드"],
@@ -254,6 +276,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "파워 센터",
       e: { ath: 1.35, def: 1.2 },
+      body: { h: [206, 214], wsd: [3, 10] },
       desc: "압도적인 체격으로 골밑을 밀고 들어가 상대 빅맨을 무력화하는 센터예요.",
       kbl: ["하승진"],
       nba: ["샤킬 오닐", "드와이트 하워드"],
@@ -261,6 +284,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "림 러너",
       e: { ath: 1.45, def: 1.1 },
+      body: { h: [203, 210], wsd: [5, 12] },
       desc: "픽앤롤 뒤 림으로 달려가 앨리웁을 받아내는 기동력 센터예요.",
       kbl: ["하윤기"],
       nba: ["디안드레 조던", "클린트 카펠라"],
@@ -268,6 +292,7 @@ export const ARCHETYPES: Record<PosKey, Archetype[]> = {
     {
       name: "슈팅 센터",
       e: { sht: 1.5, iq: 1.1 },
+      body: { h: [206, 214] },
       desc: "중거리와 3점까지 던지는 센터. 상대 빅맨을 외곽으로 끌어내요.",
       kbl: ["서장훈"],
       nba: ["브룩 로페즈", "칼-앤서니 타운스"],

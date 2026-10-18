@@ -6,6 +6,8 @@ export * from "./types";
 export * from "./data";
 export {
   archetypeOf,
+  bodyOf,
+  startCap,
   generateCandidate,
   generateCandidates,
   createCareer,

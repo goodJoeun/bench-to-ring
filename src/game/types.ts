@@ -70,6 +70,8 @@ export interface Archetype {
   name: string;
   /** 후보 능력치에 곱하는 배수 */
   e: Partial<Attrs>;
+  /** 어울리는 성인 키(cm)와 윙스팬(키 대비 cm) 범위 */
+  body?: { h?: [number, number]; wsd?: [number, number] };
   /** 한두 문장 설명 */
   desc: string;
   /** 이 유형으로 유명했던 선수 */
@@ -395,4 +397,6 @@ export interface NewCareerInput {
   nat: string;
   pos: PosKey;
   path: CareerPath;
+  /** 입학할 고등학교 (TEAMS.hs의 이름). 없으면 무작위로 정해요. */
+  school?: string;
 }

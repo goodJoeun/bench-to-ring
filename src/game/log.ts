@@ -17,9 +17,11 @@ export function giveAward(c: Career, k: AwardKey, name: string, rec?: SeasonReco
 
 export function pickTeam(lg: LeagueKey, used?: Set<string>): Team {
   const pool = TEAMS[lg].filter(([name]) => !used?.has(name));
-  const [name, color] = pick(pool.length ? pool : TEAMS[lg]);
-  return { name, color, q: Math.round(rnd(0.32, 0.68) * 100) / 100 };
+  return makeTeam(pick(pool.length ? pool : TEAMS[lg]));
 }
+
+/** 팀 목록의 한 줄로 팀을 만들어요. 전력은 무작위예요. */
+export const makeTeam = ([name, color]: readonly [string, string]): Team => ({ name, color, q: Math.round(rnd(0.32, 0.68) * 100) / 100 });
 
 export function setTeam(c: Career, lg: LeagueKey, t: Team): void {
   c.team = { lg, name: t.name, color: t.color, q: t.q };

@@ -25,6 +25,8 @@ export interface CreationDraft {
   nat: string;
   pos: PosKey;
   path: CareerPath;
+  /** 고등학교 이름. 빈 문자열이면 무작위 */
+  school: string;
   candidates: Candidate[];
   selected: number;
   rerolls: number;
@@ -59,6 +61,7 @@ const emptyDraft = (): CreationDraft => ({
   nat: "대한민국",
   pos: "SG",
   path: "abroad",
+  school: "",
   candidates: [],
   selected: 0,
   rerolls: REROLLS,
@@ -134,7 +137,7 @@ export function useGame(): GameSnapshot {
 }
 
 export const gameActions = {
-  editDraft(patch: Partial<Pick<CreationDraft, "name" | "num" | "nat" | "path" | "selected">>) {
+  editDraft(patch: Partial<Pick<CreationDraft, "name" | "num" | "nat" | "path" | "school" | "selected">>) {
     set({ draft: { ...snapshot.draft, ...patch } });
   },
   choosePosition(pos: PosKey) {
@@ -149,7 +152,7 @@ export const gameActions = {
     const d = snapshot.draft;
     const cand = d.candidates[d.selected];
     if (!cand) return;
-    const c = createCareer({ name: d.name, num: Number(d.num), nat: d.nat, pos: d.pos, path: d.path }, cand);
+    const c = createCareer({ name: d.name, num: Number(d.num), nat: d.nat, pos: d.pos, path: d.path, school: d.school || undefined }, cand);
     saveCareer(c);
     set({ career: c });
   },

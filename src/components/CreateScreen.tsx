@@ -7,7 +7,9 @@ import {
   POS,
   POS_KEYS,
   SHORT,
+  TEAMS,
   archetypeOf,
+  bodyOf,
   isCoreAttr,
   ovrOf,
   type Archetype,
@@ -115,7 +117,9 @@ function CandidateCard({ cand, pos, index, selected }: { cand: Candidate; pos: P
         </span>
         {arch && <span className="cdesc">{arch.desc}</span>}
         <span className="cmeta">
-          <span>키 {cand.h}cm</span>
+          <span>
+            키 {cand.h}cm{arch && ` · 성인 예상 ${bodyOf(pos, arch).h.join("–")}cm`}
+          </span>
           <span>윙스팬 {cand.h + cand.wsd}cm</span>
           <span>
             스카우트 등급 <span className="grade">{cand.grade}</span>
@@ -170,6 +174,10 @@ function ConfirmStartSheet({ draft, onClose }: { draft: CreationDraft; onClose: 
           <dd>
             #{draft.num || 0} · {draft.nat}
           </dd>
+        </div>
+        <div>
+          <dt>고등학교</dt>
+          <dd>{draft.school || "무작위 배정"}</dd>
         </div>
         <div>
           <dt>커리어 경로</dt>
@@ -257,6 +265,17 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
               {NATIONS.map((n) => (
                 <option key={n.name} value={n.name}>
                   {n.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="f" htmlFor="f-school">
+            고등학교
+            <select id="f-school" value={draft.school} onChange={(e) => gameActions.editDraft({ school: e.target.value })}>
+              <option value="">무작위 배정</option>
+              {TEAMS.hs.map(([name]) => (
+                <option key={name} value={name}>
+                  {name}
                 </option>
               ))}
             </select>

@@ -1,20 +1,32 @@
-import { ARCHETYPES, ATTR_KEYS, HAIRS, POS, SKINS, START_YEAR, TRAIT_KEYS } from "./data";
-import { addNews, pickTeam, setTeam } from "./log";
+import { ARCHETYPES, ATTR_KEYS, HAIRS, POS, SKINS, START_YEAR, TEAMS, TRAIT_KEYS } from "./data";
+import { addNews, makeTeam, pickTeam, setTeam } from "./log";
 import { chance, pick, ri, rnd, shuffle, triangular } from "./random";
 import { ovrOf } from "./ratings";
 import type { Archetype, AttrKey, Attrs, Candidate, Career, Grade, NewCareerInput, PosKey } from "./types";
 import { clamp, r1 } from "./util";
 
 export const START_OVR = 45;
-/** 시작 능력치 범위. 55를 넘는 능력치는 아주 드물게(SPIKE_CHANCE) 한 개만 60까지 나와요. */
+/** 시작 능력치 범위. 주특기도 55까지이고, 아주 드물게(SPIKE_CHANCE) 가장 강한 능력치 하나만 5 더 열려요. */
 export const START_MIN = 22;
 export const START_CAP = 55;
 export const SPIKE_CAP = 60;
 const SPIKE_CHANCE = 0.03;
+const SPIKE = SPIKE_CAP - START_CAP;
+
+/** 플레이 유형 배수로 정하는 시작 능력치 상한: 주특기 55, 강점 50, 보조 47, 나머지 45 */
+export function startCap(arch: Archetype, k: AttrKey): number {
+  const e = arch.e[k] ?? 1;
+  return e >= 1.45 ? START_CAP : e >= 1.25 ? 50 : e >= 1.1 ? 47 : 45;
+}
+
+/** 플레이 유형에 어울리는 성인 키와 윙스팬(키 대비) 범위 */
+export function bodyOf(pos: PosKey, arch: Archetype): { h: [number, number]; wsd: [number, number] } {
+  return { h: arch.body?.h ?? POS[pos].h, wsd: arch.body?.wsd ?? [-2, 11] };
+}
 
 /**
  * 후보 선수 한 명. 포지션과 플레이 유형이 정한 능력치 모양을 그대로 키우거나 줄여 오버롤 45에 맞추고,
- * 한 능력치만 튀지 않게 55에서 막아요. 막힌 몫은 나머지 능력치가 모양대로 나눠 가져요.
+ * 유형마다 정해진 상한(주특기 55, 강점 50…)에서 막아요. 막힌 몫은 나머지 능력치가 모양대로 나눠 가져요.
  */
 export function generateCandidate(pos: PosKey, archIndex: number): Candidate {
   const arch = ARCHETYPES[pos][archIndex];
@@ -23,8 +35,8 @@ export function generateCandidate(pos: PosKey, archIndex: number): Candidate {
   // 플레이 유형 배수는 1.6제곱해서 써요. 포지션 가중치가 낮은 능력치를 키우는 유형(패싱 센터 등)도 강점이 드러나요.
   for (const k of ATTR_KEYS) raw[k] = (0.55 + w[k] * 2.4) * (arch.e[k] ?? 1) ** 1.6 * rnd(0.88, 1.12);
   const cap = {} as Attrs;
-  for (const k of ATTR_KEYS) cap[k] = START_CAP;
-  if (chance(SPIKE_CHANCE)) cap[ATTR_KEYS.reduce((m, k) => (raw[k] > raw[m] ? k : m))] = SPIKE_CAP;
+  for (const k of ATTR_KEYS) cap[k] = startCap(arch, k);
+  if (chance(SPIKE_CHANCE)) cap[ATTR_KEYS.reduce((m, k) => (raw[k] > raw[m] ? k : m))] += SPIKE;
 
   // 상한·하한에 닿은 능력치는 그 자리에 묶고, 나머지를 같은 배율로 키워 오버롤 45를 맞춰요.
   const a = {} as Attrs;
@@ -49,17 +61,18 @@ export function generateCandidate(pos: PosKey, archIndex: number): Candidate {
     if (!k) break;
     a[k] += o < START_OVR ? 1 : -1;
   }
-  const [h0, h1] = POS[pos].h;
-  const hFinal = ri(h0, h1);
+  const body = bodyOf(pos, arch);
+  const hFinal = ri(...body.h);
   const pot = Math.round(triangular(58, 98, 73));
   const shown = pot + ri(-5, 5);
   const grade: Grade = shown >= 90 ? "S" : shown >= 83 ? "A" : shown >= 76 ? "B" : shown >= 70 ? "C" : "D";
   return {
     arch: arch.name,
     attrs: a,
-    h: hFinal - ri(3, 9),
+    // 16세에는 성인 키까지 2~6cm 남아 있어요.
+    h: hFinal - ri(2, 6),
     hFinal,
-    wsd: ri(-2, 11),
+    wsd: ri(...body.wsd),
     pot,
     grade,
     trait: pick(TRAIT_KEYS),
@@ -127,7 +140,8 @@ export function createCareer(input: NewCareerInput, cand: Candidate, id = String
     live: null,
     draftShow: null,
   };
-  const t = pickTeam("hs");
+  const chosen = TEAMS.hs.find(([name]) => name === input.school);
+  const t = chosen ? makeTeam(chosen) : pickTeam("hs");
   setTeam(c, "hs", t);
   addNews(c, `${START_YEAR} 프리시즌`, "move", `${t.name} 농구부에 입단했어요. 벤치에서 시작해요.`);
   return c;
