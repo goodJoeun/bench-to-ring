@@ -13,6 +13,18 @@ export { currentDecision, resolveQueue } from "./decisions";
 export { careerSummary, retire, canRetire, legacyOf, titleHistory, type TitleEntry } from "./career";
 export { rankHall, bestFive, compareCareers } from "./hall";
 export {
+  RECORD_BOARDS,
+  RECORD_GROUPS,
+  careerTotals,
+  placeOnBoard,
+  type BoardPlacement,
+  type BoardRow,
+  type CareerTotals,
+  type RecordBoard,
+  type RecordGroup,
+  type RecordStat,
+} from "./records";
+export {
   ovr,
   ovrOf,
   roleOf,

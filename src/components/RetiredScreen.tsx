@@ -2,6 +2,7 @@
 
 import { AWARDS, money, titleHistory, type Career, type CareerSummary } from "@/game";
 import { gameActions } from "@/lib/game-store";
+import { RecordBoards } from "./RecordBoards";
 import { Sprite } from "./Sprite";
 import { militaryLine } from "./tabs/RecordTab";
 import { HallOfFame } from "./tabs/HallOfFame";
@@ -86,6 +87,8 @@ export function RetiredScreen({ career: c, hall }: { career: Career; hall: Caree
         )}
         {!s.seasons && <p className="hint">프로 무대 기록이 없어 명예의 전당에는 오르지 않아요.</p>}
       </section>
+
+      <RecordBoards career={c} />
 
       <div className="row">
         <button type="button" className="start" onClick={gameActions.newCareer}>

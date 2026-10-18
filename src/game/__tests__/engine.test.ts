@@ -4,13 +4,16 @@ import {
   ATTR_KEYS,
   NATIONS,
   POS_KEYS,
+  RECORD_BOARDS,
   applyAction,
+  careerTotals,
   chooseOption,
   createCareer,
   currentDecision,
   generateCandidate,
   generateCandidates,
   ovrOf,
+  placeOnBoard,
   rankHall,
   resetRandom,
   seeded,
@@ -287,6 +290,68 @@ describe("우승 기록", () => {
       { year: 2030, age: null, name: "아시안게임 금메달", team: "대한민국 대표팀", league: null, kind: "nat", fmvp: false },
       { year: 2036, age: 25, name: "NBA 우승", team: "보스턴 셀틱스", league: "NBA", kind: "pro", fmvp: true },
     ]);
+  });
+});
+
+describe("기록 리더보드", () => {
+  const board = RECORD_BOARDS.find((b) => b.group === "kbl" && b.stat === "pts")!;
+
+  it("실제 순위표는 기록이 많은 순서이고, 리그마다 득점 순위표가 있어요", () => {
+    for (const b of RECORD_BOARDS) {
+      expect(b.entries.length).toBeGreaterThan(0);
+      for (let i = 1; i < b.entries.length; i++) expect(b.entries[i - 1].v).toBeGreaterThanOrEqual(b.entries[i].v);
+    }
+    for (const g of ["nba", "kbl", "olympics"] as const) expect(RECORD_BOARDS.some((b) => b.group === g && b.stat === "pts")).toBe(true);
+  });
+
+  it("내 기록을 끼워 넣으면 아래 선수 순위가 밀리고, 바로 위 선수와의 차이를 알려줘요", () => {
+    const p = placeOnBoard(board, { name: "나", v: 11000 });
+    expect(p.rank).toBe(3);
+    expect(p.rows.map((r) => [r.name, r.rank])).toEqual([
+      ["서장훈", 1],
+      ["라건아", 2],
+      ["나", 3],
+      ["애런 헤인즈", 4],
+      ["김주성", 5],
+      ["추승균", 6],
+    ]);
+    expect(p.next).toEqual({ name: "라건아", gap: 12163 - 11000 });
+    expect(placeOnBoard(board, { name: "나", v: 20000 })).toMatchObject({ rank: 1, next: null });
+  });
+
+  it("같은 기록이면 공동 순위, 순위표보다 낮으면 순위 밖, 기록이 없으면 끼워 넣지 않아요", () => {
+    const tie = placeOnBoard(board, { name: "나", v: 10878 });
+    expect(tie.rank).toBe(3);
+    expect(tie.rows.slice(2, 5).map((r) => [r.name, r.rank])).toEqual([
+      ["애런 헤인즈", 3],
+      ["나", 3],
+      ["김주성", 5],
+    ]);
+    const low = placeOnBoard(board, { name: "나", v: 5000 });
+    expect(low.rank).toBeNull();
+    expect(low.rows.at(-1)).toMatchObject({ name: "나", rank: null, mine: true });
+    expect(low.next).toEqual({ name: "추승균", gap: 10019 - 5000 });
+    expect(placeOnBoard(board, { name: "나", v: 0 })).toEqual({ rows: board.entries.map((e, i) => ({ ...e, rank: i + 1 })), rank: null, next: null });
+  });
+
+  it("리그별 통산은 그 리그 시즌만, 올림픽은 합류한 본선 경기 득점만 더해요", () => {
+    const c = createCareer({ name: "기록", num: 7, nat: "대한민국", pos: "SF", path: "domestic" }, generateCandidates("SF")[0], "rec");
+    const rec = (lg: "kbl" | "nba" | "ncaa" | null, gp: number, pts: number, reb: number, ast: number) =>
+      ({ lg, gp, pts, reb, ast }) as unknown as Career["hist"][number];
+    c.hist.push(rec("ncaa", 30, 20, 5, 3), rec("kbl", 54, 18.5, 6.2, 3.1), rec("kbl", 50, 20, 7, 4), rec(null, 0, 0, 0, 0), rec("nba", 82, 10, 3, 1));
+    const game = (pts?: number, stage = "조별리그 1차전") => ({ stage, opp: "미국", us: 80, them: 90, win: false, pts });
+    const tour = (ev: "olympics" | "asiangames", joined: boolean, games: ReturnType<typeof game>[]) =>
+      ({ year: 2032, ev, name: "대회", joined, label: "", medal: null, story: "", games }) as Career["natLog"][number];
+    c.natLog.push(
+      tour("olympics", true, [game(15, "최종예선 결승"), game(12), game(20), game(8)]),
+      tour("olympics", false, [game(), game()]),
+      tour("asiangames", true, [game(30)]),
+    );
+    expect(careerTotals(c)).toEqual({
+      kbl: { gp: 104, pts: 999 + 1000, reb: Math.round(54 * 6.2 + 350), ast: Math.round(54 * 3.1 + 200) },
+      nba: { gp: 82, pts: 820, reb: 246, ast: 82 },
+      olympics: { gp: 3, pts: 40, reb: 0, ast: 0 },
+    });
   });
 });
 
