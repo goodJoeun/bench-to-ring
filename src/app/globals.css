@@ -251,6 +251,22 @@ textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize
 .title-row .tb b{font-size:15px}
 .title-row .tb span{font-size:13px;color:var(--muted)}
 .title-row .aw{flex:none}
+.natlog{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.natlog > li{border-radius:8px;background:var(--panel2);border-left:3px solid var(--line)}
+.natlog > li[data-joined]{border-left-color:var(--paint)}
+.natlog > li[data-medal]{border-left-color:var(--gold)}
+.natlog summary{display:flex;align-items:center;gap:12px;padding:10px 12px;cursor:pointer;list-style:none}
+.natlog summary::-webkit-details-marker{display:none}
+.natlog .ny{flex:none;font-family:var(--f-num);font-weight:700;font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums}
+.natlog .nb{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.natlog .nb b{font-size:15px}
+.natlog .nb span{font-size:13px;color:var(--muted)}
+.natlog details > .hint{padding:0 12px}
+.natgames{list-style:none;margin:6px 0 0;padding:0 12px 12px;display:flex;flex-direction:column;gap:2px;font-size:13px}
+.natgames li{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) auto auto;gap:8px;padding:4px 0;border-top:1px solid var(--line)}
+.natgames .sc{font-family:var(--f-num);font-variant-numeric:tabular-nums;color:var(--bad)}
+.natgames li[data-win] .sc{color:var(--good)}
+.natgames .pt{color:var(--muted)}
 .ret{max-width:var(--t-max);margin:0 auto;display:flex;flex-direction:column;gap:14px}
 .ret .court{min-height:250px}
 .ret .plate .name{font-size:30px}
@@ -282,12 +298,52 @@ textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize
 .sim-phase .dots::after{content:"";display:inline-block;width:1.2em;text-align:left;animation:dots 1.2s steps(4,end) infinite}
 .sim-bar{height:4px;margin-top:10px;border-radius:5px;background:rgba(255,255,255,.14);overflow:hidden}
 .sim-fill{height:100%;background:var(--sim-bar)}
+/* 대회 진행: 경기 결과가 한 줄씩 올라와요. */
+.tour-games{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;max-height:42dvh;overflow-y:auto}
+.tour-games li{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto auto auto;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;
+  background:rgba(255,255,255,.08);font-size:13px;text-align:left;animation:rise .25s ease-out both}
+.tour-games .tg-stage{color:var(--sim-lbl);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tour-games .tg-opp{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tour-games .tg-score{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.tour-games .tg-wl{font-weight:800;color:#FF9C8F}
+.tour-games li[data-win] .tg-wl{color:#8FE3A8}
+.tour-games .tg-pts{font-size:12px;color:var(--sim-soft)}
+.tour-story{margin:8px 0 0;font-size:14px;line-height:1.5;color:var(--sim-soft)}
+.tour-story b{color:#FFD66B}
+/* 결승 문자 중계 */
+.live{display:flex;flex-direction:column;gap:12px;text-align:left}
+.live-title{font-size:13px;font-weight:700;color:var(--sim-lbl);text-align:center}
+.live-board{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;padding:16px 14px;border-radius:16px;background:rgba(0,0,0,.22)}
+.live-team{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;border-top:4px solid var(--tc);padding-top:8px}
+.live-name{font-size:13px;font-weight:700;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.live-team b{font-family:var(--f-num);font-size:44px;line-height:1;font-variant-numeric:tabular-nums}
+.live-team b.won{color:#FFD66B}
+.live-clock{display:flex;flex-direction:column;align-items:center;gap:2px;font-family:var(--f-num);font-weight:700;font-size:14px;color:var(--sim-soft);font-variant-numeric:tabular-nums}
+.live-final{font-family:var(--f-display);font-size:16px;color:#fff}
+.live-bar{height:4px;border-radius:4px;background:rgba(255,255,255,.14);overflow:hidden}
+.live-fill{height:100%;background:var(--sim-bar)}
+.live-log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;min-height:204px}
+.live-log li{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.06);font-size:13px}
+.live-log li:first-child{background:rgba(255,255,255,.14)}
+.live-log li[data-mine]{color:#FFD66B;font-weight:700}
+.live-log li[data-mark]{background:none;color:var(--sim-lbl);font-weight:700}
+.live-log .lc{font-family:var(--f-num);font-size:11.5px;color:var(--sim-lbl);font-variant-numeric:tabular-nums}
+.live-log .lt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.live-log .ls{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.live-ctl{display:flex;justify-content:center;gap:8px}
+.live-ctl .sim-skip{margin-top:0}
+.live-ctl .sim-skip[aria-pressed="true"]{background:rgba(255,255,255,.16);color:#fff}
+.live-result{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:8px 0}
+.live-result b{font-family:var(--f-display);font-weight:400;font-size:32px;color:#FFD66B}
+.live-result span{font-size:14px;color:var(--sim-soft)}
+.live-go{margin-top:12px;min-width:160px;min-height:48px;border:0;border-radius:14px;background:#fff;color:var(--sim-bg);font-family:var(--f-display);font-size:18px;cursor:pointer}
+.live-go:focus-visible{outline-color:#FFD66B}
 .sim-skip{margin-top:18px;background:none;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:8px 18px;font-size:13px;color:var(--sim-soft);cursor:pointer}
 .sim-skip:focus-visible{outline-color:#fff}
 @keyframes dribble{from{transform:translateY(0)}to{transform:translateY(-6px)}}
 @keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
-@media (prefers-reduced-motion:reduce){.tabc,.sim,.sim-sprite,.sim-phase .dots::after,.scrim,.sheet,.toast{animation:none}}
+@media (prefers-reduced-motion:reduce){.tabc,.sim,.sim-sprite,.sim-phase .dots::after,.scrim,.sheet,.toast,.tour-games li{animation:none}}
 
 /* 눌렀을 때 손끝에 반응이 오게 */
 .advance:active,.start:active,.choice:active,.cand:active,.btn:active,.sheet-go:active{transform:scale(.98)}

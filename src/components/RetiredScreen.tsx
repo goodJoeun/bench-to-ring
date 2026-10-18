@@ -3,6 +3,7 @@
 import { AWARDS, money, titleHistory, type Career, type CareerSummary } from "@/game";
 import { gameActions } from "@/lib/game-store";
 import { Sprite } from "./Sprite";
+import { militaryLine } from "./tabs/RecordTab";
 import { HallOfFame } from "./tabs/HallOfFame";
 
 export function RetiredScreen({ career: c, hall }: { career: Career; hall: CareerSummary[] }) {
@@ -36,6 +37,7 @@ export function RetiredScreen({ career: c, hall }: { career: Career; hall: Caree
           <div className="legacy">{s.legacy}</div>
           <div className="sub">
             {p.pos} · {p.nat} · 누적 수입 {money(s.earn)} · 국가대표 {s.caps}경기
+            {militaryLine(c) && ` · 병역 ${militaryLine(c)!.split(" · ")[0]}`}
           </div>
         </div>
       </section>

@@ -38,6 +38,8 @@ export interface GameSnapshot {
   hall: CareerSummary[];
   /** 시즌 진행 로딩 화면을 보여주는 중인지. 결과는 이미 계산·저장돼 있어요. */
   simulating: boolean;
+  /** 국가대표 대회 진행 화면을 보여주는 중인지 (c.natLog의 마지막 대회) */
+  tournament: boolean;
   /** 화면 아래에 잠깐 떴다 사라지는 알림 */
   toast: Toast | null;
 }
@@ -60,7 +62,7 @@ const emptyDraft = (): CreationDraft => ({
   rerolls: REROLLS,
 });
 
-const SERVER_SNAPSHOT: GameSnapshot = { ready: false, career: null, draft: emptyDraft(), hall: [], simulating: false, toast: null };
+const SERVER_SNAPSHOT: GameSnapshot = { ready: false, career: null, draft: emptyDraft(), hall: [], simulating: false, tournament: false, toast: null };
 
 let snapshot: GameSnapshot = SERVER_SNAPSHOT;
 const listeners = new Set<() => void>();
@@ -80,7 +82,7 @@ function ensureLoaded(): void {
   if (snapshot.ready || typeof window === "undefined") return;
   const career = loadCareer();
   if (career) resolveQueue(career);
-  snapshot = { ready: true, career, draft: freshDraft(), hall: loadHall(), simulating: false, toast: null };
+  snapshot = { ready: true, career, draft: freshDraft(), hall: loadHall(), simulating: false, tournament: false, toast: null };
 }
 
 function set(patch: Partial<GameSnapshot>): void {
@@ -165,11 +167,19 @@ export const gameActions = {
     const msg = r ? `${r.year} 시즌 종료 · ${r.lg ? `${r.w}승 ${r.l}패 · ` : ""}${r.result}` : null;
     set({ simulating: false, toast: msg ? toast(msg) : snapshot.toast });
   },
-  /** 결정을 고르고, 그 결과로 생긴 소식을 알림으로 띄워요. */
+  /** 결정을 고르고, 그 결과로 생긴 소식을 알림으로 띄워요. 국가대표에 합류하면 대회 진행 화면을 먼저 보여줘요. */
   choose(index: number) {
     const c0 = snapshot.career;
     if (!c0) return;
-    const label = currentDecision(c0)?.opts[index]?.label;
+    const opt = currentDecision(c0)?.opts[index];
+    const label = opt?.label;
+    if (opt?.act.k === "national" && opt.act.join) {
+      mutate((c) => {
+        chooseOption(c, index);
+      });
+      set({ tournament: true });
+      return;
+    }
     const before = c0.news[0];
     mutate((c) => {
       chooseOption(c, index);
@@ -177,6 +187,11 @@ export const gameActions = {
     const after = snapshot.career;
     const msg = (after && latestNewsSince(before, after)) ?? (label ? `'${label}'을(를) 골랐어요` : null);
     if (msg) set({ toast: toast(msg) });
+  },
+  /** 대회 진행 화면을 닫고 최종 성적을 알림으로 보여줘요. */
+  finishTournament() {
+    const t = snapshot.career?.natLog.at(-1);
+    set({ tournament: false, toast: t ? toast(`${t.name} · ${t.label}`) : snapshot.toast });
   },
   dismissToast(id: number) {
     if (snapshot.toast?.id === id) set({ toast: null });

@@ -23,7 +23,9 @@ import {
   type CareerSummary,
 } from "@/game";
 import { lifeEvent } from "@/game/events";
-import { nationalCallUp } from "@/game/national";
+import { makeLiveGame } from "@/game/live";
+import { militaryDecision } from "@/game/military";
+import { nationalCallUp, runNationalTeam } from "@/game/national";
 import { decodeSave, encodeSave } from "@/game/storage";
 
 afterEach(() => resetRandom());
@@ -285,5 +287,147 @@ describe("우승 기록", () => {
       { year: 2030, age: null, name: "아시안게임 금메달", team: "대한민국 대표팀", league: null, kind: "nat", fmvp: false },
       { year: 2036, age: 25, name: "NBA 우승", team: "보스턴 셀틱스", league: "NBA", kind: "pro", fmvp: true },
     ]);
+  });
+});
+
+describe("병역", () => {
+  /** 23세 KBL 선수. 계약 3년이 남아 있어요. */
+  function soldier(nat = "대한민국") {
+    const c = createCareer({ name: "병장", num: 3, nat, pos: "SG", path: "domestic" }, generateCandidates("SG")[0], "mil");
+    c.stage = "pro";
+    c.age = 23;
+    c.team = { name: "서울 SK 나이츠", color: "#E11B22", q: 0.5, lg: "kbl" };
+    c.contract = { years: 3, salary: 2 };
+    c.queue = [];
+    return c;
+  }
+  const choiceOf = (c: Career, k: string) => militaryDecision(c)!.opts.findIndex((o) => o.act.k === "military" && o.act.choice === k);
+
+  it("대한민국 선수만 23세부터 입대 시기를 묻고, 28세가 되면 연기할 수 없어요", () => {
+    expect(militaryDecision(soldier("일본"))).toBeNull();
+    const young = soldier();
+    young.age = 22;
+    expect(militaryDecision(young)).toBeNull();
+    const c = soldier();
+    expect(militaryDecision(c)!.opts.map((o) => o.label)).toEqual(["상무 지원", "현역 입대", "입대 연기"]);
+    applyAction(c, { k: "military", choice: "defer" });
+    expect(c.mil.ask).toBe(25);
+    c.age = 24;
+    expect(militaryDecision(c)).toBeNull();
+    c.age = 28;
+    expect(militaryDecision(c)!.opts.map((o) => o.label)).toEqual(["상무 지원", "현역 입대"]);
+    expect(choiceOf(c, "defer")).toBe(-1);
+  });
+
+  it("상무에 가면 D리그를 뛰고, 전역하면 원래 팀과 계약 그대로 돌아와 시즌 중반에 합류해요", () => {
+    setRandom(seeded(41));
+    const c = soldier();
+    for (const k of ["sht", "hdl", "def", "reb", "ath", "iq"] as const) c.p.attrs[k] = 80;
+    c.hist.push({ gp: 50 } as Career["hist"][number]);
+    c.queue = [militaryDecision(c)!, { lazy: "fa" }];
+    chooseOption(c, 0);
+    expect(c.stage).toBe("military");
+    expect(c.mil.kind).toBe("sangmu");
+    expect(c.team).toBeNull();
+    expect(c.queue).toEqual([]);
+    const rec = simulateSeason(c);
+    expect(rec.mil).toBe("sangmu");
+    expect(rec.team).toContain("상무");
+    expect(rec.gp).toBeGreaterThan(0);
+    expect(c.stage).toBe("pro");
+    expect(c.team?.name).toBe("서울 SK 나이츠");
+    expect(c.contract).toEqual({ years: 3, salary: 2 });
+    expect(c.mil.s).toBe("served");
+    while (c.queue.length) chooseOption(c, 0);
+    const back = simulateSeason(c);
+    expect(back.gp).toBeLessThanOrEqual(Math.round(54 * 0.6));
+    expect(militaryDecision(c)).toBeNull();
+  });
+
+  it("현역은 한 시즌 경기를 못 뛰고 운동능력과 슛 감각이 떨어져요", () => {
+    setRandom(seeded(42));
+    const c = soldier();
+    const before = { ...c.p.attrs };
+    applyAction(c, { k: "military", choice: "army" });
+    const rec = simulateSeason(c);
+    expect(rec.gp).toBe(0);
+    expect(c.p.attrs.ath).toBeLessThan(before.ath);
+    expect(c.p.attrs.sht).toBeLessThan(before.sht);
+    expect(c.mil).toMatchObject({ s: "served", kind: "army" });
+  });
+
+  it("아시안게임 금메달을 따면 병역 특례를 받고, 남은 입대 결정이 사라져요", () => {
+    setRandom(seeded(43));
+    let exempt = 0;
+    for (let i = 0; i < 60 && !exempt; i++) {
+      const c = soldier();
+      for (const k of ["sht", "hdl", "def", "reb", "ath", "iq"] as const) c.p.attrs[k] = 90;
+      c.queue = [militaryDecision(c)!];
+      const t = runNationalTeam(c, "asiangames", 2030, true);
+      if (t.medal === "금") {
+        expect(c.mil.s).toBe("exempt");
+        expect(c.queue).toEqual([]);
+        expect(c.news.some((n) => n.m.includes("병역 특례"))).toBe(true);
+        exempt++;
+      } else expect(c.mil.s).toBe("none");
+    }
+    expect(exempt).toBe(1);
+  });
+});
+
+describe("대회 진행과 결승 중계", () => {
+  it("대회 기록에 경기마다 단계·상대·점수가 남고, 합류하면 내 득점도 남아요", () => {
+    setRandom(seeded(44));
+    const c = createCareer({ name: "기록", num: 4, nat: "호주", pos: "C", path: "abroad" }, generateCandidates("C")[0], "log");
+    c.age = 25;
+    const t = runNationalTeam(c, "asiacup", 2029, true);
+    expect(c.natLog.at(-1)).toBe(t);
+    expect(t.games.length).toBeGreaterThanOrEqual(3);
+    expect(t.games[0].stage).toBe("조별리그 1차전");
+    for (const g of t.games) {
+      expect(g.win).toBe(g.us > g.them);
+      expect(g.pts).toBeGreaterThanOrEqual(0);
+    }
+    if (t.games.at(-1)!.stage === "결승") expect(c.live?.key).toBe("nat-2029");
+  });
+
+  it("중계는 결과와 같은 점수로 끝나고, 쿼터가 넷이에요", () => {
+    setRandom(seeded(45));
+    const g = makeLiveGame({
+      title: "2034 NBA 파이널 6차전", key: "league-2034", us: "보스턴", them: "덴버", usColor: "#000", themColor: "#111",
+      usScore: 104, themScore: 99, periodMin: 12, player: "김선수", mine: { pts: 27, reb: 6, ast: 5 },
+    });
+    const last = g.plays.at(-1)!;
+    expect([last.us, last.them]).toEqual([104, 99]);
+    expect(last.text).toBe("경기 종료");
+    expect(g.plays.filter((p) => p.mark).length).toBe(4);
+    expect(g.win).toBe(true);
+    const mine = g.plays.filter((p) => p.mine).length;
+    expect(mine).toBeGreaterThan(0);
+    expect(g.mine.pts).toBeLessThanOrEqual(27);
+    for (let i = 1; i < g.plays.length; i++) {
+      expect(g.plays[i].us).toBeGreaterThanOrEqual(g.plays[i - 1].us);
+      expect(g.plays[i].q).toBeGreaterThanOrEqual(g.plays[i - 1].q);
+    }
+  });
+
+  it("리그 결승에 오르면 시즌 기록에 결승 결과가, 커리어에 그 경기 중계가 남아요", () => {
+    setRandom(seeded(46));
+    let found = false;
+    for (let i = 0; i < 400 && !found; i++) {
+      const c = createCareer({ name: "결승", num: 8, nat: "미국", pos: "PF", path: "abroad" }, generateCandidates("PF")[0], "fin");
+      c.stage = "pro";
+      c.team = { name: "보스턴 셀틱스", color: "#007A33", q: 0.8, lg: "nba" };
+      c.contract = { years: 3, salary: 30 };
+      const rec = simulateSeason(c);
+      if (!rec.final) continue;
+      found = true;
+      expect(rec.final.series).toMatch(/^[0-4]-[0-4]$/);
+      expect(c.live?.key).toBe(`league-${rec.year}`);
+      const last = c.live!.plays.at(-1)!;
+      expect([last.us, last.them]).toEqual([rec.final.us, rec.final.them]);
+      expect(rec.final.win).toBe(rec.result === "리그 우승");
+    }
+    expect(found).toBe(true);
   });
 });

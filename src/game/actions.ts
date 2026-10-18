@@ -3,6 +3,7 @@ import { retire } from "./career";
 import { currentDecision, resolveQueue } from "./decisions";
 import { runDraft } from "./draft";
 import { addNews, offseasonTag, setTeam } from "./log";
+import { applyMilitary } from "./military";
 import { runNationalTeam } from "./national";
 import { chance, shuffle } from "./random";
 import { ovr } from "./ratings";
@@ -86,6 +87,9 @@ export function applyAction(c: Career, a: Action): void {
       break;
     case "national":
       runNationalTeam(c, a.ev, a.year, a.join);
+      break;
+    case "military":
+      applyMilitary(c, a.choice);
       break;
     case "none":
       break;

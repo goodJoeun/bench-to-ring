@@ -1,10 +1,12 @@
 import { ATTRS, LEAGUES, POS, ROLE_RANK, SCORING_TITLE } from "./data";
-import { addNews, giveAward } from "./log";
+import { FINAL_SCORE, finalScore, makeLiveGame } from "./live";
+import { addNews, giveAward, pickTeam } from "./log";
+import { serviceSeason } from "./military";
 import { nationalCallUp } from "./national";
 import { runOffseason } from "./offseason";
 import { chance, random, ri, rnd } from "./random";
 import { ageBase, ovr, ovrOf, roleOf } from "./ratings";
-import type { AttrKey, Career, SeasonRecord } from "./types";
+import type { AttrKey, Career, LeagueKey, SeasonRecord } from "./types";
 import { clamp, r1, sigmoid } from "./util";
 
 /** 한 시즌을 치르고, 성장시키고, 오프시즌 결정까지 만들어요. */
@@ -18,8 +20,16 @@ export function simulateSeason(c: Career): SeasonRecord {
   let min = 0;
   let rating = 6;
   let played = 0;
+  let growNormally = true;
 
-  if (c.stage === "free" || !c.team) {
+  if (c.stage === "military") {
+    const s = serviceSeason(c, yr, ov0, tag);
+    rec = s.rec;
+    min = s.min;
+    rating = s.rating;
+    played = s.rec.gp;
+    growNormally = s.grow;
+  } else if (c.stage === "free" || !c.team) {
     rec = {
       year: yr, age: c.age, team: "무소속", lg: null, pro: false, role: "-", gp: 0, min: 0,
       pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fg: 0, rating: 0, w: 0, l: 0,
@@ -61,7 +71,10 @@ export function simulateSeason(c: Career): SeasonRecord {
       }
       c.health = Math.max(15, c.health - Math.round(injFrac * 20));
     }
-    const gp = Math.max(0, Math.round(L.games * (1 - injFrac)));
+    // 전역 후 첫 시즌은 시즌 중반에 합류해요.
+    const back = !!c.mil.back;
+    c.mil.back = false;
+    const gp = Math.max(0, Math.round(L.games * (1 - injFrac) * (back ? 0.6 : 1)));
 
     // 스탯: 리그 평균 대비 능력치(e)로 36분당 기록을 만든 뒤 출전 시간만큼 줄여요.
     const e = {} as Record<AttrKey, number>;
@@ -103,6 +116,9 @@ export function simulateSeason(c: Career): SeasonRecord {
       pts, reb, ast, stl, blk, fg, rating, w: W, l: Lo, result, ovr0: ov0, ovr1: ov0, awards: [],
     };
 
+    // 결승(챔피언결정전)에 오르면 마지막 경기를 문자 중계로 남겨요.
+    if (gp > 0 && (champ || result.endsWith("준우승"))) playFinal(c, rec, lg, champ);
+
     // 시상
     const sh = L.short;
     const impact = (ovr0 - L.avg + (p.trait === "승부사" ? 1 : 0)) * clamp(min / 30, 0, 1.15) + rnd(-2.5, 2.5);
@@ -128,7 +144,10 @@ export function simulateSeason(c: Career): SeasonRecord {
     // 소식
     if (L.pro && c.proSeasons === 0) addNews(c, tag, "big", `프로 데뷔 시즌! ${c.team.name}에서 ${gp}경기를 뛰었어요.`);
     addNews(c, tag, champ ? "award" : "info", `${c.team.name} ${W}승 ${Lo}패 · ${result}`);
-    if (injury) addNews(c, tag, "bad", `${injury}으로 ${L.games - gp}경기 결장했어요.`);
+    if (rec.final)
+      addNews(c, tag, rec.final.win ? "award" : "info", `${FINAL_NAME[lg]} 상대 ${rec.final.opp} · ${rec.final.series ? `시리즈 ${rec.final.series} · ` : ""}마지막 경기 ${rec.final.us}-${rec.final.them}`);
+    if (back) addNews(c, tag, "info", "전역 후 시즌 중반부터 팀에 합류했어요.");
+    if (injury) addNews(c, tag, "bad", `${injury}으로 ${Math.round(L.games * (back ? 0.6 : 1)) - gp}경기 결장했어요.`);
     if (prev && prev.team === rec.team && prev.role !== "-" && ROLE_RANK[role] > ROLE_RANK[prev.role])
       addNews(c, tag, "good", `팀 내 역할이 ${role}(으)로 올라섰어요.`);
     rec.awards.forEach((n) => addNews(c, tag, "award", `수상 · ${n}`));
@@ -136,7 +155,7 @@ export function simulateSeason(c: Career): SeasonRecord {
     if (L.pro) c.proSeasons++;
   }
 
-  grow(c, min, rating, tag);
+  if (growNormally) grow(c, min, rating, tag);
   rec.ovr1 = ovr(p);
   // 시즌이 끝난 여름의 국가대표 대회. 성장까지 반영한 오버롤로 발탁해요.
   const call = nationalCallUp(c, rec.ovr1, played, yr);
@@ -149,6 +168,42 @@ export function simulateSeason(c: Career): SeasonRecord {
   c.year++;
   runOffseason(c, yr, call);
   return rec;
+}
+
+/** 리그별 결승 이름 */
+const FINAL_NAME: Record<LeagueKey, string> = {
+  nba: "NBA 파이널",
+  kbl: "KBL 챔피언결정전",
+  euro: "유로리그 파이널 포 결승",
+  gleague: "G리그 파이널",
+  ncaa: "NCAA 토너먼트 결승",
+  kuniv: "U-리그 챔피언결정전",
+  hs: "전국대회 결승",
+};
+
+/** 결승 상대와 점수를 정하고 마지막 경기 중계를 만들어요. NBA·KBL은 7전 4선승제예요. */
+function playFinal(c: Career, rec: SeasonRecord, lg: LeagueKey, win: boolean): void {
+  const team = c.team!;
+  const opp = pickTeam(lg, new Set([team.name]));
+  const best7 = lg === "nba" || lg === "kbl";
+  const other = ri(0, 3);
+  const series = best7 ? (win ? `4-${other}` : `${other}-4`) : undefined;
+  const [us, them] = finalScore(FINAL_SCORE[lg], win);
+  const vary = (v: number) => Math.max(0, Math.round(v * rnd(0.75, 1.35)));
+  rec.final = { opp: opp.name, us, them, win, series };
+  c.live = makeLiveGame({
+    title: `${rec.year} ${FINAL_NAME[lg]}${best7 ? ` ${4 + other}차전` : ""}`,
+    key: `league-${rec.year}`,
+    us: team.name,
+    them: opp.name,
+    usColor: team.color,
+    themColor: opp.color,
+    usScore: us,
+    themScore: them,
+    periodMin: lg === "nba" ? 12 : 10,
+    player: c.p.name,
+    mine: { pts: vary(rec.pts), reb: vary(rec.reb), ast: vary(rec.ast) },
+  });
 }
 
 function grow(c: Career, min: number, rating: number, tag: string): void {

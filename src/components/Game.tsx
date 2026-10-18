@@ -7,9 +7,10 @@ import { GameScreen, type TabKey } from "./GameScreen";
 import { RetiredScreen } from "./RetiredScreen";
 import { SeasonLoading } from "./SeasonLoading";
 import { Toast } from "./Toast";
+import { TournamentLoading } from "./TournamentLoading";
 
 export function Game() {
-  const { ready, career, draft, hall, simulating, toast } = useGame();
+  const { ready, career, draft, hall, simulating, tournament, toast } = useGame();
   // 탭은 커리어마다 홈에서 시작해요.
   const [view, setView] = useState<{ id: string | null; tab: TabKey }>({ id: null, tab: "season" });
   const tab = career && view.id === career.id ? view.tab : "season";
@@ -25,7 +26,7 @@ export function Game() {
   if (!ready) body = <p className="boot">커리어를 불러오고 있어요…</p>;
   else if (!career) body = <CreateScreen draft={draft} hall={hall} />;
   else if (career.stage === "retired") body = <RetiredScreen career={career} hall={hall} />;
-  else body = <GameScreen career={career} hall={hall} tab={tab} onTab={openTab} simulating={simulating} />;
+  else body = <GameScreen career={career} hall={hall} tab={tab} onTab={openTab} simulating={simulating || tournament} />;
 
   return (
     <>
@@ -58,6 +59,7 @@ export function Game() {
       </header>
       {body}
       {simulating && career && <SeasonLoading career={career} />}
+      {tournament && career && <TournamentLoading career={career} />}
       <Toast toast={toast} />
       <p className="foot">
         비공식 팬 게임이에요. 리그·구단·대회 명칭의 권리는 각 권리자에게 있어요. 진행 내용은 이 브라우저에만 저장되니,

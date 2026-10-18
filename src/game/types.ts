@@ -7,7 +7,9 @@ export type LeagueKey = "hs" | "kuniv" | "ncaa" | "kbl" | "gleague" | "euro" | "
 export type ProLeagueKey = "kbl" | "gleague" | "euro" | "nba";
 export type Region = "asia" | "europe" | "americas";
 export type CareerPath = "abroad" | "domestic";
-export type Stage = "hs" | "college" | "pro" | "free" | "retired";
+/** military: 상무 또는 현역으로 군 복무 중 */
+export type Stage = "hs" | "college" | "pro" | "free" | "military" | "retired";
+export type MilitaryKind = "sangmu" | "army";
 export type FocusKey = "bal" | AttrKey | "rest";
 export type Trait = "조기성장" | "대기만성" | "꾸준함" | "강철몸" | "유리몸" | "승부사";
 export type Grade = "S" | "A" | "B" | "C" | "D";
@@ -120,6 +122,86 @@ export interface SeasonRecord {
   ovr0: number;
   ovr1: number;
   awards: string[];
+  /** 군 복무 시즌이면 복무 형태 */
+  mil?: MilitaryKind;
+  /** 챔피언결정전(결승)에 올랐으면 그 결과 */
+  final?: FinalSummary;
+}
+
+export interface FinalSummary {
+  opp: string;
+  us: number;
+  them: number;
+  win: boolean;
+  /** 7전 4선승제 시리즈 성적 (예: "4-2"). 단판이면 없음 */
+  series?: string;
+}
+
+/** 빠르게 돌려 보는 결승전 한 경기의 문자 중계 */
+export interface LiveGame {
+  /** 어떤 경기인지: "2034 NBA 파이널 6차전", "2030 아시안게임 결승" */
+  title: string;
+  /** 같은 해 같은 종류의 경기를 구분해요. 시즌 결승은 league-연도, 국가대표 결승은 nat-연도 */
+  key: string;
+  us: string;
+  them: string;
+  usColor: string;
+  themColor: string;
+  periods: number;
+  /** 쿼터 길이(분). FIBA 10분, NBA 12분 */
+  periodMin: number;
+  plays: LivePlay[];
+  win: boolean;
+  /** 이 경기 내 선수 기록 */
+  mine: { pts: number; reb: number; ast: number };
+}
+
+export interface LivePlay {
+  q: number;
+  /** 쿼터 남은 시간 "7:32" */
+  clock: string;
+  us: number;
+  them: number;
+  text: string;
+  /** 내 선수의 플레이 */
+  mine?: boolean;
+  /** 쿼터 종료·경기 종료 */
+  mark?: boolean;
+}
+
+export interface NatGame {
+  /** 조별리그 1차전, 8강, 결승… */
+  stage: string;
+  opp: string;
+  us: number;
+  them: number;
+  win: boolean;
+  /** 대표팀에 합류했을 때 이 경기 내 득점 */
+  pts?: number;
+}
+
+/** 국가대표 대회 한 번의 기록 */
+export interface NatTournament {
+  year: number;
+  ev: NatEventKey;
+  name: string;
+  joined: boolean;
+  label: string;
+  medal: "금" | "은" | "동" | null;
+  story: string;
+  games: NatGame[];
+}
+
+/** 병역. none: 아직, serving: 복무 중, served: 전역, exempt: 병역 특례 */
+export interface Military {
+  s: "none" | "serving" | "served" | "exempt";
+  kind?: MilitaryKind;
+  /** 입대 전 상태. 전역하면 되돌려요. */
+  prev?: { stage: Stage; team: CurrentTeam | null; contract: Contract | null };
+  /** 다음에 입대 결정을 물어볼 나이 */
+  ask?: number;
+  /** 전역 후 첫 시즌: 시즌 중반에 합류해요. */
+  back?: boolean;
 }
 
 export type Action =
@@ -135,6 +217,8 @@ export type Action =
   | { k: "retire" }
   /** 국가대표 대회 합류(join) 또는 불참 */
   | { k: "national"; ev: NatEventKey; year: number; join: boolean }
+  /** 병역: 상무 지원, 현역 입대, 입대 연기 */
+  | { k: "military"; choice: MilitaryKind | "defer" }
   | { k: "none" };
 
 /** 이벤트 선택지가 주는 효과. 모든 값은 선택이에요. */
@@ -271,6 +355,12 @@ export interface Career {
   /** 생활 이벤트 id → 마지막으로 겪은 시즌 연도 */
   events: Record<string, number>;
   perks: Perks;
+  /** 대한민국 선수의 병역 */
+  mil: Military;
+  /** 국가대표 대회 기록 (최근 순 아님, 치른 순서) */
+  natLog: NatTournament[];
+  /** 아직 보지 않은 결승전 중계. 보여준 뒤에도 다음 결승 전까지 남아 있어요. */
+  live: LiveGame | null;
 }
 
 export interface NewCareerInput {

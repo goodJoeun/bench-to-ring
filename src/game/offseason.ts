@@ -2,6 +2,7 @@ import { POS, POS_GROWTH, TRAITS } from "./data";
 import { forcedRetirement, nbaOffer, resolveQueue, retirementPrompt } from "./decisions";
 import { lifeEvent } from "./events";
 import { addNews, pickTeam, setTeam } from "./log";
+import { endService, militaryDecision } from "./military";
 import { chance, ri, rnd } from "./random";
 import { ovr, ovrOf } from "./ratings";
 import type { Career, Decision, QueueItem } from "./types";
@@ -17,6 +18,8 @@ export function runOffseason(c: Career, finishedYear: number, natCall: Decision 
   const p = c.p;
   const tag = `${finishedYear} 오프시즌`;
   const q: QueueItem[] = natCall ? [natCall] : [];
+  // 복무 시즌이 끝났으면 전역해요. 전역한 해에는 계약 기간을 줄이지 않고 바로 진로 결정으로 넘어가요.
+  const discharged = c.stage === "military" ? endService(c, tag) : null;
 
   // 키 성장
   if (c.age <= 20 && p.h < p.hFinal) p.h += Math.min(p.hFinal - p.h, ri(1, 4));
@@ -56,8 +59,13 @@ export function runOffseason(c: Career, finishedYear: number, natCall: Decision 
     return;
   }
 
+  // 병역: 진로 결정보다 먼저 물어요. 입대하면 뒤에 쌓인 결정은 지워져요.
+  const mil = discharged ? null : militaryDecision(c);
+  if (mil) q.push(mil);
+
   // 단계별 진로
-  if (c.stage === "hs") {
+  if (discharged) q.push(...discharged);
+  else if (c.stage === "hs") {
     c.schoolYear++;
     if (c.schoolYear > 3) q.push({ lazy: "hsgrad" });
   } else if (c.stage === "college") {

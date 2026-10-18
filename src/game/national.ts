@@ -2,7 +2,9 @@ import { NATIONS } from "./data";
 import { addNews, giveAward, offseasonTag } from "./log";
 import { chance, pick, random, ri, rnd } from "./random";
 import { ovr } from "./ratings";
-import type { Career, Decision, NatEventKey, Nation } from "./types";
+import { makeLiveGame } from "./live";
+import { grantExemption, owesService } from "./military";
+import type { Career, Decision, NatEventKey, NatGame, Nation, NatTournament } from "./types";
 import { clamp, josa, sigmoid } from "./util";
 
 /*
@@ -113,6 +115,14 @@ function outlook(ev: NatEventKey, n: Nation, power: number): string {
   return "조별리그 통과가 목표예요.";
 }
 
+/** 병역을 마치지 않은 대한민국 선수에게 병역 특례가 걸린 대회임을 알려줘요. */
+function exemptHint(c: Career, ev: NatEventKey): string {
+  if (!owesService(c)) return "";
+  if (ev === "asiangames") return " 금메달을 따면 병역 특례를 받아요.";
+  if (ev === "olympics") return " 메달을 따면 병역 특례를 받아요.";
+  return "";
+}
+
 /** 국가대표 발탁 결정. 발탁 기준에 못 미치거나 시즌을 못 뛰었으면 null이에요. */
 export function nationalCallUp(c: Career, ov: number, gp: number, year: number): Decision | null {
   const n = nationOf(c);
@@ -123,7 +133,7 @@ export function nationalCallUp(c: Career, ov: number, gp: number, year: number):
   const first = !c.nat.caps;
   return {
     title: `${first ? "국가대표 첫 발탁" : "국가대표 발탁"} · ${year} ${name}`,
-    body: `${n.name} 대표팀 최종 명단에 이름을 올렸어요. ${outlook(ev, n, power)}`,
+    body: `${n.name} 대표팀 최종 명단에 이름을 올렸어요. ${outlook(ev, n, power)}${exemptHint(c, ev)}`,
     opts: [
       {
         label: "대표팀 합류",
@@ -142,50 +152,59 @@ export function nationalCallUp(c: Career, ov: number, gp: number, year: number):
 
 /* ---------- 경기 시뮬레이션 ---------- */
 
-interface Game {
-  opp: string;
-  win: boolean;
-  us: number;
-  them: number;
+/** 대표팀 유니폼 색. 중계 화면에서 써요. */
+const NAT_COLOR: Record<string, string> = {
+  대한민국: "#C8102E", 일본: "#1B2A6B", 필리핀: "#0038A8", 중국: "#D62828", 호주: "#00843D",
+  캐나다: "#D80621", 미국: "#0A3161", 프랑스: "#1F3C88", 스페인: "#AA151B", 세르비아: "#C6363C",
+};
+export const natColor = (name: string): string => NAT_COLOR[name] ?? "#3A3F4B";
+
+/** 내 선수가 뛰면 경기마다 득점이 붙어요. boost가 클수록(대표팀 에이스일수록) 많이 넣어요. */
+interface Me {
+  boost: number;
 }
 
-function play(power: number, [opp, op]: [string, number]): Game {
+function play(power: number, [opp, op]: [string, number], stage: string, me?: Me): NatGame {
   const win = random() < sigmoid((power - op) / 4.5);
   const loser = ri(62, 84);
   const margin = ri(1, 18);
-  return win ? { opp, win, us: loser + margin, them: loser } : { opp, win, us: loser, them: loser + margin };
+  const pts = me ? Math.round(clamp(4 + me.boost * 2.2 + rnd(-5, 6), 0, 42)) : undefined;
+  return win ? { stage, opp, win, us: loser + margin, them: loser, pts } : { stage, opp, win, us: loser, them: loser + margin, pts };
 }
 
-const score = (g: Game) => `${g.us}-${g.them}`;
+const score = (g: NatGame) => `${g.us}-${g.them}`;
 
 export interface NatResult {
   /** 최종 성적: 금메달, 8강, 조별리그 탈락… */
   label: string;
   medal: "금" | "은" | "동" | null;
-  games: Game[];
+  games: NatGame[];
   /** 결과를 한 문장으로 */
   story: string;
+  /** 결승에 올랐으면 결승 경기 */
+  final?: NatGame;
 }
 
 /**
  * 대회 하나를 처음부터 끝까지 치러요. power는 그 대회 대표팀 전력이에요.
  * qualified는 월드컵 예선을 이미 치렀을 때의 본선 진출 여부예요. 없으면 예선도 여기서 치러요.
  */
-export function simulateTournament(ev: NatEventKey, n: Nation, power: number, qualified?: boolean): NatResult {
-  const games: Game[] = [];
+export function simulateTournament(ev: NatEventKey, n: Nation, power: number, qualified?: boolean, me?: Me): NatResult {
+  const games: NatGame[] = [];
   const form = power + rnd(-1.5, 1.5);
-  const g = (o: [string, number]) => {
-    const r = play(form, o);
+  const g = (o: [string, number], stage: string) => {
+    const r = play(form, o, stage, me);
     games.push(r);
     return r;
   };
-  const done = (label: string, medal: NatResult["medal"], story: string): NatResult => ({ label, medal, games, story });
+  const done = (label: string, medal: NatResult["medal"], story: string, final?: NatGame): NatResult => ({ label, medal, games, story, final });
 
   if (ev === "wcq") {
-    const ok = chance(sigmoid((form - WC_QUAL[n.region]) / 2.5));
-    const w = ok ? ri(4, 6) : ri(1, 3);
-    for (let i = 0; i < 6; i++) games.push({ opp: "예선 상대", win: i < w, us: 0, them: 0 });
-    return done(ok ? "본선 진출 확정" : "본선 진출 실패", null, ok ? `예선 ${w}승 ${6 - w}패로 월드컵 본선 진출을 확정했어요.` : `예선 ${w}승 ${6 - w}패로 월드컵 본선 진출이 좌절됐어요.`);
+    // 지역 예선 6경기. 4승이면 본선행, 3승이면 득실을 따져 반반이에요.
+    const pool = fieldFor("worldcup", n).filter(([, p]) => p <= WC_QUAL[n.region] + 4);
+    const w = Array.from({ length: 6 }, (_, k) => g(pick(pool), `예선 ${k + 1}차전`)).filter((x) => x.win).length;
+    const ok = w >= 4 || (w === 3 && chance(0.5));
+    return done(ok ? "본선 진출 확정" : "본선 진출 실패", null, `예선 ${w}승 ${6 - w}패로 월드컵 본선 진출을 ${ok ? "확정했어요." : "놓쳤어요."}`);
   }
 
   const field = fieldFor(ev, n);
@@ -199,67 +218,88 @@ export function simulateTournament(ev: NatEventKey, n: Nation, power: number, qu
     // 최종예선: 6개국 중 1위만 본선행. 조별 2경기 뒤 준결승·결승을 모두 이겨야 해요.
     const pool = field.filter(([, p]) => p <= 82);
     const oqt = () => pick(pool.length ? pool : field);
-    const gw = [g(oqt()), g(oqt())].filter((x) => x.win).length;
+    const gw = [g(oqt(), "최종예선 조별리그 1차전"), g(oqt(), "최종예선 조별리그 2차전")].filter((x) => x.win).length;
     if (gw === 0) return done("올림픽 최종예선 탈락", null, "올림픽 최종예선 조별리그에서 2패로 탈락했어요.");
-    const sf = g(oqt());
+    const sf = g(oqt(), "최종예선 준결승");
     if (!sf.win) return done("올림픽 최종예선 탈락", null, `올림픽 최종예선 준결승에서 ${sf.opp}에 져(${score(sf)}) 본선행이 무산됐어요.`);
-    const f = g(oqt());
+    const f = g(oqt(), "최종예선 결승");
     if (!f.win) return done("올림픽 최종예선 탈락", null, `올림픽 최종예선 결승에서 ${f.opp}에 져(${score(f)}) 아쉽게 본선행을 놓쳤어요.`);
   }
 
   // 조별리그 (월드컵은 2라운드까지)
-  let wins = [g(any()), g(any()), g(any())].filter((x) => x.win).length;
+  let wins = [1, 2, 3].map((k) => g(any(), `조별리그 ${k}차전`)).filter((x) => x.win).length;
   if (wins < 2 && !(wins === 1 && chance(0.3)))
     return done("조별리그 탈락", null, `조별리그 ${wins}승 ${3 - wins}패로 탈락했어요.`);
   if (ev === "worldcup") {
-    wins += [g(top(16)), g(top(16))].filter((x) => x.win).length;
+    wins += [1, 2].map((k) => g(top(16), `2라운드 ${k}차전`)).filter((x) => x.win).length;
     if (wins < 3 && !(wins === 2 && chance(0.3)))
       return done("2라운드 탈락", null, `2라운드에서 밀려 ${wins}승 ${5 - wins}패로 대회를 마쳤어요.`);
   }
 
   // 토너먼트
-  const qf = g(top(8));
+  const qf = g(top(8), "8강");
   if (!qf.win) return done("8강", null, `8강에서 ${qf.opp}에 졌어요(${score(qf)}).`);
-  const sf = g(top(4));
+  const sf = g(top(4), "준결승");
   if (!sf.win) {
-    const br = g(pick(field.slice(2, 6)));
+    const br = g(pick(field.slice(2, 6)), "3·4위전");
     return br.win
       ? done("동메달", "동", `준결승에서 ${sf.opp}에 졌지만 3·4위전에서 ${josa(br.opp, "을", "를")} 꺾고(${score(br)}) 동메달을 땄어요.`)
       : done("4위", null, `준결승에서 ${sf.opp}에, 3·4위전에서 ${br.opp}에 져 4위로 마쳤어요.`);
   }
-  const f = g(top(2));
+  const f = g(top(2), "결승");
   return f.win
-    ? done("금메달", "금", `결승에서 ${josa(f.opp, "을", "를")} 꺾고(${score(f)}) 우승했어요!`)
-    : done("은메달", "은", `결승에서 ${f.opp}에 져(${score(f)}) 은메달을 땄어요.`);
+    ? done("금메달", "금", `결승에서 ${josa(f.opp, "을", "를")} 꺾고(${score(f)}) 우승했어요!`, f)
+    : done("은메달", "은", `결승에서 ${f.opp}에 져(${score(f)}) 은메달을 땄어요.`, f);
 }
 
 /* ---------- 결정 적용 ---------- */
 
 const MEDAL_KEY = { 금: "nat_gold", 은: "nat_silver", 동: "nat_bronze" } as const;
+const NAT_LOG_LIMIT = 40;
 
-/** 대표팀 합류 또는 불참. 어느 쪽이든 대표팀은 대회를 치르고 결과를 소식으로 알려줘요. */
-export function runNationalTeam(c: Career, ev: NatEventKey, year: number, join: boolean): NatResult {
+/** 대표팀 합류 또는 불참. 어느 쪽이든 대표팀은 대회를 치르고, 결과를 기록과 소식으로 남겨요. */
+export function runNationalTeam(c: Career, ev: NatEventKey, year: number, join: boolean): NatTournament {
   const n = nationOf(c);
   const tag = offseasonTag(c);
   const name = `${year} ${NAT_EVENTS[ev]}`;
-  const power = teamPower(n, ev, join ? ovr(c.p) : undefined);
+  const o = ovr(c.p);
+  const power = teamPower(n, ev, join ? o : undefined);
   const wcq = c.nat.wcq;
-  const r = simulateTournament(ev, n, power, ev === "worldcup" && wcq?.y === year ? wcq.ok : undefined);
+  const r = simulateTournament(ev, n, power, ev === "worldcup" && wcq?.y === year ? wcq.ok : undefined, join ? { boost: playerBoost(o, n) } : undefined);
   if (ev === "wcq") c.nat.wcq = { y: year + 1, ok: r.label === "본선 진출 확정" };
+  const t: NatTournament = { year, ev, name, joined: join, label: r.label, medal: r.medal, story: r.story, games: r.games };
+  c.natLog = [...c.natLog, t].slice(-NAT_LOG_LIMIT);
   if (!join) {
     c.health = clamp(c.health + 6, 15, 100);
     addNews(c, tag, "info", `${name}에 불참하고 몸을 추슬렀어요. ${n.name} 대표팀은 ${r.label} · ${r.story}`);
-    return r;
+    return t;
   }
   c.nat.caps += r.games.length;
   c.health = clamp(c.health - ri(2, 5), 15, 100);
   const rec = c.hist.find((h) => h.year === year);
   if (r.medal) giveAward(c, MEDAL_KEY[r.medal], `${name} ${r.medal}메달`, rec);
-  const extra = r.medal === "금" && n.name === "대한민국" && (ev === "asiangames" || ev === "olympics") ? " 병역 특례 혜택도 받게 됐어요." : "";
-  addNews(c, tag, r.medal ? "award" : "good", `${n.name} 대표로 ${name} 출전 · ${r.label} · ${r.story}${extra}`);
+  addNews(c, tag, r.medal ? "award" : "good", `${n.name} 대표로 ${name} 출전 · ${r.label} · ${r.story}`);
+  if (r.final) {
+    const f = r.final;
+    c.live = makeLiveGame({
+      title: `${name} 결승`,
+      key: `nat-${year}`,
+      us: n.name,
+      them: f.opp,
+      usColor: natColor(n.name),
+      themColor: natColor(f.opp),
+      usScore: f.us,
+      themScore: f.them,
+      periodMin: 10,
+      player: c.p.name,
+      mine: { pts: f.pts ?? 0, reb: ri(1, 8), ast: ri(1, 6) },
+    });
+  }
+  if (n.name === "대한민국" && ((ev === "asiangames" && r.medal === "금") || (ev === "olympics" && r.medal)))
+    grantExemption(c, tag, `${name} ${r.medal}`);
   if (chance(0.04)) {
     c.health = clamp(c.health - 10, 15, 100);
     addNews(c, tag, "bad", "대표팀 경기 중 가벼운 부상을 입었어요. 다음 시즌 초반 몸 관리가 필요해요.");
   }
-  return r;
+  return t;
 }

@@ -122,6 +122,9 @@ export function createCareer(input: NewCareerInput, cand: Candidate, id = String
     summary: null,
     events: {},
     perks: {},
+    mil: { s: "none" },
+    natLog: [],
+    live: null,
   };
   const t = pickTeam("hs");
   setTeam(c, "hs", t);

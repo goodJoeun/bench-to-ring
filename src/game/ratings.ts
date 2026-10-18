@@ -69,6 +69,8 @@ export function stageLabel(c: Career): string {
       return `프로 ${c.proSeasons + 1}년차`;
     case "free":
       return "무소속";
+    case "military":
+      return c.mil.kind === "sangmu" ? "상무 복무 중" : "현역 복무 중";
     default:
       return "";
   }

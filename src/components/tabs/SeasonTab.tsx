@@ -1,7 +1,17 @@
 import { LEAGUES, currentExpectedMinutes, roleOf, type Career, type SeasonRecord } from "@/game";
 
 function ResultCard({ r }: { r: SeasonRecord }) {
-  if (!r.lg)
+  if (r.mil === "army")
+    return (
+      <section className="panel">
+        <span className="label">{r.year} 시즌 · 군 복무</span>
+        <h2 className="sec">{r.team}</h2>
+        <p className="hint">
+          경기는 뛰지 않았어요. 오버롤 {r.ovr0} → {r.ovr1}
+        </p>
+      </section>
+    );
+  if (!r.lg && !r.mil)
     return (
       <section className="panel">
         <span className="label">{r.year} 시즌</span>
@@ -24,7 +34,7 @@ function ResultCard({ r }: { r: SeasonRecord }) {
       <div className="rc-head">
         <div>
           <span className="label">
-            {r.year} 시즌 · {r.team} · {LEAGUES[r.lg].short}
+            {r.year} 시즌 · {r.team} · {r.lg ? LEAGUES[r.lg].short : "D리그"}
           </span>
           <h2 className="sec">
             {r.role} · {r.w}승 {r.l}패 · {r.result}
@@ -57,6 +67,12 @@ function ResultCard({ r }: { r: SeasonRecord }) {
           </b>
         </span>
       </div>
+      {r.final && (
+        <p className="hint">
+          결승 상대 {r.final.opp} · {r.final.series ? `시리즈 ${r.final.series} · ` : ""}마지막 경기 {r.final.us}-{r.final.them}{" "}
+          {r.final.win ? "승리" : "패배"}
+        </p>
+      )}
       {r.awards.length > 0 && (
         <div className="awards">
           {r.awards.map((a, i) => (

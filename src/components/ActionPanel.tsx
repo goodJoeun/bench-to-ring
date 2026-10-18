@@ -74,7 +74,9 @@ export function ActionPanel({ career: c, simulating, onAdvance }: ActionPanelPro
 
   const sub = c.team
     ? `${stageLabel(c)} · ${c.team.name} · 예상 역할 ${roleOf(currentExpectedMinutes(c))}`
-    : "무소속 · 개인 훈련 시즌";
+    : c.stage === "military"
+      ? `${stageLabel(c)} · 시즌이 끝나면 전역해요`
+      : "무소속 · 개인 훈련 시즌";
 
   return (
     <>

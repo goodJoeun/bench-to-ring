@@ -68,6 +68,9 @@ function normalize(c: Career): Career {
   c.lastDelta ??= {};
   c.events ??= {};
   c.perks ??= {};
+  c.mil ??= { s: "none" };
+  c.natLog ??= [];
+  c.live ??= null;
   return c;
 }
 
