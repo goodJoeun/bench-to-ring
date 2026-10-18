@@ -80,7 +80,8 @@ export function careerSummary(c: Career): CareerSummary {
     retAge: c.age,
     retYear: c.year - 1,
     teams,
-    earn: Math.round(c.earnings),
+    // 지금 가진 돈에 투자로 쓴 돈을 더해 벌어들인 돈을 보여줘요.
+    earn: Math.round(c.earnings + (c.spent ?? 0)),
     caps: c.nat.caps,
     awards: { ...c.awards },
     draft: c.draft,

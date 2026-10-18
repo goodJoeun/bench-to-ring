@@ -1,12 +1,13 @@
 import { ATTRS, LEAGUES, POS, ROLE_RANK, SCORING_TITLE } from "./data";
 import { FINAL_SCORE, finalScore, makeLiveGame } from "./live";
 import { addNews, giveAward, pickTeam } from "./log";
+import { STUDENT_ALLOWANCE, payInvestments } from "./invest";
 import { serviceSeason } from "./military";
 import { nationalCallUp } from "./national";
 import { runOffseason } from "./offseason";
 import { chance, random, ri, rnd } from "./random";
 import { ageBase, ovr, ovrOf, roleOf } from "./ratings";
-import type { AttrKey, Career, LeagueKey, SeasonRecord } from "./types";
+import type { AttrKey, Career, InvestKey, LeagueKey, SeasonRecord } from "./types";
 import { clamp, r1, sigmoid } from "./util";
 
 /** MVP 문턱: 이 영향력에서 수상 확률이 절반이에요. NBA는 시작 능력치가 고르게 바뀐 뒤 예전 수상 빈도에 맞춰 올렸어요. */
@@ -25,6 +26,8 @@ export function simulateSeason(c: Career): SeasonRecord {
   let rating = 6;
   let played = 0;
   let growNormally = true;
+  // 시즌 투자는 시즌을 시작할 때 비용을 내고, 이번 시즌에만 효과가 나요.
+  const inv = payInvestments(c, tag);
 
   if (c.stage === "military") {
     const s = serviceSeason(c, yr, ov0, tag);
@@ -59,7 +62,7 @@ export function simulateSeason(c: Career): SeasonRecord {
       (min / 38) * 0.07 -
       (c.focus === "rest" ? 0.06 : 0) +
       (c.age > 30 ? (c.age - 30) * 0.012 : 0);
-    if (chance(injuryRisk)) {
+    if (chance(injuryRisk * (inv.has("rehab") ? 0.8 : 1))) {
       const r = random();
       if (r < 0.6) {
         injFrac = rnd(0.05, 0.15);
@@ -161,13 +164,15 @@ export function simulateSeason(c: Career): SeasonRecord {
     if (L.pro) c.proSeasons++;
   }
 
-  if (growNormally) grow(c, min, rating, tag);
+  if (growNormally) grow(c, min, rating, tag, inv);
+  if (inv.size) rec.invest = [...inv];
   rec.ovr1 = ovr(p);
   // 시즌이 끝난 여름의 국가대표 대회. 성장까지 반영한 오버롤로 발탁해요.
   const call = nationalCallUp(c, rec.ovr1, played, yr);
   c.peakOvr = Math.max(c.peakOvr, rec.ovr1);
-  c.trust = c.team ? clamp((rating - 6.3) * 1.4, -3, 4) : 0;
+  c.trust = c.team ? clamp((rating - 6.3) * 1.4 + (inv.has("video") ? 0.5 : 0), -3, 4) : 0;
   if (c.contract) c.earnings += c.contract.salary;
+  if (c.stage === "hs" || c.stage === "college") c.earnings += STUDENT_ALLOWANCE;
   c.hist.push(rec);
   c.last = rec;
   c.age++;
@@ -212,7 +217,7 @@ function playFinal(c: Career, rec: SeasonRecord, lg: LeagueKey, win: boolean): v
   });
 }
 
-function grow(c: Career, min: number, rating: number, tag: string): void {
+function grow(c: Career, min: number, rating: number, tag: string, inv: Set<InvestKey>): void {
   const p = c.p;
   const age = c.age;
   const base = ageBase(age);
@@ -247,6 +252,15 @@ function grow(c: Career, min: number, rating: number, tag: string): void {
     }
     // 전담 트레이너: 맡은 능력치는 조금 더 크고, 노화로 떨어질 때는 덜 떨어져요.
     if (c.perks.trainer === k) g *= g > 0 ? 1.15 : 0.8;
+    // 시즌 투자
+    if (g > 0) {
+      if (inv.has("coach")) g *= 1.05;
+      if (k === "ath" && inv.has("gym")) g *= 1.2;
+      if (k === "iq" && inv.has("video")) g *= 1.25;
+    } else {
+      if (k === "ath" && inv.has("gym")) g *= 0.75;
+      if (inv.has("diet")) g *= 0.9;
+    }
     if (k === "iq" && age >= 24 && age <= 33) g += 0.5;
     const old = p.attrs[k];
     p.attrs[k] = clamp(old + g, 20, 99);
@@ -258,5 +272,6 @@ function grow(c: Career, min: number, rating: number, tag: string): void {
     p.pot = Math.max(Math.round(ovrOf(p.attrs, p.pos)) + 1, p.pot - ri(1, min < 8 ? 3 : 2));
     if (p.pot < before) addNews(c, tag, "bad", "출전 시간이 부족해 성장 한계가 조금 낮아졌어요.");
   }
-  c.health = clamp(c.health + (c.focus === "rest" ? 15 : 8) - (age > 28 ? (age - 28) * 1.6 : 0), 15, 100);
+  const care = (inv.has("rehab") ? 8 : 0) + (inv.has("diet") ? 6 : 0);
+  c.health = clamp(c.health + (c.focus === "rest" ? 15 : 8) + care - (age > 28 ? (age - 28) * 1.6 : 0), 15, 100);
 }

@@ -11,6 +11,8 @@ export type CareerPath = "abroad" | "domestic";
 export type Stage = "hs" | "college" | "pro" | "free" | "military" | "retired";
 export type MilitaryKind = "sangmu" | "army";
 export type FocusKey = "bal" | AttrKey | "rest";
+/** 시즌 투자: 스킬 코치, 피지컬, 회복 관리, 영양, 영상 분석 */
+export type InvestKey = "coach" | "gym" | "rehab" | "diet" | "video";
 export type Trait = "조기성장" | "대기만성" | "꾸준함" | "강철몸" | "유리몸" | "승부사";
 export type Grade = "S" | "A" | "B" | "C" | "D";
 export type Role = "에이스" | "주전" | "식스맨" | "로테이션" | "벤치" | "엔드 오브 벤치";
@@ -128,6 +130,8 @@ export interface SeasonRecord {
   mil?: MilitaryKind;
   /** 챔피언결정전(결승)에 올랐으면 그 결과 */
   final?: FinalSummary;
+  /** 이 시즌에 비용을 내고 한 투자 */
+  invest?: InvestKey[];
 }
 
 export interface FinalSummary {
@@ -389,6 +393,10 @@ export interface Career {
   live: LiveGame | null;
   /** 가장 최근 드래프트의 지명 순서 */
   draftShow: DraftShow | null;
+  /** 다음 시즌에 할 투자 (고른 순서). 시즌을 시작할 때 비용을 내요. */
+  invest: InvestKey[];
+  /** 투자로 쓴 돈 합계 (억). earnings는 지금 가진 돈이에요. */
+  spent: number;
 }
 
 export interface NewCareerInput {

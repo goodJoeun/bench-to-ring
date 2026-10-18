@@ -139,6 +139,8 @@ export function createCareer(input: NewCareerInput, cand: Candidate, id = String
     natLog: [],
     live: null,
     draftShow: null,
+    invest: [],
+    spent: 0,
   };
   const chosen = TEAMS.hs.find(([name]) => name === input.school);
   const t = chosen ? makeTeam(chosen) : pickTeam("hs");

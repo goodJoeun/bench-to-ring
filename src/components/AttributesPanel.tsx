@@ -51,7 +51,7 @@ export function AttributesPanel({ career: c }: { career: Career }) {
           국가대표 <b>{c.nat.caps}경기</b>
         </span>
         <span>
-          누적 수입 <b>{money(c.earnings)}</b>
+          보유 자금 <b>{money(c.earnings)}</b>
         </span>
       </div>
     </section>

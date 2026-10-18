@@ -22,7 +22,10 @@ import {
   START_MIN,
   SPIKE_CAP,
   TEAMS,
+  STUDENT_ALLOWANCE,
   bodyOf,
+  careerSummary,
+  investCost,
   startCap,
   simulateSeason,
   simulateTournament,
@@ -399,6 +402,72 @@ describe("커리어 시작", () => {
       const c = createCareer({ ...input, school }, generateCandidates("PG")[0], "s2");
       expect(TEAMS.hs.map(([n]) => n)).toContain(c.team!.name);
     }
+  });
+});
+
+describe("시즌 투자", () => {
+  const pro = (seed: string) => {
+    const c = createCareer({ name: "투자", num: 8, nat: "일본", pos: "SG", path: "abroad" }, generateCandidates("SG")[0], seed);
+    c.stage = "pro";
+    c.team = { lg: "kbl", name: "서울 SK 나이츠", color: "#E4002B", q: 0.5 };
+    c.contract = { years: 3, salary: 2 };
+    c.age = 22;
+    return c;
+  };
+
+  it("시즌을 시작할 때 연봉 비례 비용을 내고, 두 가지까지만, 가진 돈 안에서만 해요", () => {
+    setRandom(seeded(31));
+    const c = pro("inv1");
+    expect(investCost(c, "coach")).toBe(0.6);
+    expect(investCost(c, "video")).toBe(0.3);
+    c.earnings = 1;
+    c.invest = ["coach", "rehab", "video"];
+    simulateSeason(c);
+    // 스킬 코치 0.6억을 내고 나면 회복 관리팀(0.4억)까지 낼 수 있어요. 세 번째는 고를 수 없어요.
+    expect(c.last!.invest).toEqual(["coach", "rehab"]);
+    expect(c.spent).toBe(1);
+    expect(c.earnings).toBeCloseTo(0 + 2, 5);
+    expect(c.invest).toEqual(["coach", "rehab", "video"]);
+    expect(careerSummary(c).earn).toBe(Math.round(c.earnings + 1));
+
+    const poor = pro("inv2");
+    poor.earnings = 0.5;
+    poor.invest = ["coach", "diet"];
+    simulateSeason(poor);
+    expect(poor.last!.invest).toEqual(["diet"]);
+    expect(poor.news.some((n) => n.m.includes("자금이 모자라"))).toBe(true);
+  });
+
+  it("투자한 시즌은 같은 운이라도 더 크고 더 건강해요", () => {
+    const run = (invest: Career["invest"]) => {
+      setRandom(seeded(77));
+      const c = pro("inv3");
+      c.earnings = 10;
+      c.health = 60;
+      c.invest = invest;
+      const before = { ...c.p.attrs };
+      simulateSeason(c);
+      return { gain: ATTR_KEYS.reduce((t, k) => t + c.p.attrs[k] - before[k], 0), ath: c.p.attrs.ath - before.ath, health: c.health };
+    };
+    const none = run([]);
+    expect(run(["coach"]).gain).toBeGreaterThan(none.gain);
+    expect(run(["gym"]).ath).toBeGreaterThan(none.ath);
+    expect(run(["rehab", "diet"]).health).toBeGreaterThan(none.health);
+  });
+
+  it("학생 선수는 시즌마다 용돈·후원금을 받고, 복무 중에는 투자하지 않아요", () => {
+    setRandom(seeded(32));
+    const c = createCareer({ name: "학생", num: 1, nat: "대한민국", pos: "PG", path: "domestic" }, generateCandidates("PG")[0], "inv4");
+    simulateSeason(c);
+    expect(c.earnings).toBeCloseTo(STUDENT_ALLOWANCE, 5);
+    const m = pro("inv5");
+    m.stage = "military";
+    m.mil = { s: "serving", kind: "army", prev: { stage: "pro", team: m.team, contract: m.contract } };
+    m.team = null;
+    m.earnings = 5;
+    m.invest = ["coach"];
+    simulateSeason(m);
+    expect(m.spent).toBe(0);
   });
 });
 

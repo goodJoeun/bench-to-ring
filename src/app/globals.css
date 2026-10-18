@@ -430,6 +430,17 @@ html:has(.sheet){overflow:hidden}
 .choice .cs{color:var(--muted);font-size:13.5px;line-height:1.45}
 .choice[aria-checked="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
 .choice[aria-checked="true"] b{color:var(--accent)}
+.choice[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+.choice[aria-pressed="true"] b{color:var(--accent)}
+.choice:disabled{opacity:.45;cursor:not-allowed}
+/* 시즌 투자 */
+.invest{display:flex;flex-direction:column;gap:6px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.invest-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.invest-head h3{margin:0;font-size:16px}
+.invest-head span{font-family:var(--f-num);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+.invest-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin-top:4px}
+@media (max-width:480px){.invest-grid{grid-template-columns:1fr}}
+.invest .hint[data-warn]{color:var(--bad)}
 .sheet-go{flex:none;margin-top:14px;min-height:56px;border:0;border-radius:16px;background:var(--accent);color:var(--accent-ink);font-family:var(--f-display);font-size:19px;cursor:pointer}
 .sheet-later{align-self:center;margin-top:4px;padding:10px 14px;background:none;border:0;color:var(--muted);font-size:14px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 @keyframes sheet-in{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}

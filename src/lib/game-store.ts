@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import {
+  INVEST_SLOTS,
   canRetire,
   chooseOption,
   createCareer,
@@ -13,6 +14,7 @@ import {
   type CareerPath,
   type CareerSummary,
   type FocusKey,
+  type InvestKey,
   type NewsItem,
   type PosKey,
 } from "@/game";
@@ -159,6 +161,12 @@ export const gameActions = {
   setFocus(focus: FocusKey) {
     mutate((c) => {
       c.focus = focus;
+    });
+  },
+  /** 시즌 투자를 고르거나 빼요. 고른 순서대로 두 가지까지 남아요. */
+  toggleInvest(key: InvestKey) {
+    mutate((c) => {
+      c.invest = c.invest.includes(key) ? c.invest.filter((k) => k !== key) : [...c.invest, key].slice(0, INVEST_SLOTS);
     });
   },
   advanceSeason() {

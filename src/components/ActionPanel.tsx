@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { FOCUS, currentDecision, currentExpectedMinutes, roleOf, stageLabel, type Career, type FocusKey } from "@/game";
 import { gameActions } from "@/lib/game-store";
+import { InvestPicker } from "./InvestPicker";
 import { Sheet } from "./Sheet";
 
 function focusHint(k: FocusKey): string {
@@ -85,6 +86,7 @@ export function ActionPanel({ career: c, simulating, onAdvance }: ActionPanelPro
           <span className="t">{c.year} 시즌 진행</span>
           <span className="s">
             {sub} · 훈련 {focusName(c.focus)}
+            {c.invest.length > 0 && ` · 투자 ${c.invest.length}개`}
           </span>
         </span>
         <span className="go" aria-hidden="true">
@@ -113,6 +115,7 @@ export function ActionPanel({ career: c, simulating, onAdvance }: ActionPanelPro
               </button>
             ))}
           </div>
+          <InvestPicker career={c} />
           <button
             type="button"
             className="sheet-go"
@@ -122,7 +125,7 @@ export function ActionPanel({ career: c, simulating, onAdvance }: ActionPanelPro
               onAdvance();
             }}
           >
-            {focusName(c.focus)} 훈련으로 시즌 시작
+            {focusName(c.focus)} 훈련{c.invest.length > 0 && ` · 투자 ${c.invest.length}개`}로 시즌 시작
           </button>
         </Sheet>
       )}

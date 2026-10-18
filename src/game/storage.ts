@@ -127,6 +127,8 @@ function normalize(c: Career): Career {
   c.natLog ??= [];
   c.live ??= null;
   c.draftShow ??= null;
+  c.invest ??= [];
+  c.spent ??= 0;
   migrateAttrs(c);
   return c;
 }
