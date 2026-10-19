@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { natColor, type Career } from "@/game";
 import { gameActions } from "@/lib/game-store";
+import { useReveal } from "./hooks";
 import { LiveGameView } from "./LiveGameView";
-import { Popup, PopupHero, useReveal } from "./Popup";
+import { Popup, PopupFooter, PopupHero } from "./Popup";
 
 /** 경기 결과를 하나씩 띄우는 간격(ms) */
 const GAME_MS = 650;
@@ -25,12 +26,7 @@ export function TournamentLoading({ career: c }: { career: Career }) {
     tail: GAME_MS,
     onDone: () => setStage(final ? "final" : "result"),
   });
-  const goRef = useRef<HTMLButtonElement>(null);
   const color = natColor(c.p.nat);
-
-  useEffect(() => {
-    if (stage === "result") goRef.current?.focus();
-  }, [stage]);
 
   if (!t) return null;
 
@@ -68,21 +64,12 @@ export function TournamentLoading({ career: c }: { career: Career }) {
           </li>
         ))}
       </ol>
-      {stage === "result" ? (
-        <>
-          <p className="tour-story" data-medal={t.medal ?? undefined}>
-            {t.medal && <b>{t.medal}메달 </b>}
-            {t.story}
-          </p>
-          <button type="button" ref={goRef} className="live-go" onClick={() => gameActions.finishTournament()}>
-            확인
-          </button>
-        </>
-      ) : (
-        <button type="button" className="sim-skip" onClick={() => setStage("result")}>
-          결과 바로 보기
-        </button>
-      )}
+      <PopupFooter done={stage === "result"} onSkip={() => setStage("result")} onConfirm={() => gameActions.finishTournament()}>
+        <p className="tour-story" data-medal={t.medal ?? undefined}>
+          {t.medal && <b>{t.medal}메달 </b>}
+          {t.story}
+        </p>
+      </PopupFooter>
     </Popup>
   );
 }

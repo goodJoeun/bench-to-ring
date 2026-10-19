@@ -1,17 +1,16 @@
-import { bestFive, rankHall, type CareerSummary } from "@/game";
+import { bestFive, fmtNum, rankHall, type CareerSummary } from "@/game";
+import { Panel } from "../ui";
 
 export function HallOfFame({ hall }: { hall: CareerSummary[] }) {
   if (!hall.length)
     return (
-      <section className="panel">
-        <h2 className="sec">명예의 전당</h2>
+      <Panel title="명예의 전당">
         <p className="empty">은퇴한 선수가 아직 없어요. 프로 무대를 밟은 선수가 은퇴하면 이 브라우저의 기록에 올라가요.</p>
-      </section>
+      </Panel>
     );
   const ranked = rankHall(hall).slice(0, 30);
   return (
-    <section className="panel">
-      <h2 className="sec">명예의 전당</h2>
+    <Panel title="명예의 전당">
       <p className="hint">
         이 브라우저에서 은퇴한 선수들이에요. NBA MVP 횟수 → 최고 오버롤 → 개인상 → 통산 득점 순으로 줄을 세워요.
       </p>
@@ -52,12 +51,12 @@ export function HallOfFame({ hall }: { hall: CareerSummary[] }) {
                 <td>{h.peak}</td>
                 <td>{h.personal}</td>
                 <td>{h.rings}</td>
-                <td>{h.pts.toLocaleString("ko-KR")}</td>
+                <td>{fmtNum(h.pts)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-    </section>
+    </Panel>
   );
 }

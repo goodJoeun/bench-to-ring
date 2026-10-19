@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { money, type Career, type DraftShow } from "@/game";
+import { useState } from "react";
+import { draftSlot, money, type Career, type DraftShow } from "@/game";
 import { gameActions } from "@/lib/game-store";
-import { Popup, PopupHero, useReveal } from "./Popup";
+import { NO_TEAM_COLOR } from "./format";
+import { useReveal } from "./hooks";
+import { Popup, PopupFooter, PopupHero } from "./Popup";
 
 /** 다음 지명을 보여주기 전 기다리는 시간(ms) */
 const OPENING_MS = 1800;
@@ -16,7 +18,6 @@ const MINE_MS = 2600;
 const TAIL_MS = 1500;
 /** 진행 중에 보여주는 최근 지명 수 */
 const RECENT = 5;
-const WAITING_COLOR = "#5A6577";
 
 /**
  * 드래프트 진행 화면. 결과는 이미 정해져 있고(c.draftShow), 1순위부터 지명을 하나씩 불러요.
@@ -33,11 +34,6 @@ export function DraftLoading({ career: c, show }: { career: Career; show: DraftS
     return p.no >= show.range[0] && p.no <= show.range[1] ? RANGE_MS : FAST_MS;
   };
   const [shown] = useReveal(count, delay, { running: stage === "picks", tail: TAIL_MS, onDone: () => setStage("result") });
-  const goRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (stage === "result") goRef.current?.focus();
-  }, [stage]);
 
   const done = stage === "result";
   const revealed = done ? count : shown;
@@ -45,11 +41,10 @@ export function DraftLoading({ career: c, show }: { career: Career; show: DraftS
   const recent = show.picks.slice(Math.max(0, revealed - RECENT), revealed).reverse();
   const mine = show.mine ? show.picks[show.mine - 1] : null;
   const called = mine !== null && revealed >= count;
-  const round = (no: number) => (no <= show.roundSize ? 1 : 2);
-  const inRound = (no: number) => (no - 1) % show.roundSize + 1;
+  const slot = mine && draftSlot(mine.no, show.roundSize);
 
   let status: string;
-  if (called) status = `${round(mine.no)}라운드 ${inRound(mine.no)}순위 · ${mine.team}`;
+  if (called && slot) status = `${slot.round}라운드 ${slot.inRound}순위 · ${mine.team}`;
   else if (done || !next) status = "이름이 불리지 않았어요";
   else if (revealed === 0) status = `스카우트 예상 · ${show.proj}`;
   else if (next.mine) status = `${next.no}순위 · ${next.team}의 선택은`;
@@ -59,7 +54,7 @@ export function DraftLoading({ career: c, show }: { career: Career; show: DraftS
     <Popup labelledBy="draft-title" className="draft">
       <PopupHero
         player={c.p}
-        color={called ? mine.color : WAITING_COLOR}
+        color={called ? mine.color : NO_TEAM_COLOR}
         team={`${c.p.name} · ${called ? "지명 완료" : "그린룸에서 기다리는 중"}`}
         title={show.name}
         titleId="draft-title"
@@ -76,31 +71,22 @@ export function DraftLoading({ career: c, show }: { career: Career; show: DraftS
           </li>
         ))}
       </ol>
-      {done ? (
-        <>
-          <p className="tour-story">
-            {called ? (
-              <>
-                <b>
-                  {round(mine.no)}라운드 {inRound(mine.no)}순위
-                </b>
-                {` (전체 ${mine.no}순위)로 ${mine.team}에 지명됐어요.`}
-                {c.contract && ` 계약 ${c.contract.years}년 · 연봉 ${money(c.contract.salary)}.`}
-                {` 스카우트 예상은 ${show.proj}였어요.`}
-              </>
-            ) : (
-              `${show.picks.length}명이 불리는 동안 내 이름은 없었어요. 그래도 육성 계약이나 다른 리그로 갈 길은 남아 있어요.`
-            )}
-          </p>
-          <button type="button" ref={goRef} className="live-go" onClick={() => gameActions.finishDraft()}>
-            확인
-          </button>
-        </>
-      ) : (
-        <button type="button" className="sim-skip" onClick={() => setStage("result")}>
-          결과 바로 보기
-        </button>
-      )}
+      <PopupFooter done={done} onSkip={() => setStage("result")} onConfirm={() => gameActions.finishDraft()}>
+        <p className="tour-story">
+          {called && slot ? (
+            <>
+              <b>
+                {slot.round}라운드 {slot.inRound}순위
+              </b>
+              {` (전체 ${mine.no}순위)로 ${mine.team}에 지명됐어요.`}
+              {c.contract && ` 계약 ${c.contract.years}년 · 연봉 ${money(c.contract.salary)}.`}
+              {` 스카우트 예상은 ${show.proj}였어요.`}
+            </>
+          ) : (
+            `${show.picks.length}명이 불리는 동안 내 이름은 없었어요. 그래도 육성 계약이나 다른 리그로 갈 길은 남아 있어요.`
+          )}
+        </p>
+      </PopupFooter>
     </Popup>
   );
 }

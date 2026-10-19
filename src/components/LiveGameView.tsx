@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { LiveGame } from "@/game";
-import { reducedMotion } from "./Popup";
+import { reducedMotion, useAutoFocus } from "./hooks";
 
 /** 한 플레이를 보여주는 간격(ms). 빠르게는 3배속이에요. */
 const STEP_MS = 120;
@@ -18,18 +18,14 @@ export function LiveGameView({ game, onDone }: { game: LiveGame; onDone: () => v
   // 움직임 줄이기를 켠 기기는 중계를 건너뛰고 결과부터 보여줘요.
   const [shown, setShown] = useState(() => (reducedMotion() ? total : 0));
   const [fast, setFast] = useState(false);
-  const doneRef = useRef<HTMLButtonElement>(null);
   const finished = shown >= total;
+  const doneRef = useAutoFocus<HTMLButtonElement>(finished);
 
   useEffect(() => {
     if (finished) return;
     const timer = setTimeout(() => setShown((n) => n + 1), fast ? FAST_MS : STEP_MS);
     return () => clearTimeout(timer);
   }, [shown, fast, finished]);
-
-  useEffect(() => {
-    if (finished) doneRef.current?.focus();
-  }, [finished]);
 
   const last = shown ? game.plays[shown - 1] : null;
   const us = last?.us ?? 0;

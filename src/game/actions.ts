@@ -1,28 +1,29 @@
 import { ATTR_KEYS, LEAGUES, POS, SHORT } from "./data";
 import { retire } from "./career";
+import { addAttr, addHealth, clampTrust } from "./condition";
 import { currentDecision, resolveQueue } from "./decisions";
 import { runDraft } from "./draft";
-import { addNews, offseasonTag, setTeam } from "./log";
+import { addNews, joinTeam, leaveTeam, offseasonTag, setTeam } from "./log";
 import { applyMilitary } from "./military";
 import { runNationalTeam } from "./national";
 import { chance, shuffle } from "./random";
 import { ovr } from "./ratings";
 import type { Action, Boost, Career } from "./types";
-import { clamp, money } from "./util";
+import { money } from "./util";
 
 /** 이벤트 효과를 적용하고 소식을 남겨요. */
 function applyBoost(c: Career, b: Boost, tag: string): void {
   const p = c.p;
   let msg = b.msg ?? "";
-  if (b.attrs) for (const k of ATTR_KEYS) if (b.attrs[k]) p.attrs[k] = clamp(p.attrs[k] + (b.attrs[k] ?? 0), 20, 99);
+  if (b.attrs) for (const k of ATTR_KEYS) if (b.attrs[k]) addAttr(p.attrs, k, b.attrs[k] ?? 0);
   if (b.rand && b.amt) {
     const keys = shuffle(ATTR_KEYS).slice(0, b.rand);
-    for (const k of keys) p.attrs[k] = clamp(p.attrs[k] + b.amt, 20, 99);
+    for (const k of keys) addAttr(p.attrs, k, b.amt);
     msg += ` ${keys.map((k) => SHORT[k]).join("·")} +${b.amt}`;
   }
-  if (b.health) c.health = clamp(c.health + b.health, 15, 100);
+  if (b.health) addHealth(c, b.health);
   if (b.money) c.earnings = Math.max(0, c.earnings + b.money);
-  if (b.trust) c.trust = clamp(c.trust + b.trust, -3, 4);
+  if (b.trust) c.trust = clampTrust(c.trust + b.trust);
   if (b.agency) c.perks.agency = true;
   if (b.trainer) c.perks.trainer = b.trainer;
   c.peakOvr = Math.max(c.peakOvr, ovr(p));
@@ -50,10 +51,7 @@ export function applyAction(c: Career, a: Action): void {
       const same = c.team?.name === a.team.name && c.team?.lg === a.lg;
       c.stage = "pro";
       c.contract = { years: a.years, salary: a.salary };
-      if (!same) {
-        setTeam(c, a.lg, a.team);
-        c.trust = 0;
-      }
+      if (!same) joinTeam(c, a.lg, a.team);
       addNews(
         c,
         tag,
@@ -65,9 +63,7 @@ export function applyAction(c: Career, a: Action): void {
       break;
     }
     case "skip":
-      c.stage = "free";
-      c.team = null;
-      c.contract = null;
+      leaveTeam(c);
       addNews(c, tag, "info", "소속팀 없이 개인 훈련으로 다음 시즌을 보내기로 했어요.");
       break;
     case "pos": {

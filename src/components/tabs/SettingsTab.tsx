@@ -5,6 +5,7 @@ import { canRetire, type Career } from "@/game";
 import { encodeSave } from "@/game/storage";
 import { gameActions } from "@/lib/game-store";
 import { ImportForm } from "../ImportForm";
+import { Panel } from "../ui";
 
 export function SettingsTab({ career }: { career: Career }) {
   const code = useMemo(() => encodeSave(career), [career]);
@@ -36,8 +37,7 @@ export function SettingsTab({ career }: { career: Career }) {
 
   return (
     <>
-      <section className="panel">
-        <h2 className="sec">저장 코드 내보내기</h2>
+      <Panel title="저장 코드 내보내기">
         <p className="hint">진행 내용은 이 브라우저에 자동 저장돼요. 다른 기기로 옮기거나 백업하려면 코드를 복사하거나 파일로 받아 두세요.</p>
         <label className="sr-only" htmlFor="export-code">
           저장 코드
@@ -54,15 +54,13 @@ export function SettingsTab({ career }: { career: Career }) {
             {copyMsg}
           </span>
         </div>
-      </section>
+      </Panel>
 
-      <section className="panel">
-        <h2 className="sec">저장 코드 불러오기</h2>
+      <Panel title="저장 코드 불러오기">
         <ImportForm placeholder="저장 코드를 붙여넣으세요. 지금 커리어는 덮어써져요." />
-      </section>
+      </Panel>
 
-      <section className="panel">
-        <h2 className="sec">커리어 관리</h2>
+      <Panel title="커리어 관리">
         <div className="row">
           {canRetire(career) ? (
             <button
@@ -83,7 +81,7 @@ export function SettingsTab({ career }: { career: Career }) {
             {confirm === "new" ? "한 번 더 누르면 지금 커리어가 지워져요" : "새 커리어 시작"}
           </button>
         </div>
-      </section>
+      </Panel>
     </>
   );
 }

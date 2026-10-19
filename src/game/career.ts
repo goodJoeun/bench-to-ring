@@ -1,5 +1,19 @@
 import { LEAGUES, PERSONAL_AWARDS } from "./data";
-import type { Career, CareerSummary } from "./types";
+import type { Career, CareerSummary, SeasonRecord } from "./types";
+import { stripYear } from "./util";
+
+export interface CareerTotals {
+  gp: number;
+  pts: number;
+  reb: number;
+  ast: number;
+}
+
+/** 시즌 기록을 더한 통산 기록. 시즌 기록은 경기당 평균이라 경기 수를 곱해 더해요. */
+export function sumSeasons(rows: SeasonRecord[]): CareerTotals {
+  const total = (f: "pts" | "reb" | "ast") => Math.round(rows.reduce((t, h) => t + h[f] * h.gp, 0));
+  return { gp: rows.reduce((t, h) => t + h.gp, 0), pts: total("pts"), reb: total("reb"), ast: total("ast") };
+}
 
 export interface TitleEntry {
   year: number;
@@ -26,7 +40,7 @@ export function titleHistory(c: Career): TitleEntry[] {
         year: a.y,
         age: rec?.age ?? null,
         // 국가대표 메달 이름엔 연도가 붙어 있어서 떼어내요. 연도는 따로 보여줘요.
-        name: nat ? a.n.replace(/^\d{4} /, "") : a.n,
+        name: nat ? stripYear(a.n) : a.n,
         team: nat ? `${c.p.nat} 대표팀` : rec?.team ?? "-",
         league: !nat && rec?.lg ? LEAGUES[rec.lg].name : null,
         kind: nat ? "nat" : a.k === "ring" ? "pro" : "amateur",
@@ -58,8 +72,7 @@ export function legacyOf(o: Omit<CareerSummary, "legacy">): string {
 }
 
 export function careerSummary(c: Career): CareerSummary {
-  const pro = c.hist.filter((h) => h.pro);
-  const total = (f: "pts" | "reb" | "ast") => Math.round(pro.reduce((t, h) => t + h[f] * h.gp, 0));
+  const pro = sumSeasons(c.hist.filter((h) => h.pro));
   const teams: string[] = [];
   for (const h of c.hist) if (h.team !== "무소속" && teams[teams.length - 1] !== h.team) teams.push(h.team);
   const base = {
@@ -72,10 +85,10 @@ export function careerSummary(c: Career): CareerSummary {
     rings: c.awards.ring ?? 0,
     personal: PERSONAL_AWARDS.reduce((t, k) => t + (c.awards[k] ?? 0), 0),
     peak: c.peakOvr,
-    pts: total("pts"),
-    reb: total("reb"),
-    ast: total("ast"),
-    gp: pro.reduce((t, h) => t + h.gp, 0),
+    pts: pro.pts,
+    reb: pro.reb,
+    ast: pro.ast,
+    gp: pro.gp,
     seasons: c.proSeasons,
     retAge: c.age,
     retYear: c.year - 1,

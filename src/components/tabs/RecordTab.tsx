@@ -1,20 +1,12 @@
-import { LEAGUES, careerSummary, r1, type Career } from "@/game";
-
-/** 병역 상태 한 줄. 대한민국 선수만 보여줘요. */
-export function militaryLine(c: Career): string | null {
-  if (c.p.nat !== "대한민국") return null;
-  const m = c.mil;
-  if (m.s === "exempt") return "병역 특례 (예술체육요원)";
-  if (m.s === "served") return m.kind === "sangmu" ? "상무 복무 마침" : "현역 복무 마침";
-  if (m.s === "serving") return m.kind === "sangmu" ? "상무 복무 중" : "현역 복무 중";
-  return "병역 미필 · 만 28세까지 입대해야 해요";
-}
+import { LEAGUES, careerSummary, fmtNum, r1, stripYear, type Career } from "@/game";
+import { militaryLine } from "../format";
+import { Panel, StatTiles } from "../ui";
 
 function NationalLog({ career: c }: { career: Career }) {
   const log = [...c.natLog].reverse();
+  const mil = militaryLine(c);
   return (
-    <section className="panel">
-      <h2 className="sec">국가대표 기록 · {c.nat.caps}경기</h2>
+    <Panel title={`국가대표 기록 · ${c.nat.caps}경기`}>
       {log.length ? (
         <ul className="natlog">
           {log.map((t, i) => {
@@ -25,7 +17,7 @@ function NationalLog({ career: c }: { career: Career }) {
                   <summary>
                     <span className="ny">{t.year}</span>
                     <span className="nb">
-                      <b>{t.name.replace(/^d{4} /, "")}</b>
+                      <b>{stripYear(t.name)}</b>
                       <span>
                         {t.joined ? "합류" : "불참"} · {t.label}
                         {t.games.length > 0 && ` · ${w}승 ${t.games.length - w}패`}
@@ -56,46 +48,37 @@ function NationalLog({ career: c }: { career: Career }) {
       ) : (
         <p className="empty">아직 국가대표로 뽑힌 적이 없어요.</p>
       )}
-      {militaryLine(c) && <p className="hint">병역 · {militaryLine(c)}</p>}
-    </section>
+      {mil && <p className="hint">병역 · {mil}</p>}
+    </Panel>
   );
 }
 
 export function RecordTab({ career: c }: { career: Career }) {
   if (!c.hist.length)
     return (
-      <section className="panel">
+      <Panel>
         <p className="empty">아직 기록이 없어요. 첫 시즌을 진행해 보세요.</p>
-      </section>
+      </Panel>
     );
   const s = careerSummary(c);
   const ppg = s.gp ? r1(s.pts / s.gp) : 0;
   const tiles: [string, string | number][] = [
-    ["출전", s.gp.toLocaleString("ko-KR")],
-    ["득점", s.pts.toLocaleString("ko-KR")],
+    ["출전", fmtNum(s.gp)],
+    ["득점", fmtNum(s.pts)],
     ["평균 득점", ppg],
     ["최고 오버롤", c.peakOvr],
   ];
   return (
     <>
-      <section className="panel">
-        <h2 className="sec">프로 통산</h2>
-        <div className="tiles">
-          {tiles.map(([k, v]) => (
-            <div className="tile" key={k}>
-              <span className="label">{k}</span>
-              <span className="n">{v}</span>
-            </div>
-          ))}
-        </div>
+      <Panel title="프로 통산">
+        <StatTiles items={tiles} />
         {c.draft && (
           <p className="hint">
             {c.draft.year} {c.draft.lg} 드래프트 {c.draft.round}라운드 {c.draft.inRound}순위 · {c.draft.team}
           </p>
         )}
-      </section>
-      <section className="panel">
-        <h2 className="sec">시즌별 기록</h2>
+      </Panel>
+      <Panel title="시즌별 기록">
         <div className="tbl-wrap">
           <table>
             <thead>
@@ -140,7 +123,7 @@ export function RecordTab({ career: c }: { career: Career }) {
             </tbody>
           </table>
         </div>
-      </section>
+      </Panel>
       <NationalLog career={c} />
     </>
   );

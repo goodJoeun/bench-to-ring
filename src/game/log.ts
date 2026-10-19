@@ -27,5 +27,18 @@ export function setTeam(c: Career, lg: LeagueKey, t: Team): void {
   c.team = { lg, name: t.name, color: t.color, q: t.q };
 }
 
+/** 새 팀에 들어가요. 코치 신뢰는 처음부터 다시 쌓아요. */
+export function joinTeam(c: Career, lg: LeagueKey, t: Team): void {
+  setTeam(c, lg, t);
+  c.trust = 0;
+}
+
+/** 소속팀과 계약 없이 무소속이 돼요. */
+export function leaveTeam(c: Career): void {
+  c.stage = "free";
+  c.team = null;
+  c.contract = null;
+}
+
 /** 지난 시즌 오프시즌 소식에 붙는 꼬리표 */
 export const offseasonTag = (c: Career): string => `${c.year - 1} 오프시즌`;

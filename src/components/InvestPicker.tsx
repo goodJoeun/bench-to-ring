@@ -2,6 +2,7 @@
 
 import { INVESTMENTS, INVEST_SLOTS, STUDENT_ALLOWANCE, canInvest, investCost, money, type Career } from "@/game";
 import { gameActions } from "@/lib/game-store";
+import { Choice } from "./ui";
 
 /** 시즌 계획 시트 안의 시즌 투자 고르기. 두 가지까지, 보유 자금 안에서 골라요. */
 export function InvestPicker({ career: c }: { career: Career }) {
@@ -27,20 +28,15 @@ export function InvestPicker({ career: c }: { career: Career }) {
           const on = chosen.includes(i.key);
           const blocked = !on && (chosen.length >= INVEST_SLOTS || total + cost > c.earnings);
           return (
-            <button
-              type="button"
-              className="choice"
+            <Choice
               key={i.key}
+              label={i.name}
+              tag={money(cost)}
+              sub={i.effect}
               aria-pressed={on}
               disabled={blocked}
               onClick={() => gameActions.toggleInvest(i.key)}
-            >
-              <span className="cl">
-                <b>{i.name}</b>
-                <span className="ct">{money(cost)}</span>
-              </span>
-              <span className="cs">{i.effect}</span>
-            </button>
+            />
           );
         })}
       </div>

@@ -1,3 +1,4 @@
+import { addHealth } from "./condition";
 import { NATIONS } from "./data";
 import { addNews, giveAward, offseasonTag } from "./log";
 import { chance, pick, random, ri, rnd } from "./random";
@@ -270,12 +271,12 @@ export function runNationalTeam(c: Career, ev: NatEventKey, year: number, join: 
   const t: NatTournament = { year, ev, name, joined: join, label: r.label, medal: r.medal, story: r.story, games: r.games };
   c.natLog = [...c.natLog, t].slice(-NAT_LOG_LIMIT);
   if (!join) {
-    c.health = clamp(c.health + 6, 15, 100);
+    addHealth(c, 6);
     addNews(c, tag, "info", `${name}에 불참하고 몸을 추슬렀어요. ${n.name} 대표팀은 ${r.label} · ${r.story}`);
     return t;
   }
   c.nat.caps += r.games.length;
-  c.health = clamp(c.health - ri(2, 5), 15, 100);
+  addHealth(c, -ri(2, 5));
   const rec = c.hist.find((h) => h.year === year);
   if (r.medal) giveAward(c, MEDAL_KEY[r.medal], `${name} ${r.medal}메달`, rec);
   addNews(c, tag, r.medal ? "award" : "good", `${n.name} 대표로 ${name} 출전 · ${r.label} · ${r.story}`);
@@ -298,7 +299,7 @@ export function runNationalTeam(c: Career, ev: NatEventKey, year: number, join: 
   if (n.name === "대한민국" && ((ev === "asiangames" && r.medal === "금") || (ev === "olympics" && r.medal)))
     grantExemption(c, tag, `${name} ${r.medal}`);
   if (chance(0.04)) {
-    c.health = clamp(c.health - 10, 15, 100);
+    addHealth(c, -10);
     addNews(c, tag, "bad", "대표팀 경기 중 가벼운 부상을 입었어요. 다음 시즌 초반 몸 관리가 필요해요.");
   }
   return t;

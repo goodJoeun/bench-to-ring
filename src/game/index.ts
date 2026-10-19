@@ -17,12 +17,13 @@ export {
   SPIKE_CAP,
 } from "./create";
 export { simulateSeason } from "./season";
+export { draftSlot } from "./draft";
 export { NAT_EVENTS, natColor, natEventFor, simulateTournament, teamPower } from "./national";
-export { ARMY, ENLIST_DEADLINE, SANGMU, militaryDecision, owesService } from "./military";
+export { ARMY, ENLIST_DEADLINE, SANGMU, militaryDecision, militaryUnit, owesService } from "./military";
 export { chooseOption, applyAction } from "./actions";
 export { INVESTMENTS, INVEST_SLOTS, STUDENT_ALLOWANCE, canInvest, investCost, type Investment } from "./invest";
 export { currentDecision, resolveQueue } from "./decisions";
-export { careerSummary, retire, canRetire, legacyOf, titleHistory, type TitleEntry } from "./career";
+export { careerSummary, retire, canRetire, legacyOf, sumSeasons, titleHistory, type CareerTotals, type TitleEntry } from "./career";
 export { rankHall, bestFive, compareCareers } from "./hall";
 export {
   RECORD_BOARDS,
@@ -31,7 +32,6 @@ export {
   placeOnBoard,
   type BoardPlacement,
   type BoardRow,
-  type CareerTotals,
   type RecordBoard,
   type RecordGroup,
   type RecordStat,
@@ -46,5 +46,5 @@ export {
   potentialRange,
   stageLabel,
 } from "./ratings";
-export { money, r1 } from "./util";
+export { fmtNum, money, r1, stripYear } from "./util";
 export { setRandom, resetRandom, seeded } from "./random";

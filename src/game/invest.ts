@@ -1,6 +1,6 @@
 import { addNews } from "./log";
 import type { Career, InvestKey } from "./types";
-import { money } from "./util";
+import { money, round2 } from "./util";
 
 /** 한 시즌에 고를 수 있는 투자 수. 돈보다 시간이 모자라요. */
 export const INVEST_SLOTS = 2;
@@ -26,8 +26,6 @@ export const INVESTMENTS: ReadonlyArray<Investment> = [
   { key: "diet", name: "영양·수면 관리", effect: "시즌 뒤 건강 +6, 나이로 떨어지는 폭 -10%", pct: 0.15, min: 0.02 },
   { key: "video", name: "영상 분석관", effect: "BQ 성장 +25%, 코치 신뢰 +0.5", pct: 0.15, min: 0.02 },
 ];
-
-const round2 = (x: number) => Math.round(x * 100) / 100;
 
 /** 지금 연봉 기준 비용 (억) */
 export function investCost(c: Career, key: InvestKey): number {

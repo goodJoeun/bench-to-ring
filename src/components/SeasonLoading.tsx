@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ARMY, LEAGUES, SANGMU, type Career } from "@/game";
+import { useEffect, useState } from "react";
+import { LEAGUES, militaryUnit, type Career } from "@/game";
 import { gameActions } from "@/lib/game-store";
+import { NO_TEAM_COLOR } from "./format";
+import { reducedMotion, useAutoFocus } from "./hooks";
 import { LiveGameView } from "./LiveGameView";
 import { Popup, PopupHero } from "./Popup";
 
 const DURATION = 3200;
 const REDUCED_DURATION = 900;
-const NO_TEAM_COLOR = "#5A6577";
 
 interface Phase {
   /** 이 단계가 끝나는 진행률 (0~1) */
@@ -60,12 +61,10 @@ export function SeasonLoading({ career: c }: { career: Career }) {
   const final = rec && c.live?.key === `league-${rec.year}` ? c.live : null;
   const [t, setT] = useState(0);
   const [watching, setWatching] = useState(false);
-  const skipRef = useRef<HTMLButtonElement>(null);
+  const skipRef = useAutoFocus<HTMLButtonElement>();
 
   useEffect(() => {
-    skipRef.current?.focus();
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const duration = reduced ? REDUCED_DURATION : DURATION;
+    const duration = reducedMotion() ? REDUCED_DURATION : DURATION;
     const start = performance.now();
     let raf = 0;
     const tick = (now: number) => {
@@ -99,8 +98,7 @@ export function SeasonLoading({ career: c }: { career: Career }) {
   const total = rec.w + rec.l;
   const played = Math.round(seasonShare(t) * total);
   const wins = total ? Math.round((rec.w * played) / total) : 0;
-  const color =
-    rec.mil === "sangmu" ? SANGMU.color : rec.mil === "army" ? ARMY.color : hasTeam && c.team?.name === rec.team ? c.team.color : NO_TEAM_COLOR;
+  const color = rec.mil ? militaryUnit(rec.mil).color : hasTeam && c.team?.name === rec.team ? c.team.color : NO_TEAM_COLOR;
   const showScore = (hasTeam || rec.mil === "sangmu") && total > 0;
 
   return (

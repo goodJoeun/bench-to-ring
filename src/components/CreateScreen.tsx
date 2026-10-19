@@ -20,15 +20,19 @@ import {
   type PosKey,
 } from "@/game";
 import { gameActions, type CreationDraft } from "@/lib/game-store";
+import { useEscapeKey } from "./hooks";
 import { HallOfFame } from "./tabs/HallOfFame";
 import { ImportForm } from "./ImportForm";
 import { Sheet } from "./Sheet";
 import { Sprite } from "./Sprite";
+import { Panel, Segmented, type SegmentOption } from "./ui";
 
-const PATHS: [CareerPath, string, string][] = [
-  ["abroad", "해외 경로", "고교 → NCAA → NBA 드래프트"],
-  ["domestic", "국내 경로", "고교 → U-리그 → KBL → NBA·유로리그 도전"],
+const PATHS: SegmentOption<CareerPath>[] = [
+  { key: "abroad", big: "해외 경로", sm: "고교 → NCAA → NBA 드래프트" },
+  { key: "domestic", big: "국내 경로", sm: "고교 → U-리그 → KBL → NBA·유로리그 도전" },
 ];
+
+const POSITIONS: SegmentOption<PosKey>[] = POS_KEYS.map((k) => ({ key: k, big: k, sm: POS[k].name }));
 
 /** 배수가 큰 순서로 이 유형이 키워주는 능력치 */
 function strengthsOf(arch: Archetype): string {
@@ -44,20 +48,14 @@ function ArchetypeTip({ arch }: { arch: Archetype }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
   const id = useId();
+  useEscapeKey(() => setOpen(false), open);
   useEffect(() => {
     if (!open) return;
     const onDown = (e: PointerEvent) => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
     };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
     document.addEventListener("pointerdown", onDown);
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onDown);
-      window.removeEventListener("keydown", onKey);
-    };
+    return () => document.removeEventListener("pointerdown", onDown);
   }, [open]);
   return (
     // 툴팁을 눌러도 카드가 선택되지 않게 클릭을 여기서 멈춰요.
@@ -152,7 +150,7 @@ function ConfirmStartSheet({ draft, onClose }: { draft: CreationDraft; onClose: 
   const cand = draft.candidates[draft.selected];
   if (!cand) return null;
   const name = draft.name.trim() || "무명의 루키";
-  const path = PATHS.find(([k]) => k === draft.path);
+  const path = PATHS.find((p) => p.key === draft.path);
   return (
     <Sheet labelledBy="confirm-title" onClose={onClose}>
       <span className="sheet-kicker">커리어 시작 확인</span>
@@ -181,7 +179,7 @@ function ConfirmStartSheet({ draft, onClose }: { draft: CreationDraft; onClose: 
         </div>
         <div>
           <dt>커리어 경로</dt>
-          <dd>{path?.[1]}</dd>
+          <dd>{path?.big}</dd>
         </div>
         <div>
           <dt>키 · 윙스팬</dt>
@@ -284,26 +282,18 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
 
         <div className="field">
           <span className="label">포지션</span>
-          <div className="seg" role="group" aria-label="포지션">
-            {POS_KEYS.map((k) => (
-              <button type="button" key={k} aria-pressed={draft.pos === k} onClick={() => gameActions.choosePosition(k)}>
-                <span className="big">{k}</span>
-                <span className="sm">{POS[k].name}</span>
-              </button>
-            ))}
-          </div>
+          <Segmented label="포지션" options={POSITIONS} value={draft.pos} onChange={gameActions.choosePosition} />
         </div>
 
         <div className="field">
           <span className="label">커리어 경로</span>
-          <div className="seg path" role="group" aria-label="커리어 경로">
-            {PATHS.map(([k, title, sub]) => (
-              <button type="button" key={k} aria-pressed={draft.path === k} onClick={() => gameActions.editDraft({ path: k })}>
-                <span className="big">{title}</span>
-                <span className="sm">{sub}</span>
-              </button>
-            ))}
-          </div>
+          <Segmented
+            label="커리어 경로"
+            className="path"
+            options={PATHS}
+            value={draft.path}
+            onChange={(path) => gameActions.editDraft({ path })}
+          />
           <p className="hint">어느 경로든 중간에 다른 리그로 옮길 수 있어요. 경로는 고교 졸업 때 받는 제안을 바꿔요.</p>
         </div>
 
@@ -327,10 +317,9 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
         </button>
       </section>
 
-      <section className="panel resume">
-        <h2 className="sec">저장 코드로 이어하기</h2>
+      <Panel title="저장 코드로 이어하기" className="resume">
         <ImportForm placeholder="다른 기기에서 복사한 저장 코드를 붙여넣으세요" />
-      </section>
+      </Panel>
 
       {confirmOpen && <ConfirmStartSheet draft={draft} onClose={() => setConfirmOpen(false)} />}
 

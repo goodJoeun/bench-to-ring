@@ -52,10 +52,13 @@ const SALARY: Record<ProLeagueKey, (o: number) => number> = {
 };
 export const salaryFor = (lg: ProLeagueKey, o: number): number => SALARY[lg](o);
 
-/** 스카우트 잠재력 추정 범위. 나이가 들수록 좁아져요. */
+/** 스카우트 잠재력 추정의 오차 폭. 16세 ±9에서 나이가 들수록 좁아져요. */
+export const scoutError = (age: number): number => Math.max(1, Math.round(9 - (age - 16) * 1.1));
+
+/** 스카우트 잠재력 추정 범위 */
 export function potentialRange(c: Career): string {
   const p = c.p;
-  const u = Math.max(1, Math.round(9 - (c.age - 16) * 1.1));
+  const u = scoutError(c.age);
   const o = ovr(p);
   const lo = clamp(Math.round(p.pot - u + c.potOff), o, 99);
   const hi = clamp(Math.max(Math.round(p.pot + u + c.potOff), o), o, 99);

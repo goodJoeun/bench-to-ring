@@ -210,10 +210,13 @@ export interface Military {
   back?: boolean;
 }
 
+/** 신청할 수 있는 드래프트 */
+export type DraftKey = "nba" | "kbl";
+
 export type Action =
   | { k: "school"; lg: LeagueKey; team: Team; walk?: boolean }
   | { k: "stay" }
-  | { k: "draft"; d: "nba" | "kbl" }
+  | { k: "draft"; d: DraftKey }
   | { k: "sign"; lg: ProLeagueKey; team: Team; years: number; salary: number }
   | { k: "skip" }
   | { k: "pos"; pos: PosKey }

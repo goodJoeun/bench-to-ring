@@ -3,17 +3,16 @@
 import { useState } from "react";
 import { FOCUS, currentDecision, currentExpectedMinutes, roleOf, stageLabel, type Career, type FocusKey } from "@/game";
 import { gameActions } from "@/lib/game-store";
+import { focusName } from "./format";
 import { InvestPicker } from "./InvestPicker";
 import { Sheet } from "./Sheet";
+import { Choice } from "./ui";
 
 function focusHint(k: FocusKey): string {
   if (k === "bal") return "모든 능력치를 고르게 키워요.";
   if (k === "rest") return "성장은 느려지지만 건강을 회복하고 부상 위험이 줄어요.";
-  const name = FOCUS.find(([f]) => f === k)?.[1] ?? "";
-  return `${name} 성장이 1.5배로 빨라지고, 나머지는 조금 느려져요.`;
+  return `${focusName(k)} 성장이 1.5배로 빨라지고, 나머지는 조금 느려져요.`;
 }
-
-const focusName = (k: FocusKey) => FOCUS.find(([f]) => f === k)?.[1] ?? "";
 
 interface ActionPanelProps {
   career: Career;
@@ -55,13 +54,7 @@ export function ActionPanel({ career: c, simulating, onAdvance }: ActionPanelPro
             <p className="sheet-desc">{decision.body}</p>
             <div className="choices">
               {decision.opts.map((o, i) => (
-                <button type="button" className="choice" key={`${o.label}-${i}`} onClick={() => gameActions.choose(i)}>
-                  <span className="cl">
-                    <b>{o.label}</b>
-                    {o.tag && <span className="ct">{o.tag}</span>}
-                  </span>
-                  {o.sub && <span className="cs">{o.sub}</span>}
-                </button>
+                <Choice key={`${o.label}-${i}`} label={o.label} tag={o.tag} sub={o.sub} onClick={() => gameActions.choose(i)} />
               ))}
             </div>
             <button type="button" className="sheet-later" onClick={() => setHiddenKey(decisionKey)}>
@@ -100,19 +93,14 @@ export function ActionPanel({ career: c, simulating, onAdvance }: ActionPanelPro
           <p className="sheet-desc">이번 시즌에 집중할 훈련을 고르고 시즌을 시작하세요.</p>
           <div className="choices focus-grid" role="radiogroup" aria-label="훈련 초점">
             {FOCUS.map(([k, name]) => (
-              <button
-                type="button"
+              <Choice
                 key={k}
-                className="choice"
+                label={name}
+                sub={focusHint(k)}
                 role="radio"
                 aria-checked={c.focus === k}
                 onClick={() => gameActions.setFocus(k)}
-              >
-                <span className="cl">
-                  <b>{name}</b>
-                </span>
-                <span className="cs">{focusHint(k)}</span>
-              </button>
+              />
             ))}
           </div>
           <InvestPicker career={c} />

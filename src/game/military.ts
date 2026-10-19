@@ -1,3 +1,4 @@
+import { addAttr, addHealth } from "./condition";
 import { ATTR_KEYS } from "./data";
 import { addNews, offseasonTag } from "./log";
 import { chance, ri, rnd } from "./random";
@@ -18,6 +19,9 @@ const FIRST_ASK = 23;
 
 export const SANGMU = { name: "상무 (국군체육부대)", color: "#4B5A2A" };
 export const ARMY = { name: "육군 (현역 복무)", color: "#5B6148" };
+
+/** 복무하는 부대 (이름, 유니폼 색) */
+export const militaryUnit = (kind: MilitaryKind | undefined): { name: string; color: string } => (kind === "sangmu" ? SANGMU : ARMY);
 
 export const owesService = (c: Career): boolean => c.p.nat === "대한민국" && c.mil.s === "none";
 
@@ -127,13 +131,9 @@ export function serviceSeason(
   // 현역: 농구를 거의 못 해요. 운동능력과 슛 감각이 많이 떨어지고, 경기 이해도는 그대로예요.
   const drop: Record<AttrKey, number> = { ath: 1.3, sht: 1.1, hdl: 0.9, pas: 0.6, def: 0.8, iq: 0.15 };
   const delta: Partial<Record<AttrKey, number>> = {};
-  for (const k of ATTR_KEYS) {
-    const old = c.p.attrs[k];
-    c.p.attrs[k] = clamp(old - drop[k] * rnd(1, 2.6), 20, 99);
-    delta[k] = Math.round(c.p.attrs[k]) - Math.round(old);
-  }
+  for (const k of ATTR_KEYS) delta[k] = addAttr(c.p.attrs, k, -drop[k] * rnd(1, 2.6));
   c.lastDelta = delta;
-  c.health = clamp(c.health + 12, 15, 100);
+  addHealth(c, 12);
   const rec: SeasonRecord = {
     ...base, team: ARMY.name, role: "-", gp: 0, min: 0, pts: 0, reb: 0, ast: 0, fg: 0, rating: 0, w: 0, l: 0,
     result: "현역 복무",

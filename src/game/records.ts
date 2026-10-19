@@ -1,3 +1,4 @@
+import { sumSeasons, type CareerTotals } from "./career";
 import type { Career } from "./types";
 
 /** 실제 통산 기록과 내 선수를 나란히 세우는 기록 리더보드 */
@@ -168,20 +169,9 @@ export const RECORD_BOARDS: RecordBoard[] = [
   },
 ];
 
-export interface CareerTotals {
-  gp: number;
-  pts: number;
-  reb: number;
-  ast: number;
-}
-
-/** 리그별(NBA·KBL) 정규리그 통산과 올림픽 통산. 시즌 기록은 경기당 평균이라 경기 수를 곱해 더해요. */
+/** 리그별(NBA·KBL) 정규리그 통산과 올림픽 통산 */
 export function careerTotals(c: Career): Record<RecordGroup, CareerTotals> {
-  const league = (lg: "nba" | "kbl"): CareerTotals => {
-    const rows = c.hist.filter((h) => h.lg === lg);
-    const total = (f: RecordStat) => Math.round(rows.reduce((t, h) => t + h[f] * h.gp, 0));
-    return { gp: rows.reduce((t, h) => t + h.gp, 0), pts: total("pts"), reb: total("reb"), ast: total("ast") };
-  };
+  const league = (lg: "nba" | "kbl"): CareerTotals => sumSeasons(c.hist.filter((h) => h.lg === lg));
   // 올림픽은 경기마다 내 득점만 남아요. 실제 기록처럼 본선만 세고, 최종예선과 불참한 대회는 빼요.
   const games = c.natLog.filter((t) => t.ev === "olympics" && t.joined).flatMap((t) => t.games);
   const played = games.filter((g) => g.pts !== undefined && !g.stage.startsWith("최종예선"));

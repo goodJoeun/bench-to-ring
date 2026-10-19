@@ -36,6 +36,9 @@ src/
 │  ├─ CreateScreen.tsx  선수 생성
 │  ├─ GameScreen.tsx    커리어 진행 화면
 │  ├─ ActionPanel.tsx   시즌 진행 버튼, 시즌 계획·오프시즌 결정 시트
+│  ├─ ui.tsx            공통 화면 조각 (Panel, StatTiles, Choice, Segmented, CourtStage)
+│  ├─ hooks.ts          공통 훅 (useReveal, useAutoFocus, useEscapeKey, useLatest)
+│  ├─ format.ts         여러 화면이 같이 쓰는 문구와 색 (훈련 이름, 병역 상태)
 │  ├─ Sheet.tsx         아래에서 올라오는 선택 시트
 │  ├─ InvestPicker.tsx  시즌 계획 시트의 시즌 투자 고르기
 │  ├─ Popup.tsx         진행 화면 공통 팝업 (시즌·대회·드래프트·결승 중계)
@@ -55,12 +58,14 @@ src/
    ├─ offseason.ts      오프시즌 처리와 결정 대기열
    ├─ decisions.ts      진로·계약 결정 만들기
    ├─ events.ts         생활 이벤트 (학교·대학·프로 생활)
-   ├─ draft.ts          드래프트, 진행 화면용 지명 순서
+   ├─ draft.ts          드래프트 규칙표(NBA·KBL), 진행 화면용 지명 순서
    ├─ actions.ts        결정 선택 처리
    ├─ career.ts         은퇴, 커리어 요약, 레거시 등급
    ├─ hall.ts           명예의 전당 순위
    ├─ invest.ts         시즌 투자 (훈련·회복 프로그램)
    ├─ records.ts        실제 역대 기록 순위표와 내 기록 끼워 넣기
+   ├─ condition.ts      능력치·건강·코치 신뢰의 범위와 바꾸는 함수
+   ├─ log.ts            소식·수상 기록, 팀 입단·무소속 처리
    ├─ storage.ts        localStorage 저장, 저장 코드
    └─ random.ts         난수 (테스트용 시드 고정 지원)
 ```

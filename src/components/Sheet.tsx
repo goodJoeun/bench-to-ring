@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useEscapeKey } from "./hooks";
 
 interface SheetProps {
   labelledBy: string;
@@ -12,24 +13,13 @@ interface SheetProps {
 /** 화면 아래에서 올라오는 선택 시트 */
 export function Sheet({ labelledBy, onClose, children }: SheetProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const closeRef = useRef(onClose);
-  useEffect(() => {
-    closeRef.current = onClose;
-  });
+  useEscapeKey(onClose);
 
   // 열릴 때 한 번만: 첫 버튼에 초점을 두고, 닫히면 원래 자리로 돌려놔요.
   useEffect(() => {
-    const el = ref.current;
     const prev = document.activeElement as HTMLElement | null;
-    el?.querySelector<HTMLElement>("button")?.focus({ preventScroll: true });
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeRef.current?.();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      prev?.focus?.({ preventScroll: true });
-    };
+    ref.current?.querySelector<HTMLElement>("button")?.focus({ preventScroll: true });
+    return () => prev?.focus?.({ preventScroll: true });
   }, []);
 
   return (

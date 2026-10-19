@@ -1,7 +1,7 @@
+import { clampAttr } from "./condition";
 import { ATTR_KEYS } from "./data";
 import { ovrOf } from "./ratings";
 import type { Action, AttrKey, Attrs, Boost, Career, CareerSummary, PosKey } from "./types";
-import { clamp } from "./util";
 
 const SAVE_KEY = "b2r-save-v1";
 const HALL_KEY = "b2r-hall-v1";
@@ -95,7 +95,7 @@ function migrateAttrs(c: Career): void {
   const a = {} as Attrs;
   for (const k of ATTR_KEYS) a[k] = old[k === "pas" ? "hdl" : k] ?? 40;
   const shift = oldOvr - ovrOf(a, c.p.pos);
-  for (const k of ATTR_KEYS) a[k] = clamp(a[k] + shift, 20, 99);
+  for (const k of ATTR_KEYS) a[k] = clampAttr(a[k] + shift);
   c.p.attrs = a;
   const d = c.lastDelta as Record<string, number>;
   c.lastDelta = { sht: d.sht, hdl: d.hdl, pas: d.hdl, def: d.def, iq: d.iq, ath: d.ath };

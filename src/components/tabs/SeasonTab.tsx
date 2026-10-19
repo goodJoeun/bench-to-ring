@@ -1,26 +1,20 @@
 import { LEAGUES, currentExpectedMinutes, roleOf, type Career, type SeasonRecord } from "@/game";
+import { Panel } from "../ui";
+
+/** 경기를 뛰지 않은 시즌 (현역 복무, 무소속) */
+function NoGamesCard({ r, kicker, title }: { r: SeasonRecord; kicker: string; title: string }) {
+  return (
+    <Panel kicker={kicker} title={title}>
+      <p className="hint">
+        경기는 뛰지 않았어요. 오버롤 {r.ovr0} → {r.ovr1}
+      </p>
+    </Panel>
+  );
+}
 
 function ResultCard({ r }: { r: SeasonRecord }) {
-  if (r.mil === "army")
-    return (
-      <section className="panel">
-        <span className="label">{r.year} 시즌 · 군 복무</span>
-        <h2 className="sec">{r.team}</h2>
-        <p className="hint">
-          경기는 뛰지 않았어요. 오버롤 {r.ovr0} → {r.ovr1}
-        </p>
-      </section>
-    );
-  if (!r.lg && !r.mil)
-    return (
-      <section className="panel">
-        <span className="label">{r.year} 시즌</span>
-        <h2 className="sec">무소속 · 개인 훈련</h2>
-        <p className="hint">
-          경기는 뛰지 않았어요. 오버롤 {r.ovr0} → {r.ovr1}
-        </p>
-      </section>
-    );
+  if (r.mil === "army") return <NoGamesCard r={r} kicker={`${r.year} 시즌 · 군 복무`} title={r.team} />;
+  if (!r.lg && !r.mil) return <NoGamesCard r={r} kicker={`${r.year} 시즌`} title="무소속 · 개인 훈련" />;
   const stats: [string, number][] = [
     ["PTS", r.pts],
     ["REB", r.reb],
@@ -89,9 +83,7 @@ function ResultCard({ r }: { r: SeasonRecord }) {
 function Preseason({ career: c }: { career: Career }) {
   const min = currentExpectedMinutes(c);
   return (
-    <section className="panel">
-      <span className="label">프리시즌 리포트</span>
-      <h2 className="sec">{c.team?.name} 농구부의 막내</h2>
+    <Panel kicker="프리시즌 리포트" title={`${c.team?.name} 농구부의 막내`}>
       <p>
         코치는 아직 당신을 잘 몰라요. 예상 역할은 <b>{roleOf(min)}</b>, 경기당 약 {Math.round(min)}분이에요. 훈련 초점을 정하고
         첫 시즌을 시작하세요.
@@ -101,7 +93,7 @@ function Preseason({ career: c }: { career: Career }) {
         <li>잠재력은 성장의 상한이에요. 스카우트 추정치는 나이가 들수록 정확해져요.</li>
         <li>건강이 낮으면 부상 위험이 커져요. 가끔은 회복 훈련을 고르세요.</li>
       </ul>
-    </section>
+    </Panel>
   );
 }
 
@@ -109,8 +101,7 @@ export function SeasonTab({ career: c }: { career: Career }) {
   return (
     <>
       {c.last ? <ResultCard r={c.last} /> : <Preseason career={c} />}
-      <section className="panel">
-        <h2 className="sec">소식</h2>
+      <Panel title="소식">
         <ul className="news">
           {c.news.slice(0, 18).map((n, i) => (
             <li className={n.t} key={`${n.w}-${i}`}>
@@ -122,7 +113,7 @@ export function SeasonTab({ career: c }: { career: Career }) {
             </li>
           ))}
         </ul>
-      </section>
+      </Panel>
     </>
   );
 }

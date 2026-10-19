@@ -1,11 +1,11 @@
 import { AWARDS, type Career } from "@/game";
+import { Panel } from "../ui";
 
 export function TrophyTab({ career: c }: { career: Career }) {
   const log = [...c.awardLog].reverse();
   return (
     <>
-      <section className="panel">
-        <h2 className="sec">트로피 진열장</h2>
+      <Panel title="트로피 진열장">
         <div className="trophies">
           {AWARDS.map(([k, name]) => {
             const n = c.awards[k] ?? 0;
@@ -17,9 +17,8 @@ export function TrophyTab({ career: c }: { career: Career }) {
             );
           })}
         </div>
-      </section>
-      <section className="panel">
-        <h2 className="sec">수상 기록</h2>
+      </Panel>
+      <Panel title="수상 기록">
         {log.length ? (
           <ul className="loglist">
             {log.map((l, i) => (
@@ -32,7 +31,7 @@ export function TrophyTab({ career: c }: { career: Career }) {
         ) : (
           <p className="empty">아직 수상 기록이 없어요.</p>
         )}
-      </section>
+      </Panel>
     </>
   );
 }

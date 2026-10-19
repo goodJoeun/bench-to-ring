@@ -89,7 +89,7 @@ function ensureLoaded(): void {
   if (snapshot.ready || typeof window === "undefined") return;
   const career = loadCareer();
   if (career) resolveQueue(career);
-  snapshot = { ready: true, career, draft: freshDraft(), hall: loadHall(), simulating: false, tournament: false, drafting: false, toast: null };
+  snapshot = { ...SERVER_SNAPSHOT, ready: true, career, draft: freshDraft(), hall: loadHall() };
 }
 
 function set(patch: Partial<GameSnapshot>): void {
@@ -99,6 +99,11 @@ function set(patch: Partial<GameSnapshot>): void {
 
 let toastId = 0;
 const toast = (msg: string): Toast => ({ id: ++toastId, msg });
+
+/** 진행 화면을 닫으며 결과를 알림으로 띄워요. 알릴 말이 없으면 지금 알림을 그대로 둬요. */
+function closeWithToast(patch: Partial<GameSnapshot>, msg: string | null | undefined): void {
+  set({ ...patch, toast: msg ? toast(msg) : snapshot.toast });
+}
 
 /** before 이후에 새로 쌓인 소식 중 가장 최근 것 */
 function latestNewsSince(before: NewsItem | undefined, c: Career): string | null {
@@ -177,8 +182,7 @@ export const gameActions = {
   /** 로딩 화면을 닫고 시즌 결과를 알림으로 보여줘요. */
   finishSimulation() {
     const r = snapshot.career?.last;
-    const msg = r ? `${r.year} 시즌 종료 · ${r.lg ? `${r.w}승 ${r.l}패 · ` : ""}${r.result}` : null;
-    set({ simulating: false, toast: msg ? toast(msg) : snapshot.toast });
+    closeWithToast({ simulating: false }, r && `${r.year} 시즌 종료 · ${r.lg ? `${r.w}승 ${r.l}패 · ` : ""}${r.result}`);
   },
   /**
    * 결정을 고르고, 그 결과로 생긴 소식을 알림으로 띄워요.
@@ -188,32 +192,24 @@ export const gameActions = {
     const c0 = snapshot.career;
     if (!c0) return;
     const opt = currentDecision(c0)?.opts[index];
-    const label = opt?.label;
-    if ((opt?.act.k === "national" && opt.act.join) || opt?.act.k === "draft") {
-      const k = opt.act.k;
-      mutate((c) => {
-        chooseOption(c, index);
-      });
-      set(k === "draft" ? { drafting: true } : { tournament: true });
-      return;
-    }
     const before = c0.news[0];
     mutate((c) => {
       chooseOption(c, index);
     });
+    if (opt?.act.k === "draft") return set({ drafting: true });
+    if (opt?.act.k === "national" && opt.act.join) return set({ tournament: true });
     const after = snapshot.career;
-    const msg = (after && latestNewsSince(before, after)) ?? (label ? `'${label}'을(를) 골랐어요` : null);
+    const msg = (after && latestNewsSince(before, after)) ?? (opt?.label ? `'${opt.label}'을(를) 골랐어요` : null);
     if (msg) set({ toast: toast(msg) });
   },
   /** 대회 진행 화면을 닫고 최종 성적을 알림으로 보여줘요. */
   finishTournament() {
     const t = snapshot.career?.natLog.at(-1);
-    set({ tournament: false, toast: t ? toast(`${t.name} · ${t.label}`) : snapshot.toast });
+    closeWithToast({ tournament: false }, t && `${t.name} · ${t.label}`);
   },
   /** 드래프트 진행 화면을 닫고 지명 결과를 알림으로 보여줘요. */
   finishDraft() {
-    const msg = snapshot.career?.news[0]?.m;
-    set({ drafting: false, toast: msg ? toast(msg) : snapshot.toast });
+    closeWithToast({ drafting: false }, snapshot.career?.news[0]?.m);
   },
   dismissToast(id: number) {
     if (snapshot.toast?.id === id) set({ toast: null });

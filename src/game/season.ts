@@ -1,3 +1,4 @@
+import { HEALTH_RANGE, addAttr, addHealth, clampTrust } from "./condition";
 import { ATTRS, LEAGUES, POS, ROLE_RANK, SCORING_TITLE } from "./data";
 import { FINAL_SCORE, finalScore, makeLiveGame } from "./live";
 import { addNews, giveAward, pickTeam } from "./log";
@@ -73,10 +74,10 @@ export function simulateSeason(c: Career): SeasonRecord {
       } else {
         injFrac = rnd(0.5, 0.85);
         injury = "시즌 아웃급 부상";
-        p.attrs.ath = Math.max(20, p.attrs.ath - ri(2, 4));
-        c.health -= 12;
+        addAttr(p.attrs, "ath", -ri(2, 4));
+        addHealth(c, -12);
       }
-      c.health = Math.max(15, c.health - Math.round(injFrac * 20));
+      addHealth(c, -Math.round(injFrac * 20));
     }
     // 전역 후 첫 시즌은 시즌 중반에 합류해요.
     const back = !!c.mil.back;
@@ -170,7 +171,7 @@ export function simulateSeason(c: Career): SeasonRecord {
   // 시즌이 끝난 여름의 국가대표 대회. 성장까지 반영한 오버롤로 발탁해요.
   const call = nationalCallUp(c, rec.ovr1, played, yr);
   c.peakOvr = Math.max(c.peakOvr, rec.ovr1);
-  c.trust = c.team ? clamp((rating - 6.3) * 1.4 + (inv.has("video") ? 0.5 : 0), -3, 4) : 0;
+  c.trust = c.team ? clampTrust((rating - 6.3) * 1.4 + (inv.has("video") ? 0.5 : 0)) : 0;
   if (c.contract) c.earnings += c.contract.salary;
   if (c.stage === "hs" || c.stage === "college") c.earnings += STUDENT_ALLOWANCE;
   c.hist.push(rec);
@@ -262,9 +263,7 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: Set<Inve
       if (inv.has("diet")) g *= 0.9;
     }
     if (k === "iq" && age >= 24 && age <= 33) g += 0.5;
-    const old = p.attrs[k];
-    p.attrs[k] = clamp(old + g, 20, 99);
-    delta[k] = Math.round(p.attrs[k]) - Math.round(old);
+    delta[k] = addAttr(p.attrs, k, g);
   }
   c.lastDelta = delta;
   if (age >= 19 && min < 15 && base > 0 && c.stage !== "hs") {
@@ -273,5 +272,5 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: Set<Inve
     if (p.pot < before) addNews(c, tag, "bad", "출전 시간이 부족해 성장 한계가 조금 낮아졌어요.");
   }
   const care = (inv.has("rehab") ? 8 : 0) + (inv.has("diet") ? 6 : 0);
-  c.health = clamp(c.health + (c.focus === "rest" ? 15 : 8) + care - (age > 28 ? (age - 28) * 1.6 : 0), 15, 100);
+  c.health = clamp(c.health + (c.focus === "rest" ? 15 : 8) + care - (age > 28 ? (age - 28) * 1.6 : 0), ...HEALTH_RANGE);
 }

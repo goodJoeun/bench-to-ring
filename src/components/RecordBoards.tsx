@@ -5,6 +5,7 @@ import {
   RECORD_BOARDS,
   RECORD_GROUPS,
   careerTotals,
+  fmtNum as num,
   placeOnBoard,
   type BoardPlacement,
   type BoardRow,
@@ -12,8 +13,7 @@ import {
   type RecordBoard,
   type RecordGroup,
 } from "@/game";
-
-const num = (v: number) => v.toLocaleString("ko-KR");
+import { Panel, Segmented } from "./ui";
 
 /** 이만큼 넘는 순위표는 상위권과 내 주변만 보여줘요. */
 const FOLD = 10;
@@ -79,16 +79,13 @@ export function RecordBoards({ career: c }: { career: Career }) {
   const foldable = boards.some((b) => b.entries.length > FOLD);
 
   return (
-    <section className="panel">
-      <h2 className="sec">역대 기록 순위</h2>
-      <div className="seg" role="group" aria-label="순위표 고르기">
-        {RECORD_GROUPS.map((g) => (
-          <button type="button" key={g.key} aria-pressed={group === g.key} onClick={() => setGroup(g.key)}>
-            <span className="big">{g.name}</span>
-            <span className="sm">{totals[g.key].gp ? `${num(totals[g.key].gp)}경기` : "기록 없음"}</span>
-          </button>
-        ))}
-      </div>
+    <Panel title="역대 기록 순위">
+      <Segmented
+        label="순위표 고르기"
+        options={RECORD_GROUPS.map((g) => ({ key: g.key, big: g.name, sm: totals[g.key].gp ? `${num(totals[g.key].gp)}경기` : "기록 없음" }))}
+        value={group}
+        onChange={setGroup}
+      />
       {!mine.gp && (
         <p className="hint">
           {group === "olympics" ? "올림픽에 나간 기록이 없어요." : `${info.name}에서 뛴 기록이 없어요.`} 실제 순위표만 보여줘요.
@@ -112,6 +109,6 @@ export function RecordBoards({ career: c }: { career: Career }) {
           ? "내 기록은 올림픽 본선 경기 득점을 더한 값이에요. 최종예선은 빼요."
           : "현역 표시가 붙은 선수는 그 뒤로도 기록이 늘어요. 내 기록은 시즌 평균에 경기 수를 곱해 더한 값이에요."}
       </p>
-    </section>
+    </Panel>
   );
 }

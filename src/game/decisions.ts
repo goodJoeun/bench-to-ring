@@ -22,22 +22,23 @@ export const nbaPick = (score: number): number => Math.max(1, Math.round(60 - (s
 /** KBL 신인드래프트: 2라운드 전체 1~20순위, 21 이상이면 미지명 */
 export const kblPick = (score: number): number => Math.max(1, Math.round(20 - (score - 54) * 1.3));
 
-export function projectNba(c: Career): string {
-  const pk = nbaPick(nbaDraftScore(c, 0));
-  if (pk <= 3) return "1라운드 최상위";
-  if (pk <= 12) return "1라운드 상위";
-  if (pk <= 30) return "1라운드 중후반";
-  if (pk <= 60) return "2라운드";
-  return "지명 불확실";
-}
+/** 예상 지명 순위를 스카우트 문구로 바꿔요. tiers는 [이 순위까지, 문구] 목록이에요. */
+const projection = (pick: number, tiers: [number, string][]): string => tiers.find(([n]) => pick <= n)?.[1] ?? "지명 불확실";
 
-export function projectKbl(c: Career): string {
-  const pk = kblPick(kblDraftScore(c, 0));
-  if (pk <= 3) return "1라운드 최상위";
-  if (pk <= 10) return "1라운드";
-  if (pk <= 20) return "2라운드";
-  return "지명 불확실";
-}
+export const projectNba = (c: Career): string =>
+  projection(nbaPick(nbaDraftScore(c, 0)), [
+    [3, "1라운드 최상위"],
+    [12, "1라운드 상위"],
+    [30, "1라운드 중후반"],
+    [60, "2라운드"],
+  ]);
+
+export const projectKbl = (c: Career): string =>
+  projection(kblPick(kblDraftScore(c, 0)), [
+    [3, "1라운드 최상위"],
+    [10, "1라운드"],
+    [20, "2라운드"],
+  ]);
 
 /* ---------- 진로 결정 ---------- */
 
@@ -106,17 +107,25 @@ export function collegeSeasonEnd(c: Career): Decision {
 
 /* ---------- 계약 제안 ---------- */
 
+/** 계약 선택지. 설명에는 리그, 기간, 연봉, 그 팀에서의 예상 역할이 들어가요. */
+function signOption(c: Career, lg: ProLeagueKey, t: Team, years: number, salary: number, label = t.name, tag = LEAGUES[lg].short): DecisionOption {
+  return {
+    label,
+    sub: `${LEAGUES[lg].name} · ${years}년 · 연봉 ${money(salary)} · 예상 역할 ${roleOf(expectedMinutes(c, lg))}`,
+    tag,
+    act: { k: "sign", lg, team: t, years, salary },
+  };
+}
+
+/** 협상을 거친 계약 제안. 연봉이 ±10% 흔들려요. */
 function offerOption(c: Career, lg: ProLeagueKey, t: Team, years: number, sal: number, note?: string): DecisionOption {
   // 대형 에이전시가 있으면 협상에서 10% 더 받아요. 최저 연봉 계약은 그대로예요.
   const agent = c.perks.agency && note !== "최저 연봉" ? 1.1 : 1;
-  const s = roundSalary(sal * rnd(0.9, 1.1) * agent);
-  return {
-    label: t.name,
-    sub: `${LEAGUES[lg].name} · ${years}년 · 연봉 ${money(s)} · 예상 역할 ${roleOf(expectedMinutes(c, lg))}`,
-    tag: note ?? LEAGUES[lg].short,
-    act: { k: "sign", lg, team: t, years, salary: s },
-  };
+  return signOption(c, lg, t, years, roundSalary(sal * rnd(0.9, 1.1) * agent), t.name, note);
 }
+
+/** 소속팀 없이 한 시즌을 보내는 선택지 */
+const skipOption = (sub: string): DecisionOption => ({ label: "무소속으로 1년 개인 훈련", sub, act: { k: "skip" } });
 
 const RESIGN_MIN: Partial<Record<string, number>> = { nba: 72, euro: 62, kbl: 53, gleague: 58 };
 
@@ -159,7 +168,7 @@ export function freeAgency(c: Career, isFree: boolean): Decision {
   const opts = [...offers];
   if (c.age >= 31) opts.push(RETIRE_OPTION);
   if (!offers.length && c.age < 34)
-    opts.push({ label: "무소속으로 1년 개인 훈련", sub: "경기는 못 뛰지만 다음 시장을 노려요", act: { k: "skip" } });
+    opts.push(skipOption("경기는 못 뛰지만 다음 시장을 노려요"));
   if (!opts.length) opts.push(RETIRE_OPTION);
   return {
     title: isFree ? "다시 시장에 나왔어요" : "FA 시장이 열렸어요",
@@ -170,7 +179,7 @@ export function freeAgency(c: Career, isFree: boolean): Decision {
 
 export function undrafted(c: Career): Decision {
   const opts: DecisionOption[] = generateOffers(c, null, 6).map((o) => ({ ...o, tag: "육성 계약" }));
-  opts.push({ label: "무소속으로 1년 개인 훈련", sub: "다음 시즌 시장을 노려요", act: { k: "skip" } });
+  opts.push(skipOption("다음 시즌 시장을 노려요"));
   return { title: "지명받지 못했어요", body: "드래프트에서 이름이 불리지 않았지만 다른 길이 남아 있어요.", opts };
 }
 
@@ -189,12 +198,7 @@ export function nbaOffer(c: Career): Decision | null {
       ? `${t.name} 구단에서 G리그에서 NBA로 불러올리고 싶어해요.`
       : `${t.name} 구단에서 바이아웃 금액을 내고 데려가고 싶어해요.`,
     opts: [
-      {
-        label: `${t.name} 이적`,
-        sub: `NBA · ${years}년 · 연봉 ${money(sal)} · 예상 역할 ${roleOf(expectedMinutes(c, "nba"))}`,
-        tag: "NBA",
-        act: { k: "sign", lg: "nba", team: t, years, salary: sal },
-      },
+      signOption(c, "nba", t, years, sal, `${t.name} 이적`),
       { label: `${c.team.name} 잔류`, sub: `남은 계약 ${c.contract.years}년을 채워요`, act: { k: "none" } },
     ],
   };
