@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { draftSlot, money, type Career, type DraftShow } from "@/game";
 import { gameActions } from "@/lib/game-store";
-import { NO_TEAM_COLOR } from "./format";
-import { useReveal } from "./hooks";
+import { NO_TEAM_COLOR } from "@/components/common/format";
+import { useReveal } from "@/components/common/hooks";
 import { Popup, PopupFooter, PopupHero } from "./Popup";
 
 /** 다음 지명을 보여주기 전 기다리는 시간(ms) */

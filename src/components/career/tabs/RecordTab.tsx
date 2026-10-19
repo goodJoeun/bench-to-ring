@@ -1,6 +1,6 @@
 import { LEAGUES, careerSummary, fmtNum, r1, stripYear, type Career } from "@/game";
-import { militaryLine } from "../format";
-import { Panel, StatTiles } from "../ui";
+import { militaryLine } from "@/components/common/format";
+import { Panel, StatTiles } from "@/components/common/ui";
 
 function NationalLog({ career: c }: { career: Career }) {
   const log = [...c.natLog].reverse();

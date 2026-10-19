@@ -2,10 +2,10 @@
 
 import { AWARDS, fmtNum, money, titleHistory, type Career, type CareerSummary } from "@/game";
 import { gameActions } from "@/lib/game-store";
-import { NO_TEAM_COLOR, militaryShort } from "./format";
+import { NO_TEAM_COLOR, militaryShort } from "@/components/common/format";
 import { RecordBoards } from "./RecordBoards";
-import { HallOfFame } from "./tabs/HallOfFame";
-import { CourtStage, Panel, StatTiles } from "./ui";
+import { HallOfFame } from "@/components/common/HallOfFame";
+import { CourtStage, Panel, StatTiles } from "@/components/common/ui";
 
 export function RetiredScreen({ career: c, hall }: { career: Career; hall: CareerSummary[] }) {
   const s = c.summary;

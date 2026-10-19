@@ -1,4 +1,5 @@
-import { ATTR_KEYS, LEAGUES, POS, SHORT } from "./data";
+import { ATTR_KEYS, POS, SHORT } from "./data";
+import { LEAGUES } from "./leagues";
 import { retire } from "./career";
 import { addAttr, addHealth, clampTrust } from "./condition";
 import { currentDecision, resolveQueue } from "./decisions";

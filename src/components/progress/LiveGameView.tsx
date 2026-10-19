@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { LiveGame } from "@/game";
-import { reducedMotion, useAutoFocus } from "./hooks";
+import { reducedMotion, useAutoFocus } from "@/components/common/hooks";
 
 /** 한 플레이를 보여주는 간격(ms). 빠르게는 3배속이에요. */
 const STEP_MS = 120;

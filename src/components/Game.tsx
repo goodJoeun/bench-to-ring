@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { useGame } from "@/lib/game-store";
-import { CreateScreen } from "./CreateScreen";
-import { DraftLoading } from "./DraftLoading";
-import { GameScreen, type TabKey } from "./GameScreen";
-import { RetiredScreen } from "./RetiredScreen";
-import { SeasonLoading } from "./SeasonLoading";
-import { Toast } from "./Toast";
-import { TournamentLoading } from "./TournamentLoading";
+import { CreateScreen } from "@/components/create/CreateScreen";
+import { DraftLoading } from "@/components/progress/DraftLoading";
+import { GameScreen, type TabKey } from "@/components/career/GameScreen";
+import { RetiredScreen } from "@/components/retired/RetiredScreen";
+import { SeasonLoading } from "@/components/progress/SeasonLoading";
+import { Toast } from "@/components/common/Toast";
+import { TournamentLoading } from "@/components/progress/TournamentLoading";
 
 export function Game() {
   const { ready, career, draft, hall, simulating, tournament, drafting, toast } = useGame();

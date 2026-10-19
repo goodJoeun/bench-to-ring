@@ -2,7 +2,7 @@
 
 import { INVESTMENTS, INVEST_SLOTS, STUDENT_ALLOWANCE, canInvest, investCost, money, type Career } from "@/game";
 import { gameActions } from "@/lib/game-store";
-import { Choice } from "./ui";
+import { Choice } from "@/components/common/ui";
 
 /** 시즌 계획 시트 안의 시즌 투자 고르기. 두 가지까지, 보유 자금 안에서 골라요. */
 export function InvestPicker({ career: c }: { career: Career }) {

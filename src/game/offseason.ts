@@ -1,4 +1,5 @@
-import { POS, POS_GROWTH, TRAITS } from "./data";
+import { POS, POS_GROWTH } from "./data";
+import { TRAITS } from "./players";
 import { forcedRetirement, nbaOffer, resolveQueue, retirementPrompt } from "./decisions";
 import { lifeEvent } from "./events";
 import { addNews, joinTeam, pickTeam } from "./log";

@@ -1,5 +1,5 @@
 import { AWARDS, type Career } from "@/game";
-import { Panel } from "../ui";
+import { Panel } from "@/components/common/ui";
 
 export function TrophyTab({ career: c }: { career: Career }) {
   const log = [...c.awardLog].reverse();

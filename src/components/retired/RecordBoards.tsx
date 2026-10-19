@@ -13,7 +13,7 @@ import {
   type RecordBoard,
   type RecordGroup,
 } from "@/game";
-import { Panel, Segmented } from "./ui";
+import { Panel, Segmented } from "@/components/common/ui";
 
 /** 이만큼 넘는 순위표는 상위권과 내 주변만 보여줘요. */
 const FOLD = 10;

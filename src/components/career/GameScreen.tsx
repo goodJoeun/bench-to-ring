@@ -5,7 +5,7 @@ import { ActionPanel } from "./ActionPanel";
 import { AttributesPanel } from "./AttributesPanel";
 import { CourtCard } from "./CourtCard";
 import { Scoreboard } from "./Scoreboard";
-import { HallOfFame } from "./tabs/HallOfFame";
+import { HallOfFame } from "@/components/common/HallOfFame";
 import { RecordTab } from "./tabs/RecordTab";
 import { SeasonTab } from "./tabs/SeasonTab";
 import { SettingsTab } from "./tabs/SettingsTab";

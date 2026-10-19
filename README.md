@@ -2,7 +2,7 @@
 
 고교 벤치 멤버로 시작해 KBL과 NBA를 거쳐 MVP와 우승 반지에 도전하는 농구 커리어 시뮬레이션 게임이에요.
 
-리그와 구단은 2026-27 시즌 기준 실제 명칭을 써요(`src/game/data.ts`). 비공식 팬 게임이고, 명칭의 권리는 각 권리자에게 있어요. 로고는 쓰지 않고, 실존 선수는 플레이 유형 예시와 은퇴 화면의 역대 기록 순위표(`src/game/records.ts`, 2025-26 시즌 종료 기준)에만 나와요.
+리그와 구단은 2026-27 시즌 기준 실제 명칭을 써요(`src/game/leagues.ts`). 비공식 팬 게임이고, 명칭의 권리는 각 권리자에게 있어요. 로고는 쓰지 않고, 실존 선수는 플레이 유형 예시와 은퇴 화면의 역대 기록 순위표(`src/game/records.ts`, 2025-26 시즌 종료 기준)에만 나와요.
 
 ## 실행하기
 
@@ -30,44 +30,52 @@ npm run dev
 
 ```
 src/
-├─ app/                 Next.js App Router (레이아웃, 페이지, 전역 스타일)
-├─ components/          화면 컴포넌트
-│  ├─ Game.tsx          화면 전환 (선수 생성 / 커리어 / 은퇴)
-│  ├─ CreateScreen.tsx  선수 생성
-│  ├─ GameScreen.tsx    커리어 진행 화면
-│  ├─ ActionPanel.tsx   시즌 진행 버튼, 시즌 계획·오프시즌 결정 시트
-│  ├─ ui.tsx            공통 화면 조각 (Panel, StatTiles, Choice, Segmented, CourtStage)
-│  ├─ hooks.ts          공통 훅 (useReveal, useAutoFocus, useEscapeKey, useLatest)
-│  ├─ format.ts         여러 화면이 같이 쓰는 문구와 색 (훈련 이름, 병역 상태)
-│  ├─ Sheet.tsx         아래에서 올라오는 선택 시트
-│  ├─ InvestPicker.tsx  시즌 계획 시트의 시즌 투자 고르기
-│  ├─ Popup.tsx         진행 화면 공통 팝업 (시즌·대회·드래프트·결승 중계)
-│  ├─ Toast.tsx         결정 결과 알림
-│  ├─ RecordBoards.tsx  은퇴 화면 역대 기록 순위
-│  ├─ SeasonLoading.tsx 시즌 진행 로딩 화면
-│  ├─ DraftLoading.tsx  드래프트 진행 화면
-│  ├─ Sprite.tsx        Canvas 도트 캐릭터
-│  └─ tabs/             시즌 · 기록 · 트로피 · 명예의 전당 · 설정 탭
+├─ app/                    Next.js App Router (레이아웃, 페이지, 전역 스타일)
+├─ components/             화면 컴포넌트
+│  ├─ Game.tsx             화면 전환 (선수 생성 / 커리어 / 은퇴)과 진행 팝업 띄우기
+│  ├─ common/              여러 화면이 같이 쓰는 것
+│  │  ├─ ui.tsx            Panel, StatTiles, Choice, Segmented, CourtStage
+│  │  ├─ hooks.ts          useReveal, useAutoFocus, useEscapeKey, useLatest
+│  │  ├─ format.ts         훈련 이름, 병역 상태 같은 공통 문구와 색
+│  │  ├─ Sheet.tsx         아래에서 올라오는 선택 시트
+│  │  ├─ Sprite.tsx        Canvas 도트 캐릭터 (도트 그림 데이터 포함)
+│  │  └─ Toast · ImportForm · HallOfFame
+│  ├─ create/              선수 생성 화면 (후보 카드, 유형 툴팁, 시작 확인 시트)
+│  ├─ career/              커리어 진행 화면
+│  │  ├─ GameScreen.tsx    코트 카드, 전광판, 능력치, 탭 배치
+│  │  ├─ ActionPanel.tsx   시즌 진행 버튼, 시즌 계획·오프시즌 결정 시트
+│  │  ├─ InvestPicker.tsx  시즌 투자 고르기
+│  │  └─ tabs/             시즌 · 기록 · 트로피 · 설정 탭
+│  ├─ progress/            진행 팝업 (시즌·국가대표 대회·드래프트·결승 중계)
+│  └─ retired/             은퇴 화면과 역대 기록 순위
 ├─ lib/
-│  └─ game-store.ts     화면과 엔진을 잇는 상태 저장소 (useSyncExternalStore)
-└─ game/                게임 엔진 (순수 TypeScript)
-   ├─ types.ts          모든 타입
-   ├─ data.ts           포지션, 리그, 구단, 수상 같은 상수
-   ├─ create.ts         후보 선수 생성, 커리어 시작
-   ├─ season.ts         시즌 시뮬레이션, 성장, 부상, 시상, 국가대표
-   ├─ offseason.ts      오프시즌 처리와 결정 대기열
-   ├─ decisions.ts      진로·계약 결정 만들기
-   ├─ events.ts         생활 이벤트 (학교·대학·프로 생활)
-   ├─ draft.ts          드래프트 규칙표(NBA·KBL), 진행 화면용 지명 순서
-   ├─ actions.ts        결정 선택 처리
-   ├─ career.ts         은퇴, 커리어 요약, 레거시 등급
-   ├─ hall.ts           명예의 전당 순위
-   ├─ invest.ts         시즌 투자 (훈련·회복 프로그램)
-   ├─ records.ts        실제 역대 기록 순위표와 내 기록 끼워 넣기
-   ├─ condition.ts      능력치·건강·코치 신뢰의 범위와 바꾸는 함수
-   ├─ log.ts            소식·수상 기록, 팀 입단·무소속 처리
-   ├─ storage.ts        localStorage 저장, 저장 코드
-   └─ random.ts         난수 (테스트용 시드 고정 지원)
+│  └─ game-store.ts        화면과 엔진을 잇는 상태 저장소 (useSyncExternalStore)
+└─ game/                   게임 엔진 (순수 TypeScript)
+   ├─ index.ts             공개 API. 화면은 여기로만 엔진을 가져와요.
+   ├─ types.ts             모든 타입 (저장 데이터의 모양)
+   ├─ data.ts              여러 도메인이 같이 쓰는 상수 (능력치, 포지션, 수상)
+   ├─ leagues.ts           리그와 구단
+   ├─ players.ts           플레이 유형, 숨은 특성, 외모
+   ├─ create.ts            후보 선수 생성, 커리어 시작
+   ├─ season.ts            시즌 시뮬레이션, 성장, 부상, 시상
+   ├─ offseason.ts         오프시즌 처리와 결정 대기열
+   ├─ decisions.ts         진로·계약 결정 만들기
+   ├─ actions.ts           결정 선택 처리
+   ├─ events.ts            생활 이벤트 (학교·대학·프로 생활)
+   ├─ draft.ts             드래프트 규칙표(NBA·KBL), 진행 화면용 지명 순서
+   ├─ national.ts          국가와 국가대표 대회
+   ├─ live.ts              결승전 문자 중계
+   ├─ military.ts          병역
+   ├─ invest.ts            시즌 투자 (훈련·회복 프로그램)
+   ├─ career.ts            은퇴, 커리어 요약, 레거시 등급
+   ├─ hall.ts              명예의 전당 순위
+   ├─ records.ts           실제 역대 기록 순위표와 내 기록 끼워 넣기
+   ├─ ratings.ts           오버롤, 출전 시간, 연봉, 잠재력 추정
+   ├─ condition.ts         능력치·건강·코치 신뢰의 범위와 바꾸는 함수
+   ├─ log.ts               소식·수상 기록, 팀 입단·무소속 처리
+   ├─ storage.ts           localStorage 저장, 저장 코드
+   ├─ random.ts            난수 (테스트용 시드 고정 지원)
+   └─ util.ts              숫자·금액·조사 같은 작은 도우미
 ```
 
 ## 게임 규칙 요약
@@ -85,7 +93,7 @@ src/
 - **역대 기록 순위**: 은퇴 화면에서 NBA·KBL 정규리그 통산 득점·리바운드·어시스트와 올림픽 통산 득점을 실제 역대 순위표에 끼워 볼 수 있어요.
 - **명예의 전당 순위**: NBA MVP 횟수 → 최고 오버롤 → 개인상 횟수 → 프로 통산 득점. 네 항목이 같으면 공동 순위예요.
 
-밸런스를 바꾸려면 대부분 `src/game/data.ts`(리그 평균, 키 범위 등), `src/game/ratings.ts`(나이별 성장량, 연봉), `src/game/season.ts`(성장·스탯·시상 공식)를 보면 돼요. 바꾼 뒤에는 `npm run balance`로 분포를 확인하세요.
+밸런스를 바꾸려면 대부분 `src/game/leagues.ts`(리그 평균), `src/game/data.ts`(포지션 가중치와 키 범위), `src/game/ratings.ts`(나이별 성장량, 연봉), `src/game/season.ts`(성장·스탯·시상 공식)를 보면 돼요. 바꾼 뒤에는 `npm run balance`로 분포를 확인하세요.
 
 ### 육성 난이도 기준 (npm run balance, 무작위 선택 커리어 600개)
 

@@ -1,5 +1,6 @@
 import { HEALTH_RANGE, addAttr, addHealth, clampTrust } from "./condition";
-import { ATTRS, LEAGUES, POS, ROLE_RANK, SCORING_TITLE } from "./data";
+import { ATTRS, POS, ROLE_RANK } from "./data";
+import { LEAGUES, SCORING_TITLE } from "./leagues";
 import { FINAL_SCORE, finalScore, makeLiveGame } from "./live";
 import { addNews, giveAward, pickTeam } from "./log";
 import { STUDENT_ALLOWANCE, payInvestments } from "./invest";

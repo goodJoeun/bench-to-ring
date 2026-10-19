@@ -1,4 +1,4 @@
-import { TEAMS } from "./data";
+import { TEAMS } from "./leagues";
 import { pick, rnd } from "./random";
 import type { AwardKey, Career, LeagueKey, NewsType, SeasonRecord, Team } from "./types";
 

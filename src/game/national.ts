@@ -1,5 +1,4 @@
 import { addHealth } from "./condition";
-import { NATIONS } from "./data";
 import { addNews, giveAward, offseasonTag } from "./log";
 import { chance, pick, random, ri, rnd } from "./random";
 import { ovr } from "./ratings";
@@ -13,6 +12,20 @@ import { clamp, josa, sigmoid } from "./util";
  * 조별리그와 토너먼트를 한 경기씩 시뮬레이션해요.
  * 전력 차 4.5마다 승률이 약 73%로 벌어져서, 한 선수가 아무리 잘해도 약체국이 세계 대회를 우승하긴 매우 어려워요.
  */
+
+/** 고를 수 있는 국적. power는 대표팀 전력, threshold는 대표팀 발탁 기준 오버롤이에요. */
+export const NATIONS: Nation[] = [
+  { name: "대한민국", power: 66, threshold: 64, region: "asia" },
+  { name: "일본", power: 70, threshold: 64, region: "asia" },
+  { name: "필리핀", power: 67, threshold: 63, region: "asia" },
+  { name: "중국", power: 71, threshold: 66, region: "asia" },
+  { name: "호주", power: 82, threshold: 72, region: "asia" },
+  { name: "캐나다", power: 85, threshold: 79, region: "americas" },
+  { name: "미국", power: 95, threshold: 86, region: "americas" },
+  { name: "프랑스", power: 85, threshold: 79, region: "europe" },
+  { name: "스페인", power: 84, threshold: 77, region: "europe" },
+  { name: "세르비아", power: 86, threshold: 77, region: "europe" },
+];
 
 export const NAT_EVENTS: Record<NatEventKey, string> = {
   olympics: "올림픽",

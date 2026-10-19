@@ -1,6 +1,6 @@
 import { LEAGUES, POS, militaryUnit, money, stageLabel, type Career } from "@/game";
-import { NO_TEAM_COLOR } from "./format";
-import { CourtStage } from "./ui";
+import { NO_TEAM_COLOR } from "@/components/common/format";
+import { CourtStage } from "@/components/common/ui";
 
 export function CourtCard({ career: c }: { career: Career }) {
   const p = c.p;

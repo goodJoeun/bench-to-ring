@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { natColor, type Career } from "@/game";
 import { gameActions } from "@/lib/game-store";
-import { useReveal } from "./hooks";
+import { useReveal } from "@/components/common/hooks";
 import { LiveGameView } from "./LiveGameView";
 import { Popup, PopupFooter, PopupHero } from "./Popup";
 

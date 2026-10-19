@@ -1,4 +1,5 @@
-import { LEAGUES, PERSONAL_AWARDS } from "./data";
+import { PERSONAL_AWARDS } from "./data";
+import { LEAGUES } from "./leagues";
 import type { Career, CareerSummary, SeasonRecord } from "./types";
 import { stripYear } from "./util";
 

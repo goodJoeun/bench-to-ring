@@ -1,4 +1,4 @@
-import { LEAGUES } from "./data";
+import { LEAGUES } from "./leagues";
 import { pickTeam } from "./log";
 import { ri, rnd } from "./random";
 import { expectedMinutes, ovr, ovrOf, roleOf, salaryFor } from "./ratings";

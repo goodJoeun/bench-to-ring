@@ -1,5 +1,5 @@
 import { bestFive, fmtNum, rankHall, type CareerSummary } from "@/game";
-import { Panel } from "../ui";
+import { Panel } from "./ui";
 
 export function HallOfFame({ hall }: { hall: CareerSummary[] }) {
   if (!hall.length)

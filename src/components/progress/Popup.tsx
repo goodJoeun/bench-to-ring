@@ -1,7 +1,7 @@
 "use client";
 
-import { useAutoFocus } from "./hooks";
-import { Sprite } from "./Sprite";
+import { useAutoFocus } from "@/components/common/hooks";
+import { Sprite } from "@/components/common/Sprite";
 
 interface PopupProps {
   /** 제목 요소 id. 없으면 label로 이름을 붙여요. */

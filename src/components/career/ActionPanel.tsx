@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { FOCUS, currentDecision, currentExpectedMinutes, roleOf, stageLabel, type Career, type FocusKey } from "@/game";
 import { gameActions } from "@/lib/game-store";
-import { focusName } from "./format";
+import { focusName } from "@/components/common/format";
 import { InvestPicker } from "./InvestPicker";
-import { Sheet } from "./Sheet";
-import { Choice } from "./ui";
+import { Sheet } from "@/components/common/Sheet";
+import { Choice } from "@/components/common/ui";
 
 function focusHint(k: FocusKey): string {
   if (k === "bal") return "모든 능력치를 고르게 키워요.";

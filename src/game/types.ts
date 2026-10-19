@@ -1,3 +1,10 @@
+/*
+ * 게임 엔진의 모든 타입. 대부분은 Career와 그 안에 든 값, 곧 저장 데이터의 모양이에요.
+ * 저장 코드에 그대로 들어가니, 필드를 바꾸면 storage.ts의 불러오기·마이그레이션도 같이 고쳐야 해요.
+ */
+
+/* ---------- 기본 키 ---------- */
+
 export type AttrKey = "sht" | "hdl" | "pas" | "def" | "iq" | "ath";
 export type Attrs = Record<AttrKey, number>;
 
@@ -35,6 +42,8 @@ export type AwardKey =
   | "nat_silver"
   | "nat_bronze";
 
+/* ---------- 리그 · 팀 · 국가 ---------- */
+
 export interface Team {
   name: string;
   color: string;
@@ -66,6 +75,8 @@ export interface Nation {
 }
 
 export type NatEventKey = "olympics" | "worldcup" | "wcq" | "asiacup" | "eurobasket" | "americup" | "asiangames";
+
+/* ---------- 선수 ---------- */
 
 /** 선수 생성 때 고르는 플레이 유형 */
 export interface Archetype {
@@ -103,6 +114,8 @@ export interface Player extends Candidate {
   path: CareerPath;
   traitKnown: boolean;
 }
+
+/* ---------- 시즌 · 경기 기록 ---------- */
 
 export interface SeasonRecord {
   year: number;
@@ -198,6 +211,8 @@ export interface NatTournament {
   games: NatGame[];
 }
 
+/* ---------- 병역 ---------- */
+
 /** 병역. none: 아직, serving: 복무 중, served: 전역, exempt: 병역 특례 */
 export interface Military {
   s: "none" | "serving" | "served" | "exempt";
@@ -209,6 +224,8 @@ export interface Military {
   /** 전역 후 첫 시즌: 시즌 중반에 합류해요. */
   back?: boolean;
 }
+
+/* ---------- 결정과 선택지 ---------- */
 
 /** 신청할 수 있는 드래프트 */
 export type DraftKey = "nba" | "kbl";
@@ -275,6 +292,8 @@ export interface LazyDecision {
 
 export type QueueItem = Decision | LazyDecision;
 
+/* ---------- 소식 · 수상 · 드래프트 · 계약 ---------- */
+
 export interface NewsItem {
   w: string;
   t: NewsType;
@@ -324,6 +343,8 @@ export interface Contract {
   years: number;
   salary: number;
 }
+
+/* ---------- 커리어 ---------- */
 
 export interface CareerSummary {
   id: string;

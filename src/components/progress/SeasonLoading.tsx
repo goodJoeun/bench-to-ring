@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { LEAGUES, militaryUnit, type Career } from "@/game";
 import { gameActions } from "@/lib/game-store";
-import { NO_TEAM_COLOR } from "./format";
-import { reducedMotion, useAutoFocus } from "./hooks";
+import { NO_TEAM_COLOR } from "@/components/common/format";
+import { reducedMotion, useAutoFocus } from "@/components/common/hooks";
 import { LiveGameView } from "./LiveGameView";
 import { Popup, PopupHero } from "./Popup";
 

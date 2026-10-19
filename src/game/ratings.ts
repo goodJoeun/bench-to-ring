@@ -1,4 +1,5 @@
-import { ATTRS, LEAGUES, POS } from "./data";
+import { ATTRS, POS } from "./data";
+import { LEAGUES } from "./leagues";
 import type { AttrKey, Attrs, Career, LeagueKey, Player, PosKey, ProLeagueKey, Role } from "./types";
 import { clamp } from "./util";
 

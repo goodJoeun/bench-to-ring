@@ -1,7 +1,34 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { SPRITE } from "@/game";
+
+/** 16x24 도트 캐릭터. H 머리, S 피부, E 눈, J 유니폼, j 목선, n 등번호, W 반바지, K 신발, k 밑창, B/b 공 */
+const SPRITE = [
+  "......HHHH......",
+  ".....HHHHHH.....",
+  ".....HSSSSH.....",
+  ".....SESSES.....",
+  ".....SSSSSS.....",
+  "......SSSS......",
+  ".......SS.......",
+  "....JJJjjJJJ....",
+  "...JJJJJJJJJJ...",
+  "...SJJJJJJJJS...",
+  "...SJJJnnJJJS...",
+  "...SJJJnnJJJS...",
+  "...SJJJJJJJJSBB.",
+  "....JJJJJJJJBbBB",
+  "....WWWWWWWWBBbB",
+  "....WWWWWWWW.BB.",
+  "....WWW..WWW....",
+  ".....SS..SS.....",
+  ".....SS..SS.....",
+  ".....SS..SS.....",
+  ".....SS..SS.....",
+  ".....SS..SS.....",
+  "....KKK..KKK....",
+  "....kkk..kkk....",
+];
 
 function shade(hex: string, amount: number): string {
   const n = parseInt(hex.slice(1), 16);

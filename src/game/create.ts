@@ -1,4 +1,6 @@
-import { ARCHETYPES, ATTR_KEYS, HAIRS, POS, SKINS, START_YEAR, TEAMS, TRAIT_KEYS } from "./data";
+import { ATTR_KEYS, POS, START_YEAR } from "./data";
+import { ARCHETYPES, HAIRS, SKINS, TRAIT_KEYS } from "./players";
+import { TEAMS } from "./leagues";
 import { addNews, makeTeam, pickTeam, setTeam } from "./log";
 import { chance, pick, ri, rnd, shuffle, triangular } from "./random";
 import { ovrOf } from "./ratings";

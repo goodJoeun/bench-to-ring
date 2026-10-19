@@ -1,4 +1,5 @@
-import { POS_KEYS, TEAMS } from "./data";
+import { POS_KEYS } from "./data";
+import { TEAMS } from "./leagues";
 import { kblDraftScore, kblPick, nbaDraftScore, nbaPick, projectKbl, projectNba, undrafted } from "./decisions";
 import { addNews, joinTeam, leaveTeam, pickTeam } from "./log";
 import { chance, pick as pickOne, rnd, shuffle } from "./random";

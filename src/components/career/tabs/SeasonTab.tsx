@@ -1,5 +1,5 @@
 import { LEAGUES, currentExpectedMinutes, roleOf, type Career, type SeasonRecord } from "@/game";
-import { Panel } from "../ui";
+import { Panel } from "@/components/common/ui";
 
 /** 경기를 뛰지 않은 시즌 (현역 복무, 무소속) */
 function NoGamesCard({ r, kicker, title }: { r: SeasonRecord; kicker: string; title: string }) {

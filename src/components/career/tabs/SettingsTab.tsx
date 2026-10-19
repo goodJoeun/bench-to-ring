@@ -4,8 +4,8 @@ import { useMemo, useRef, useState } from "react";
 import { canRetire, type Career } from "@/game";
 import { encodeSave } from "@/game/storage";
 import { gameActions } from "@/lib/game-store";
-import { ImportForm } from "../ImportForm";
-import { Panel } from "../ui";
+import { ImportForm } from "@/components/common/ImportForm";
+import { Panel } from "@/components/common/ui";
 
 export function SettingsTab({ career }: { career: Career }) {
   const code = useMemo(() => encodeSave(career), [career]);
