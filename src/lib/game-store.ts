@@ -36,6 +36,8 @@ export interface CreationDraft {
   /** 고등학교 이름. 빈 문자열이면 무작위 */
   school: string;
   candidates: Candidate[];
+  /** 포지션마다 마지막으로 뽑은 후보. 포지션을 오가도 다시 뽑히지 않아요. */
+  pool: Partial<Record<PosKey, Candidate[]>>;
   selected: number;
   rerolls: number;
 }
@@ -70,7 +72,7 @@ export interface Toast {
   msg: string;
 }
 
-const REROLLS = 3;
+const REROLLS = 5;
 
 const emptyDraft = (): CreationDraft => ({
   name: "",
@@ -80,6 +82,7 @@ const emptyDraft = (): CreationDraft => ({
   path: "abroad",
   school: "",
   candidates: [],
+  pool: {},
   selected: 0,
   rerolls: REROLLS,
 });
@@ -91,10 +94,12 @@ const listeners = new Set<() => void>();
 
 function freshDraft(prev?: CreationDraft): CreationDraft {
   const base = prev ?? emptyDraft();
+  const candidates = generateCandidates(base.pos);
   return {
     ...base,
     num: base.num || String(Math.floor(Math.random() * 100)),
-    candidates: generateCandidates(base.pos),
+    candidates,
+    pool: { [base.pos]: candidates },
     selected: 0,
     rerolls: REROLLS,
   };
@@ -181,13 +186,18 @@ export const gameActions = {
   editDraft(patch: Partial<Pick<CreationDraft, "name" | "num" | "nat" | "path" | "school" | "selected">>) {
     set({ draft: { ...snapshot.draft, ...patch } });
   },
+  /** 포지션을 바꿔요. 처음 고르는 포지션만 새로 뽑고, 이미 본 포지션은 그때 후보를 그대로 보여줘요. */
   choosePosition(pos: PosKey) {
-    set({ draft: { ...snapshot.draft, pos, candidates: generateCandidates(pos), selected: 0 } });
+    const d = snapshot.draft;
+    if (pos === d.pos) return;
+    const candidates = d.pool[pos] ?? generateCandidates(pos);
+    set({ draft: { ...d, pos, candidates, pool: { ...d.pool, [pos]: candidates }, selected: 0 } });
   },
   reroll() {
     const d = snapshot.draft;
     if (d.rerolls <= 0) return;
-    set({ draft: { ...d, candidates: generateCandidates(d.pos), selected: 0, rerolls: d.rerolls - 1 } });
+    const candidates = generateCandidates(d.pos);
+    set({ draft: { ...d, candidates, pool: { ...d.pool, [d.pos]: candidates }, selected: 0, rerolls: d.rerolls - 1 } });
   },
   startCareer() {
     const d = snapshot.draft;
