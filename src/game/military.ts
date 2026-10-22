@@ -1,6 +1,6 @@
 import { addAttr, addHealth } from "./condition";
 import { ATTR_KEYS } from "./data";
-import { addNews, offseasonTag } from "./log";
+import { addNews, decisionTag } from "./log";
 import { chance, ri, rnd } from "./random";
 import { ovr } from "./ratings";
 import type { AttrKey, Career, Decision, DecisionOption, MilitaryKind, QueueItem, SeasonRecord } from "./types";
@@ -84,7 +84,7 @@ function enlist(c: Career, kind: MilitaryKind, tag: string): void {
 }
 
 export function applyMilitary(c: Career, choice: MilitaryKind | "defer"): void {
-  const tag = offseasonTag(c);
+  const tag = decisionTag(c);
   const forced = c.age >= ENLIST_DEADLINE;
   if (choice === "defer") {
     c.mil.ask = Math.min(ENLIST_DEADLINE, c.age + 2);

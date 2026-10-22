@@ -17,6 +17,8 @@ export function describeBoost(b: Boost): string {
   if (b.trust) parts.push(b.trust > 0 ? "코치 신뢰 상승" : "코치 신뢰 하락");
   if (b.agency) parts.push("앞으로 연봉 제안 +10%");
   if (b.trainer) parts.push(`${SHORT[b.trainer]} 성장 꾸준히 +15%`);
+  if (b.form) parts.push(b.form > 0 ? "경기력 상승" : "경기력 하락");
+  if (b.sit) parts.push(b.sit > 0 ? `${b.sit}경기 휴식` : `결장 ${-b.sit}경기 단축`);
   return parts.join(" · ") || "변화 없음";
 }
 
@@ -405,13 +407,168 @@ const EVENTS: LifeEvent[] = [
   },
 ];
 
+/* ---------- 시즌 중 이벤트 ---------- */
+
+/** 정규시즌을 치르는 중인지 (경기력·휴식 효과가 의미 있을 때) */
+const inGames = (c: Career) => !!c.run && c.run.games > 0;
+const inSchoolGames = (c: Career) => inGames(c) && (isHs(c) || isCollege(c));
+const inProGames = (c: Career) => inGames(c) && isPro(c);
+/** 팀 없이 보내는 시즌 */
+const offCourt = (c: Career) => !!c.run && c.run.games === 0;
+
+/** 시즌 도중에 생기는 일. 경기력(form)과 휴식(sit)은 남은 경기에만 영향을 줘요. */
+const SEASON_EVENTS: LifeEvent[] = [
+  {
+    id: "s-slump",
+    when: inGames,
+    make: (c) => {
+      const fee = roundSalary(clamp(salary(c) * 0.02, 0.01, 2));
+      return {
+        title: "슛 감각 난조",
+        body: "최근 몇 경기째 슛이 림을 외면해요. 코치는 별말 없지만 신경이 쓰여요.",
+        opts: [
+          opt("새벽 추가 훈련", { form: 1, health: -5, msg: "새벽 훈련으로 슛 감각을 되찾았어요." }),
+          opt("멘탈 코치와 상담", { form: 0.7, money: -fee, msg: "멘탈 코치와 이야기하며 마음이 편해졌어요." }),
+          pass("감을 믿고 기다린다", "조급해하지 않고 평소 루틴을 지켰어요."),
+        ],
+      };
+    },
+  },
+  {
+    id: "s-rival",
+    when: inGames,
+    make: () => ({
+      title: "라이벌의 도발",
+      body: "다음 상대 팀 에이스가 인터뷰에서 나를 콕 집어 '별것 아니'라고 했어요.",
+      opts: [
+        risky(
+          "코트에서 갚아 준다",
+          0.55,
+          { form: 1, msg: "맞대결에서 완승하며 기세가 올랐어요." },
+          { form: -1, msg: "의욕이 앞서 무리하다 경기를 망쳤어요.", t: "bad" },
+        ),
+        pass("신경 쓰지 않는다", "도발에 반응하지 않고 내 경기를 했어요."),
+      ],
+    }),
+  },
+  {
+    id: "s-vet",
+    when: inGames,
+    make: () => ({
+      title: "선배의 개인 지도",
+      body: "팀 고참 선배가 경기 뒤 따로 남아 함께 연습하자고 해요.",
+      opts: [
+        opt("경기 영상을 같이 본다", { attrs: { iq: 1 }, msg: "선배와 영상을 보며 경기를 읽는 눈이 생겼어요." }),
+        opt("슈팅 연습을 같이 한다", { attrs: { sht: 1 }, health: -2, msg: "선배에게 슈팅 요령을 배웠어요." }),
+      ],
+    }),
+  },
+  {
+    id: "s-fatigue",
+    when: inProGames,
+    make: () => ({
+      title: "연전 피로",
+      body: "원정 연전이 이어지며 다리가 무거워요. 트레이너는 쉬어 가라고 해요.",
+      opts: [
+        opt("휴식을 요청한다", { sit: 2, health: 8, msg: "두 경기를 쉬며 몸을 추슬렀어요." }),
+        opt("참고 계속 뛴다", { form: 0.5, health: -7, msg: "피곤함을 참고 계속 코트에 섰어요." }),
+      ],
+    }),
+  },
+  {
+    id: "s-media",
+    when: inProGames,
+    make: (c) => {
+      const pay = roundSalary(clamp(salary(c) * 0.03, 0.05, 3));
+      return {
+        title: "방송 출연 제안",
+        body: "인기 예능 프로그램에서 게스트로 나와 달라고 해요. 촬영은 휴식일이에요.",
+        opts: [
+          opt("출연한다", { money: pay, health: -3, msg: "예능 출연으로 얼굴을 알렸어요." }),
+          opt("경기에만 집중", { form: 0.5, msg: "다음 경기 준비에만 집중했어요." }),
+        ],
+      };
+    },
+  },
+  {
+    id: "s-scout",
+    when: inSchoolGames,
+    make: () => ({
+      title: "관중석의 스카우트",
+      body: "오늘 경기에 프로 스카우트들이 왔다는 소문이 돌아요.",
+      opts: [
+        risky(
+          "눈도장을 찍으려 몰아붙인다",
+          0.5,
+          { form: 1, rand: 1, amt: 1, msg: "스카우트 앞에서 인생 경기를 펼쳤어요." },
+          { form: -0.5, health: -5, msg: "무리하다 실수가 쏟아졌어요.", t: "bad" },
+        ),
+        pass("평소처럼 뛴다", "스카우트를 의식하지 않고 평소대로 뛰었어요."),
+      ],
+    }),
+  },
+  {
+    id: "s-midterm",
+    when: inSchoolGames,
+    make: () => ({
+      title: "중간고사와 원정 경기",
+      body: "중간고사 기간에 원정 경기가 이어져요. 버스에서라도 공부해야 할까요?",
+      opts: [
+        opt("공부도 챙긴다", { attrs: { iq: 1 }, form: -0.5, msg: "시험과 경기를 함께 버텨 냈어요." }),
+        opt("농구에 집중", { form: 0.7, msg: "시험은 뒷전으로 하고 경기에 집중했어요." }),
+      ],
+    }),
+  },
+  {
+    id: "s-pickup",
+    when: (c) => offCourt(c) && isFree(c),
+    make: () => ({
+      title: "실내 체육관 픽업 게임",
+      body: "근처 체육관에서 프로 출신 선수들이 픽업 게임을 한다고 해요.",
+      opts: [
+        risky(
+          "끼워 달라고 한다",
+          0.6,
+          { rand: 1, amt: 1, msg: "프로 출신들과 부딪치며 감각을 지켰어요." },
+          { health: -5, msg: "거친 몸싸움에 발목을 삐었어요.", t: "bad" },
+        ),
+        pass("혼자 훈련한다", "계획한 개인 훈련을 이어 갔어요."),
+      ],
+    }),
+  },
+  {
+    id: "s-barracks",
+    when: (c) => offCourt(c) && c.stage === "military",
+    make: () => ({
+      title: "부대의 개인 정비 시간",
+      body: "주말 개인 정비 시간이 생겼어요. 어떻게 보낼까요?",
+      opts: [
+        opt("연병장에서 개인 운동", { attrs: { ath: 1 }, health: -3, msg: "주말마다 개인 운동으로 몸을 지켰어요." }),
+        opt("푹 쉰다", { health: 6, msg: "모처럼 푹 쉬며 몸을 회복했어요." }),
+      ],
+    }),
+  },
+];
+
+/** 의료진이 오래 쉬라고 할 때 고르는 복귀 시점 */
+export function injuryDecision(out: number): Decision {
+  return {
+    title: "부상 복귀 시점",
+    body: `의료진은 ${out}경기 정도 쉬어야 한다고 해요. 팀은 하루라도 빨리 돌아오길 바라는 눈치예요.`,
+    opts: [
+      opt("서둘러 복귀한다", { sit: -Math.round(out * 0.4), health: -6, form: -0.5, msg: "재활을 서둘러 예정보다 일찍 돌아오기로 했어요.", t: "info" }),
+      opt("완전히 회복한다", { health: 6, msg: "서두르지 않고 몸을 완전히 회복하기로 했어요." }),
+    ],
+  };
+}
+
 /** 같은 이벤트는 이 기간 안에 다시 나오지 않아요. */
 const COOLDOWN = 3;
 
-/** 지금 단계에 맞는 생활 이벤트를 하나 골라요. 고른 이벤트는 기록해 둬요. */
-export function lifeEvent(c: Career): Decision | null {
+/** 겪을 수 있는 이벤트 가운데 하나를 골라요. 고른 이벤트는 기록해 둬요. */
+function drawEvent(c: Career, events: LifeEvent[]): Decision | null {
   const seen = c.events;
-  const pool = EVENTS.filter((e) => {
+  const pool = events.filter((e) => {
     const last = seen[e.id];
     if (last !== undefined && (e.once || c.year - last < COOLDOWN)) return false;
     return !e.when || e.when(c);
@@ -421,3 +578,9 @@ export function lifeEvent(c: Career): Decision | null {
   seen[e.id] = c.year;
   return e.make(c);
 }
+
+/** 지금 단계에 맞는 생활 이벤트를 하나 골라요. 오프시즌에 생겨요. */
+export const lifeEvent = (c: Career): Decision | null => drawEvent(c, EVENTS);
+
+/** 시즌 도중에 생기는 이벤트를 하나 골라요. */
+export const seasonEvent = (c: Career): Decision | null => drawEvent(c, SEASON_EVENTS);

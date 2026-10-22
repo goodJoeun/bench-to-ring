@@ -147,6 +147,98 @@ export interface SeasonRecord {
   invest?: InvestKey[];
 }
 
+/* ---------- 진행 중인 시즌 ---------- */
+
+/** 정규시즌 한 경기 */
+export interface GameLine {
+  /** 몇 번째 경기 (1부터) */
+  n: number;
+  opp: string;
+  us: number;
+  them: number;
+  win: boolean;
+  /** 내 기록. 결장했으면 없어요. */
+  me?: { min: number; pts: number; reb: number; ast: number; rating: number };
+  /** 결장 사유: 부상, 휴식, 합류 전 */
+  out?: string;
+}
+
+/** 플레이오프(전국대회) 한 라운드 */
+export interface PostRound {
+  /** 플레이오프 1라운드, 전국대회 4강, NBA 파이널… */
+  name: string;
+  opp: string;
+  /** 상대 팀 색 (결승 중계용) */
+  color: string;
+  win: boolean;
+  /** 시리즈 성적 "4-2" 또는 단판 점수 "78-71" */
+  score: string;
+}
+
+/** 내가 뛴 경기 기록 합계 */
+export interface SeasonTotals {
+  gp: number;
+  min: number;
+  pts: number;
+  reb: number;
+  ast: number;
+  stl: number;
+  blk: number;
+  rating: number;
+}
+
+/**
+ * 진행 중인 시즌. 시즌을 시작하면 생기고, 결산하면 사라져요.
+ * 팀 성적·부상처럼 밸런스를 좌우하는 값은 시작할 때 정해 두고, 경기마다 하나씩 풀어 보여줘요.
+ * 시즌 중 이벤트는 내 경기력(폼)과 결장에만 영향을 줘요.
+ */
+export interface SeasonRun {
+  year: number;
+  /** pre 프리시즌, reg 정규시즌, post 플레이오프, end 결산 대기 */
+  phase: "pre" | "reg" | "post" | "end";
+  /** 팀이 없는 시즌(무소속·군 복무)은 경기 대신 이 일정을 한 칸씩 진행해요. */
+  plan: string[];
+  /** plan에서 진행한 칸 수 */
+  step: number;
+  /** 시즌을 시작할 때의 오버롤(반올림 전) */
+  ovr0: number;
+  /** 이번 시즌에 비용을 내고 한 투자 */
+  inv: InvestKey[];
+  /** 정규시즌 경기 수와 치른 경기 수 */
+  games: number;
+  g: number;
+  w: number;
+  l: number;
+  /** 정규시즌에 거둘 승수. 남은 승수를 남은 경기에 무작위로 나눠요. */
+  wins: number;
+  /** 예상 출전 시간, 기본 평점, 예상 출전 시간만큼 뛸 때의 경기당 기록, 야투율 */
+  min: number;
+  rating: number;
+  mean: { pts: number; reb: number; ast: number; stl: number; blk: number };
+  fg: number;
+  /** 경기력 (-2~2). 시즌 중 이벤트로 오르내리고 기록·평점에 반영돼요. */
+  form: number;
+  /** 남은 결장 경기와 사유 */
+  out: number;
+  outWhy: string;
+  /** 예정된 부상: at번째 경기(0부터)에서 다쳐 out경기를 빠져요. 다치는 순간 건강 hp, 운동능력 ath가 줄어요. */
+  injury: { at: number; out: number; name: string; hp: number; ath: number } | null;
+  /** 시즌 중 이벤트를 확인할 경기 번호 */
+  checks: number[];
+  /** 전역 후 합류하는 시즌 */
+  back: boolean;
+  tot: SeasonTotals;
+  /** 최근 경기 (최신이 앞) */
+  log: GameLine[];
+  /** 정규시즌 결과로 정한 플레이오프 라운드와 공개한 수 */
+  post: PostRound[];
+  shown: number;
+  /** 시즌 최종 성적 문구와 우승 여부. 정규시즌이 끝나면 정해져요. */
+  result: string;
+  champ: boolean;
+  final: FinalSummary | null;
+}
+
 export interface FinalSummary {
   opp: string;
   us: number;
@@ -261,6 +353,10 @@ export interface Boost {
   agency?: boolean;
   /** 전담 트레이너: 이 능력치가 매 시즌 조금 더 잘 커요. */
   trainer?: AttrKey;
+  /** 시즌 중에만: 남은 경기의 경기력(폼) 변화 */
+  form?: number;
+  /** 시즌 중에만: 쉬는 경기 수. 음수면 결장 경기가 줄어요. */
+  sit?: number;
   msg?: string;
   /** 소식 종류. 기본은 good */
   t?: NewsType;
@@ -421,6 +517,8 @@ export interface Career {
   invest: InvestKey[];
   /** 투자로 쓴 돈 합계 (억). earnings는 지금 가진 돈이에요. */
   spent: number;
+  /** 진행 중인 시즌. 시즌과 시즌 사이(오프시즌)에는 null이에요. */
+  run: SeasonRun | null;
 }
 
 export interface NewCareerInput {

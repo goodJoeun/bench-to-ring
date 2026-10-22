@@ -1,4 +1,4 @@
-import { LEAGUES, currentExpectedMinutes, roleOf, type Career, type SeasonRecord } from "@/game";
+import { LEAGUES, currentExpectedMinutes, militaryUnit, r1, roleOf, seasonProgress, type Career, type SeasonRecord, type SeasonRun } from "@/game";
 import { Panel } from "@/components/common/ui";
 
 /** 경기를 뛰지 않은 시즌 (현역 복무, 무소속) */
@@ -97,10 +97,128 @@ function Preseason({ career: c }: { career: Career }) {
   );
 }
 
+/** 팀 없이 보내는 시즌(무소속·군 복무)의 일정 */
+function RunPlan({ career: c, run }: { career: Career; run: SeasonRun }) {
+  const title = c.stage === "military" ? militaryUnit(c.mil.kind).name : "무소속 · 개인 훈련";
+  return (
+    <Panel kicker={`${run.year} 시즌 진행 중`} title={title}>
+      <ol className="plan">
+        {run.plan.map((p, i) => (
+          <li key={i} data-state={i < run.step ? "done" : i === run.step ? "now" : undefined}>
+            {p}
+          </li>
+        ))}
+      </ol>
+    </Panel>
+  );
+}
+
+const formLabel = (f: number) => (f >= 0.3 ? "상승세" : f <= -0.3 ? "하락세" : null);
+
+/** 진행 중인 팀 시즌: 지금까지의 평균 기록, 팀 성적, 플레이오프 라운드, 최근 경기 */
+function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
+  const t = run.tot;
+  const avg = (v: number) => (t.gp ? r1(v / t.gp) : "-");
+  const stats: [string, number | string][] = [
+    ["PTS", avg(t.pts)],
+    ["REB", avg(t.reb)],
+    ["AST", avg(t.ast)],
+    ["STL", avg(t.stl)],
+    ["BLK", avg(t.blk)],
+    ["MIN", avg(t.min)],
+  ];
+  const team = c.team;
+  const form = formLabel(run.form);
+  return (
+    <section className="panel">
+      <div className="rc-head">
+        <div>
+          <span className="label">
+            {run.year} 시즌 · {team?.name} · {team ? LEAGUES[team.lg].short : ""}
+          </span>
+          <h2 className="sec">
+            {seasonProgress(run).label} · {run.w}승 {run.l}패
+          </h2>
+        </div>
+        <div className="rating">
+          <span className="label">평점</span>
+          <b>{avg(t.rating)}</b>
+        </div>
+      </div>
+      <div className="statline">
+        {stats.map(([k, v]) => (
+          <div className="stat" key={k}>
+            <span className="n">{v}</span>
+            <span className="k">{k}</span>
+          </div>
+        ))}
+      </div>
+      <div className="meta-row">
+        <span>
+          출전 <b>{t.gp}경기</b>
+        </span>
+        {run.out > 0 && (
+          <span>
+            {run.outWhy} <b>{run.out}경기 결장 예정</b>
+          </span>
+        )}
+        {form && (
+          <span>
+            경기력 <b>{form}</b>
+          </span>
+        )}
+      </div>
+      {run.shown > 0 && (
+        <ul className="rounds">
+          {run.post.slice(0, run.shown).map((r) => (
+            <li key={r.name} data-win={r.win}>
+              <span>{r.name}</span>
+              <span className="gopp">{r.opp}</span>
+              <b>
+                {r.score} {r.win ? "승" : "패"}
+              </b>
+            </li>
+          ))}
+        </ul>
+      )}
+      {run.log.length > 0 ? (
+        <ol className="games" aria-label="최근 경기">
+          {run.log.map((g) => (
+            <li key={g.n} data-win={g.win}>
+              <span className="gn">{g.n}</span>
+              <span className="gwl">{g.win ? "승" : "패"}</span>
+              <span className="gopp">
+                {g.opp}
+                <small>
+                  {g.us}-{g.them}
+                </small>
+              </span>
+              <span className="gme">{g.me ? `${g.me.pts}점 ${g.me.reb}리바 ${g.me.ast}어시 · ${g.me.rating}` : `결장 · ${g.out}`}</span>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="hint">프리시즌 훈련 중이에요. 곧 개막전이에요.</p>
+      )}
+    </section>
+  );
+}
+
 export function SeasonTab({ career: c }: { career: Career }) {
+  const run = c.run;
   return (
     <>
-      {c.last ? <ResultCard r={c.last} /> : <Preseason career={c} />}
+      {run ? (
+        run.plan.length ? (
+          <RunPlan career={c} run={run} />
+        ) : (
+          <RunCard career={c} run={run} />
+        )
+      ) : c.last ? (
+        <ResultCard r={c.last} />
+      ) : (
+        <Preseason career={c} />
+      )}
       <Panel title="소식">
         <ul className="news">
           {c.news.slice(0, 18).map((n, i) => (

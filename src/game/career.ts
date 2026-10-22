@@ -112,4 +112,4 @@ export function retire(c: Career): CareerSummary {
 }
 
 /** 은퇴를 직접 선언할 수 있는지 */
-export const canRetire = (c: Career): boolean => c.age >= 30 && (c.stage === "pro" || c.stage === "free");
+export const canRetire = (c: Career): boolean => !c.run && c.age >= 30 && (c.stage === "pro" || c.stage === "free");

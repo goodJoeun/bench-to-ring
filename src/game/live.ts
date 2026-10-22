@@ -120,6 +120,13 @@ export function makeLiveGame(i: LiveInput): LiveGame {
 /** 리그별 결승 한 경기 평균 득점 */
 export const FINAL_SCORE: Record<string, number> = { nba: 108, gleague: 112, euro: 80, kbl: 80, ncaa: 72, kuniv: 76, hs: 66, fiba: 80 };
 
+/** 정규시즌 한 경기 점수. 결승보다 점수 차가 크게 벌어질 때가 많아요. */
+export function gameScore(avg: number, win: boolean): [number, number] {
+  const loser = Math.round(avg + rnd(-12, 6));
+  const margin = random() < 0.4 ? ri(1, 6) : ri(7, 24);
+  return win ? [loser + margin, loser] : [loser, loser + margin];
+}
+
 /** 평균 득점 기준으로 승패에 맞는 두 팀 점수를 만들어요. 결승답게 대체로 접전이에요. */
 export function finalScore(avg: number, win: boolean): [number, number] {
   const loser = Math.round(avg + rnd(-10, 6));

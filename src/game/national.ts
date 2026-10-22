@@ -1,5 +1,5 @@
 import { addHealth } from "./condition";
-import { addNews, giveAward, offseasonTag } from "./log";
+import { addNews, decisionTag, giveAward } from "./log";
 import { chance, pick, random, ri, rnd } from "./random";
 import { ovr } from "./ratings";
 import { makeLiveGame } from "./live";
@@ -274,7 +274,7 @@ const NAT_LOG_LIMIT = 40;
 /** 대표팀 합류 또는 불참. 어느 쪽이든 대표팀은 대회를 치르고, 결과를 기록과 소식으로 남겨요. */
 export function runNationalTeam(c: Career, ev: NatEventKey, year: number, join: boolean): NatTournament {
   const n = nationOf(c);
-  const tag = offseasonTag(c);
+  const tag = decisionTag(c);
   const name = `${year} ${NAT_EVENTS[ev]}`;
   const o = ovr(c.p);
   const power = teamPower(n, ev, join ? o : undefined);

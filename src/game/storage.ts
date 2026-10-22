@@ -129,6 +129,7 @@ function normalize(c: Career): Career {
   c.draftShow ??= null;
   c.invest ??= [];
   c.spent ??= 0;
+  c.run ??= null;
   migrateAttrs(c);
   return c;
 }

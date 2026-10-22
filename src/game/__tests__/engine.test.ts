@@ -29,13 +29,17 @@ import {
   startCap,
   simulateSeason,
   simulateTournament,
+  canRetire,
+  startSeason,
+  stepSeason,
+  type SeasonStep,
   teamPower,
   titleHistory,
   type AttrKey,
   type Career,
   type CareerSummary,
 } from "@/game";
-import { lifeEvent } from "@/game/events";
+import { injuryDecision, lifeEvent } from "@/game/events";
 import { makeLiveGame } from "@/game/live";
 import { militaryDecision } from "@/game/military";
 import { nationalCallUp, runNationalTeam } from "@/game/national";
@@ -710,5 +714,130 @@ describe("대회 진행과 결승 중계", () => {
       expect(rec.final.win).toBe(rec.result === "리그 우승");
     }
     expect(found).toBe(true);
+  });
+});
+
+describe("시즌 진행", () => {
+  /** NBA 강팀 주전으로 시즌을 하나 준비해요. */
+  function proCareer(id: string): Career {
+    const c = createCareer({ name: "시즌", num: 30, nat: "미국", pos: "SG", path: "abroad" }, generateCandidates("SG")[0], id);
+    c.stage = "pro";
+    c.team = { name: "보스턴 셀틱스", color: "#007A33", q: 0.8, lg: "nba" };
+    c.contract = { years: 3, salary: 30 };
+    return c;
+  }
+
+  /** 결정은 첫 선택지로 고르며 시즌 끝까지 한 칸씩 진행하고, 칸마다 결과를 모아요. */
+  function stepThrough(c: Career): SeasonStep[] {
+    const steps: SeasonStep[] = [];
+    if (!c.run) startSeason(c);
+    while (c.run) {
+      if (c.queue.length) {
+        expect(stepSeason(c), "결정이 남았으면 진행하지 않아요").toBeNull();
+        chooseOption(c, 0);
+        continue;
+      }
+      const g = c.run.g;
+      const phase = c.run.phase;
+      steps.push(stepSeason(c)!);
+      if (phase === "reg" && c.run?.games) expect(c.run.g).toBe(g + 1);
+    }
+    return steps;
+  }
+
+  it("정규시즌은 한 경기씩, 플레이오프는 한 라운드씩 진행하고 결산하면 시즌 기록이 하나 남아요", () => {
+    setRandom(seeded(61));
+    for (let i = 0; i < 30; i++) {
+      const c = proCareer(`run${i}`);
+      const year = c.year;
+      startSeason(c);
+      expect(c.run?.phase).toBe("pre");
+      expect(canRetire({ ...c, age: 33 })).toBe(false);
+      const games = c.run!.games;
+      const steps = stepThrough(c);
+      const rec = c.last!;
+      expect(c.run).toBeNull();
+      expect(c.year).toBe(year + 1);
+      expect(rec.year).toBe(year);
+      expect(rec.w + rec.l).toBe(games);
+      expect(rec.gp).toBeLessThanOrEqual(games);
+      expect(steps.at(-1)).toBe("done");
+      expect(steps.filter((s) => s === "done").length).toBe(1);
+      // 프리시즌 + 경기 수 + 플레이오프 라운드(0~3) + 결산
+      expect(steps.length).toBeGreaterThanOrEqual(games + 2);
+      expect(steps.length).toBeLessThanOrEqual(games + 5);
+      if (c.live?.key === `league-${year}`) expect(steps).toContain("final");
+    }
+  });
+
+  it("미리 정한 승수를 경기마다 나눠 주어 정규시즌 승수가 정확히 맞아요", () => {
+    setRandom(seeded(62));
+    const c = proCareer("wins");
+    startSeason(c);
+    const wins = c.run!.wins;
+    while (c.run && c.run.phase !== "post" && c.run.phase !== "end") {
+      if (c.queue.length) chooseOption(c, 0);
+      else stepSeason(c);
+    }
+    expect(c.run!.w).toBe(wins);
+  });
+
+  it("결승에 오르면 결승 라운드에서 중계를 만들고, 시즌 기록에 같은 결과가 남아요", () => {
+    setRandom(seeded(63));
+    let found = false;
+    for (let i = 0; i < 200 && !found; i++) {
+      const c = proCareer(`fin${i}`);
+      const steps = stepThrough(c);
+      if (!steps.includes("final")) continue;
+      found = true;
+      const rec = c.last!;
+      expect(rec.final).toBeDefined();
+      expect(c.live?.key).toBe(`league-${rec.year}`);
+      const last = c.live!.plays.at(-1)!;
+      expect([last.us, last.them]).toEqual([rec.final!.us, rec.final!.them]);
+    }
+    expect(found).toBe(true);
+  });
+
+  it("시즌 도중에 저장해도 그대로 불러와 이어서 진행해요", () => {
+    setRandom(seeded(64));
+    const c = proCareer("mid");
+    startSeason(c);
+    for (let i = 0; i < 20; i++) {
+      if (c.queue.length) chooseOption(c, 0);
+      stepSeason(c);
+    }
+    const loaded = decodeSave(encodeSave(c))!;
+    expect(loaded).toEqual(c);
+    expect(loaded.run?.g).toBeGreaterThan(0);
+    simulateSeason(loaded);
+    expect(loaded.run).toBeNull();
+    expect(loaded.hist.length).toBe(1);
+  });
+
+  it("오래 쉬어야 하는 부상은 복귀 시점을 묻고, 서둘러 돌아오면 결장 경기가 줄어요", () => {
+    setRandom(seeded(65));
+    const c = proCareer("inj");
+    startSeason(c);
+    c.run!.out = 20;
+    c.run!.outWhy = "부상";
+    const d = injuryDecision(20);
+    applyAction(c, d.opts[0].act);
+    expect(c.run!.out).toBe(12);
+    expect(c.run!.form).toBeLessThan(0);
+    // 쉬는 이벤트는 결장을 늘려요.
+    applyAction(c, { k: "boost", sit: 2 });
+    expect(c.run!.out).toBe(14);
+  });
+
+  it("팀이 없는 시즌은 정해진 일정을 한 칸씩 지나 결산해요", () => {
+    setRandom(seeded(66));
+    const c = proCareer("solo");
+    c.stage = "free";
+    c.team = null;
+    c.contract = null;
+    const steps = stepThrough(c);
+    expect(steps.length).toBe(7);
+    expect(c.last?.result).toBe("개인 훈련");
   });
 });

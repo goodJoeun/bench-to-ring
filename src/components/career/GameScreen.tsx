@@ -1,6 +1,7 @@
 "use client";
 
 import type { Career, CareerSummary } from "@/game";
+import type { Speed } from "@/lib/game-store";
 import { ActionPanel } from "./ActionPanel";
 import { AttributesPanel } from "./AttributesPanel";
 import { CourtCard } from "./CourtCard";
@@ -33,10 +34,13 @@ interface GameScreenProps {
   hall: CareerSummary[];
   tab: TabKey;
   onTab: (k: TabKey) => void;
-  simulating: boolean;
+  playing: boolean;
+  speed: Speed;
+  /** 진행 팝업(결승 중계·국가대표 대회·드래프트)이 떠 있는지 */
+  busy: boolean;
 }
 
-export function GameScreen({ career, hall, tab, onTab, simulating }: GameScreenProps) {
+export function GameScreen({ career, hall, tab, onTab, playing, speed, busy }: GameScreenProps) {
   const pending = career.queue.length > 0;
 
   return (
@@ -44,7 +48,7 @@ export function GameScreen({ career, hall, tab, onTab, simulating }: GameScreenP
       <div className="col-l">
         <CourtCard career={career} />
         <Scoreboard career={career} />
-        <ActionPanel career={career} simulating={simulating} onAdvance={() => onTab("season")} />
+        <ActionPanel career={career} playing={playing} speed={speed} busy={busy} onAdvance={() => onTab("season")} />
       </div>
       <div className="col-r">
         <AttributesPanel career={career} />
@@ -66,7 +70,7 @@ export function GameScreen({ career, hall, tab, onTab, simulating }: GameScreenP
               <span className="tl">{name}</span>
               {k === "season" && pending && (
                 <span className="tdot">
-                  <span className="sr-only">오프시즌 결정 남음</span>
+                  <span className="sr-only">결정 남음</span>
                 </span>
               )}
             </button>

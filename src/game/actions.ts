@@ -4,13 +4,13 @@ import { retire } from "./career";
 import { addAttr, addHealth, clampTrust } from "./condition";
 import { currentDecision, resolveQueue } from "./decisions";
 import { runDraft } from "./draft";
-import { addNews, joinTeam, leaveTeam, offseasonTag, setTeam } from "./log";
+import { addNews, decisionTag, joinTeam, leaveTeam, setTeam } from "./log";
 import { applyMilitary } from "./military";
 import { runNationalTeam } from "./national";
 import { chance, shuffle } from "./random";
 import { ovr } from "./ratings";
 import type { Action, Boost, Career } from "./types";
-import { money } from "./util";
+import { clamp, money } from "./util";
 
 /** 이벤트 효과를 적용하고 소식을 남겨요. */
 function applyBoost(c: Career, b: Boost, tag: string): void {
@@ -27,13 +27,20 @@ function applyBoost(c: Career, b: Boost, tag: string): void {
   if (b.trust) c.trust = clampTrust(c.trust + b.trust);
   if (b.agency) c.perks.agency = true;
   if (b.trainer) c.perks.trainer = b.trainer;
+  // 시즌 중 이벤트: 남은 경기의 경기력과 결장
+  const run = c.run;
+  if (run && b.form) run.form = clamp(run.form + b.form, -2, 2);
+  if (run && b.sit) {
+    if (run.out === 0) run.outWhy = "휴식";
+    run.out = Math.max(0, run.out + b.sit);
+  }
   c.peakOvr = Math.max(c.peakOvr, ovr(p));
   if (msg) addNews(c, tag, b.t ?? "good", msg.trim());
 }
 
 export function applyAction(c: Career, a: Action): void {
   const p = c.p;
-  const tag = offseasonTag(c);
+  const tag = decisionTag(c);
   switch (a.k) {
     case "school":
       c.stage = "college";

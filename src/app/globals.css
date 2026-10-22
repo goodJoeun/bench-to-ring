@@ -302,19 +302,10 @@ textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize
 .sim-court{position:relative;height:160px;display:flex;justify-content:center;align-items:flex-end;margin-bottom:8px}
 .sim-sprite{margin-bottom:12px;filter:none;animation:dribble .5s ease-in-out infinite alternate}
 .sim-shadow{position:absolute;bottom:6px;left:50%;width:72px;height:10px;margin-left:-36px;border-radius:50%;background:rgba(0,0,0,.28)}
-.sim-score{display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr;align-items:center;gap:14px;margin-bottom:12px;padding:14px 18px;border-radius:16px;
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(4px)}
-.sim-score > i{width:1px;height:40px;background:rgba(255,255,255,.14)}
-.sim-score span{display:grid;gap:3px}
-.sim-score small{font-size:10px;font-weight:800;letter-spacing:.18em;color:var(--sim-lbl)}
-.sim-score b{font-family:var(--f-num);font-size:34px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.sim-score em{font-style:normal;font-size:16px;color:var(--sim-lbl)}
 .sim-team{font-size:13px;font-weight:700;color:var(--sim-lbl)}
 .sim-card h2{font-family:var(--f-display);font-weight:400;font-size:clamp(27px,8vw,36px);margin:0;line-height:1.15}
 .sim-phase{margin:0;font-size:14px;font-weight:700;color:var(--sim-soft);min-height:1.55em}
 .sim-phase .dots::after{content:"";display:inline-block;width:1.2em;text-align:left;animation:dots 1.2s steps(4,end) infinite}
-.sim-bar{height:4px;margin-top:10px;border-radius:5px;background:rgba(255,255,255,.14);overflow:hidden}
-.sim-fill{height:100%;background:var(--sim-bar)}
 /* 대회 진행: 경기 결과가 한 줄씩 올라와요. */
 .tour-games{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;max-height:42dvh;overflow-y:auto}
 .tour-games li{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto auto auto;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;
@@ -390,19 +381,58 @@ input,select,textarea{font-size:16px}
 .tab[aria-selected="true"]{color:var(--accent)}
 .tdot{position:absolute;top:8px;left:calc(50% + 8px);width:8px;height:8px;border-radius:50%;background:var(--bad);box-shadow:0 0 0 2px var(--panel)}
 
-/* 시즌 진행 버튼은 탭 바 위에 고정 */
-.advance{position:fixed;left:0;right:0;bottom:calc(var(--dock) + 28px + var(--safe-b));z-index:25;width:calc(100% - 32px);max-width:var(--t-max);margin-inline:auto;
+/* 시즌 진행 버튼과 시즌 중 진행 막대는 탭 바 위에 고정 */
+.advance,.run-bar{position:fixed;left:0;right:0;bottom:calc(var(--dock) + 28px + var(--safe-b));z-index:25;width:calc(100% - 32px);max-width:var(--t-max);margin-inline:auto;
   padding:11px 16px;min-height:var(--cta);box-shadow:0 8px 24px rgba(0,0,0,.22)}
 .advance .t{font-size:19px}
 .advance .s{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .advance > span:first-child{min-width:0}
 body:has(main.grid){padding-bottom:calc(var(--dock) + 24px + var(--safe-b))}
-body:has(.advance){padding-bottom:calc(var(--dock) + var(--cta) + 52px + var(--safe-b))}
+body:has(:is(.advance,.run-bar)){padding-bottom:calc(var(--dock) + var(--cta) + 52px + var(--safe-b))}
 
 /* 홈 탭에서만 선수 카드·능력치·훈련 초점을 보여줘요. */
 main.grid:not([data-tab="season"]) :is(.court,.sb,.attrs){display:none}
 main.grid:not([data-tab="season"]) .col-l{display:contents}
 .advance.pending{background:var(--ink);color:var(--panel)}
+
+/* 시즌 중 진행 막대 */
+.run-bar{display:flex;align-items:center;gap:12px;border-radius:var(--r);background:var(--ink);color:var(--panel)}
+.run-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.run-info .t{font-family:var(--f-display);font-size:19px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.run-info .s{font-size:12px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.run-track{height:4px;margin-top:5px;border-radius:2px;background:color-mix(in srgb,var(--panel) 22%,transparent);overflow:hidden}
+.run-fill{height:100%;background:var(--accent);transition:width .3s ease}
+.run-ctrl{display:flex;gap:6px;flex:none}
+.run-btn{display:grid;place-items:center;width:42px;height:42px;padding:0;border:1px solid color-mix(in srgb,var(--panel) 28%,transparent);border-radius:50%;
+  background:none;color:inherit;cursor:pointer}
+.run-btn svg{width:20px;height:20px;fill:currentColor}
+.run-btn.play{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.run-speed{font-family:var(--f-num);font-weight:700;font-size:16px}
+.run-btn:active{transform:scale(.94)}
+@media (max-width:380px){.run-btn{width:38px;height:38px}.run-ctrl{gap:4px}}
+
+/* 시즌 중 홈 탭: 최근 경기, 플레이오프 라운드, 팀 없는 시즌 일정 */
+.games,.rounds,.plan{list-style:none;margin:0;padding:0}
+.games li{display:grid;grid-template-columns:2.2em 1.6em minmax(0,1fr) auto;align-items:baseline;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.games li:last-child{border-bottom:0}
+.games .gn{font-family:var(--f-num);color:var(--muted);font-variant-numeric:tabular-nums}
+.games .gwl{font-weight:700;color:var(--bad)}
+.games li[data-win="true"] .gwl{color:var(--good)}
+.gopp{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gopp small{margin-left:6px;font-family:var(--f-num);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.games .gme{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.games li:first-child{animation:fade .3s ease both}
+.rounds li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;padding:8px 12px;border-radius:8px;background:var(--panel2);font-size:13.5px}
+.rounds li + li{margin-top:6px}
+.rounds b{color:var(--bad)}
+.rounds li[data-win="true"] b{color:var(--good)}
+.plan{display:flex;flex-direction:column;gap:6px;counter-reset:plan}
+.plan li{display:flex;align-items:center;gap:10px;font-size:14.5px;color:var(--muted)}
+.plan li::before{counter-increment:plan;content:counter(plan);display:grid;place-items:center;width:24px;height:24px;border-radius:50%;flex:none;
+  border:1px solid var(--line);font-family:var(--f-num);font-size:13px}
+.plan li[data-state="done"]::before{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.plan li[data-state="now"]{color:var(--ink);font-weight:700}
+.plan li[data-state="now"]::before{border-color:var(--accent);color:var(--accent)}
 
 /* 선수 생성·은퇴 화면의 시작 버튼은 화면 아래에 고정 */
 .start{position:fixed;left:0;right:0;bottom:calc(12px + var(--safe-b));z-index:25;width:calc(100% - 32px);max-width:var(--t-max);margin-inline:auto;min-height:56px;box-shadow:0 8px 24px rgba(0,0,0,.22)}

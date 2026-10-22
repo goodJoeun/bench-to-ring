@@ -1,17 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useGame } from "@/lib/game-store";
+import { gameActions, useGame } from "@/lib/game-store";
 import { CreateScreen } from "@/components/create/CreateScreen";
 import { DraftLoading } from "@/components/progress/DraftLoading";
 import { GameScreen, type TabKey } from "@/components/career/GameScreen";
 import { RetiredScreen } from "@/components/retired/RetiredScreen";
-import { SeasonLoading } from "@/components/progress/SeasonLoading";
+import { LiveGameView } from "@/components/progress/LiveGameView";
+import { Popup } from "@/components/progress/Popup";
 import { Toast } from "@/components/common/Toast";
 import { TournamentLoading } from "@/components/progress/TournamentLoading";
 
 export function Game() {
-  const { ready, career, draft, hall, simulating, tournament, drafting, toast } = useGame();
+  const { ready, career, draft, hall, playing, speed, final, tournament, drafting, toast } = useGame();
   // 탭은 커리어마다 홈에서 시작해요.
   const [view, setView] = useState<{ id: string | null; tab: TabKey }>({ id: null, tab: "season" });
   const tab = career && view.id === career.id ? view.tab : "season";
@@ -27,7 +28,10 @@ export function Game() {
   if (!ready) body = <p className="boot">커리어를 불러오고 있어요…</p>;
   else if (!career) body = <CreateScreen draft={draft} hall={hall} />;
   else if (career.stage === "retired") body = <RetiredScreen career={career} hall={hall} />;
-  else body = <GameScreen career={career} hall={hall} tab={tab} onTab={openTab} simulating={simulating || tournament || drafting} />;
+  else
+    body = (
+      <GameScreen career={career} hall={hall} tab={tab} onTab={openTab} playing={playing} speed={speed} busy={final || tournament || drafting} />
+    );
 
   return (
     <>
@@ -39,7 +43,7 @@ export function Game() {
         {inGame && (
           <div className="hmeta">
             <span className="who">
-              {career.p.name} · {career.year} 시즌 준비
+              {career.p.name} · {career.year} 시즌 {career.run ? "진행 중" : "준비"}
             </span>
             <span className="saved">자동 저장</span>
             <button
@@ -59,7 +63,11 @@ export function Game() {
         )}
       </header>
       {body}
-      {simulating && career && <SeasonLoading career={career} />}
+      {final && career?.live && (
+        <Popup label={career.live.title}>
+          <LiveGameView game={career.live} onDone={() => gameActions.finishFinal()} />
+        </Popup>
+      )}
       {tournament && career && <TournamentLoading career={career} />}
       {drafting && career?.draftShow && <DraftLoading career={career} show={career.draftShow} />}
       <Toast toast={toast} />

@@ -18,7 +18,7 @@ export {
   START_CAP,
   SPIKE_CAP,
 } from "./create";
-export { simulateSeason } from "./season";
+export { simulateSeason, startSeason, stepSeason, seasonProgress, type SeasonStep } from "./season";
 export { draftSlot } from "./draft";
 export { NATIONS, NAT_EVENTS, natColor, natEventFor, simulateTournament, teamPower } from "./national";
 export { ARMY, ENLIST_DEADLINE, SANGMU, militaryDecision, militaryUnit, owesService } from "./military";
@@ -48,5 +48,5 @@ export {
   potentialRange,
   stageLabel,
 } from "./ratings";
-export { fmtNum, money, r1, stripYear } from "./util";
+export { fmtNum, money, r1, ro, stripYear } from "./util";
 export { setRandom, resetRandom, seeded } from "./random";

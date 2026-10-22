@@ -40,5 +40,5 @@ export function leaveTeam(c: Career): void {
   c.contract = null;
 }
 
-/** 지난 시즌 오프시즌 소식에 붙는 꼬리표 */
-export const offseasonTag = (c: Career): string => `${c.year - 1} 오프시즌`;
+/** 결정 결과 소식에 붙는 꼬리표: 시즌 중이면 그 시즌, 아니면 지난 시즌의 오프시즌 */
+export const decisionTag = (c: Career): string => (c.run ? `${c.run.year} 시즌` : `${c.year - 1} 오프시즌`);

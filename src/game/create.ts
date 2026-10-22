@@ -143,6 +143,7 @@ export function createCareer(input: NewCareerInput, cand: Candidate, id = String
     draftShow: null,
     invest: [],
     spent: 0,
+    run: null,
   };
   const chosen = TEAMS.hs.find(([name]) => name === input.school);
   const t = chosen ? makeTeam(chosen) : pickTeam("hs");
