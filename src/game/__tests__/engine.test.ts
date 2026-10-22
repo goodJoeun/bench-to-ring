@@ -38,6 +38,9 @@ import {
   requestTransfer,
   canRequestTransfer,
   careerJourney,
+  COMPS,
+  careerProfile,
+  similarPlayers,
   teamPower,
   titleHistory,
   type AttrKey,
@@ -1025,5 +1028,55 @@ describe("은퇴 회고", () => {
       expect(steps.at(-1)!.trophies).toBe(c.awardLog.length);
       if (c.awards.ring) expect(steps.some((s) => s.big && s.title.endsWith("우승"))).toBe(true);
     }
+  });
+});
+
+describe("닮은 꼴 선수", () => {
+  it("프로 기록이 있으면 KBL·NBA에서 닮은 순서로 세 명을 고르고, 없으면 비워 둬요", () => {
+    const rand = seeded(98);
+    setRandom(rand);
+    let found = 0;
+    for (let i = 0; i < 40; i++) {
+      const c = createCareer({ name: "닮은꼴", num: 3, nat: "대한민국", pos: POS_KEYS[i % 5], path: i % 2 ? "abroad" : "domestic" }, generateCandidates(POS_KEYS[i % 5])[0], `cmp${i}`);
+      playToRetirement(c, rand);
+      for (const lg of ["kbl", "nba"] as const) {
+        const m = similarPlayers(c, lg);
+        if (!c.hist.some((h) => h.pro && h.gp > 0)) {
+          expect(m).toEqual([]);
+          continue;
+        }
+        found++;
+        expect(m).toHaveLength(3);
+        expect(new Set(m.map((x) => x.player.name)).size).toBe(3);
+        for (let k = 1; k < m.length; k++) expect(m[k].score).toBeLessThanOrEqual(m[k - 1].score);
+        for (const x of m) {
+          expect(x.score).toBeGreaterThanOrEqual(30);
+          expect(x.score).toBeLessThanOrEqual(99);
+          expect(x.reasons.length).toBeLessThanOrEqual(3);
+        }
+      }
+    }
+    expect(found).toBeGreaterThan(10);
+  });
+
+  it("커리어가 실제 선수와 똑같으면 그 선수가 가장 닮았다고 나와요", () => {
+    setRandom(seeded(99));
+    const c = createCareer({ name: "복제", num: 23, nat: "미국", pos: "SG", path: "abroad" }, generateCandidates("SG")[0], "clone");
+    const jordan = COMPS.nba.find((x) => x.name === "마이클 조던")!;
+    for (let y = 0; y < jordan.seasons; y++) {
+      c.hist.push({
+        year: 2030 + y, age: 21 + y, team: "시카고 불스", lg: "nba", pro: true, role: "에이스", gp: 80, min: 38,
+        pts: jordan.ppg, reb: jordan.rpg, ast: jordan.apg, stl: 2, blk: 1, fg: 50, rating: 9, w: 60, l: 22,
+        result: "리그 우승", ovr0: 93, ovr1: 94, awards: [],
+      });
+    }
+    for (let k = 0; k < 5; k++) c.awardLog.push({ y: 2030 + k, k: "mvp_nba", n: "NBA MVP" });
+    for (let k = 0; k < 6; k++) c.awardLog.push({ y: 2031 + k, k: "ring", n: "NBA 우승" });
+    const top = similarPlayers(c, "nba")[0];
+    expect(top.player.name).toBe("마이클 조던");
+    expect(top.score).toBe(99);
+    expect(top.reasons).toContain("MVP 수상");
+    // NBA에서 뛰었으니 KBL은 "KBL로 치면"이에요.
+    expect(careerProfile(c, "kbl")!.played).toBe(false);
   });
 });

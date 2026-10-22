@@ -4,6 +4,7 @@ import { AWARDS, fmtNum, money, titleHistory, type Career, type CareerSummary } 
 import { gameActions } from "@/lib/game-store";
 import { NO_TEAM_COLOR, militaryShort } from "@/components/common/format";
 import { RecordBoards } from "./RecordBoards";
+import { SimilarPlayers } from "./SimilarPlayers";
 import { HallOfFame } from "@/components/common/HallOfFame";
 import { CourtStage, Panel, StatTiles } from "@/components/common/ui";
 
@@ -55,6 +56,8 @@ export function RetiredScreen({ career: c, hall }: { career: Career; hall: Caree
           </p>
         )}
       </Panel>
+
+      <SimilarPlayers career={c} />
 
       <Panel title={`우승 기록 · ${titles.length}회`}>
         {titles.length ? (

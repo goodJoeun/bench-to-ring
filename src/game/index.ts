@@ -39,6 +39,7 @@ export {
   type TitleEntry,
 } from "./career";
 export { rankHall, bestFive, compareCareers } from "./hall";
+export { COMPS, careerProfile, similarPlayers, type CompLeague, type CompMatch, type CompPlayer, type CompProfile } from "./comps";
 export {
   RECORD_BOARDS,
   RECORD_GROUPS,

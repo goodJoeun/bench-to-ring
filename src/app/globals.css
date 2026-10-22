@@ -333,6 +333,16 @@ textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize
 .draft-picks li[data-mine]{background:rgba(255,214,107,.18);outline:2px solid #FFD66B;animation:rise .25s ease-out both,glow 1.2s ease-in-out .25s 2}
 .draft-picks li[data-mine] .dp-who{color:#FFD66B;font-weight:800}
 @keyframes glow{50%{background:rgba(255,214,107,.34)}}
+/* 은퇴 화면의 닮은 꼴 선수 */
+.comps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:560px){.comps{grid-template-columns:1fr}}
+.comp{display:flex;flex-direction:column;gap:6px;min-width:0;padding:14px 16px;border-radius:12px;background:var(--panel2)}
+.comp-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.comp-name{font-family:var(--f-display);font-weight:400;font-size:24px;line-height:1.2}
+.comp-score{font-size:12.5px;color:var(--muted)}
+.comp-score b{font-family:var(--f-num);font-size:20px;color:var(--accent);font-variant-numeric:tabular-nums}
+.comp-pos{font-size:12.5px;font-weight:700;color:var(--muted)}
+.comp-blurb{margin:0;font-size:14.5px}
 /* 은퇴 회고: 도트 선수가 커리어 길을 따라 걸어가고, 지나온 점이 하나씩 켜져요. 빛나는 순간은 금색이에요. */
 .fw-road{position:relative;height:96px;margin:4px 0 2px}
 .fw-track{position:absolute;inset:0 24px}
