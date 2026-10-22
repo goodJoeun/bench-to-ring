@@ -144,6 +144,9 @@ export function createCareer(input: NewCareerInput, cand: Candidate, id = String
     invest: [],
     spent: 0,
     run: null,
+    owned: [],
+    donated: 0,
+    moveAsked: null,
   };
   const chosen = TEAMS.hs.find(([name]) => name === input.school);
   const t = chosen ? makeTeam(chosen) : pickTeam("hs");

@@ -21,6 +21,10 @@ test("balance report", () => {
   let topLeague = 0;
   let mvps = 0;
   let mvpPlayers = 0;
+  /** 프로 시즌을 시작할 때 건강과 그 시즌 출전 시간 (체력 소모가 얼마나 쌓이는지) */
+  const proHealth: [number, number][] = [];
+  let proSeasons = 0;
+  let injuredSeasons = 0;
   for (let i = 0; i < N; i++) {
     const pos = POS_KEYS[i % 5];
     const c = createCareer({ name: "b", num: 1, nat: "대한민국", pos, path: i % 2 ? "abroad" : "domestic" }, generateCandidate(pos, i % ARCHETYPES[pos].length), `b${i}`);
@@ -28,7 +32,15 @@ test("balance report", () => {
     while (c.stage !== "retired" && steps++ < 200) {
       if (c.queue.length) chooseOption(c, Math.floor(rand() * currentDecision(c)!.opts.length));
       else {
+        const h0 = c.health;
+        const pro = c.stage === "pro";
         simulateSeason(c);
+        if (pro && c.last?.pro) {
+          proHealth.push([h0, c.last.min]);
+          proSeasons++;
+          const tag = `${c.last.year} 시즌`;
+          if (c.news.some((n) => n.w === tag && n.m.includes("부상을 당했어요"))) injuredSeasons++;
+        }
         if (c.age === 19) at18.push(Math.round(ovrOf(c.p.attrs, c.p.pos)));
         if (c.age === 23) at22.push(Math.round(ovrOf(c.p.attrs, c.p.pos)));
       }
@@ -57,6 +69,7 @@ test("balance report", () => {
       gainRow("ΔOVR avg", (a) => avg(a).toFixed(2)),
       gainRow("ΔOVR<=1", (a) => `${Math.round((a.filter((x) => x <= 1).length / a.length) * 100)}%`),
       `top league ${((topLeague / N) * 100).toFixed(1)}%  MVP players ${((mvpPlayers / N) * 100).toFixed(1)}%  MVPs ${mvps}`,
+      `pro health at start  28+min ${avg(proHealth.filter(([, m]) => m >= 28).map(([h]) => h)).toFixed(0)}  <15min ${avg(proHealth.filter(([, m]) => m < 15).map(([h]) => h)).toFixed(0)}  injured seasons ${((injuredSeasons / proSeasons) * 100).toFixed(0)}%`,
     ].join("\n"),
   );
 });

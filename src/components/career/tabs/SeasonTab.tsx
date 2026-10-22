@@ -1,5 +1,7 @@
 import { LEAGUES, currentExpectedMinutes, militaryUnit, r1, roleOf, seasonProgress, type Career, type SeasonRecord, type SeasonRun } from "@/game";
 import { Panel } from "@/components/common/ui";
+import { ContractPanel } from "../ContractPanel";
+import { ShopPanel } from "../ShopPanel";
 
 /** 경기를 뛰지 않은 시즌 (현역 복무, 무소속) */
 function NoGamesCard({ r, kicker, title }: { r: SeasonRecord; kicker: string; title: string }) {
@@ -157,6 +159,10 @@ function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
         <span>
           출전 <b>{t.gp}경기</b>
         </span>
+        <span data-warn={c.health < 50 || undefined}>
+          건강 <b>{Math.round(c.health)}</b>
+          {c.health < 60 && " · 지쳐서 경기력이 떨어져요"}
+        </span>
         {run.out > 0 && (
           <span>
             {run.outWhy} <b>{run.out}경기 결장 예정</b>
@@ -219,6 +225,8 @@ export function SeasonTab({ career: c }: { career: Career }) {
       ) : (
         <Preseason career={c} />
       )}
+      {!run && <ContractPanel career={c} />}
+      {!run && <ShopPanel career={c} />}
       <Panel title="소식">
         <ul className="news">
           {c.news.slice(0, 18).map((n, i) => (

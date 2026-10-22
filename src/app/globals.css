@@ -173,6 +173,10 @@ tr:last-child td{border-bottom:0}
 .btn{border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:9px 14px;font-weight:700;cursor:pointer;font-size:14px;display:inline-flex;align-items:center}
 .btn.warn{color:var(--gold);border-color:var(--gold)}
 .btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row-btns{display:flex;flex-wrap:wrap;gap:8px}
+.donate{display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
+.meta-row [data-warn] b{color:var(--bad)}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 textarea,input,select{font:inherit;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%;min-width:0}
 textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize:vertical}

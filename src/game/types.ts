@@ -20,6 +20,8 @@ export type MilitaryKind = "sangmu" | "army";
 export type FocusKey = "bal" | AttrKey | "rest";
 /** 시즌 투자: 스킬 코치, 피지컬, 회복 관리, 영양, 영상 분석 */
 export type InvestKey = "coach" | "gym" | "rehab" | "diet" | "video";
+/** 한 번 사면 커리어 내내 남는 것: 농구화, 집, 차, 부모님 집, 영양팀, 회복 센터, 훈련장, 아카데미 */
+export type ShopKey = "shoes" | "home" | "car" | "parents" | "chef" | "recovery" | "court" | "academy";
 export type Trait = "조기성장" | "대기만성" | "꾸준함" | "강철몸" | "유리몸" | "승부사";
 export type Grade = "S" | "A" | "B" | "C" | "D";
 export type Role = "에이스" | "주전" | "식스맨" | "로테이션" | "벤치" | "엔드 오브 벤치";
@@ -221,10 +223,12 @@ export interface SeasonRun {
   /** 남은 결장 경기와 사유 */
   out: number;
   outWhy: string;
-  /** 예정된 부상: at번째 경기(0부터)에서 다쳐 out경기를 빠져요. 다치는 순간 건강 hp, 운동능력 ath가 줄어요. */
-  injury: { at: number; out: number; name: string; hp: number; ath: number } | null;
   /** 시즌 중 이벤트를 확인할 경기 번호 */
   checks: number[];
+  /** 빅매치(뛸지 말지 고르는 경기)를 확인할 경기 번호 */
+  bigs: number[];
+  /** 결승 전에 출전 여부를 이미 물었는지 */
+  clutch: boolean;
   /** 전역 후 합류하는 시즌 */
   back: boolean;
   tot: SeasonTotals;
@@ -326,7 +330,15 @@ export type Action =
   | { k: "school"; lg: LeagueKey; team: Team; walk?: boolean }
   | { k: "stay" }
   | { k: "draft"; d: DraftKey }
-  | { k: "sign"; lg: ProLeagueKey; team: Team; years: number; salary: number }
+  /** 계약. deal이면 협상을 마친 조건이라 바로 서명해요. */
+  | { k: "sign"; lg: ProLeagueKey; team: Team; years: number; salary: number; deal?: boolean }
+  /**
+   * 연봉 인상 요구: 확률 p로 salary×ask에 서명해요. 실패하면 원래 조건에 서명하거나(walk 없음),
+   * 구단이 협상을 끝내고 walk에 남은 다른 제안으로 돌아가요.
+   */
+  | { k: "nego"; lg: ProLeagueKey; team: Team; years: number; salary: number; ask: number; p: number; walk?: DecisionOption[] }
+  /** 위약금을 내고 계약을 해지해 FA가 돼요. */
+  | { k: "buyout"; cost: number }
   | { k: "skip" }
   | { k: "pos"; pos: PosKey }
   | ({ k: "boost" } & Boost)
@@ -357,6 +369,8 @@ export interface Boost {
   form?: number;
   /** 시즌 중에만: 쉬는 경기 수. 음수면 결장 경기가 줄어요. */
   sit?: number;
+  /** 시즌 중에만: 다쳐서 빠지는 경기 수 */
+  injure?: number;
   msg?: string;
   /** 소식 종류. 기본은 good */
   t?: NewsType;
@@ -465,6 +479,10 @@ export interface CareerSummary {
   awards: Partial<Record<AwardKey, number>>;
   draft: DraftInfo | null;
   legacy: string;
+  /** 기부한 돈 합계 (억). 예전 기록에는 없어요. */
+  donated?: number;
+  /** 유소년 아카데미를 세웠는지 */
+  academy?: boolean;
 }
 
 export interface Career {
@@ -515,10 +533,16 @@ export interface Career {
   draftShow: DraftShow | null;
   /** 다음 시즌에 할 투자 (고른 순서). 시즌을 시작할 때 비용을 내요. */
   invest: InvestKey[];
-  /** 투자로 쓴 돈 합계 (억). earnings는 지금 가진 돈이에요. */
+  /** 투자·구입·기부로 쓴 돈 합계 (억). earnings는 지금 가진 돈이에요. */
   spent: number;
   /** 진행 중인 시즌. 시즌과 시즌 사이(오프시즌)에는 null이에요. */
   run: SeasonRun | null;
+  /** 산 것들 (산 순서) */
+  owned: ShopKey[];
+  /** 기부한 돈 합계 (억) */
+  donated: number;
+  /** 마지막으로 이적을 요청한 오프시즌 (다음 시즌 연도) */
+  moveAsked: number | null;
 }
 
 export interface NewCareerInput {

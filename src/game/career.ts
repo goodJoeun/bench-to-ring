@@ -99,6 +99,8 @@ export function careerSummary(c: Career): CareerSummary {
     caps: c.nat.caps,
     awards: { ...c.awards },
     draft: c.draft,
+    donated: c.donated,
+    academy: c.owned.includes("academy"),
   };
   return { ...base, legacy: legacyOf(base) };
 }

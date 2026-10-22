@@ -24,7 +24,8 @@ export { NATIONS, NAT_EVENTS, natColor, natEventFor, simulateTournament, teamPow
 export { ARMY, ENLIST_DEADLINE, SANGMU, militaryDecision, militaryUnit, owesService } from "./military";
 export { chooseOption, applyAction } from "./actions";
 export { INVESTMENTS, INVEST_SLOTS, STUDENT_ALLOWANCE, canInvest, investCost, type Investment } from "./invest";
-export { currentDecision, resolveQueue } from "./decisions";
+export { buyoutCost, canRequestTransfer, currentDecision, leverage, requestTransfer, resolveQueue } from "./decisions";
+export { DONATIONS, SHOP, buy, canBuy, canDonate, donate, owns, shopItem, type ShopItem } from "./shop";
 export { careerSummary, retire, canRetire, legacyOf, sumSeasons, titleHistory, type CareerTotals, type TitleEntry } from "./career";
 export { rankHall, bestFive, compareCareers } from "./hall";
 export {

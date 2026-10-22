@@ -130,6 +130,13 @@ function normalize(c: Career): Career {
   c.invest ??= [];
   c.spent ??= 0;
   c.run ??= null;
+  if (c.run) {
+    c.run.bigs ??= [];
+    c.run.clutch ??= false;
+  }
+  c.owned ??= [];
+  c.donated ??= 0;
+  c.moveAsked ??= null;
   migrateAttrs(c);
   return c;
 }

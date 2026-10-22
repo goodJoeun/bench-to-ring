@@ -1,8 +1,8 @@
 import { SHORT } from "./data";
-import { pick, rnd } from "./random";
+import { pick, ri, rnd } from "./random";
 import { ovr } from "./ratings";
 import type { AttrKey, Boost, Career, Decision, DecisionOption } from "./types";
-import { clamp, money, roundSalary } from "./util";
+import { clamp, josa, money, roundSalary } from "./util";
 
 /* ---------- 선택지 만들기 ---------- */
 
@@ -19,6 +19,7 @@ export function describeBoost(b: Boost): string {
   if (b.trainer) parts.push(`${SHORT[b.trainer]} 성장 꾸준히 +15%`);
   if (b.form) parts.push(b.form > 0 ? "경기력 상승" : "경기력 하락");
   if (b.sit) parts.push(b.sit > 0 ? `${b.sit}경기 휴식` : `결장 ${-b.sit}경기 단축`);
+  if (b.injure) parts.push(`부상으로 ${b.injure}경기 결장`);
   return parts.join(" · ") || "변화 없음";
 }
 
@@ -439,7 +440,7 @@ const SEASON_EVENTS: LifeEvent[] = [
     when: inGames,
     make: () => ({
       title: "라이벌의 도발",
-      body: "다음 상대 팀 에이스가 인터뷰에서 나를 콕 집어 '별것 아니'라고 했어요.",
+      body: "다음 상대 팀 에이스가 인터뷰에서 나를 콕 집어 '별것 아니다'라고 했어요.",
       opts: [
         risky(
           "코트에서 갚아 준다",
@@ -558,6 +559,32 @@ export function injuryDecision(out: number): Decision {
     opts: [
       opt("서둘러 복귀한다", { sit: -Math.round(out * 0.4), health: -6, form: -0.5, msg: "재활을 서둘러 예정보다 일찍 돌아오기로 했어요.", t: "info" }),
       opt("완전히 회복한다", { health: 6, msg: "서두르지 않고 몸을 완전히 회복하기로 했어요." }),
+    ],
+  };
+}
+
+/**
+ * 빅매치나 결승을 앞두고 몸을 던질지 고르는 결정. 건강할수록 강행이 성공하기 쉬워요.
+ * 성공하면 경기력이 오르고, 실패하면 다쳐서 다음 경기(결승이면 결승)에 나서지 못해요.
+ */
+export function bigGameDecision(c: Career, label: string, final: boolean): Decision {
+  const h = Math.round(c.health);
+  const p = clamp(0.3 + c.health / 140 + (c.p.trait === "승부사" ? 0.1 : 0), 0.3, 0.92);
+  const hurt = final ? 3 : ri(1, 3);
+  const body = h >= 75 ? "몸 상태는 괜찮아요" : h >= 50 ? "다리가 조금 무거워요" : "몸이 많이 지쳐 있어요";
+  return {
+    title: final ? "결승 출전" : `빅매치 · ${label}`,
+    body: `${final ? label : `${josa(label, "이", "가")} 다가와요`}. ${body}(건강 ${h}). 몸을 던지면 경기력이 오르지만, 버티지 못하면 다쳐서 ${final ? "결승에" : "다음 경기에"} 나서지 못해요.`,
+    opts: [
+      risky(
+        final ? "모든 걸 쏟아붓는다" : "출전을 강행한다",
+        p,
+        { form: 1.2, health: -3, msg: final ? "결승을 앞두고 컨디션을 끌어올렸어요." : `${label}에서 몸을 던져 흐름을 가져왔어요.` },
+        { injure: hurt, health: -8, msg: `무리하다 다쳤어요. ${hurt}경기는 쉬어야 해요.`, t: "bad" },
+      ),
+      final
+        ? pass("출전 시간을 조절하며 뛴다", "무리하지 않고 평소처럼 결승을 준비했어요.")
+        : opt("이번 경기는 쉰다", { sit: 1, health: 5, msg: `${label}에 나서지 않고 몸을 추슬렀어요.`, t: "info" }),
     ],
   };
 }

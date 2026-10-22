@@ -2,7 +2,7 @@ import { chooseOption } from "./actions";
 import { HEALTH_RANGE, addAttr, addHealth, clampTrust } from "./condition";
 import { ATTRS, POS, ROLE_RANK } from "./data";
 import { currentDecision } from "./decisions";
-import { injuryDecision, seasonEvent } from "./events";
+import { bigGameDecision, injuryDecision, seasonEvent } from "./events";
 import { LEAGUES, SCORING_TITLE } from "./leagues";
 import { FINAL_SCORE, finalScore, gameScore, makeLiveGame } from "./live";
 import { addNews, giveAward, pickTeam } from "./log";
@@ -10,16 +10,18 @@ import { STUDENT_ALLOWANCE, payInvestments } from "./invest";
 import { serviceSeason } from "./military";
 import { nationalCallUp } from "./national";
 import { runOffseason } from "./offseason";
-import { chance, random, ri, rnd } from "./random";
+import { chance, pick, random, ri, rnd } from "./random";
+import { owns } from "./shop";
 import { ageBase, ovr, ovrOf, roleOf } from "./ratings";
 import type { AttrKey, Career, GameLine, InvestKey, LeagueKey, SeasonRecord, SeasonRun } from "./types";
 import { clamp, r1, sigmoid } from "./util";
 
 /*
  * 시즌은 세 단계로 흘러가요.
- * startSeason: 투자 비용을 내고, 출전 시간·기록 평균·팀 승수·부상처럼 밸런스를 좌우하는 값을 미리 정해요.
+ * startSeason: 투자 비용을 내고, 출전 시간·기록 평균·팀 승수처럼 밸런스를 좌우하는 값을 미리 정해요.
  * stepSeason: 한 칸씩 진행해요. 팀 시즌은 프리시즌 → 정규시즌 한 경기씩 → 플레이오프 한 라운드씩 → 결산이고,
  *             팀이 없는 시즌(무소속·군 복무)은 정해진 일정을 한 칸씩 지나요. 중간에 시즌 중 결정이 생기면 멈춰요.
+ *             뛴 시간만큼 건강이 닳고, 부상은 경기마다 그때 건강으로 굴려요.
  * finishSeason: 기록을 합쳐 시상하고, 성장시키고, 오프시즌 결정을 만들어요.
  */
 
@@ -33,6 +35,42 @@ const LOG_LIMIT = 12;
 const EVENT_CHANCE = 0.5;
 /** 의료진이 이만큼 이상 쉬라고 하면 복귀 시점을 물어요. */
 const ASK_RETURN_AT = 6;
+/** 빅매치에서 출전 여부를 물을 확률 (확인 시점마다) */
+const BIG_GAME_CHANCE = 0.6;
+/** 결장하는 경기마다 돌아오는 건강 */
+const REST_HEAL = 0.8;
+/** 경기를 뛴 날 사이사이 돌아오는 건강 */
+const GAME_DAY_HEAL = 0.12;
+
+/**
+ * 30분을 뛴 한 경기에서 닳는 건강. 경기가 많은 리그일수록 시즌 전체로는 더 지쳐요.
+ * 36분 에이스면 한 시즌에 고교 약 30, KBL 약 41, NBA 약 51이 닳아요(경기 사이 회복 전).
+ */
+const fatigueOf = (games: number) => (18 + 0.3 * games) / games;
+
+/** 빅매치 이름 */
+const BIG_GAMES = ["라이벌전", "순위 싸움 빅매치", "전국 중계 경기", "연고지 더비"];
+
+/**
+ * 한 시즌 동안 다칠 위험. 건강이 낮을수록, 오래 뛸수록, 나이가 많을수록 커요.
+ * 경기마다 이 값을 경기 수로 나눈 만큼 굴려서, 시즌 중 건강이 떨어지면 위험이 바로 커져요.
+ */
+function injuryRisk(c: Career, min: number, inv: InvestKey[]): number {
+  const p = c.p;
+  const risk =
+    0.08 +
+    (100 - c.health) / 300 +
+    (p.trait === "유리몸" ? 0.12 : 0) -
+    (p.trait === "강철몸" ? 0.05 : 0) +
+    (min / 38) * 0.07 -
+    (c.focus === "rest" ? 0.06 : 0) +
+    (c.age > 30 ? (c.age - 30) * 0.012 : 0);
+  const gear = (owns(c, "shoes") ? 0.95 : 1) * (owns(c, "recovery") ? 0.85 : 1);
+  return Math.max(0.02, risk * (inv.includes("rehab") ? 0.8 : 1) * gear);
+}
+
+/** 건강이 60 아래로 떨어지면 경기력이 떨어져요 (0~1, 건강 15면 0.6) */
+const wornOut = (health: number) => Math.max(0, (60 - health) / 75);
 
 /** 팀 없이 보내는 시즌의 일정 */
 const SOLO_PLAN = ["체력 훈련", "기술 훈련", "기술 훈련", "연습 경기", "연습 경기", "개인 훈련 마무리"];
@@ -81,8 +119,9 @@ export function startSeason(c: Career): void {
     form: 0,
     out: 0,
     outWhy: "",
-    injury: null,
     checks: [],
+    bigs: [],
+    clutch: false,
     back,
     tot: { gp: 0, min: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, rating: 0 },
     log: [],
@@ -114,41 +153,10 @@ function planTeamSeason(c: Career, run: SeasonRun): void {
   const rel = ovr0 - L.avg + c.trust + heightEdge;
   const min = clamp(18 + rel * 1.7 + rnd(-3, 3), 1.5, 38);
 
-  // 부상: 다칠지, 얼마나 쉴지, 시즌 중 언제 다칠지까지 미리 정해요.
-  let injFrac = 0;
-  let injury: { name: string; hp: number; ath: number } | null = null;
-  const injuryRisk =
-    0.08 +
-    (100 - c.health) / 300 +
-    (p.trait === "유리몸" ? 0.12 : 0) -
-    (p.trait === "강철몸" ? 0.05 : 0) +
-    (min / 38) * 0.07 -
-    (c.focus === "rest" ? 0.06 : 0) +
-    (c.age > 30 ? (c.age - 30) * 0.012 : 0);
-  if (chance(injuryRisk * (run.inv.includes("rehab") ? 0.8 : 1))) {
-    const r = random();
-    if (r < 0.6) {
-      injFrac = rnd(0.05, 0.15);
-      injury = { name: "가벼운 부상", hp: 0, ath: 0 };
-    } else if (r < 0.9) {
-      injFrac = rnd(0.2, 0.4);
-      injury = { name: "큰 부상", hp: 0, ath: 0 };
-    } else {
-      injFrac = rnd(0.5, 0.85);
-      injury = { name: "시즌 아웃급 부상", hp: 12, ath: ri(2, 4) };
-    }
-    injury.hp += Math.round(injFrac * 20);
-  }
-  // 전역 후 첫 시즌은 시즌 중반에 합류해요.
-  const avail = Math.round(L.games * (run.back ? 0.6 : 1));
-  const gp = Math.max(0, Math.round(L.games * (1 - injFrac) * (run.back ? 0.6 : 1)));
-  const late = L.games - avail;
-  run.out = late;
-  run.outWhy = late ? "합류 전" : "";
-  if (injury) {
-    const out = Math.max(1, avail - gp);
-    run.injury = { ...injury, out, at: ri(late, Math.max(late, L.games - out)) };
-  }
+  // 전역 후 첫 시즌은 시즌 중반에 합류해요. 부상은 경기마다 굴려요(playGame).
+  const gp = Math.round(L.games * (run.back ? 0.6 : 1));
+  run.out = L.games - gp;
+  run.outWhy = run.out ? "합류 전" : "";
 
   // 기록: 리그 평균 대비 능력치(e)로 36분당 기록을 만든 뒤 출전 시간만큼 줄여요.
   const e = {} as Record<AttrKey, number>;
@@ -177,6 +185,8 @@ function planTeamSeason(c: Career, run: SeasonRun): void {
   run.wins = Math.round(L.games * clamp(team.q + contrib + rnd(-0.06, 0.06), 0.1, 0.9));
   // 시즌 중 결정은 정규시즌 초중반과 후반에 한 번씩 생길 수 있어요.
   run.checks = [Math.round(L.games * rnd(0.25, 0.4)), Math.round(L.games * rnd(0.6, 0.8))];
+  // 빅매치는 시즌 중반과 막판 순위 싸움에 한 번씩 올 수 있어요.
+  run.bigs = [Math.round(L.games * rnd(0.42, 0.55)), Math.round(L.games * rnd(0.85, 0.95))];
 }
 
 /** 한 칸 진행한 결과. final이면 결승 중계를, done이면 시즌 결산을 보여줄 차례예요. */
@@ -207,14 +217,26 @@ export function stepSeason(c: Career): SeasonStep | null {
     return "step";
   }
   // 플레이오프: 한 라운드씩 공개해요. 결승은 문자 중계로 보여줘요.
+  const finalNext = !!run.final && run.shown === run.post.length - 1;
+  // 결승 직전에는 몸 상태를 보고 출전을 강행할지 물어요. 고르고 나면 같은 칸을 다시 진행해요.
+  if (finalNext && !run.clutch && run.tot.gp > 0 && run.out === 0) {
+    run.clutch = true;
+    c.queue.push(bigGameDecision(c, `${FINAL_NAME[c.team!.lg]}을 앞두고`, true));
+    return "step";
+  }
   const round = run.post[run.shown++];
   const last = run.shown >= run.post.length;
   if (last) run.phase = "end";
-  // 내가 뛴 경기가 있어야 결승 중계를 보여줘요.
+  // 내가 뛴 경기가 있고 다치지 않았어야 결승 중계를 보여줘요.
   if (last && run.final && run.tot.gp > 0) {
-    playFinal(c, run);
-    return "final";
+    if (run.out === 0) {
+      playFinal(c, run);
+      return "final";
+    }
+    addNews(c, tag, "bad", `${run.outWhy === "부상" ? "부상으로" : "몸 상태 때문에"} ${round.name}에 나서지 못했어요.`);
   }
+  // 라운드 하나는 여러 경기라 결장도 몇 경기씩 지나가요.
+  if (run.out > 0) run.out = Math.max(0, run.out - 3);
   addNews(c, tag, round.win ? "good" : "info", `${round.name} · ${round.opp} 상대 ${round.score} ${round.win ? "승리" : "패배"}`);
   return "step";
 }
@@ -223,7 +245,7 @@ export function stepSeason(c: Career): SeasonStep | null {
 function playGame(c: Career, run: SeasonRun, tag: string): void {
   const team = c.team!;
   const lg = team.lg;
-  if (run.injury && run.g === run.injury.at) startInjury(c, run, tag);
+  if (run.out === 0 && chance(injuryRisk(c, run.min, run.inv) / run.games)) startInjury(c, run, tag);
   const win = random() < (run.wins - run.w) / (run.games - run.g);
   const n = ++run.g;
   if (win) run.w++;
@@ -232,29 +254,38 @@ function playGame(c: Career, run: SeasonRun, tag: string): void {
   const line: GameLine = { n, opp: pickTeam(lg, new Set([team.name])).name, us, them, win };
   if (run.out > 0) {
     line.out = run.outWhy;
+    addHealth(c, REST_HEAL);
     if (--run.out === 0) {
       if (run.outWhy === "부상") addNews(c, tag, "good", "부상에서 회복해 코트로 돌아왔어요.");
       if (run.outWhy === "합류 전") addNews(c, tag, "info", "전역 후 시즌 중반부터 팀에 합류했어요.");
     }
-  } else line.me = playMinutes(run);
+  } else line.me = playMinutes(c, run);
   run.log.unshift(line);
   if (run.log.length > LOG_LIMIT) run.log.length = LOG_LIMIT;
   // 이벤트로 오른(내린) 경기력은 경기를 치를수록 평소대로 돌아와요.
   run.form *= 0.97;
   if (run.checks.includes(n)) checkEvent(c, EVENT_CHANCE);
+  // 빅매치: 다음 경기에 몸을 던질지 고르게 해요. 로테이션 이상이고 뛸 수 있을 때만이에요.
+  else if (run.bigs.includes(n) && run.out === 0 && run.min >= 10 && n < run.games && chance(BIG_GAME_CHANCE))
+    c.queue.push(bigGameDecision(c, pick(BIG_GAMES), false));
 }
 
-/** 내가 뛴 한 경기 기록. 시즌 평균을 중심으로 흔들리고, 경기력(폼)만큼 오르내려요. */
-function playMinutes(run: SeasonRun): NonNullable<GameLine["me"]> {
+/**
+ * 내가 뛴 한 경기 기록. 시즌 평균을 중심으로 흔들리고, 경기력(폼)만큼 오르내려요.
+ * 지친 몸(낮은 건강)은 기록과 평점을 깎고, 뛴 시간만큼 건강이 닳아요.
+ */
+function playMinutes(c: Career, run: SeasonRun): NonNullable<GameLine["me"]> {
+  const tired = wornOut(c.health);
   const m = clamp(run.min * rnd(0.8, 1.2), 1, 44);
-  const k = (m / run.min) * (1 + run.form * 0.08);
+  const k = (m / run.min) * (1 + run.form * 0.08) * (1 - tired * 0.25);
   const one = (v: number) => sround(v * k * rnd(0.5, 1.5));
   const pts = one(run.mean.pts);
   const reb = one(run.mean.reb);
   const ast = one(run.mean.ast);
   const stl = one(run.mean.stl);
   const blk = one(run.mean.blk);
-  const rating = r1(clamp(run.rating + run.form * 0.35 + rnd(-1.2, 1.2), 1, 10));
+  const rating = r1(clamp(run.rating + run.form * 0.35 - tired * 1.2 + rnd(-1.2, 1.2), 1, 10));
+  addHealth(c, GAME_DAY_HEAL - fatigueOf(run.games) * (m / 30) * (owns(c, "chef") ? 0.88 : 1));
   const t = run.tot;
   t.gp++;
   t.min += m;
@@ -267,15 +298,19 @@ function playMinutes(run: SeasonRun): NonNullable<GameLine["me"]> {
   return { min: Math.round(m), pts, reb, ast, rating };
 }
 
+/** 이번 경기 직전에 다쳐요. 심할수록 오래 빠지고, 시즌 아웃급이면 운동능력도 떨어져요. */
 function startInjury(c: Career, run: SeasonRun, tag: string): void {
-  const inj = run.injury!;
-  run.injury = null;
-  run.out += inj.out;
+  const r = random();
+  const [name, frac] =
+    r < 0.6 ? ["가벼운 부상", rnd(0.05, 0.15)] : r < 0.9 ? ["큰 부상", rnd(0.2, 0.4)] : ["시즌 아웃급 부상", rnd(0.5, 0.85)];
+  const severe = r >= 0.9;
+  const out = Math.max(1, Math.round(run.games * frac * (owns(c, "recovery") ? 0.85 : 1)));
+  run.out = out;
   run.outWhy = "부상";
-  addHealth(c, -inj.hp);
-  if (inj.ath) addAttr(c.p.attrs, "ath", -inj.ath);
-  addNews(c, tag, "bad", `${run.g + 1}번째 경기에서 ${inj.name}을 당했어요. ${inj.out}경기쯤 결장할 것 같아요.`);
-  if (inj.out >= ASK_RETURN_AT) c.queue.push(injuryDecision(inj.out));
+  addHealth(c, -Math.round(frac * 20) - (severe ? 12 : 0));
+  if (severe) addAttr(c.p.attrs, "ath", -ri(2, 4));
+  addNews(c, tag, "bad", `${run.g + 1}번째 경기를 앞두고 ${name}을 당했어요. ${out}경기쯤 결장할 것 같아요.`);
+  if (out >= ASK_RETURN_AT) c.queue.push(injuryDecision(out));
 }
 
 function checkEvent(c: Career, p: number): void {
@@ -533,14 +568,16 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: Set<Inve
     }
     // 전담 트레이너: 맡은 능력치는 조금 더 크고, 노화로 떨어질 때는 덜 떨어져요.
     if (c.perks.trainer === k) g *= g > 0 ? 1.15 : 0.8;
-    // 시즌 투자
+    // 시즌 투자와 개인 훈련장
     if (g > 0) {
       if (inv.has("coach")) g *= 1.05;
+      if (owns(c, "court")) g *= 1.04;
       if (k === "ath" && inv.has("gym")) g *= 1.2;
       if (k === "iq" && inv.has("video")) g *= 1.25;
     } else {
       if (k === "ath" && inv.has("gym")) g *= 0.75;
       if (inv.has("diet")) g *= 0.9;
+      if (owns(c, "court")) g *= 0.9;
     }
     if (k === "iq" && age >= 24 && age <= 33) g += 0.5;
     delta[k] = addAttr(p.attrs, k, g);
@@ -551,6 +588,16 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: Set<Inve
     p.pot = Math.max(Math.round(ovrOf(p.attrs, p.pos)) + 1, p.pot - ri(1, min < 8 ? 3 : 2));
     if (p.pot < before) addNews(c, tag, "bad", "출전 시간이 부족해 성장 한계가 조금 낮아졌어요.");
   }
-  const care = (inv.has("rehab") ? 8 : 0) + (inv.has("diet") ? 6 : 0);
-  c.health = clamp(c.health + (c.focus === "rest" ? 15 : 8) + care - (age > 28 ? (age - 28) * 1.6 : 0), ...HEALTH_RANGE);
+  recover(c, inv);
+}
+
+/**
+ * 시즌이 끝난 뒤 쉬며 회복해요. 많이 닳았을수록 많이 돌아오지만 다 채우지는 못해서,
+ * 해마다 오래 뛰는 선수는 건강이 낮은 채로 다음 시즌을 시작해요. 시즌에 D만큼 닳는 선수는 대략 112 - D에서 시작해요.
+ */
+function recover(c: Career, inv: Set<InvestKey>): void {
+  const rest = c.focus === "rest";
+  const care = (inv.has("rehab") ? 8 : 0) + (inv.has("diet") ? 6 : 0) + (owns(c, "home") ? 4 : 0);
+  const heal = (100 - c.health) * (rest ? 0.65 : 0.5) + (rest ? 10 : 6) + care;
+  c.health = clamp(c.health + heal - (c.age > 28 ? (c.age - 28) * 1.6 : 0), ...HEALTH_RANGE);
 }

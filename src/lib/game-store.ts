@@ -1,11 +1,14 @@
 import { useSyncExternalStore } from "react";
 import {
   INVEST_SLOTS,
+  buy,
   canRetire,
   chooseOption,
   createCareer,
   currentDecision,
+  donate,
   generateCandidates,
+  requestTransfer,
   resolveQueue,
   retire,
   startSeason,
@@ -19,6 +22,7 @@ import {
   type NewsItem,
   type PosKey,
   type SeasonStep,
+  type ShopKey,
 } from "@/game";
 import { decodeSave, loadCareer, loadHall, saveCareer, saveHall } from "@/game/storage";
 
@@ -266,6 +270,30 @@ export const gameActions = {
   /** 드래프트 진행 화면을 닫고 지명 결과를 알림으로 보여줘요. */
   finishDraft() {
     closeWithToast({ drafting: false }, snapshot.career?.news[0]?.m);
+  },
+  /** 구단에 이적을 요청해요. 결과는 결정 시트(허락·거절)와 알림으로 나와요. */
+  requestTransfer() {
+    const before = snapshot.career?.news[0];
+    mutate((c) => {
+      requestTransfer(c);
+    });
+    const c = snapshot.career;
+    const msg = c && latestNewsSince(before, c);
+    if (msg) set({ toast: toast(msg) });
+  },
+  buy(key: ShopKey) {
+    mutate((c) => {
+      buy(c, key);
+    });
+    const m = snapshot.career?.news[0]?.m;
+    if (m) set({ toast: toast(`구입 · ${m}`) });
+  },
+  donate(amount: number) {
+    mutate((c) => {
+      donate(c, amount);
+    });
+    const m = snapshot.career?.news[0]?.m;
+    if (m) set({ toast: toast(m) });
   },
   dismissToast(id: number) {
     if (snapshot.toast?.id === id) set({ toast: null });

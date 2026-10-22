@@ -1,9 +1,10 @@
+import { clampTrust } from "./condition";
 import { LEAGUES } from "./leagues";
-import { pickTeam } from "./log";
-import { ri, rnd } from "./random";
-import { expectedMinutes, ovr, ovrOf, roleOf, salaryFor } from "./ratings";
-import type { Career, CurrentTeam, Decision, DecisionOption, ProLeagueKey, Team } from "./types";
-import { money, roundSalary } from "./util";
+import { addNews, pickTeam } from "./log";
+import { chance, ri, rnd } from "./random";
+import { currentExpectedMinutes, expectedMinutes, ovr, ovrOf, roleOf, salaryFor } from "./ratings";
+import type { Action, Career, CurrentTeam, Decision, DecisionOption, ProLeagueKey, Team } from "./types";
+import { clamp, money, roundSalary } from "./util";
 
 /* ---------- 드래프트 평가 ---------- */
 
@@ -202,6 +203,119 @@ export function nbaOffer(c: Career): Decision | null {
       { label: `${c.team.name} 잔류`, sub: `남은 계약 ${c.contract.years}년을 채워요`, act: { k: "none" } },
     ],
   };
+}
+
+/* ---------- 연봉 협상 ---------- */
+
+type SignAction = Extract<Action, { k: "sign" }>;
+
+/** 협상할 수 있는 계약인지. G리그 계약과 NBA 최저 연봉은 금액이 정해져 있어요. */
+export const negotiable = (a: SignAction): boolean => !a.deal && a.lg !== "gleague" && !(a.lg === "nba" && a.salary <= 17);
+
+/**
+ * 구단이 요구를 들어줄 기본 확률. 그 리그 수준보다 잘할수록, 지난 시즌 평점이 높을수록,
+ * 대형 에이전시가 있으면 협상력이 커요.
+ */
+export function leverage(c: Career, lg: ProLeagueKey): number {
+  const rating = c.last?.rating || 6;
+  return clamp(0.45 + (ovr(c.p) - LEAGUES[lg].avg) / 25 + (rating - 6.5) * 0.1 + (c.perks.agency ? 0.1 : 0), 0.15, 0.85);
+}
+
+/**
+ * 제안을 고르면 바로 서명하지 않고 협상 테이블에 앉아요.
+ * others는 원래 결정에 있던 다른 선택지로, 크게 요구했다가 결렬되면 여기로 돌아가요.
+ */
+export function negotiation(c: Career, a: SignAction, others: DecisionOption[]): Decision {
+  const lev = leverage(c, a.lg);
+  const base = { lg: a.lg, team: a.team, years: a.years, salary: a.salary };
+  const up = (x: number) => money(roundSalary(a.salary * x));
+  const mood = lev >= 0.6 ? "더 받아낼 수 있다고 자신해요" : lev >= 0.35 ? "조금은 더 받아낼 여지가 있다고 해요" : "욕심을 부리면 위험하다고 말려요";
+  const opts: DecisionOption[] = [
+    { label: "제시안에 서명", sub: `${a.years}년 · 연봉 ${money(a.salary)}`, tag: "서명", act: { k: "sign", ...base, deal: true } },
+    {
+      label: "연봉 10% 인상 요구",
+      sub: `받아들이면 연봉 ${up(1.1)} · 거절하면 원래 조건으로 서명해요`,
+      tag: "협상",
+      act: { k: "nego", ...base, ask: 1.1, p: lev },
+    },
+    {
+      label: "연봉 25% 인상 요구",
+      sub: `받아들이면 연봉 ${up(1.25)} · 거절하면 구단이 협상을 끝낼 수 있어요`,
+      tag: "도전",
+      act: { k: "nego", ...base, ask: 1.25, p: lev * 0.6, walk: others },
+    },
+  ];
+  if (a.years < 5)
+    opts.push({
+      label: "계약 기간 1년 연장 요구",
+      sub: `받아들이면 ${a.years + 1}년 · 같은 연봉 · 거절하면 원래 조건으로 서명해요`,
+      tag: "협상",
+      act: { k: "nego", ...base, years: a.years + 1, ask: 1, p: clamp(lev + 0.1 - (c.age >= 30 ? 0.25 : 0), 0.1, 0.9) },
+    });
+  return {
+    title: `${a.team.name} 연봉 협상`,
+    body: `${LEAGUES[a.lg].name} · ${a.years}년 · 연봉 ${money(a.salary)}를 제시했어요. 에이전트는 ${mood}.`,
+    opts,
+  };
+}
+
+/* ---------- 이적 요청 ---------- */
+
+/** 계약 기간 중 이적을 요청할 수 있는지: 프로 선수가 시즌 사이에, 오프시즌마다 한 번 */
+export const canRequestTransfer = (c: Career): boolean =>
+  c.stage === "pro" && !!c.team && !!c.contract && c.contract.years > 0 && !c.run && !c.queue.length && c.moveAsked !== c.year;
+
+/** 계약을 깨고 나갈 때 내는 위약금: 남은 연봉의 절반 */
+export const buyoutCost = (c: Career): number => (c.contract ? roundSalary(c.contract.salary * c.contract.years * 0.5) : 0);
+
+/**
+ * 구단에 이적을 요청해요. 출전 시간이 적을수록 구단이 쉽게 보내 주고, 팀의 핵심일수록 붙잡아요.
+ * 허락하면 다른 구단의 제안을, 거절하면 남거나 위약금을 내고 나가는 선택지를 대기열에 넣어요.
+ */
+export function requestTransfer(c: Career): boolean {
+  if (!canRequestTransfer(c)) return false;
+  c.moveAsked = c.year;
+  const team = c.team!;
+  const lg = team.lg;
+  const tag = `${c.year - 1} 오프시즌`;
+  const star = Math.max(0, ovr(c.p) - LEAGUES[lg].avg - 6);
+  const p = clamp(
+    0.45 + (currentExpectedMinutes(c) < 20 ? 0.2 : 0) - star * 0.04 + (c.perks.agency ? 0.1 : 0) - (c.trust >= 2 ? 0.1 : 0),
+    0.1,
+    0.85,
+  );
+  const stay: DecisionOption = { label: `${team.name}에 남는다`, sub: `남은 계약 ${c.contract!.years}년을 채워요`, act: { k: "none" } };
+  if (chance(p)) {
+    const offers = generateOffers(c, null, c.last?.rating || 6).filter((o) => o.act.k === "sign" && o.act.team.name !== team.name);
+    if (!offers.length) {
+      addNews(c, tag, "info", "구단은 이적을 허락했지만 관심을 보이는 팀이 없었어요.");
+      return true;
+    }
+    addNews(c, tag, "info", `${team.name} 구단이 이적 요청을 받아들였어요.`);
+    c.queue.unshift({
+      title: "이적 시장",
+      body: `${team.name} 구단이 트레이드 상대를 찾았어요. 새 팀을 고르면 연봉을 협상해요.`,
+      opts: [...offers.map((o) => ({ ...o, tag: o.tag ?? "이적" })), stay],
+    });
+    return true;
+  }
+  c.trust = clampTrust(c.trust - 1);
+  addNews(c, tag, "bad", `${team.name} 구단이 이적 요청을 거절했어요. 코치와 사이가 조금 서먹해졌어요.`);
+  const cost = buyoutCost(c);
+  const opts: DecisionOption[] = [{ ...stay, label: "남아서 실력으로 증명한다" }];
+  if (c.earnings + 1e-9 >= cost)
+    opts.push({
+      label: `위약금 ${money(cost)}을 내고 계약 해지`,
+      sub: "FA가 되어 모든 구단의 제안을 받아요",
+      tag: "해지",
+      act: { k: "buyout", cost },
+    });
+  c.queue.unshift({
+    title: "이적 요청 거절",
+    body: `구단은 아직 당신이 필요하대요.${opts.length > 1 ? "" : ` 계약을 해지하려면 위약금 ${money(cost)}이 필요해요.`}`,
+    opts,
+  });
+  return true;
 }
 
 export function retirementPrompt(c: Career): Decision {

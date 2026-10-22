@@ -2,15 +2,15 @@ import { ATTR_KEYS, POS, SHORT } from "./data";
 import { LEAGUES } from "./leagues";
 import { retire } from "./career";
 import { addAttr, addHealth, clampTrust } from "./condition";
-import { currentDecision, resolveQueue } from "./decisions";
+import { currentDecision, negotiable, negotiation, resolveQueue } from "./decisions";
 import { runDraft } from "./draft";
 import { addNews, decisionTag, joinTeam, leaveTeam, setTeam } from "./log";
 import { applyMilitary } from "./military";
 import { runNationalTeam } from "./national";
 import { chance, shuffle } from "./random";
 import { ovr } from "./ratings";
-import type { Action, Boost, Career } from "./types";
-import { clamp, money } from "./util";
+import type { Action, Boost, Career, ProLeagueKey, Team } from "./types";
+import { clamp, money, round2, roundSalary } from "./util";
 
 /** 이벤트 효과를 적용하고 소식을 남겨요. */
 function applyBoost(c: Career, b: Boost, tag: string): void {
@@ -34,8 +34,26 @@ function applyBoost(c: Career, b: Boost, tag: string): void {
     if (run.out === 0) run.outWhy = "휴식";
     run.out = Math.max(0, run.out + b.sit);
   }
+  if (run && b.injure) {
+    run.out += b.injure;
+    run.outWhy = "부상";
+  }
   c.peakOvr = Math.max(c.peakOvr, ovr(p));
   if (msg) addNews(c, tag, b.t ?? "good", msg.trim());
+}
+
+/** 계약서에 서명해요. 같은 팀이면 재계약이에요. */
+function sign(c: Career, lg: ProLeagueKey, team: Team, years: number, salary: number, note = ""): void {
+  const same = c.team?.name === team.name && c.team?.lg === lg;
+  c.stage = "pro";
+  c.contract = { years, salary };
+  if (!same) joinTeam(c, lg, team);
+  addNews(
+    c,
+    decisionTag(c),
+    "move",
+    `${same ? `${team.name} 재계약` : `${team.name} 입단 · ${LEAGUES[lg].name}`} · ${years}년 · 연봉 ${money(salary)}${note}`,
+  );
 }
 
 export function applyAction(c: Career, a: Action): void {
@@ -55,19 +73,31 @@ export function applyAction(c: Career, a: Action): void {
     case "draft":
       runDraft(c, a.d);
       break;
-    case "sign": {
-      const same = c.team?.name === a.team.name && c.team?.lg === a.lg;
-      c.stage = "pro";
-      c.contract = { years: a.years, salary: a.salary };
-      if (!same) joinTeam(c, a.lg, a.team);
-      addNews(
-        c,
-        tag,
-        "move",
-        same
-          ? `${a.team.name} 재계약 · ${a.years}년 · 연봉 ${money(a.salary)}`
-          : `${a.team.name} 입단 · ${LEAGUES[a.lg].name} · ${a.years}년 · 연봉 ${money(a.salary)}`,
-      );
+    case "sign":
+      sign(c, a.lg, a.team, a.years, a.salary);
+      break;
+    case "nego":
+      if (chance(a.p)) sign(c, a.lg, a.team, a.years, roundSalary(a.salary * a.ask), " · 협상 성공");
+      else if (!a.walk) {
+        // 기간 연장 요구가 거절되면 원래 기간이에요.
+        const years = a.ask === 1 ? a.years - 1 : a.years;
+        sign(c, a.lg, a.team, years, a.salary, " · 구단이 원래 조건을 고수했어요");
+      } else {
+        addNews(c, tag, "bad", `${a.team.name} 구단이 협상 테이블을 떠났어요.`);
+        c.queue.unshift({
+          title: "협상 결렬",
+          body: `${a.team.name} 구단이 제안을 거둬들였어요. 남은 선택지에서 고르세요.`,
+          opts: a.walk.length ? a.walk : [{ label: "무소속으로 1년 개인 훈련", sub: "다음 시장을 노려요", act: { k: "skip" } }],
+        });
+      }
+      break;
+    case "buyout": {
+      const from = c.team?.name ?? "";
+      c.earnings = round2(Math.max(0, c.earnings - a.cost));
+      c.spent = round2(c.spent + a.cost);
+      leaveTeam(c);
+      addNews(c, tag, "move", `${from}에 위약금 ${money(a.cost)}을 내고 계약을 해지했어요. FA 시장에 나가요.`);
+      c.queue.unshift({ lazy: "faFree" });
       break;
     }
     case "skip":
@@ -107,7 +137,10 @@ export function chooseOption(c: Career, index: number): boolean {
   const opt = d?.opts[index];
   if (!opt) return false;
   c.queue.shift();
-  applyAction(c, opt.act);
+  // 계약 제안은 바로 서명하지 않고 연봉 협상으로 넘어가요.
+  const a = opt.act;
+  if (a.k === "sign" && negotiable(a)) c.queue.unshift(negotiation(c, a, d.opts.filter((_, i) => i !== index)));
+  else applyAction(c, a);
   resolveQueue(c);
   return true;
 }

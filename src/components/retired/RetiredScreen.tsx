@@ -49,6 +49,11 @@ export function RetiredScreen({ career: c, hall }: { career: Career; hall: Caree
           ))}
         </div>
         <p className="hint">거쳐간 팀 · {s.teams.join(" → ")}</p>
+        {(s.academy || !!s.donated) && (
+          <p className="hint">
+            코트 밖에서 · {[s.academy && "유소년 농구 아카데미 설립", s.donated && `유소년 농구 기부 ${money(s.donated)}`].filter(Boolean).join(" · ")}
+          </p>
+        )}
       </Panel>
 
       <Panel title={`우승 기록 · ${titles.length}회`}>

@@ -33,13 +33,17 @@ import {
   startSeason,
   stepSeason,
   type SeasonStep,
+  buy,
+  donate,
+  requestTransfer,
+  canRequestTransfer,
   teamPower,
   titleHistory,
   type AttrKey,
   type Career,
   type CareerSummary,
 } from "@/game";
-import { injuryDecision, lifeEvent } from "@/game/events";
+import { bigGameDecision, injuryDecision, lifeEvent } from "@/game/events";
 import { makeLiveGame } from "@/game/live";
 import { militaryDecision } from "@/game/military";
 import { nationalCallUp, runNationalTeam } from "@/game/national";
@@ -763,9 +767,9 @@ describe("시즌 진행", () => {
       expect(rec.gp).toBeLessThanOrEqual(games);
       expect(steps.at(-1)).toBe("done");
       expect(steps.filter((s) => s === "done").length).toBe(1);
-      // 프리시즌 + 경기 수 + 플레이오프 라운드(0~3) + 결산
+      // 프리시즌 + 경기 수 + 플레이오프 라운드(0~3) + 결산, 결승 직전 출전 결정을 물으면 한 칸 더
       expect(steps.length).toBeGreaterThanOrEqual(games + 2);
-      expect(steps.length).toBeLessThanOrEqual(games + 5);
+      expect(steps.length).toBeLessThanOrEqual(games + 6);
       if (c.live?.key === `league-${year}`) expect(steps).toContain("final");
     }
   });
@@ -839,5 +843,163 @@ describe("시즌 진행", () => {
     const steps = stepThrough(c);
     expect(steps.length).toBe(7);
     expect(c.last?.result).toBe("개인 훈련");
+  });
+});
+
+describe("체력과 빅매치", () => {
+  function nba(id: string, ovrBoost: number): Career {
+    const c = createCareer({ name: "체력", num: 1, nat: "미국", pos: "SF", path: "abroad" }, generateCandidates("SF")[0], id);
+    for (const k of ATTR_KEYS) c.p.attrs[k] += ovrBoost;
+    c.stage = "pro";
+    c.team = { name: "보스턴 셀틱스", color: "#007A33", q: 0.5, lg: "nba" };
+    c.contract = { years: 3, salary: 30 };
+    c.p.trait = "강철몸";
+    return c;
+  }
+
+  /** 정규시즌 절반을 치른 뒤의 건강 (결정은 첫 선택지) */
+  function healthAtHalf(c: Career): number {
+    startSeason(c);
+    while (c.run!.phase === "pre" || c.run!.g < c.run!.games / 2) {
+      if (c.queue.length) chooseOption(c, 1);
+      else stepSeason(c);
+    }
+    return c.health;
+  }
+
+  it("오래 뛸수록 경기마다 건강이 많이 닳아요", () => {
+    setRandom(seeded(81));
+    const star = healthAtHalf(nba("star", 40));
+    setRandom(seeded(81));
+    const bench = healthAtHalf(nba("bench", 0));
+    expect(star).toBeLessThan(bench - 8);
+  });
+
+  it("빅매치에서 강행해 성공하면 경기력이 오르고, 실패하면 다쳐서 다음 경기에 못 나가요", () => {
+    setRandom(seeded(82));
+    const c = nba("big", 20);
+    startSeason(c);
+    stepSeason(c);
+    const d = bigGameDecision(c, "라이벌전", false);
+    expect(d.opts[0].act.k).toBe("gamble");
+    setRandom(() => 0);
+    applyAction(c, d.opts[0].act);
+    expect(c.run!.form).toBeGreaterThan(1);
+    expect(c.run!.out).toBe(0);
+    setRandom(() => 0.999);
+    applyAction(c, d.opts[0].act);
+    expect(c.run!.out).toBeGreaterThanOrEqual(1);
+    expect(c.run!.outWhy).toBe("부상");
+    // 쉬는 쪽을 고르면 한 경기 쉬어요.
+    const rest = nba("rest", 20);
+    startSeason(rest);
+    applyAction(rest, bigGameDecision(rest, "라이벌전", false).opts[1].act);
+    expect(rest.run!.out).toBe(1);
+  });
+});
+
+describe("연봉 협상과 이적 요청", () => {
+  function kbl(id: string): Career {
+    const c = createCareer({ name: "협상", num: 2, nat: "대한민국", pos: "PG", path: "domestic" }, generateCandidates("PG")[0], id);
+    for (const k of ATTR_KEYS) c.p.attrs[k] += 22;
+    c.age = 26;
+    c.mil = { s: "exempt" };
+    c.stage = "pro";
+    c.team = { name: "서울 SK 나이츠", color: "#D7141A", q: 0.5, lg: "kbl" };
+    c.contract = { years: 2, salary: 3 };
+    return c;
+  }
+  const offer = () => ({
+    title: "FA",
+    body: "",
+    opts: [
+      { label: "부산 KCC 이지스", act: { k: "sign" as const, lg: "kbl" as const, team: { name: "부산 KCC 이지스", color: "#003A70", q: 0.5 }, years: 3, salary: 4 } },
+      { label: "무소속", act: { k: "skip" as const } },
+    ],
+  });
+
+  it("제안을 고르면 바로 서명하지 않고 협상하고, 인상에 성공하면 오른 연봉에 서명해요", () => {
+    setRandom(seeded(91));
+    const c = kbl("nego");
+    c.queue = [offer()];
+    chooseOption(c, 0);
+    const d = currentDecision(c)!;
+    expect(d.title).toContain("연봉 협상");
+    expect(d.opts.map((o) => o.act.k)).toEqual(["sign", "nego", "nego", "nego"]);
+    setRandom(() => 0);
+    chooseOption(c, 1);
+    expect(c.contract).toEqual({ years: 3, salary: 4.4 });
+    expect(c.team?.name).toBe("부산 KCC 이지스");
+  });
+
+  it("작은 요구가 거절되면 원래 조건, 큰 요구가 거절되면 협상이 깨져 다른 선택지로 돌아가요", () => {
+    setRandom(seeded(92));
+    const c = kbl("walk");
+    c.queue = [offer()];
+    chooseOption(c, 0);
+    setRandom(() => 0.999);
+    chooseOption(c, 1);
+    expect(c.contract).toEqual({ years: 3, salary: 4 });
+
+    const w = kbl("walk2");
+    w.queue = [offer()];
+    chooseOption(w, 0);
+    chooseOption(w, 2);
+    const back = currentDecision(w)!;
+    expect(back.title).toBe("협상 결렬");
+    expect(back.opts.map((o) => o.label)).toEqual(["무소속"]);
+    expect(w.team?.name).toBe("서울 SK 나이츠");
+  });
+
+  it("이적 요청은 오프시즌마다 한 번이고, 허락되면 다른 구단 제안이, 거절되면 위약금 해지 선택지가 와요", () => {
+    setRandom(() => 0);
+    const ok = kbl("move");
+    expect(canRequestTransfer(ok)).toBe(true);
+    expect(requestTransfer(ok)).toBe(true);
+    expect(canRequestTransfer(ok)).toBe(false);
+    const d = currentDecision(ok)!;
+    expect(d.title).toBe("이적 시장");
+    for (const o of d.opts.slice(0, -1)) {
+      expect(o.act.k).toBe("sign");
+      if (o.act.k === "sign") expect(o.act.team.name).not.toBe("서울 SK 나이츠");
+    }
+
+    setRandom(() => 0.999);
+    const no = kbl("stay");
+    no.earnings = 10;
+    requestTransfer(no);
+    const r = currentDecision(no)!;
+    expect(r.title).toBe("이적 요청 거절");
+    const i = r.opts.findIndex((o) => o.act.k === "buyout");
+    expect(i).toBeGreaterThan(0);
+    setRandom(seeded(93));
+    chooseOption(no, i);
+    expect(no.earnings).toBe(7);
+    expect(no.team).toBeNull();
+    expect(no.stage).toBe("free");
+    expect(currentDecision(no)?.title).toBe("다시 시장에 나왔어요");
+  });
+});
+
+describe("자금 쓰기", () => {
+  it("산 것은 한 번만 살 수 있고 효과가 남으며, 기부는 누적돼 은퇴 기록에 남아요", () => {
+    setRandom(seeded(95));
+    const c = createCareer({ name: "부자", num: 0, nat: "대한민국", pos: "C", path: "domestic" }, generateCandidates("C")[0], "shop");
+    c.earnings = 20;
+    c.health = 70;
+    expect(buy(c, "parents")).toBe(true);
+    expect(c.health).toBe(80);
+    expect(buy(c, "parents")).toBe(false);
+    expect(buy(c, "academy")).toBe(false);
+    expect(donate(c, 10)).toBe(true);
+    expect(c.earnings).toBe(7);
+    expect(c.spent).toBe(13);
+    expect(c.owned).toEqual(["parents"]);
+    const s = careerSummary(c);
+    expect(s.donated).toBe(10);
+    expect(s.earn).toBe(20);
+    // 시즌 중에는 살 수 없어요.
+    startSeason(c);
+    expect(buy(c, "shoes")).toBe(false);
   });
 });
