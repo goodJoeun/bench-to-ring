@@ -58,6 +58,8 @@ const isFree = (c: Career) => c.stage === "free";
 const hasTeam = (c: Career) => !!c.team;
 /** 이벤트 비용·수입의 기준이 되는 연봉 */
 const salary = (c: Career) => c.contract?.salary ?? 1;
+/** 연봉의 pct만큼, lo~hi 억 사이로 정한 금액 */
+const cut = (c: Career, pct: number, lo: number, hi: number) => roundSalary(clamp(salary(c) * pct, lo, hi));
 
 const TRAINERS: [AttrKey, string][] = [
   ["ath", "피지컬 전문 트레이너"],
@@ -101,6 +103,54 @@ const EVENTS: LifeEvent[] = [
       opts: [
         opt("함께 한다", { attrs: { iq: 2 }, msg: "경기를 보는 눈이 넓어졌어요." }),
         opt("웨이트에 집중", { attrs: { ath: 1 }, msg: "웨이트로 몸을 키웠어요." }),
+      ],
+    }),
+  },
+
+  {
+    id: "yoga",
+    make: (c) => {
+      const fee = cut(c, 0.01, 0.01, 1);
+      return {
+        title: "요가 클래스 체험권",
+        body: "팀 트레이너가 유연성이 부족하다며 요가 클래스를 추천했어요. 주변에선 '농구 선수가 무슨 요가냐'며 웃어요.",
+        opts: [
+          opt("한 달 등록한다", { health: 6, money: -fee, msg: "몸이 부드러워지니 착지가 한결 편해졌어요." }),
+          pass("웃고 넘긴다", "요가 매트 대신 농구공을 잡았어요."),
+        ],
+      };
+    },
+  },
+  {
+    id: "gaming",
+    make: () => ({
+      title: "새로 나온 농구 게임",
+      body: "친구들이 새로 나온 농구 게임을 밤새 같이 하자고 해요. 게임 속 내 능력치가 실제보다 낮게 나와서 은근히 자존심이 상해요.",
+      opts: [
+        risky(
+          "딱 한 판만 한다",
+          0.5,
+          { attrs: { iq: 1 }, msg: "게임 속 전술 화면에서 의외의 힌트를 얻었어요." },
+          { health: -5, msg: "한 판이 열 판이 됐어요. 다음 날 훈련이 지옥이었어요.", t: "bad" },
+        ),
+        opt("게임 능력치를 넘어서겠다며 체육관으로", { rand: 1, amt: 1, msg: "자존심이 최고의 훈련 동기였어요." }),
+      ],
+    }),
+  },
+  {
+    id: "dunkshow",
+    when: (c) => !isFree(c),
+    make: () => ({
+      title: "덩크 콘테스트 초청",
+      body: "올스타 행사 덩크 콘테스트에 나와 달래요. 마스코트 위를 넘는 덩크를 기대하는 눈치예요.",
+      opts: [
+        risky(
+          "마스코트를 넘는다",
+          0.5,
+          { attrs: { ath: 1 }, trust: 1, msg: "마스코트를 훌쩍 넘는 덩크로 하이라이트를 장식했어요." },
+          { health: -6, msg: "착지하다 발목을 접질렸어요. 마스코트는 무사해요.", t: "bad" },
+        ),
+        opt("심사위원석에 앉는다", { attrs: { iq: 1 }, msg: "남의 덩크를 보며 몸의 쓰임새를 공부했어요." }),
       ],
     }),
   },
@@ -189,6 +239,77 @@ const EVENTS: LifeEvent[] = [
     }),
   },
 
+  {
+    id: "transfer-hs",
+    when: isHs,
+    make: () => ({
+      title: "명문고 감독의 전화",
+      body: "다른 명문고 감독이 전학 오면 주전을 보장하겠대요. 지금 팀 동료들은 아직 이 사실을 몰라요.",
+      opts: [
+        opt("의리를 지킨다", { trust: 1, msg: "남기로 했어요. 감독님이 어깨를 두드려 줬어요." }),
+        risky(
+          "연습 경기만 같이 해 본다",
+          0.4,
+          { rand: 2, amt: 1, msg: "더 강한 선수들 틈에서 자극을 받고 돌아왔어요." },
+          { trust: -1, msg: "전학 소문이 퍼져 팀에서 눈총을 받았어요.", t: "bad" },
+        ),
+      ],
+    }),
+  },
+  {
+    id: "letter",
+    when: isHs,
+    make: () => ({
+      title: "사물함 속 편지",
+      body: "사물함에 '경기 잘 보고 있어요'라는 편지가 들어 있어요. 보낸 사람 이름은 없어요.",
+      opts: [
+        opt("답장을 써서 붙여 둔다", { health: 4, msg: "답장이 사라졌어요. 다음 경기 관중석이 신경 쓰여요." }),
+        opt("설렘을 슈팅 연습으로 바꾼다", { attrs: { sht: 1 }, msg: "두근거릴 때마다 슛을 던졌더니 손끝이 좋아졌어요." }),
+      ],
+    }),
+  },
+  {
+    id: "growthplate",
+    when: (c) => isHs(c) && c.age <= 18,
+    make: () => ({
+      title: "성장판 검사",
+      body: "병원에서 성장판이 아직 조금 열려 있대요. 의사 선생님은 잠과 스트레칭을 강조해요.",
+      opts: [
+        opt("밤 11시 취침을 지킨다", { health: 5, attrs: { ath: 1 }, msg: "일찍 자는 습관이 생겼어요. 몸이 가벼워요." }),
+        opt("밤에도 슛을 던진다", { attrs: { sht: 1 }, health: -3, msg: "잠보다 슛이 좋았어요." }),
+      ],
+    }),
+  },
+  {
+    id: "alumni",
+    when: isHs,
+    make: () => ({
+      title: "프로 선배의 모교 방문",
+      body: "모교 출신 프로 선배가 훈련을 보러 왔어요. 딱 30분 시간이 있대요.",
+      opts: [
+        opt("1대1 레슨을 부탁한다", { attrs: { hdl: 1 }, msg: "선배의 드리블 요령 하나를 몸에 새겼어요." }),
+        opt("프로 생활을 묻는다", { attrs: { iq: 1 }, health: 2, msg: "프로의 하루를 듣고 목표가 또렷해졌어요." }),
+      ],
+    }),
+  },
+  {
+    id: "relay",
+    when: isHs,
+    make: () => ({
+      title: "체육대회 계주 마지막 주자",
+      body: "반 대표 계주 마지막 주자로 뽑혔어요. 우리 반은 지금 꼴찌예요.",
+      opts: [
+        risky(
+          "전력으로 뛴다",
+          0.65,
+          { attrs: { ath: 1 }, trust: 1, msg: "역전 우승을 이끌어 전교의 영웅이 됐어요." },
+          { health: -4, msg: "결승선 앞에서 넘어져 무릎이 까졌어요.", t: "bad" },
+        ),
+        pass("농구부 체면에 살살 뛴다", "부상 없이 체육대회를 마쳤어요."),
+      ],
+    }),
+  },
+
   /* 대학생 */
   {
     id: "grades",
@@ -248,6 +369,60 @@ const EVENTS: LifeEvent[] = [
       opts: [
         opt("MT 간다", { health: 6, msg: "동기들과 MT에서 실컷 웃었어요." }),
         opt("연습 경기 뛴다", { rand: 1, amt: 1, trust: 1, msg: "연습 경기에서 눈도장을 찍었어요." }),
+      ],
+    }),
+  },
+
+  {
+    id: "abroadcamp",
+    when: isCollege,
+    make: () => ({
+      title: "해외 대학 연합 캠프",
+      body: "여름 방학 해외 대학 연합 캠프에 초청받았어요. 항공권은 내가 내야 해요.",
+      opts: [
+        opt("참가한다", { rand: 2, amt: 1, health: -4, money: -0.03, msg: "말은 안 통해도 농구는 통했어요." }),
+        pass("국내에서 훈련", "익숙한 체육관에서 여름을 보냈어요."),
+      ],
+    }),
+  },
+  {
+    id: "roommate",
+    when: isCollege,
+    make: () => ({
+      title: "기숙사 룸메이트",
+      body: "새 룸메이트가 밤마다 기타를 쳐요. 실력은 꽤 늘고 있는데 잠은 줄고 있어요.",
+      opts: [
+        opt("대화로 규칙을 정한다", { health: 4, msg: "밤 10시 이후엔 이어폰 연습으로 합의했어요." }),
+        opt("새벽 체육관으로 피신", { attrs: { sht: 1 }, health: -3, msg: "잠 못 드는 밤마다 체육관에서 슛을 던졌어요." }),
+      ],
+    }),
+  },
+  {
+    id: "lab",
+    when: isCollege,
+    make: () => ({
+      title: "스포츠과학 연구 참여",
+      body: "스포츠과학과 교수님이 운동 데이터 연구에 참여해 달래요. 온몸에 센서를 붙여야 해요.",
+      opts: [
+        opt("실험에 참여한다", { attrs: { iq: 1 }, health: 2, msg: "내 몸의 데이터를 보고 훈련법을 고쳤어요." }),
+        pass("수업만 듣는다", "연구 참여는 정중히 거절했어요."),
+      ],
+    }),
+  },
+  {
+    id: "universiade",
+    when: isCollege,
+    make: () => ({
+      title: "유니버시아드 대표 선발전",
+      body: "대학 대표 선발전이 열려요. 뽑히면 여름 내내 국제 대회에 나가요.",
+      opts: [
+        risky(
+          "선발전에 나간다",
+          0.45,
+          { rand: 1, amt: 2, trust: 1, msg: "대학 대표로 뽑혀 국제 무대를 경험했어요." },
+          { health: -3, msg: "아쉽게 떨어졌지만 좋은 경험이었어요.", t: "info" },
+        ),
+        pass("팀 훈련에 집중", "선발전 대신 소속팀 훈련을 택했어요."),
       ],
     }),
   },
@@ -376,6 +551,129 @@ const EVENTS: LifeEvent[] = [
     }),
   },
 
+  {
+    id: "dog",
+    when: isPro,
+    once: true,
+    make: () => ({
+      title: "보호소의 강아지",
+      body: "봉사활동 간 보호소에서 한 강아지가 계속 따라와요. 원정 경기가 많아 걱정이에요.",
+      opts: [
+        opt("입양한다", { health: 5, msg: "새 가족이 생겨 원정길이 덜 외로워졌어요." }),
+        pass("자주 보러 온다고 약속한다", "주말마다 보호소에 들르기로 했어요."),
+      ],
+    }),
+  },
+  {
+    id: "charity",
+    when: isPro,
+    make: () => ({
+      title: "자선 경기 초청",
+      body: "소아암 환우를 돕는 자선 경기에 초청받았어요. 오프시즌 휴가와 겹쳐요.",
+      opts: [
+        opt("뛴다", { trust: 1, health: -2, msg: "아이들의 응원 속에 의미 있는 경기를 뛰었어요." }),
+        opt("휴가를 지킨다", { health: 5, msg: "가족과 푹 쉬며 휴가를 보냈어요.", t: "info" }),
+      ],
+    }),
+  },
+  {
+    id: "scheme",
+    when: isPro,
+    make: (c) => {
+      const stake = cut(c, 0.2, 0.05, 50);
+      return {
+        title: "지인의 투자 권유",
+        body: "오랜 지인이 '절대 안 망하는' 사업이라며 투자를 권해요. 설명을 들을수록 더 헷갈려요.",
+        opts: [
+          risky(
+            "투자한다",
+            0.3,
+            { money: stake, msg: "놀랍게도 사업이 대박 났어요." },
+            { money: -stake, msg: "역시나 사업이 망했어요. 돈은 돌아오지 않았어요.", t: "bad" },
+          ),
+          pass("정중히 거절한다", "농구로 버는 돈이 가장 확실하다고 생각했어요."),
+        ],
+      };
+    },
+  },
+  {
+    id: "diet-shift",
+    when: isPro,
+    make: () => ({
+      title: "식단 혁명",
+      body: "영양사가 탄수화물을 확 줄이는 새 식단을 권해요. 동료 하나는 효과를 봤대요.",
+      opts: [
+        risky(
+          "식단을 바꾼다",
+          0.6,
+          { health: 6, attrs: { ath: 1 }, msg: "몸이 가벼워지고 회복이 빨라졌어요." },
+          { health: -3, msg: "체중이 너무 빠져 몸싸움에서 밀렸어요.", t: "bad" },
+        ),
+        pass("먹던 대로 먹는다", "어머니표 집밥이 최고라고 믿기로 했어요."),
+      ],
+    }),
+  },
+  {
+    id: "captain",
+    when: (c) => isPro(c) && c.age >= 27,
+    make: () => ({
+      title: "주장 제안",
+      body: "감독이 다음 시즌 주장을 맡아 달래요. 후배들 고민 상담까지 해야 해요.",
+      opts: [
+        opt("주장 완장을 찬다", { trust: 2, health: -3, msg: "주장이 됐어요. 책임감이 무거워요." }),
+        opt("경기에만 집중하겠다고 말한다", { health: 2, msg: "주장은 고사하고 코트에서 보여주기로 했어요.", t: "info" }),
+      ],
+    }),
+  },
+  {
+    id: "shoe",
+    when: (c) => isPro(c) && ovr(c.p) >= 78,
+    once: true,
+    make: (c) => {
+      const pay = roundSalary(clamp((ovr(c.p) - 75) * 2, 2, 60));
+      return {
+        title: "시그니처 농구화 제안",
+        body: "스포츠 브랜드가 내 이름을 단 농구화를 만들고 싶대요. 디자인 회의에 자주 나와야 해요.",
+        opts: [
+          opt("디자인까지 참여한다", { money: pay, health: -3, msg: "내 이름이 새겨진 농구화가 나왔어요." }, "시그니처"),
+          opt("이름만 빌려준다", { money: roundSalary(pay * 0.4), msg: "농구화는 나왔지만 디자인은 조금 아쉬워요." }),
+        ],
+      };
+    },
+  },
+  {
+    id: "podcast",
+    when: isPro,
+    make: (c) => {
+      const pay = cut(c, 0.02, 0.02, 3);
+      return {
+        title: "농구 팟캐스트 게스트",
+        body: "인기 농구 팟캐스트에서 게스트로 나와 달래요. 진행자가 돌직구 질문으로 유명해요.",
+        opts: [
+          risky(
+            "거침없이 말한다",
+            0.5,
+            { money: pay, trust: 1, msg: "솔직한 입담으로 화제가 됐어요." },
+            { trust: -1, msg: "전 소속팀 이야기가 기사화돼 곤란했어요.", t: "bad" },
+          ),
+          opt("무난하게 마친다", { money: roundSalary(pay * 0.5), msg: "무난한 방송이었어요.", t: "info" }),
+        ],
+      };
+    },
+  },
+  {
+    id: "summerleague",
+    when: (c) => isPro(c) && c.age <= 27,
+    make: () => ({
+      title: "해외 서머리그 초청",
+      body: "해외 서머리그 팀이 오프시즌에 함께 뛰자고 해요. 휴가는 반납해야 해요.",
+      opts: [
+        opt("참가한다", { rand: 2, amt: 1, health: -5, msg: "낯선 리그에서 새로운 스타일을 익혔어요." }),
+        pass("쉬면서 시즌을 준비한다", "서머리그 대신 몸을 만들었어요."),
+      ],
+    }),
+  },
+
   /* 무소속 */
   {
     id: "coachjob",
@@ -403,6 +701,35 @@ const EVENTS: LifeEvent[] = [
           { health: -5, msg: "거친 몸싸움에 몸만 상했어요.", t: "bad" },
         ),
         pass("쉬면서 준비한다", "대회 대신 몸을 만들었어요."),
+      ],
+    }),
+  },
+  {
+    id: "tryout",
+    when: isFree,
+    make: () => ({
+      title: "구단 공개 테스트",
+      body: "한 구단이 무소속 선수 공개 테스트를 연대요. 지원자가 백 명이 넘어요.",
+      opts: [
+        risky(
+          "테스트를 받는다",
+          0.5,
+          { rand: 1, amt: 1, trust: 1, msg: "좋은 인상을 남겼어요. 시장이 열리면 연락하겠대요." },
+          { health: -3, msg: "긴장한 탓에 실력을 다 보여주지 못했어요.", t: "info" },
+        ),
+        pass("다음 기회를 노린다", "테스트 대신 개인 훈련을 이어 갔어요."),
+      ],
+    }),
+  },
+  {
+    id: "asialeague",
+    when: isFree,
+    make: () => ({
+      title: "아시아 리그 단기 계약 제안",
+      body: "해외 아시아 리그 팀이 몇 주간 함께 훈련해 보자고 해요. 숙소비는 내가 내야 해요.",
+      opts: [
+        opt("현지 훈련에 합류한다", { rand: 2, amt: 1, money: -0.05, health: -3, msg: "낯선 코트에서 경기 감각을 되찾았어요." }),
+        opt("국내에서 준비한다", { health: 4, msg: "익숙한 곳에서 몸을 만들었어요.", t: "info" }),
       ],
     }),
   },
@@ -465,6 +792,52 @@ const SEASON_EVENTS: LifeEvent[] = [
     }),
   },
   {
+    id: "s-buzzer",
+    when: inGames,
+    make: () => ({
+      title: "놓친 버저비터",
+      body: "지난 경기 마지막 슛이 림을 돌아 나왔어요. 하이라이트 영상이 계속 돌아다녀요.",
+      opts: [
+        opt("영상을 백 번 돌려 본다", { attrs: { iq: 1 }, form: -0.3, msg: "무엇이 문제였는지 알았지만 아직 마음이 무거워요." }),
+        risky(
+          "잊고 다음 경기만 본다",
+          0.6,
+          { form: 1, msg: "털어 내고 나니 오히려 몸이 가벼워졌어요." },
+          { form: -0.7, msg: "잊으려 할수록 그 장면이 떠올랐어요.", t: "bad" },
+        ),
+      ],
+    }),
+  },
+  {
+    id: "s-argue",
+    when: inGames,
+    make: () => ({
+      title: "동료와 언쟁",
+      body: "수비 실수를 두고 동료와 벤치에서 언성을 높였어요. 중계 카메라에 그대로 잡혔어요.",
+      opts: [
+        opt("먼저 사과한다", { form: 0.5, msg: "먼저 손을 내밀었더니 팀 분위기가 좋아졌어요." }),
+        risky(
+          "제대로 짚고 넘어간다",
+          0.5,
+          { form: 1, msg: "속을 털어놓고 나니 손발이 더 잘 맞게 됐어요." },
+          { form: -1, msg: "냉랭한 분위기가 경기력에 묻어났어요.", t: "bad" },
+        ),
+      ],
+    }),
+  },
+  {
+    id: "s-flu",
+    when: inGames,
+    make: () => ({
+      title: "원정길 몸살",
+      body: "원정 숙소에서 열이 올라요. 다음 경기는 꼭 이겨야 하는 경기예요.",
+      opts: [
+        opt("하루 쉰다", { sit: 1, health: 5, msg: "한 경기를 쉬며 몸살을 털어 냈어요.", t: "info" }),
+        opt("약 먹고 뛴다", { health: -6, form: -0.5, msg: "열을 참고 뛰었지만 몸이 무거웠어요.", t: "bad" }),
+      ],
+    }),
+  },
+  {
     id: "s-fatigue",
     when: inProGames,
     make: () => ({
@@ -490,6 +863,35 @@ const SEASON_EVENTS: LifeEvent[] = [
         ],
       };
     },
+  },
+  {
+    id: "s-trade-rumor",
+    when: inProGames,
+    make: () => ({
+      title: "트레이드 루머",
+      body: "트레이드 마감 직전, 기자들이 내 이름이 협상 테이블에 올랐다고 물어요.",
+      opts: [
+        opt("코트에서 답한다", { form: 0.5, msg: "루머에 흔들리지 않고 경기로 답했어요." }),
+        risky(
+          "에이전트에게 확인한다",
+          0.5,
+          { health: 3, msg: "헛소문으로 확인돼 마음이 놓였어요." },
+          { form: -1, msg: "실제로 논의가 오갔다는 말에 마음이 복잡해졌어요.", t: "bad" },
+        ),
+      ],
+    }),
+  },
+  {
+    id: "s-fanmeet",
+    when: inProGames,
+    make: () => ({
+      title: "올스타 팬 투표 독려",
+      body: "구단이 올스타 팬 투표를 앞두고 팬 사인회를 열재요. 휴식일이 하루 줄어요.",
+      opts: [
+        opt("사인회를 연다", { form: 0.7, health: -3, msg: "팬들의 응원에 힘이 났어요." }),
+        pass("쉬겠다고 말한다", "휴식일을 지키며 다음 경기를 준비했어요."),
+      ],
+    }),
   },
   {
     id: "s-scout",
@@ -521,6 +923,35 @@ const SEASON_EVENTS: LifeEvent[] = [
     }),
   },
   {
+    id: "s-chant",
+    when: inSchoolGames,
+    make: () => ({
+      title: "응원단의 깜짝 응원가",
+      body: "학교 응원단이 내 이름으로 응원가를 만들었대요. 다음 홈경기에서 처음 부른대요.",
+      opts: [
+        risky(
+          "세리머니까지 준비한다",
+          0.5,
+          { form: 1.2, msg: "세리머니까지 완벽한 홈경기였어요." },
+          { form: -0.5, msg: "세리머니 생각하다 쉬운 슛을 놓쳤어요.", t: "bad" },
+        ),
+        opt("평소처럼 집중한다", { form: 0.5, msg: "응원가를 등에 업고 침착하게 뛰었어요." }),
+      ],
+    }),
+  },
+  {
+    id: "s-newrole",
+    when: inSchoolGames,
+    make: () => ({
+      title: "감독님의 포지션 실험",
+      body: "감독님이 남은 경기 동안 볼 운반을 맡겨 보겠대요. 실수하면 바로 교체래요.",
+      opts: [
+        opt("해 본다", { attrs: { pas: 1 }, form: -0.5, msg: "낯선 역할에 진땀을 뺐지만 코트를 보는 시야가 넓어졌어요." }),
+        opt("원래 역할을 원한다고 말한다", { form: 0.3, msg: "익숙한 자리에서 자신 있게 뛰었어요." }),
+      ],
+    }),
+  },
+  {
     id: "s-pickup",
     when: (c) => offCourt(c) && isFree(c),
     make: () => ({
@@ -534,6 +965,35 @@ const SEASON_EVENTS: LifeEvent[] = [
           { health: -5, msg: "거친 몸싸움에 발목을 삐었어요.", t: "bad" },
         ),
         pass("혼자 훈련한다", "계획한 개인 훈련을 이어 갔어요."),
+      ],
+    }),
+  },
+  {
+    id: "s-gymclosed",
+    when: (c) => offCourt(c) && isFree(c),
+    make: () => ({
+      title: "다니던 체육관 공사",
+      body: "매일 가던 사설 체육관이 공사로 한 달간 문을 닫아요.",
+      opts: [
+        opt("야외 코트에서 훈련한다", { attrs: { ath: 1 }, health: -3, msg: "바람 부는 야외 코트에서 하체가 단단해졌어요." }),
+        opt("돈을 내고 프로 훈련장을 빌린다", { rand: 1, amt: 1, money: -0.1, msg: "좋은 시설에서 훈련을 이어 갔어요." }),
+      ],
+    }),
+  },
+  {
+    id: "s-unitcup",
+    when: (c) => offCourt(c) && c.stage === "military",
+    make: () => ({
+      title: "부대 대항 체육대회",
+      body: "부대 대항 농구 대회에 부대 대표로 나가 달래요. 우승하면 포상 휴가가 걸려 있어요.",
+      opts: [
+        risky(
+          "부대의 명예를 걸고 뛴다",
+          0.6,
+          { attrs: { iq: 1 }, health: 3, msg: "부대를 우승으로 이끌어 포상 휴가를 받았어요." },
+          { health: -5, msg: "거친 몸싸움에 몸만 상했어요.", t: "bad" },
+        ),
+        opt("심판을 맡는다", { attrs: { iq: 1 }, msg: "심판을 보며 경기를 읽는 눈을 길렀어요." }),
       ],
     }),
   },
