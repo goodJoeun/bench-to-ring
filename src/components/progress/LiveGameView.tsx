@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { LiveGame } from "@/game";
 import { reducedMotion, useAutoFocus } from "@/components/common/hooks";
+import { TeamBadge } from "@/components/common/TeamBadge";
 
 /** 한 플레이를 보여주는 간격(ms). 빠르게는 3배속이에요. */
 const STEP_MS = 120;
@@ -38,6 +39,7 @@ export function LiveGameView({ game, onDone }: { game: LiveGame; onDone: () => v
       <span className="live-title">{game.title}</span>
       <div className="live-board">
         <div className="live-team" style={{ "--tc": game.usColor } as React.CSSProperties}>
+          <TeamBadge name={game.us} color={game.usColor} size={36} />
           <span className="live-name">{game.us}</span>
           <b className={finished && game.win ? "won" : undefined}>{us}</b>
         </div>
@@ -52,6 +54,7 @@ export function LiveGameView({ game, onDone }: { game: LiveGame; onDone: () => v
           )}
         </div>
         <div className="live-team" style={{ "--tc": game.themColor } as React.CSSProperties}>
+          <TeamBadge name={game.them} color={game.themColor} size={36} />
           <span className="live-name">{game.them}</span>
           <b className={finished && !game.win ? "won" : undefined}>{them}</b>
         </div>

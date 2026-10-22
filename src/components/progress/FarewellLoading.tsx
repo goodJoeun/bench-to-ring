@@ -6,6 +6,7 @@ import { gameActions } from "@/lib/game-store";
 import { NO_TEAM_COLOR } from "@/components/common/format";
 import { reducedMotion, useAutoFocus, useReveal } from "@/components/common/hooks";
 import { Sprite } from "@/components/common/Sprite";
+import { TeamBadge } from "@/components/common/TeamBadge";
 import { Popup } from "./Popup";
 
 /** 한 칸을 보여주는 시간(ms). 우승·MVP 같은 순간은 조금 더 오래 머물러요. 빠르게 보기는 3배속이에요. */
@@ -101,8 +102,8 @@ export function FarewellLoading({ career: c }: { career: Career }) {
             <b>{cur.year}</b>
             <span>{cur.age}세</span>
           </div>
-          <span className="fw-team" style={{ "--tc": color } as React.CSSProperties}>
-            <i />
+          <span className="fw-team">
+            <TeamBadge name={cur.team} color={cur.color ?? undefined} size={22} />
             {cur.team}
           </span>
           <h2 id="fw-title" key={at} className="fw-title" data-big={cur.big || undefined}>

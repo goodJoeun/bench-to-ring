@@ -1,4 +1,5 @@
 import { LEAGUES, currentExpectedMinutes, militaryUnit, r1, roleOf, seasonProgress, type Career, type SeasonRecord, type SeasonRun } from "@/game";
+import { TeamBadge } from "@/components/common/TeamBadge";
 import { Panel } from "@/components/common/ui";
 import { ContractPanel } from "../ContractPanel";
 import { ShopPanel } from "../ShopPanel";
@@ -28,13 +29,16 @@ function ResultCard({ r }: { r: SeasonRecord }) {
   return (
     <section className="panel">
       <div className="rc-head">
-        <div>
-          <span className="label">
-            {r.year} 시즌 · {r.team} · {r.lg ? LEAGUES[r.lg].short : "D리그"}
-          </span>
-          <h2 className="sec">
-            {r.role} · {r.w}승 {r.l}패 · {r.result}
-          </h2>
+        <div className="rc-title">
+          <TeamBadge name={r.team} size={40} />
+          <div>
+            <span className="label">
+              {r.year} 시즌 · {r.team} · {r.lg ? LEAGUES[r.lg].short : "D리그"}
+            </span>
+            <h2 className="sec">
+              {r.role} · {r.w}승 {r.l}패 · {r.result}
+            </h2>
+          </div>
         </div>
         <div className="rating">
           <span className="label">평점</span>
@@ -134,13 +138,16 @@ function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
   return (
     <section className="panel">
       <div className="rc-head">
-        <div>
-          <span className="label">
-            {run.year} 시즌 · {team?.name} · {team ? LEAGUES[team.lg].short : ""}
-          </span>
-          <h2 className="sec">
-            {seasonProgress(run).label} · {run.w}승 {run.l}패
-          </h2>
+        <div className="rc-title">
+          {team && <TeamBadge name={team.name} kind={team.lg} color={team.color} size={40} />}
+          <div>
+            <span className="label">
+              {run.year} 시즌 · {team?.name} · {team ? LEAGUES[team.lg].short : ""}
+            </span>
+            <h2 className="sec">
+              {seasonProgress(run).label} · {run.w}승 {run.l}패
+            </h2>
+          </div>
         </div>
         <div className="rating">
           <span className="label">평점</span>
@@ -179,7 +186,10 @@ function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
           {run.post.slice(0, run.shown).map((r) => (
             <li key={r.name} data-win={r.win}>
               <span>{r.name}</span>
-              <span className="gopp">{r.opp}</span>
+              <span className="gopp">
+                <TeamBadge name={r.opp} color={r.color} size={18} />
+                {r.opp}
+              </span>
               <b>
                 {r.score} {r.win ? "승" : "패"}
               </b>
@@ -194,6 +204,7 @@ function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
               <span className="gn">{g.n}</span>
               <span className="gwl">{g.win ? "승" : "패"}</span>
               <span className="gopp">
+                <TeamBadge name={g.opp} size={18} />
                 {g.opp}
                 <small>
                   {g.us}-{g.them}

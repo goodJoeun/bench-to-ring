@@ -4,6 +4,7 @@ import { useState } from "react";
 import { natColor, type Career } from "@/game";
 import { gameActions } from "@/lib/game-store";
 import { useReveal } from "@/components/common/hooks";
+import { TeamBadge } from "@/components/common/TeamBadge";
 import { LiveGameView } from "./LiveGameView";
 import { Popup, PopupFooter, PopupHero } from "./Popup";
 
@@ -55,7 +56,10 @@ export function TournamentLoading({ career: c }: { career: Career }) {
         {visible.map((g, i) => (
           <li key={i} data-win={g.win || undefined}>
             <span className="tg-stage">{g.stage}</span>
-            <span className="tg-opp">vs {g.opp}</span>
+            <span className="tg-opp">
+              <TeamBadge name={g.opp} kind="nat" size={18} />
+              vs {g.opp}
+            </span>
             <span className="tg-score">
               {g.us}-{g.them}
             </span>

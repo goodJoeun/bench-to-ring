@@ -1,5 +1,6 @@
 import { LEAGUES, careerSummary, fmtNum, r1, stripYear, type Career } from "@/game";
 import { militaryLine } from "@/components/common/format";
+import { TeamBadge } from "@/components/common/TeamBadge";
 import { Panel, StatTiles } from "@/components/common/ui";
 
 function NationalLog({ career: c }: { career: Career }) {
@@ -104,7 +105,12 @@ export function RecordTab({ career: c }: { career: Career }) {
                 <tr key={h.year}>
                   <td className="l">{h.year}</td>
                   <td>{h.age}</td>
-                  <td className="l t">{h.team}</td>
+                  <td className="l t">
+                    <span className="team-cell">
+                      <TeamBadge name={h.team} size={16} />
+                      {h.team}
+                    </span>
+                  </td>
                   <td className="l t">{h.lg ? LEAGUES[h.lg].short : "–"}</td>
                   <td className="l t">{h.role}</td>
                   <td>{h.gp}</td>

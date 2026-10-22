@@ -6,6 +6,7 @@ import { NO_TEAM_COLOR, militaryShort } from "@/components/common/format";
 import { RecordBoards } from "./RecordBoards";
 import { SimilarPlayers } from "./SimilarPlayers";
 import { HallOfFame } from "@/components/common/HallOfFame";
+import { TeamBadge } from "@/components/common/TeamBadge";
 import { CourtStage, Panel, StatTiles } from "@/components/common/ui";
 
 export function RetiredScreen({ career: c, hall }: { career: Career; hall: CareerSummary[] }) {
@@ -27,6 +28,7 @@ export function RetiredScreen({ career: c, hall }: { career: Career; hall: Caree
   return (
     <main className="ret">
       <CourtStage player={p} color={c.team?.color ?? NO_TEAM_COLOR}>
+        {c.team && <TeamBadge className="plate-badge" name={c.team.name} kind={c.team.lg} color={c.team.color} size={52} />}
         <span className="label">
           {s.retYear}년 · {s.retAge}세 은퇴
         </span>
@@ -65,6 +67,7 @@ export function RetiredScreen({ career: c, hall }: { career: Career; hall: Caree
             {titles.map((t, i) => (
               <li key={`${t.year}-${t.name}-${i}`} className="title-row" data-kind={t.kind}>
                 <span className="ty">{t.year}</span>
+                <TeamBadge name={t.team} size={30} />
                 <span className="tb">
                   <b>{t.name}</b>
                   <span>

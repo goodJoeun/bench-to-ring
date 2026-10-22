@@ -65,6 +65,15 @@ main.grid{max-width:var(--t-max);margin:0 auto;padding-top:4px}
 .plate-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 8px}
 .plate .num{font-family:var(--f-num);font-weight:700;font-size:30px;line-height:1}
 .plate .pos{font-family:var(--f-num);font-weight:600;font-size:15px;color:var(--muted);letter-spacing:.06em;white-space:nowrap}
+/* 구단·학교 엠블럼 (자체 디자인) */
+.badge{flex:none;display:inline-block;vertical-align:middle;overflow:visible}
+.badge-mono{font-family:var(--f-display);font-weight:400;letter-spacing:-.02em}
+.badge-mono.latin{font-family:var(--f-num);font-weight:700;letter-spacing:0}
+.plate-badge{position:absolute;top:10px;right:10px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.18))}
+.plate:has(.plate-badge){padding-right:66px}
+:is(.gopp,.dp-team,.tg-opp) .badge{margin-right:6px;vertical-align:-4px}
+.team-cell{display:inline-flex;align-items:center;gap:6px}
+.rc-title{display:flex;align-items:center;gap:10px;min-width:0}
 .plate .name{font-family:var(--f-display);font-size:24px;line-height:1.2;overflow-wrap:anywhere}
 .plate .sub{color:var(--muted);font-size:13px;line-height:1.45}
 .health{display:grid;grid-template-columns:auto minmax(0,1fr) 28px;align-items:center;gap:8px;margin-top:6px}
@@ -358,7 +367,6 @@ textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize
 .fw-year b{font-family:var(--f-num);font-size:44px;line-height:1;font-variant-numeric:tabular-nums}
 .fw-year span{font-size:14px;font-weight:700;color:var(--sim-lbl)}
 .fw-team{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:700;color:var(--sim-soft)}
-.fw-team i{width:10px;height:10px;border-radius:3px;background:var(--tc);box-shadow:0 0 0 1px rgba(255,255,255,.3)}
 .sim-card .fw-title{font-size:clamp(23px,6.5vw,30px);text-wrap:balance;animation:rise .35s ease-out both}
 .fw-title[data-big]{color:#FFD66B}
 .fw-awards{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}

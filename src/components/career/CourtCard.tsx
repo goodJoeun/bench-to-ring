@@ -1,5 +1,6 @@
 import { LEAGUES, POS, militaryUnit, money, stageLabel, type Career } from "@/game";
 import { NO_TEAM_COLOR } from "@/components/common/format";
+import { TeamBadge } from "@/components/common/TeamBadge";
 import { CourtStage } from "@/components/common/ui";
 
 export function CourtCard({ career: c }: { career: Career }) {
@@ -12,6 +13,11 @@ export function CourtCard({ career: c }: { career: Career }) {
 
   return (
     <CourtStage player={p} color={color}>
+      {unit ? (
+        <TeamBadge className="plate-badge" name={unit.name} kind="mil" color={unit.color} size={46} />
+      ) : (
+        t && <TeamBadge className="plate-badge" name={t.name} kind={t.lg} color={t.color} size={46} />
+      )}
       <div className="plate-top">
         <span className="num">#{p.num}</span>
         <span className="pos">

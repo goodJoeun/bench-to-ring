@@ -136,14 +136,17 @@ export const TEAMS: Record<LeagueKey, ReadonlyArray<readonly [string, string]>> 
   ],
 };
 
-/** 팀 이름으로 대표색을 찾아요. 리그 목록에 없는 이름이면 null이에요. */
-export function teamColor(name: string): string | null {
-  for (const list of Object.values(TEAMS)) {
+/** 팀 이름으로 리그와 대표색을 찾아요. 리그 목록에 없는 이름이면 null이에요. */
+export function findTeam(name: string): { lg: LeagueKey; color: string } | null {
+  for (const [lg, list] of Object.entries(TEAMS) as [LeagueKey, (typeof TEAMS)[LeagueKey]][]) {
     const t = list.find(([n]) => n === name);
-    if (t) return t[1];
+    if (t) return { lg, color: t[1] };
   }
   return null;
 }
+
+/** 팀 이름으로 대표색을 찾아요. 리그 목록에 없는 이름이면 null이에요. */
+export const teamColor = (name: string): string | null => findTeam(name)?.color ?? null;
 
 /** 득점왕 후보가 되는 경기당 득점 */
 export const SCORING_TITLE: Record<LeagueKey, number> = {
