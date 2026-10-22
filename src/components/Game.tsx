@@ -4,6 +4,7 @@ import { useState } from "react";
 import { gameActions, useGame } from "@/lib/game-store";
 import { CreateScreen } from "@/components/create/CreateScreen";
 import { DraftLoading } from "@/components/progress/DraftLoading";
+import { FarewellLoading } from "@/components/progress/FarewellLoading";
 import { GameScreen, type TabKey } from "@/components/career/GameScreen";
 import { RetiredScreen } from "@/components/retired/RetiredScreen";
 import { LiveGameView } from "@/components/progress/LiveGameView";
@@ -12,7 +13,7 @@ import { Toast } from "@/components/common/Toast";
 import { TournamentLoading } from "@/components/progress/TournamentLoading";
 
 export function Game() {
-  const { ready, career, draft, hall, playing, speed, final, tournament, drafting, toast } = useGame();
+  const { ready, career, draft, hall, playing, speed, final, farewell, tournament, drafting, toast } = useGame();
   // 탭은 커리어마다 홈에서 시작해요.
   const [view, setView] = useState<{ id: string | null; tab: TabKey }>({ id: null, tab: "season" });
   const tab = career && view.id === career.id ? view.tab : "season";
@@ -27,7 +28,8 @@ export function Game() {
   let body: React.ReactNode;
   if (!ready) body = <p className="boot">커리어를 불러오고 있어요…</p>;
   else if (!career) body = <CreateScreen draft={draft} hall={hall} />;
-  else if (career.stage === "retired") body = <RetiredScreen career={career} hall={hall} />;
+  // 은퇴 직후에는 회고 팝업 뒤에 엔딩이 미리 보이지 않게 비워 둬요.
+  else if (career.stage === "retired") body = farewell ? null : <RetiredScreen career={career} hall={hall} />;
   else
     body = (
       <GameScreen career={career} hall={hall} tab={tab} onTab={openTab} playing={playing} speed={speed} busy={final || tournament || drafting} />
@@ -70,6 +72,7 @@ export function Game() {
       )}
       {tournament && career && <TournamentLoading career={career} />}
       {drafting && career?.draftShow && <DraftLoading career={career} show={career.draftShow} />}
+      {farewell && career?.stage === "retired" && <FarewellLoading career={career} />}
       <Toast toast={toast} />
       <p className="foot">
         비공식 팬 게임이에요. 리그·구단·대회 명칭의 권리는 각 권리자에게 있어요. 진행 내용은 이 브라우저에만 저장되니,

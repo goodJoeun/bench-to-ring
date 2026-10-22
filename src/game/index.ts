@@ -26,7 +26,18 @@ export { chooseOption, applyAction } from "./actions";
 export { INVESTMENTS, INVEST_SLOTS, STUDENT_ALLOWANCE, canInvest, investCost, type Investment } from "./invest";
 export { buyoutCost, canRequestTransfer, currentDecision, leverage, requestTransfer, resolveQueue } from "./decisions";
 export { DONATIONS, SHOP, buy, canBuy, canDonate, donate, owns, shopItem, type ShopItem } from "./shop";
-export { careerSummary, retire, canRetire, legacyOf, sumSeasons, titleHistory, type CareerTotals, type TitleEntry } from "./career";
+export {
+  careerJourney,
+  careerSummary,
+  retire,
+  canRetire,
+  legacyOf,
+  sumSeasons,
+  titleHistory,
+  type CareerTotals,
+  type JourneyStep,
+  type TitleEntry,
+} from "./career";
 export { rankHall, bestFive, compareCareers } from "./hall";
 export {
   RECORD_BOARDS,

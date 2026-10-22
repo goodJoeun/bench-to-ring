@@ -1,6 +1,8 @@
-import { PERSONAL_AWARDS } from "./data";
-import { LEAGUES } from "./leagues";
-import type { Career, CareerSummary, SeasonRecord } from "./types";
+import { AWARDS, PERSONAL_AWARDS } from "./data";
+import { LEAGUES, teamColor } from "./leagues";
+import { militaryUnit } from "./military";
+import { natColor } from "./national";
+import type { AwardKey, Career, CareerSummary, SeasonRecord } from "./types";
 import { stripYear } from "./util";
 
 export interface CareerTotals {
@@ -49,6 +51,93 @@ export function titleHistory(c: Career): TitleEntry[] {
       } satisfies TitleEntry;
     })
     .sort((x, y) => x.year - y.year);
+}
+
+/* ---------- 은퇴 회고 ---------- */
+
+/** 은퇴 회고 화면에서 한 칸씩 따라가는 커리어의 순간 */
+export interface JourneyStep {
+  year: number;
+  age: number;
+  /** 그때 소속 (팀, 부대, 대표팀) */
+  team: string;
+  /** 유니폼 색. 모르는 팀이면 null */
+  color: string | null;
+  /** 큰 글씨 한 줄: 수상, 우승, 역할 */
+  title: string;
+  /** 작은 글씨 한 줄: 시즌 기록 */
+  detail: string;
+  /** 이 시즌에 받은 상 */
+  awards: string[];
+  /** 우승·MVP·금메달처럼 빛나는 순간이라 조금 더 오래 보여줘요. */
+  big: boolean;
+  /** 이 순간까지 쌓인 출전 경기, 득점, 트로피(수상·우승·메달) */
+  gp: number;
+  pts: number;
+  trophies: number;
+}
+
+/** 시즌 제목으로 고를 상의 순서: AWARDS 순서(MVP → 우승 → 파이널 MVP …), 메달은 따로 보여줘요. */
+const HEADLINE_ORDER: AwardKey[] = AWARDS.map(([k]) => k).filter((k) => !k.startsWith("nat_"));
+const SHINING: AwardKey[] = ["mvp_nba", "ring", "fmvp", "mvp", "title"];
+
+/**
+ * 은퇴 회고용으로 커리어를 순서대로 펼쳐요: 입단 → 시즌마다 한 칸(그해 메달과 드래프트는 바로 뒤에) → 은퇴.
+ * 화면은 이 목록을 한 칸씩 따라가며 보여줘요.
+ */
+export function careerJourney(c: Career): JourneyStep[] {
+  const steps: JourneyStep[] = [];
+  let gp = 0;
+  let pts = 0;
+  const trophiesBy = (y: number) => c.awardLog.filter((a) => a.y <= y).length;
+  const first = c.hist[0];
+  if (first)
+    steps.push({
+      year: first.year, age: first.age, team: first.team, color: teamColor(first.team), title: "벤치에서 시작",
+      detail: `${first.team} 농구부 입단 · 오버롤 ${first.ovr0}`, awards: [], big: false, gp: 0, pts: 0, trophies: 0,
+    });
+  for (const h of c.hist) {
+    gp += h.gp;
+    pts += Math.round(h.pts * h.gp);
+    const logs = c.awardLog.filter((a) => a.y === h.year);
+    const top = HEADLINE_ORDER.map((k) => logs.find((a) => a.k === k)).find(Boolean);
+    const title = top
+      ? top.n
+      : h.mil
+        ? h.mil === "sangmu" ? "상무에서 군 복무" : "현역으로 군 복무"
+        : !h.lg ? "무소속 · 개인 훈련" : `${h.role} · ${h.result}`;
+    steps.push({
+      year: h.year,
+      age: h.age,
+      team: h.team,
+      color: h.mil ? militaryUnit(h.mil).color : teamColor(h.team),
+      title,
+      detail: h.gp ? `${h.gp}경기 · ${h.pts}점 ${h.reb}리바 ${h.ast}어시 · ${h.w}승 ${h.l}패` : `${h.result} · 오버롤 ${h.ovr1}`,
+      awards: h.awards.filter((a) => a !== top?.n),
+      big: logs.some((a) => SHINING.includes(a.k)),
+      gp, pts, trophies: trophiesBy(h.year),
+    });
+    for (const t of c.natLog.filter((t) => t.year === h.year && t.joined && t.medal))
+      steps.push({
+        year: t.year, age: h.age, team: `${c.p.nat} 대표팀`, color: natColor(c.p.nat), title: `${t.name} ${t.medal}메달`,
+        detail: t.label, awards: [], big: t.medal === "금", gp, pts, trophies: trophiesBy(h.year),
+      });
+    const d = c.draft;
+    if (d && d.year === h.year)
+      steps.push({
+        year: d.year, age: h.age + 1, team: d.team, color: teamColor(d.team), title: `${d.lg} 드래프트 ${d.pick}순위`,
+        detail: `${d.round}라운드 ${d.inRound}순위로 ${d.team}에 지명`, awards: [], big: d.lg === "NBA" && d.round === 1,
+        gp, pts, trophies: trophiesBy(h.year),
+      });
+  }
+  const s = c.summary ?? careerSummary(c);
+  const last = c.hist.at(-1);
+  steps.push({
+    year: s.retYear, age: s.retAge, team: last?.team ?? "", color: last ? teamColor(last.team) : null, title: "은퇴",
+    detail: `${c.hist.length}시즌 · ${s.teams.length}개 팀을 거쳐 코트를 떠나요`, awards: [], big: true, gp, pts,
+    trophies: c.awardLog.length,
+  });
+  return steps;
 }
 
 export function legacyOf(o: Omit<CareerSummary, "legacy">): string {

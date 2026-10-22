@@ -52,6 +52,8 @@ export interface GameSnapshot {
   speed: Speed;
   /** 결승전 중계를 보여주는 중인지 (c.live) */
   final: boolean;
+  /** 방금 은퇴해서 엔딩 전에 커리어 회고를 보여주는 중인지 */
+  farewell: boolean;
   /** 국가대표 대회 진행 화면을 보여주는 중인지 (c.natLog의 마지막 대회) */
   tournament: boolean;
   /** 드래프트 진행 화면을 보여주는 중인지 (c.draftShow) */
@@ -82,7 +84,7 @@ const emptyDraft = (): CreationDraft => ({
   rerolls: REROLLS,
 });
 
-const SERVER_SNAPSHOT: GameSnapshot = { ready: false, career: null, draft: emptyDraft(), hall: [], playing: false, speed: 1, final: false, tournament: false, drafting: false, toast: null };
+const SERVER_SNAPSHOT: GameSnapshot = { ready: false, career: null, draft: emptyDraft(), hall: [], playing: false, speed: 1, final: false, farewell: false, tournament: false, drafting: false, toast: null };
 
 let snapshot: GameSnapshot = SERVER_SNAPSHOT;
 const listeners = new Set<() => void>();
@@ -145,9 +147,12 @@ function afterStep(res: SeasonStep | null, before: NewsItem | undefined): void {
 /** 커리어 복사본에 엔진 함수를 적용하고 저장해요. 은퇴하면 명예의 전당에도 올려요. */
 function mutate(fn: (c: Career) => void): void {
   if (!snapshot.career) return;
+  const wasRetired = snapshot.career.stage === "retired";
   const c = structuredClone(snapshot.career);
   fn(c);
   resolveQueue(c);
+  // 이번 변화로 은퇴했으면 엔딩 전에 회고부터 보여줘요.
+  const farewell = !wasRetired && c.stage === "retired";
   let hall = snapshot.hall;
   const s = c.summary;
   if (c.stage === "retired" && s && s.seasons > 0 && !hall.some((h) => h.id === s.id)) {
@@ -155,7 +160,7 @@ function mutate(fn: (c: Career) => void): void {
     saveHall(hall);
   }
   saveCareer(c);
-  set({ career: c, hall });
+  set(farewell ? { career: c, hall, farewell, playing: false, toast: null } : { career: c, hall });
 }
 
 function subscribe(listener: () => void): () => void {
@@ -261,6 +266,11 @@ export const gameActions = {
     const after = snapshot.career;
     const msg = (after && latestNewsSince(before, after)) ?? (opt?.label ? `'${opt.label}'을(를) 골랐어요` : null);
     if (msg) set({ toast: toast(msg) });
+  },
+  /** 커리어 회고를 닫고 엔딩(은퇴 화면)으로 가요. */
+  finishFarewell() {
+    set({ farewell: false });
+    if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   },
   /** 대회 진행 화면을 닫고 최종 성적을 알림으로 보여줘요. */
   finishTournament() {

@@ -136,6 +136,15 @@ export const TEAMS: Record<LeagueKey, ReadonlyArray<readonly [string, string]>> 
   ],
 };
 
+/** 팀 이름으로 대표색을 찾아요. 리그 목록에 없는 이름이면 null이에요. */
+export function teamColor(name: string): string | null {
+  for (const list of Object.values(TEAMS)) {
+    const t = list.find(([n]) => n === name);
+    if (t) return t[1];
+  }
+  return null;
+}
+
 /** 득점왕 후보가 되는 경기당 득점 */
 export const SCORING_TITLE: Record<LeagueKey, number> = {
   hs: 24,

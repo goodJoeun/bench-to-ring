@@ -66,22 +66,24 @@ interface PopupFooterProps {
   onConfirm: () => void;
   /** 끝났을 때 확인 버튼 위에 보여줄 결과 */
   children: React.ReactNode;
+  skipLabel?: string;
+  confirmLabel?: string;
 }
 
 /** 팝업 아래쪽: 진행 중에는 '결과 바로 보기', 끝나면 결과와 '확인' 버튼. 끝나면 확인 버튼에 초점이 가요. */
-export function PopupFooter({ done, onSkip, onConfirm, children }: PopupFooterProps) {
+export function PopupFooter({ done, onSkip, onConfirm, children, skipLabel = "결과 바로 보기", confirmLabel = "확인" }: PopupFooterProps) {
   const goRef = useAutoFocus<HTMLButtonElement>(done);
   if (!done)
     return (
       <button type="button" className="sim-skip" onClick={onSkip}>
-        결과 바로 보기
+        {skipLabel}
       </button>
     );
   return (
     <>
       {children}
       <button type="button" ref={goRef} className="live-go" onClick={onConfirm}>
-        확인
+        {confirmLabel}
       </button>
     </>
   );

@@ -333,6 +333,38 @@ textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize
 .draft-picks li[data-mine]{background:rgba(255,214,107,.18);outline:2px solid #FFD66B;animation:rise .25s ease-out both,glow 1.2s ease-in-out .25s 2}
 .draft-picks li[data-mine] .dp-who{color:#FFD66B;font-weight:800}
 @keyframes glow{50%{background:rgba(255,214,107,.34)}}
+/* 은퇴 회고: 도트 선수가 커리어 길을 따라 걸어가고, 지나온 점이 하나씩 켜져요. 빛나는 순간은 금색이에요. */
+.fw-road{position:relative;height:96px;margin:4px 0 2px}
+.fw-track{position:absolute;inset:0 24px}
+.fw-line{position:absolute;left:0;right:0;bottom:14px;height:4px;border-radius:2px;background:rgba(255,255,255,.14);overflow:hidden}
+.fw-fill{height:100%;background:var(--sim-bar);transition:width .6s cubic-bezier(.4,0,.2,1)}
+.fw-dot{position:absolute;bottom:12px;width:8px;height:8px;margin-left:-4px;border-radius:50%;background:rgba(255,255,255,.22);transition:background .3s,box-shadow .3s}
+.fw-dot[data-on]{background:var(--sim-bar)}
+.fw-dot[data-big]{bottom:10px;width:12px;height:12px;margin-left:-6px}
+.fw-dot[data-big][data-on]{background:#FFD66B;box-shadow:0 0 10px rgba(255,214,107,.75)}
+.fw-walker{position:absolute;bottom:20px;width:48px;margin-left:-24px;transition:left .6s cubic-bezier(.4,0,.2,1)}
+.fw-walker .sprite{width:48px;height:72px;margin:0;animation:dribble .35s ease-in-out infinite alternate}
+.fw-year{display:flex;align-items:baseline;justify-content:center;gap:8px}
+.fw-year b{font-family:var(--f-num);font-size:44px;line-height:1;font-variant-numeric:tabular-nums}
+.fw-year span{font-size:14px;font-weight:700;color:var(--sim-lbl)}
+.fw-team{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:700;color:var(--sim-soft)}
+.fw-team i{width:10px;height:10px;border-radius:3px;background:var(--tc);box-shadow:0 0 0 1px rgba(255,255,255,.3)}
+.sim-card .fw-title{font-size:clamp(23px,6.5vw,30px);text-wrap:balance;animation:rise .35s ease-out both}
+.fw-title[data-big]{color:#FFD66B}
+.fw-awards{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.fw-awards span{padding:2px 10px;border:1px solid rgba(255,214,107,.6);border-radius:999px;font-size:12px;font-weight:700;color:#FFD66B}
+.fw-tally{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:6px;padding:12px;border-radius:14px;background:rgba(0,0,0,.2)}
+.fw-tally span{display:grid;gap:3px}
+.fw-tally small{font-size:10px;font-weight:800;letter-spacing:.14em;color:var(--sim-lbl)}
+.fw-tally b{font-family:var(--f-num);font-size:26px;line-height:1;font-variant-numeric:tabular-nums}
+.fw-trail{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;min-height:100px}
+.fw-trail li{display:grid;grid-template-columns:42px minmax(0,1fr);gap:8px;padding:6px 12px;border-radius:10px;background:rgba(255,255,255,.06);font-size:12.5px;text-align:left;animation:rise .25s ease-out both}
+.fw-trail li:nth-child(2){opacity:.7}
+.fw-trail li:nth-child(3){opacity:.45}
+.fw-trail .ty{font-family:var(--f-num);color:var(--sim-lbl);font-variant-numeric:tabular-nums}
+.fw-trail .tt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fw-trail li[data-big] .tt{color:#FFD66B;font-weight:700}
+.fw .live-ctl{margin-top:4px}
 /* 결승 문자 중계 */
 .live{display:flex;flex-direction:column;gap:12px;text-align:left}
 .live-title{font-size:13px;font-weight:700;color:var(--sim-lbl);text-align:center}
@@ -366,7 +398,8 @@ textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize
 @keyframes dribble{from{transform:translateY(0)}to{transform:translateY(-6px)}}
 @keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
-@media (prefers-reduced-motion:reduce){.tabc,.sim,.sim-sprite,.sim-phase .dots::after,.scrim,.sheet,.toast,.tour-games li,.draft-picks li{animation:none}}
+@media (prefers-reduced-motion:reduce){.tabc,.sim,.sim-sprite,.sim-phase .dots::after,.scrim,.sheet,.toast,.tour-games li,.draft-picks li,.fw-title,.fw-trail li,.fw-walker .sprite{animation:none}
+  .fw-fill,.fw-walker{transition:none}}
 
 /* 눌렀을 때 손끝에 반응이 오게 */
 .advance:active,.start:active,.choice:active,.cand:active,.btn:active,.sheet-go:active{transform:scale(.98)}

@@ -37,6 +37,7 @@ import {
   donate,
   requestTransfer,
   canRequestTransfer,
+  careerJourney,
   teamPower,
   titleHistory,
   type AttrKey,
@@ -1001,5 +1002,28 @@ describe("자금 쓰기", () => {
     // 시즌 중에는 살 수 없어요.
     startSeason(c);
     expect(buy(c, "shoes")).toBe(false);
+  });
+});
+
+describe("은퇴 회고", () => {
+  it("입단에서 시작해 시즌마다 한 칸씩 지나 은퇴로 끝나고, 쌓인 기록은 줄지 않아요", () => {
+    const rand = seeded(97);
+    setRandom(rand);
+    for (let i = 0; i < 20; i++) {
+      const c = createCareer({ name: "회고", num: 9, nat: "대한민국", pos: "SF", path: i % 2 ? "abroad" : "domestic" }, generateCandidates("SF")[0], `fw${i}`);
+      playToRetirement(c, rand);
+      const steps = careerJourney(c);
+      expect(steps[0].title).toBe("벤치에서 시작");
+      expect(steps.at(-1)!.title).toBe("은퇴");
+      expect(steps.at(-1)!.detail).toContain(`${c.hist.length}시즌`);
+      for (const h of c.hist) expect(steps.some((s) => s.year === h.year && s.team === h.team)).toBe(true);
+      for (let k = 1; k < steps.length; k++) {
+        expect(steps[k].year).toBeGreaterThanOrEqual(steps[k - 1].year);
+        expect(steps[k].pts).toBeGreaterThanOrEqual(steps[k - 1].pts);
+        expect(steps[k].trophies).toBeGreaterThanOrEqual(steps[k - 1].trophies);
+      }
+      expect(steps.at(-1)!.trophies).toBe(c.awardLog.length);
+      if (c.awards.ring) expect(steps.some((s) => s.big && s.title.endsWith("우승"))).toBe(true);
+    }
   });
 });
