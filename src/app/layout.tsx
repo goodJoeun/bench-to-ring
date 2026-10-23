@@ -24,9 +24,11 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // 브라우저 확장 프로그램이 html·body에 속성(event-clipboard-installed 등)을 붙여 하이드레이션 경고가 나요.
+  // suppressHydrationWarning은 이 두 요소 자신의 속성 차이만 넘기고, 안쪽 내용은 그대로 검사해요.
   return (
-    <html lang="ko">
-      <body>{children}</body>
+    <html lang="ko" suppressHydrationWarning>
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }
