@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { NATIONS, TEAMS, type CareerSummary } from "@/game";
+import { TEAMS, type CareerSummary } from "@/game";
 import { gameActions, type CreationDraft } from "@/lib/game-store";
 import { HallOfFame } from "@/components/common/HallOfFame";
 import { ImportForm } from "@/components/common/ImportForm";
@@ -62,16 +62,6 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
               value={draft.num}
               onChange={(e) => gameActions.editDraft({ num: e.target.value })}
             />
-          </label>
-          <label className="f" htmlFor="f-nat">
-            국적
-            <select id="f-nat" value={draft.nat} onChange={(e) => gameActions.editDraft({ nat: e.target.value })}>
-              {NATIONS.map((n) => (
-                <option key={n.name} value={n.name}>
-                  {n.name}
-                </option>
-              ))}
-            </select>
           </label>
           <label className="f" htmlFor="f-school">
             고등학교

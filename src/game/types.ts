@@ -555,7 +555,8 @@ export interface Career {
 export interface NewCareerInput {
   name: string;
   num: number;
-  nat: string;
+  /** 국적. 게임에서는 대한민국으로 고정이라 생략해요. 엔진 테스트에서만 다른 나라를 넣어요. */
+  nat?: string;
   pos: PosKey;
   path: CareerPath;
   /** 입학할 고등학교 (TEAMS.hs의 이름). 없으면 무작위로 정해요. */

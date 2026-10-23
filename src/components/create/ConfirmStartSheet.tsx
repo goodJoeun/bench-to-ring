@@ -27,10 +27,8 @@ export function ConfirmStartSheet({ draft, onClose }: { draft: CreationDraft; on
           <dd>{cand.arch}</dd>
         </div>
         <div>
-          <dt>등번호 · 국적</dt>
-          <dd>
-            #{draft.num || 0} · {draft.nat}
-          </dd>
+          <dt>등번호</dt>
+          <dd>#{draft.num || 0}</dd>
         </div>
         <div>
           <dt>고등학교</dt>

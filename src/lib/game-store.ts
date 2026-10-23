@@ -30,7 +30,6 @@ import { decodeSave, loadCareer, loadHall, saveCareer, saveHall } from "@/game/s
 export interface CreationDraft {
   name: string;
   num: string;
-  nat: string;
   pos: PosKey;
   path: CareerPath;
   /** 고등학교 이름. 빈 문자열이면 무작위 */
@@ -77,7 +76,6 @@ const REROLLS = 5;
 const emptyDraft = (): CreationDraft => ({
   name: "",
   num: "",
-  nat: "대한민국",
   pos: "SG",
   path: "abroad",
   school: "",
@@ -183,7 +181,7 @@ export function useGame(): GameSnapshot {
 }
 
 export const gameActions = {
-  editDraft(patch: Partial<Pick<CreationDraft, "name" | "num" | "nat" | "path" | "school" | "selected">>) {
+  editDraft(patch: Partial<Pick<CreationDraft, "name" | "num" | "path" | "school" | "selected">>) {
     set({ draft: { ...snapshot.draft, ...patch } });
   },
   /** 포지션을 바꿔요. 처음 고르는 포지션만 새로 뽑고, 이미 본 포지션은 그때 후보를 그대로 보여줘요. */
@@ -203,7 +201,7 @@ export const gameActions = {
     const d = snapshot.draft;
     const cand = d.candidates[d.selected];
     if (!cand) return;
-    const c = createCareer({ name: d.name, num: Number(d.num), nat: d.nat, pos: d.pos, path: d.path, school: d.school || undefined }, cand);
+    const c = createCareer({ name: d.name, num: Number(d.num), pos: d.pos, path: d.path, school: d.school || undefined }, cand);
     saveCareer(c);
     set({ career: c });
   },

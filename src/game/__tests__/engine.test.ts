@@ -39,6 +39,7 @@ import {
   requestTransfer,
   canRequestTransfer,
   careerJourney,
+  HOME_NATION,
   SHOP_SIZE,
   ownedItems,
   shopLineup,
@@ -414,6 +415,14 @@ describe("우승 기록", () => {
 });
 
 describe("커리어 시작", () => {
+  it("국적을 정하지 않으면 대한민국 선수로 시작하고 병역 의무가 있어요", () => {
+    setRandom(seeded(13));
+    const c = createCareer({ name: "국적", num: 7, pos: "PG", path: "domestic" }, generateCandidates("PG")[0], "kor");
+    expect(c.p.nat).toBe(HOME_NATION);
+    expect(HOME_NATION).toBe("대한민국");
+    expect(c.mil).toEqual({ s: "none" });
+  });
+
   it("고른 고등학교로 입학하고, 고르지 않으면 고교 중 하나로 정해져요", () => {
     setRandom(seeded(4));
     const input = { name: "입학", num: 5, nat: "대한민국", pos: "PG" as const, path: "domestic" as const };

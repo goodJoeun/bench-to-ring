@@ -4,6 +4,9 @@ import { TEAMS } from "./leagues";
 import { addNews, makeTeam, pickTeam, setTeam } from "./log";
 import { chance, pick, ri, rnd, shuffle, triangular } from "./random";
 import { ovrOf } from "./ratings";
+
+/** 선수 국적. 게임에서는 대한민국으로 고정이에요(병역, 국가대표, KBL 진로가 모두 한국 선수 기준이에요). */
+export const HOME_NATION = "대한민국";
 import { refreshShop } from "./shop";
 import type { Archetype, AttrKey, Attrs, Candidate, Career, Grade, NewCareerInput, PosKey } from "./types";
 import { clamp, r1 } from "./util";
@@ -106,7 +109,7 @@ export function createCareer(input: NewCareerInput, cand: Candidate, id = String
       attrs: { ...cand.attrs },
       name: input.name.trim().slice(0, 12) || "무명의 루키",
       num: clamp(Math.round(input.num) || 0, 0, 99),
-      nat: input.nat,
+      nat: input.nat ?? HOME_NATION,
       pos: input.pos,
       path: input.path,
       traitKnown: false,
