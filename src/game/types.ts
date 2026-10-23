@@ -20,8 +20,8 @@ export type MilitaryKind = "sangmu" | "army";
 export type FocusKey = "bal" | AttrKey | "rest";
 /** 시즌 투자: 스킬 코치, 피지컬, 회복 관리, 영양, 영상 분석 */
 export type InvestKey = "coach" | "gym" | "rehab" | "diet" | "video";
-/** 한 번 사면 커리어 내내 남는 것: 농구화, 집, 차, 부모님 집, 영양팀, 회복 센터, 훈련장, 아카데미 */
-export type ShopKey = "shoes" | "home" | "car" | "parents" | "chef" | "recovery" | "court" | "academy";
+/** 상점 상품 키 (shop.ts의 SHOP 목록) */
+export type ShopKey = string;
 export type Trait = "조기성장" | "대기만성" | "꾸준함" | "강철몸" | "유리몸" | "승부사";
 export type Grade = "S" | "A" | "B" | "C" | "D";
 export type Role = "에이스" | "주전" | "식스맨" | "로테이션" | "벤치" | "엔드 오브 벤치";
@@ -484,8 +484,10 @@ export interface CareerSummary {
   legacy: string;
   /** 기부한 돈 합계 (억). 예전 기록에는 없어요. */
   donated?: number;
-  /** 유소년 아카데미를 세웠는지 */
+  /** 유소년 아카데미를 세웠는지 (예전 기록) */
   academy?: boolean;
+  /** 은퇴 기록에 남는 산 것들 (아카데미, 재단 등) */
+  legacyItems?: string[];
 }
 
 export interface Career {
@@ -540,8 +542,10 @@ export interface Career {
   spent: number;
   /** 진행 중인 시즌. 시즌과 시즌 사이(오프시즌)에는 null이에요. */
   run: SeasonRun | null;
-  /** 산 것들 (산 순서) */
+  /** 산 것들 (산 순서). 일회성 상품은 남지 않아요. */
   owned: ShopKey[];
+  /** 이번 시즌 상점 진열과 이번 시즌에 산 진열 상품. 시즌이 바뀌면 새로 골라요. */
+  shop: { year: number; keys: ShopKey[]; bought: ShopKey[] } | null;
   /** 기부한 돈 합계 (억) */
   donated: number;
   /** 마지막으로 이적을 요청한 오프시즌 (다음 시즌 연도) */

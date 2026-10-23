@@ -25,7 +25,22 @@ export { ARMY, ENLIST_DEADLINE, SANGMU, militaryDecision, militaryUnit, owesServ
 export { chooseOption, applyAction } from "./actions";
 export { INVESTMENTS, INVEST_SLOTS, STUDENT_ALLOWANCE, canInvest, investCost, type Investment } from "./invest";
 export { buyoutCost, canRequestTransfer, currentDecision, leverage, negotiable, requestTransfer, resolveQueue } from "./decisions";
-export { DONATIONS, SHOP, buy, canBuy, canDonate, donate, owns, shopItem, type ShopItem } from "./shop";
+export {
+  DONATIONS,
+  SHOP,
+  SHOP_SIZE,
+  boughtThisSeason,
+  buy,
+  canBuy,
+  canDonate,
+  donate,
+  ownedItems,
+  owns,
+  shopItem,
+  shopLineup,
+  type ShopCategory,
+  type ShopItem,
+} from "./shop";
 export {
   careerJourney,
   careerSummary,

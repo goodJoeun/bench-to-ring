@@ -11,7 +11,7 @@ import { serviceSeason } from "./military";
 import { nationalCallUp } from "./national";
 import { runOffseason } from "./offseason";
 import { chance, pick, random, ri, rnd } from "./random";
-import { owns } from "./shop";
+import { shopPerks } from "./shop";
 import { BONUS_CAP, SPECIALTIES, combinedEffect, specialtiesOf } from "./specialty";
 import { ageBase, ovr, ovrOf, roleOf } from "./ratings";
 import type { AttrKey, Career, GameLine, InvestKey, LeagueKey, SeasonRecord, SeasonRun } from "./types";
@@ -76,8 +76,7 @@ function injuryRisk(c: Career, min: number, inv: InvestKey[]): number {
     (min / 38) * 0.07 -
     (c.focus === "rest" ? 0.06 : 0) +
     (c.age > 30 ? (c.age - 30) * 0.012 : 0);
-  const gear = (owns(c, "shoes") ? 0.95 : 1) * (owns(c, "recovery") ? 0.85 : 1);
-  return Math.max(0.02, risk * (inv.includes("rehab") ? 0.8 : 1) * gear);
+  return Math.max(0.02, risk * (inv.includes("rehab") ? 0.8 : 1) * shopPerks(c).injury);
 }
 
 /** 건강이 이보다 낮으면 큰 부상이 길어지고, CRITICAL_HEALTH 아래에서만 시즌 아웃급 부상이 나와요. */
@@ -162,7 +161,10 @@ export function startSeason(c: Career): void {
   c.run = run;
   if (c.stage === "military") run.plan = [...(c.mil.kind === "sangmu" ? SANGMU_PLAN : ARMY_PLAN)];
   else if (c.stage === "free" || !c.team) run.plan = [...SOLO_PLAN];
-  else planTeamSeason(c, run);
+  else {
+    planTeamSeason(c, run);
+    run.form = shopPerks(c).form;
+  }
   if (run.plan.length) {
     // 팀이 없는 시즌은 프리시즌 없이 일정을 시작하고, 중반에 한 번 이벤트를 확인해요.
     run.phase = "reg";
@@ -318,7 +320,7 @@ function playMinutes(c: Career, run: SeasonRun): NonNullable<GameLine["me"]> {
   const stl = one(run.mean.stl);
   const blk = one(run.mean.blk);
   const rating = r1(clamp(run.rating + run.form * 0.35 - tired * 1.2 + rnd(-1.2, 1.2), 1, 10));
-  addHealth(c, GAME_DAY_HEAL - fatigueOf(run.games) * (m / 30) * (owns(c, "chef") ? 0.88 : 1));
+  addHealth(c, GAME_DAY_HEAL - fatigueOf(run.games) * (m / 30) * shopPerks(c).fatigue);
   const t = run.tot;
   t.gp++;
   t.min += m;
@@ -335,7 +337,7 @@ function playMinutes(c: Career, run: SeasonRun): NonNullable<GameLine["me"]> {
 function startInjury(c: Career, run: SeasonRun, tag: string): void {
   const { name, frac: range, severe } = injuryKind(c.health, random());
   const frac = rnd(...range);
-  const out = Math.max(1, Math.round(run.games * frac * (owns(c, "recovery") ? 0.85 : 1)));
+  const out = Math.max(1, Math.round(run.games * frac * shopPerks(c).rehab));
   run.out = out;
   run.outWhy = "부상";
   addHealth(c, -Math.round(frac * 20) - (severe ? 12 : 0));
@@ -597,6 +599,7 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: Set<Inve
   const minutesFactor = ncaa ? Math.max(played, NCAA_PRACTICE) : played;
   const perf = rating >= 7.5 ? 1.1 : 1;
   const decline: Record<AttrKey, number> = { ath: 1.6, sht: 0.7, iq: 0.25, hdl: 0.9, pas: 0.5, def: 1.1 };
+  const gear = shopPerks(c);
   const delta: Partial<Record<AttrKey, number>> = {};
   for (const [k] of ATTRS) {
     const focus = c.focus === "bal" ? 1 : c.focus === "rest" ? 0.6 : c.focus === k ? 1.5 : 0.85;
@@ -608,16 +611,16 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: Set<Inve
     }
     // 전담 트레이너: 맡은 능력치는 조금 더 크고, 노화로 떨어질 때는 덜 떨어져요.
     if (c.perks.trainer === k) g *= g > 0 ? 1.15 : 0.8;
-    // 시즌 투자와 개인 훈련장
+    // 시즌 투자와 산 장비
     if (g > 0) {
       if (inv.has("coach")) g *= 1.05;
-      if (owns(c, "court")) g *= 1.04;
+      g *= gear.growth[k];
       if (k === "ath" && inv.has("gym")) g *= 1.2;
       if (k === "iq" && inv.has("video")) g *= 1.25;
     } else {
       if (k === "ath" && inv.has("gym")) g *= 0.75;
       if (inv.has("diet")) g *= 0.9;
-      if (owns(c, "court")) g *= 0.9;
+      g *= gear.decline;
     }
     if (k === "iq" && age >= 24 && age <= 33) g += 0.5;
     delta[k] = addAttr(p.attrs, k, g);
@@ -637,7 +640,7 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: Set<Inve
  */
 function recover(c: Career, inv: Set<InvestKey>): void {
   const rest = c.focus === "rest";
-  const care = (inv.has("rehab") ? 8 : 0) + (inv.has("diet") ? 6 : 0) + (owns(c, "home") ? 4 : 0);
+  const care = (inv.has("rehab") ? 8 : 0) + (inv.has("diet") ? 6 : 0) + shopPerks(c).heal;
   const heal = (100 - c.health) * (rest ? 0.65 : 0.5) + (rest ? 10 : 6) + care;
   c.health = clamp(c.health + heal - (c.age > 28 ? (c.age - 28) * 1.6 : 0), ...HEALTH_RANGE);
 }

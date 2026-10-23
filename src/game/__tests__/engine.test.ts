@@ -39,6 +39,9 @@ import {
   requestTransfer,
   canRequestTransfer,
   careerJourney,
+  SHOP_SIZE,
+  ownedItems,
+  shopLineup,
   CRITICAL_HEALTH,
   injuryKind,
   evalOvrOf,
@@ -58,6 +61,7 @@ import { makeLiveGame } from "@/game/live";
 import { militaryDecision } from "@/game/military";
 import { nationalCallUp, runNationalTeam } from "@/game/national";
 import { decodeSave, encodeSave } from "@/game/storage";
+import { refreshShop, shopPerks } from "@/game/shop";
 
 afterEach(() => resetRandom());
 
@@ -997,23 +1001,79 @@ describe("연봉 협상과 이적 요청", () => {
 });
 
 describe("자금 쓰기", () => {
-  it("산 것은 한 번만 살 수 있고 효과가 남으며, 기부는 누적돼 은퇴 기록에 남아요", () => {
+  const rich = (id: string) => {
+    const c = createCareer({ name: "부자", num: 0, nat: "대한민국", pos: "C", path: "domestic" }, generateCandidates("C")[0], id);
+    c.earnings = 400;
+    return c;
+  };
+  /** 이번 시즌 진열을 정해 둬요. */
+  const stock = (c: Career, keys: string[]) => (c.shop = { year: c.year, keys, bought: [] });
+
+  it("시즌마다 싼 것·중간·비싼 것이 고루 섞인 여섯 개가 진열되고, 시즌이 바뀌면 진열도 바뀌어요", () => {
+    const c = rich("lineup");
+    const first = shopLineup(c);
+    expect(first).toHaveLength(SHOP_SIZE);
+    expect(first.filter((i) => i.price < 1).length).toBeGreaterThanOrEqual(2);
+    expect(first.filter((i) => i.price > 20).length).toBeGreaterThanOrEqual(2);
+    // 같은 커리어·같은 시즌이면 같은 진열이에요.
+    const again: Career = { ...c, shop: null };
+    refreshShop(again);
+    expect(again.shop!.keys).toEqual(c.shop!.keys);
+    const seen = new Set(c.shop!.keys);
+    for (let y = 1; y <= 4; y++) {
+      c.year++;
+      refreshShop(c);
+      c.shop!.keys.forEach((k) => seen.add(k));
+    }
+    expect(seen.size).toBeGreaterThan(SHOP_SIZE * 2);
+  });
+
+  it("진열된 것만 살 수 있고, 산 것은 보유 목록에 남아 다시 진열되지 않아요", () => {
     setRandom(seeded(95));
-    const c = createCareer({ name: "부자", num: 0, nat: "대한민국", pos: "C", path: "domestic" }, generateCandidates("C")[0], "shop");
-    c.earnings = 20;
+    const c = rich("own");
     c.health = 70;
+    stock(c, ["parents", "shoes", "academy"]);
+    expect(buy(c, "court")).toBe(false);
     expect(buy(c, "parents")).toBe(true);
     expect(c.health).toBe(80);
     expect(buy(c, "parents")).toBe(false);
-    expect(buy(c, "academy")).toBe(false);
+    expect(buy(c, "academy")).toBe(true);
+    expect(ownedItems(c).map((i) => i.key)).toEqual(["parents", "academy"]);
+    expect(careerSummary(c).legacyItems).toEqual(["부모님께 집 선물", "유소년 농구 아카데미 설립"]);
+    for (let y = 1; y <= 10; y++) {
+      c.year++;
+      refreshShop(c);
+      expect(c.shop!.keys).not.toContain("parents");
+      expect(c.shop!.keys).not.toContain("academy");
+    }
+  });
+
+  it("일회성 상품은 시즌마다 한 번 살 수 있고 보유 목록에 남지 않아요", () => {
+    setRandom(seeded(96));
+    const c = rich("repeat");
+    c.health = 50;
+    stock(c, ["familytrip"]);
+    expect(buy(c, "familytrip")).toBe(true);
+    expect(c.health).toBe(58);
+    expect(buy(c, "familytrip")).toBe(false);
+    expect(c.owned).toEqual([]);
+    c.year++;
+    stock(c, ["familytrip"]);
+    expect(buy(c, "familytrip")).toBe(true);
+  });
+
+  it("장비 효과는 성장과 부상에 반영되고, 기부는 누적되며, 시즌 중에는 살 수 없어요", () => {
+    setRandom(seeded(97));
+    const c = rich("perk");
+    stock(c, ["shootingmachine", "recovery", "shoes"]);
+    buy(c, "shootingmachine");
+    buy(c, "recovery");
+    const perks = shopPerks(c);
+    expect(perks.growth.sht).toBeCloseTo(1.06, 5);
+    expect(perks.growth.def).toBe(1);
+    expect(perks.injury).toBeCloseTo(0.85, 5);
     expect(donate(c, 10)).toBe(true);
-    expect(c.earnings).toBe(7);
-    expect(c.spent).toBe(13);
-    expect(c.owned).toEqual(["parents"]);
-    const s = careerSummary(c);
-    expect(s.donated).toBe(10);
-    expect(s.earn).toBe(20);
-    // 시즌 중에는 살 수 없어요.
+    expect(careerSummary(c).donated).toBe(10);
     startSeason(c);
     expect(buy(c, "shoes")).toBe(false);
   });

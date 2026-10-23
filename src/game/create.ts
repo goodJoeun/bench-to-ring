@@ -4,6 +4,7 @@ import { TEAMS } from "./leagues";
 import { addNews, makeTeam, pickTeam, setTeam } from "./log";
 import { chance, pick, ri, rnd, shuffle, triangular } from "./random";
 import { ovrOf } from "./ratings";
+import { refreshShop } from "./shop";
 import type { Archetype, AttrKey, Attrs, Candidate, Career, Grade, NewCareerInput, PosKey } from "./types";
 import { clamp, r1 } from "./util";
 
@@ -145,9 +146,11 @@ export function createCareer(input: NewCareerInput, cand: Candidate, id = String
     spent: 0,
     run: null,
     owned: [],
+    shop: null,
     donated: 0,
     moveAsked: null,
   };
+  refreshShop(c);
   const chosen = TEAMS.hs.find(([name]) => name === input.school);
   const t = chosen ? makeTeam(chosen) : pickTeam("hs");
   setTeam(c, "hs", t);

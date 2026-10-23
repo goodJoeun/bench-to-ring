@@ -237,7 +237,7 @@ export function SeasonTab({ career: c }: { career: Career }) {
         <Preseason career={c} />
       )}
       {!run && <ContractPanel career={c} />}
-      {!run && <ShopPanel career={c} />}
+      <ShopPanel career={c} />
       <Panel title="소식">
         <ul className="news">
           {c.news.slice(0, 18).map((n, i) => (

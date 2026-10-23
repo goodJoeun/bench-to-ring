@@ -1,54 +1,202 @@
-import { addHealth } from "./condition";
+import { ATTR_KEYS, SHORT } from "./data";
+import { addAttr, addHealth } from "./condition";
 import { addNews } from "./log";
-import type { Career, ShopKey } from "./types";
+import { shuffle } from "./random";
+import type { AttrKey, Career, ShopKey } from "./types";
 import { money, round2 } from "./util";
 
 /*
- * 보유 자금으로 사는 것. 시즌 투자와 달리 한 번 사면 커리어 내내 남아요.
- * 학생 용돈으로 살 수 있는 농구화부터 NBA 스타만 엄두를 낼 아카데미까지 값의 폭을 넓게 잡았어요.
+ * 보유 자금으로 사는 것. 시즌 투자와 달리 한 번 사면 커리어 내내 남아요(일회성 상품만 빼고).
+ * 상점에는 시즌마다 SHOP_SIZE개만 진열되고, 진열 상품은 시즌이 바뀔 때마다 새로 골라요.
+ * 싼 것(1억 미만)·중간(1억~20억)·비싼 것(20억 넘게)을 고루 섞어서, 학생 용돈부터 NBA 연봉까지 살 거리가 있게 했어요.
  */
+
+export type ShopCategory = "장비" | "회복·생활" | "사치품" | "일회성" | "유산";
 
 export interface ShopItem {
   key: ShopKey;
   name: string;
-  /** 효과 한 줄 */
-  effect: string;
+  cat: ShopCategory;
   /** 값 (억) */
   price: number;
+  /** 효과 한 줄 */
+  effect: string;
+  /** 이 능력치들이 클 때 더 커요 (+0.06이면 +6%) */
+  growth?: Partial<Record<AttrKey, number>>;
+  /** 모든 능력치 성장 (+0.04면 +4%) */
+  growthAll?: number;
+  /** 나이로 떨어지는 폭 배수 */
+  decline?: number;
+  /** 부상 위험 배수 */
+  injury?: number;
+  /** 부상 결장 경기 배수 */
+  rehab?: number;
+  /** 경기 중 체력 소모 배수 */
+  fatigue?: number;
+  /** 시즌이 끝날 때 더 돌아오는 건강 */
+  heal?: number;
+  /** 시즌을 시작할 때 경기력 */
+  form?: number;
+  /** 사는 순간 건강 */
+  health?: number;
+  /** 사는 순간 무작위 능력치 rand개 +1 */
+  rand?: number;
+  /** 다른 시즌에 다시 살 수 있어요 (보유 목록에 남지 않아요). */
+  repeat?: boolean;
+  /** 은퇴 기록의 '코트 밖에서'에 남아요. */
+  legacy?: boolean;
 }
 
+const item = (key: ShopKey, name: string, cat: ShopCategory, price: number, effect: string, extra: Omit<ShopItem, "key" | "name" | "cat" | "price" | "effect"> = {}): ShopItem => ({
+  key,
+  name,
+  cat,
+  price,
+  effect,
+  ...extra,
+});
+
 export const SHOP: ReadonlyArray<ShopItem> = [
-  { key: "shoes", name: "맞춤 농구화", effect: "부상 위험 -5%", price: 0.03 },
-  { key: "parents", name: "부모님께 집 선물", effect: "지금 건강 +10 · 효도는 커리어에 남아요", price: 3 },
-  { key: "car", name: "드림카 구입", effect: "지금 건강 +3 · 기분 전환일 뿐이에요", price: 4 },
-  { key: "home", name: "내 집 마련", effect: "시즌이 끝날 때마다 건강 +4", price: 5 },
-  { key: "chef", name: "전담 셰프·영양팀", effect: "경기 중 체력 소모 -12%", price: 12 },
-  { key: "recovery", name: "개인 회복 센터", effect: "부상 위험 -15%, 부상 복귀가 빨라져요", price: 30 },
-  { key: "court", name: "개인 훈련장", effect: "능력치 성장 +4%, 나이로 떨어지는 폭 -10%", price: 60 },
-  { key: "academy", name: "유소년 농구 아카데미 설립", effect: "은퇴 기록에 남아요", price: 150 },
+  /* 장비: 맡은 능력치가 커리어 내내 조금 더 잘 커요. */
+  item("shoes", "맞춤 농구화", "장비", 0.03, "부상 위험 -5%", { injury: 0.95 }),
+  item("dribblegear", "드리블 트레이닝 기어", "장비", 0.08, "볼 핸들링 성장 +6%", { growth: { hdl: 0.06 } }),
+  item("passtrainer", "패스 리바운더", "장비", 0.1, "패스 성장 +6%", { growth: { pas: 0.06 } }),
+  item("slideboard", "수비 슬라이드 보드", "장비", 0.12, "수비 성장 +6%", { growth: { def: 0.06 } }),
+  item("shootingmachine", "슈팅 머신", "장비", 0.5, "슛 성장 +6%", { growth: { sht: 0.06 } }),
+  item("weightset", "홈 웨이트 세트", "장비", 0.6, "운동능력 성장 +6%", { growth: { ath: 0.06 } }),
+  item("videosystem", "개인 영상 분석 시스템", "장비", 2, "BQ 성장 +8%", { growth: { iq: 0.08 } }),
+  item("court", "개인 훈련장", "장비", 60, "모든 능력치 성장 +4%, 나이로 떨어지는 폭 -10%", { growthAll: 0.04, decline: 0.9 }),
+
+  /* 회복·생활: 건강과 체력을 지켜요. */
+  item("massage", "마사지 의자", "회복·생활", 0.05, "시즌이 끝날 때마다 건강 +1", { heal: 1 }),
+  item("sleeppod", "수면 캡슐 침대", "회복·생활", 0.25, "시즌이 끝날 때마다 건강 +2", { heal: 2 }),
+  item("mental", "스포츠 심리 상담 패키지", "회복·생활", 1, "시즌을 경기력 상승으로 시작해요", { form: 0.3 }),
+  item("home", "내 집 마련", "회복·생활", 5, "시즌이 끝날 때마다 건강 +4", { heal: 4 }),
+  item("hypoxic", "고지대 훈련 텐트", "회복·생활", 8, "경기 중 체력 소모 -6%", { fatigue: 0.94 }),
+  item("chef", "전담 셰프·영양팀", "회복·생활", 12, "경기 중 체력 소모 -12%", { fatigue: 0.88 }),
+  item("physio", "전담 물리치료사 평생 계약", "회복·생활", 20, "부상 위험 -10%, 부상 복귀가 빨라져요", { injury: 0.9, rehab: 0.9 }),
+  item("recovery", "개인 회복 센터", "회복·생활", 30, "부상 위험 -15%, 부상 복귀가 빨라져요", { injury: 0.85, rehab: 0.85 }),
+  item("penthouse", "한강 펜트하우스", "회복·생활", 40, "지금 건강 +5, 시즌이 끝날 때마다 건강 +3", { health: 5, heal: 3 }),
+  item("jet", "전용 전세기", "회복·생활", 80, "원정 피로가 줄어 경기 중 체력 소모 -10%", { fatigue: 0.9 }),
+
+  /* 사치품: 기분 전환. 효과는 작거나 없어요. */
+  item("sneakers", "한정판 스니커즈 컬렉션", "사치품", 0.08, "지금 건강 +1 · 수집하는 즐거움", { health: 1 }),
+  item("watch", "명품 시계", "사치품", 1.5, "효과는 없어요 · 손목이 빛나요"),
+  item("trophyroom", "트로피 진열실", "사치품", 2, "효과는 없어요 · 받은 상을 모아 둬요"),
+  item("car", "드림카 구입", "사치품", 4, "지금 건강 +3 · 기분 전환일 뿐이에요", { health: 3 }),
+  item("yacht", "요트", "사치품", 25, "지금 건강 +5 · 바다 위에서 쉬어요", { health: 5 }),
+
+  /* 일회성: 진열될 때마다 다시 살 수 있어요. */
+  item("retreat", "명상 리트릿", "일회성", 0.3, "지금 건강 +6", { health: 6, repeat: true }),
+  item("bootcamp", "여름 개인 전지훈련", "일회성", 0.6, "지금 무작위 능력치 2개 +1", { rand: 2, repeat: true }),
+  item("familytrip", "가족 여행", "일회성", 1, "지금 건강 +8", { health: 8, repeat: true }),
+
+  /* 유산: 은퇴 기록에 남아요. */
+  item("parents", "부모님께 집 선물", "유산", 3, "지금 건강 +10 · 효도는 커리어에 남아요", { health: 10, legacy: true }),
+  item("gymremodel", "모교 체육관 리모델링", "유산", 10, "은퇴 기록에 남아요", { legacy: true }),
+  item("foundation", "자선 재단 설립", "유산", 50, "은퇴 기록에 남아요", { legacy: true }),
+  item("academy", "유소년 농구 아카데미 설립", "유산", 150, "은퇴 기록에 남아요", { legacy: true }),
 ];
+
+/** 시즌마다 진열하는 상품 수: 싼 것·중간·비싼 것에서 두 개씩 */
+export const SHOP_SIZE = 6;
 
 /** 기부 금액 (억). 가진 돈 안에서 고를 수 있어요. */
 export const DONATIONS = [0.1, 1, 10, 100] as const;
 
-export const shopItem = (key: ShopKey): ShopItem => SHOP.find((i) => i.key === key)!;
+export const shopItem = (key: ShopKey): ShopItem | undefined => SHOP.find((i) => i.key === key);
 export const owns = (c: Career, key: ShopKey): boolean => c.owned.includes(key);
 
-/** 지금 살 수 있는지: 은퇴 전, 시즌 사이, 아직 없고 돈이 있으면 */
+/** 문자열로 정하는 난수: 같은 커리어·같은 시즌이면 언제나 같은 진열이 나와요. 게임 난수 흐름은 건드리지 않아요. */
+function seededPick(seed: string): () => number {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619);
+  return () => {
+    h = Math.imul(h ^ (h >>> 15), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+  };
+}
+
+/** 이번 시즌 진열을 새로 골라요. 이미 가진 상품(일회성 제외)은 다시 나오지 않아요. */
+export function refreshShop(c: Career): void {
+  if (c.shop?.year === c.year) return;
+  const rand = seededPick(`${c.id}:${c.year}`);
+  const pool = SHOP.filter((i) => i.repeat || !owns(c, i.key));
+  const take = (list: ShopItem[], n: number) =>
+    list
+      .map((i) => ({ i, r: rand() }))
+      .sort((a, b) => a.r - b.r)
+      .slice(0, n)
+      .map((x) => x.i);
+  const picked = [
+    ...take(pool.filter((i) => i.price < 1), 2),
+    ...take(pool.filter((i) => i.price >= 1 && i.price <= 20), 2),
+    ...take(pool.filter((i) => i.price > 20), 2),
+  ];
+  // 한 가격대가 바닥나면 남은 상품으로 채워요.
+  const rest = take(pool.filter((i) => !picked.includes(i)), SHOP_SIZE - picked.length);
+  c.shop = { year: c.year, keys: [...picked, ...rest].sort((a, b) => a.price - b.price).map((i) => i.key), bought: [] };
+}
+
+/** 이번 시즌 진열 상품 (값 순) */
+export const shopLineup = (c: Career): ShopItem[] => (c.shop?.keys ?? []).map(shopItem).filter((i): i is ShopItem => !!i);
+
+/** 이번 시즌에 이미 산 진열 상품인지 */
+export const boughtThisSeason = (c: Career, key: ShopKey): boolean => !!c.shop?.bought.includes(key);
+
+/** 지금 살 수 있는지: 은퇴 전, 시즌 사이, 이번 진열에 있고, 아직 안 샀고, 돈이 있으면 */
 export function canBuy(c: Career, key: ShopKey): boolean {
-  return c.stage !== "retired" && !c.run && !owns(c, key) && c.earnings + 1e-9 >= shopItem(key).price;
+  const i = shopItem(key);
+  if (!i || c.stage === "retired" || c.run || !c.shop?.keys.includes(key) || boughtThisSeason(c, key)) return false;
+  return (i.repeat || !owns(c, key)) && c.earnings + 1e-9 >= i.price;
 }
 
 export function buy(c: Career, key: ShopKey): boolean {
   if (!canBuy(c, key)) return false;
-  const item = shopItem(key);
-  c.earnings = round2(c.earnings - item.price);
-  c.spent = round2(c.spent + item.price);
-  c.owned.push(key);
-  if (key === "parents") addHealth(c, 10);
-  if (key === "car") addHealth(c, 3);
-  addNews(c, `${c.year - 1} 오프시즌`, key === "academy" ? "big" : "good", `${item.name} · ${money(item.price)}`);
+  const i = shopItem(key)!;
+  c.earnings = round2(c.earnings - i.price);
+  c.spent = round2(c.spent + i.price);
+  c.shop!.bought.push(key);
+  if (!i.repeat) c.owned.push(key);
+  if (i.health) addHealth(c, i.health);
+  let note = "";
+  if (i.rand) {
+    const keys = shuffle(ATTR_KEYS).slice(0, i.rand);
+    for (const k of keys) addAttr(c.p.attrs, k, 1);
+    note = ` · ${keys.map((k) => SHORT[k]).join("·")} +1`;
+  }
+  addNews(c, `${c.year - 1} 오프시즌`, i.legacy && i.price >= 10 ? "big" : "good", `${i.name} · ${money(i.price)}${note}`);
   return true;
+}
+
+/** 가진 상품 (산 순서) */
+export const ownedItems = (c: Career): ShopItem[] => c.owned.map(shopItem).filter((i): i is ShopItem => !!i);
+
+/** 가진 상품의 효과를 합쳐요. 시즌 진행과 성장 계산에서 써요. */
+export interface ShopPerks {
+  injury: number;
+  rehab: number;
+  fatigue: number;
+  heal: number;
+  form: number;
+  decline: number;
+  growth: Record<AttrKey, number>;
+}
+
+export function shopPerks(c: Career): ShopPerks {
+  const p: ShopPerks = { injury: 1, rehab: 1, fatigue: 1, heal: 0, form: 0, decline: 1, growth: { sht: 1, hdl: 1, pas: 1, def: 1, iq: 1, ath: 1 } };
+  for (const i of ownedItems(c)) {
+    p.injury *= i.injury ?? 1;
+    p.rehab *= i.rehab ?? 1;
+    p.fatigue *= i.fatigue ?? 1;
+    p.heal += i.heal ?? 0;
+    p.form += i.form ?? 0;
+    p.decline *= i.decline ?? 1;
+    for (const k of ATTR_KEYS) p.growth[k] += (i.growth?.[k] ?? 0) + (i.growthAll ?? 0);
+  }
+  return p;
 }
 
 export function canDonate(c: Career, amount: number): boolean {

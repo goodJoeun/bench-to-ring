@@ -2,6 +2,7 @@ import { AWARDS, PERSONAL_AWARDS } from "./data";
 import { LEAGUES, teamColor } from "./leagues";
 import { militaryUnit } from "./military";
 import { natColor } from "./national";
+import { ownedItems } from "./shop";
 import type { AwardKey, Career, CareerSummary, SeasonRecord } from "./types";
 import { stripYear } from "./util";
 
@@ -189,7 +190,7 @@ export function careerSummary(c: Career): CareerSummary {
     awards: { ...c.awards },
     draft: c.draft,
     donated: c.donated,
-    academy: c.owned.includes("academy"),
+    legacyItems: ownedItems(c).filter((i) => i.legacy).map((i) => i.name),
   };
   return { ...base, legacy: legacyOf(base) };
 }

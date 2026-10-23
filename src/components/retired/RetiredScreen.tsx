@@ -52,11 +52,12 @@ export function RetiredScreen({ career: c, hall }: { career: Career; hall: Caree
           ))}
         </div>
         <p className="hint">거쳐간 팀 · {s.teams.join(" → ")}</p>
-        {(s.academy || !!s.donated) && (
-          <p className="hint">
-            코트 밖에서 · {[s.academy && "유소년 농구 아카데미 설립", s.donated && `유소년 농구 기부 ${money(s.donated)}`].filter(Boolean).join(" · ")}
-          </p>
-        )}
+        {(() => {
+          // 예전 기록은 아카데미 여부만 있어요.
+          const legacy = s.legacyItems ?? (s.academy ? ["유소년 농구 아카데미 설립"] : []);
+          const parts = [...legacy, s.donated ? `유소년 농구 기부 ${money(s.donated)}` : ""].filter(Boolean);
+          return parts.length > 0 && <p className="hint">코트 밖에서 · {parts.join(" · ")}</p>;
+        })()}
       </Panel>
 
       <SimilarPlayers career={c} />

@@ -5,6 +5,7 @@ import { lifeEvent } from "./events";
 import { addNews, joinTeam, pickTeam } from "./log";
 import { endService, militaryDecision } from "./military";
 import { chance, ri, rnd } from "./random";
+import { refreshShop } from "./shop";
 import { ovr, ovrOf, scoutError } from "./ratings";
 import type { Career, Decision, QueueItem } from "./types";
 import { r1 } from "./util";
@@ -96,4 +97,6 @@ export function runOffseason(c: Career, finishedYear: number, natCall: Decision 
   }
   c.queue = q;
   resolveQueue(c);
+  // 새 시즌 상점 진열
+  refreshShop(c);
 }

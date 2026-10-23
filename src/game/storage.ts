@@ -1,6 +1,7 @@
 import { clampAttr } from "./condition";
 import { ATTR_KEYS } from "./data";
 import { ovrOf } from "./ratings";
+import { refreshShop } from "./shop";
 import type { Action, AttrKey, Attrs, Boost, Career, CareerSummary, PosKey } from "./types";
 
 const SAVE_KEY = "b2r-save-v1";
@@ -137,6 +138,8 @@ function normalize(c: Career): Career {
     c.run.bonus ??= 0;
   }
   c.owned ??= [];
+  c.shop ??= null;
+  refreshShop(c);
   c.donated ??= 0;
   c.moveAsked ??= null;
   migrateAttrs(c);
