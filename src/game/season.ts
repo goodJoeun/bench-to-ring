@@ -15,7 +15,7 @@ import { owns } from "./shop";
 import { BONUS_CAP, SPECIALTIES, combinedEffect, specialtiesOf } from "./specialty";
 import { ageBase, ovr, ovrOf, roleOf } from "./ratings";
 import type { AttrKey, Career, GameLine, InvestKey, LeagueKey, SeasonRecord, SeasonRun } from "./types";
-import { clamp, r1, sigmoid } from "./util";
+import { clamp, josa, r1, sigmoid } from "./util";
 
 /*
  * 시즌은 세 단계로 흘러가요.
@@ -28,11 +28,11 @@ import { clamp, r1, sigmoid } from "./util";
 
 /**
  * MVP 문턱: 이 영향력(리그 평균 대비 오버롤 × 출전 비중)에서 수상 확률이 절반이에요.
- * NBA는 리그 평균이 워낙 높아 다른 리그와 같은 기준이면 오버롤 100을 훌쩍 넘어야 해서 평균 + 8로 낮췄어요.
- * 그래도 성장 한계(90대 초반)에 닿은 선수가 특화까지 갖춰야 겨우 닿는, 거의 나오지 않는 상이에요.
+ * NBA는 리그 평균이 워낙 높아 다른 리그와 같은 기준이면 오버롤 100을 훌쩍 넘어야 해서 평균 + 3으로 낮췄어요.
+ * NBA까지 가는 선수 자체가 드물어서, 커리어 100개 중 1개 정도에서 NBA MVP가 나와요.
  */
 const MVP_AT = 15.5;
-const NBA_MVP_AT = 8;
+const NBA_MVP_AT = 3;
 
 /** 최근 경기 기록을 이만큼 남겨요. */
 const LOG_LIMIT = 12;
@@ -52,6 +52,12 @@ const GAME_DAY_HEAL = 0.12;
  * 36분 에이스면 한 시즌에 고교 약 30, KBL 약 41, NBA 약 51이 닳아요(경기 사이 회복 전).
  */
 const fatigueOf = (games: number) => (18 + 0.3 * games) / games;
+
+/**
+ * NCAA 선수가 경기에 거의 못 나가도 받는 성장 몫(출전 시간 계수의 하한).
+ * 강도 높은 팀 훈련과 연습 경기로 프로에서 경기당 11분쯤 뛴 만큼은 커요.
+ */
+const NCAA_PRACTICE = 0.75;
 
 /** 빅매치 이름 */
 const BIG_GAMES = ["라이벌전", "순위 싸움 빅매치", "전국 중계 경기", "연고지 더비"];
@@ -154,7 +160,7 @@ function planTeamSeason(c: Career, run: SeasonRun): void {
   const p = c.p;
   const team = c.team!;
   const L = LEAGUES[team.lg];
-  // 특화: 평가 오버롤에 보너스를 더하고, 특화마다 기록에 작은 효과가 나요.
+  // 히든 스탯: 평가 오버롤에 보너스를 더하고, 히든 스탯마다 기록에 작은 효과가 나요.
   const hits = specialtiesOf(p.attrs);
   const fx = combinedEffect(hits);
   run.spec = hits.map((h) => h.spec.key);
@@ -439,9 +445,9 @@ function finishSeason(c: Career): SeasonRecord {
   const specBefore = specialtiesOf(p.attrs).map((h) => h.spec.name);
   if (growNormally) grow(c, min, rating, tag, inv);
   for (const h of specialtiesOf(p.attrs))
-    if (!specBefore.includes(h.spec.name)) addNews(c, tag, "big", `특화 획득 · ${h.spec.name}! ${h.spec.desc} (평가 +${h.bonus})`);
+    if (!specBefore.includes(h.spec.name)) addNews(c, tag, "big", `히든 스탯 발견 · ${h.spec.name}! ${h.spec.desc} (평가 +${h.bonus})`);
   for (const name of specBefore)
-    if (!specialtiesOf(p.attrs).some((h) => h.spec.name === name)) addNews(c, tag, "info", `특화 '${name}'의 조건에서 벗어났어요.`);
+    if (!specialtiesOf(p.attrs).some((h) => h.spec.name === name)) addNews(c, tag, "info", `히든 스탯 ${josa(name, "을", "를")} 잃었어요.`);
   if (inv.size) rec.invest = [...inv];
   rec.ovr1 = ovr(p);
   // 시즌이 끝난 여름의 국가대표 대회. 성장까지 반영한 오버롤로 발탁해요.
@@ -464,7 +470,7 @@ function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord 
   const team = c.team!;
   const lg = team.lg;
   const L = LEAGUES[lg];
-  // 시상은 특화까지 반영한 평가 오버롤로, 기록에 남는 오버롤은 그대로예요.
+  // 시상은 히든 스탯까지 반영한 평가 오버롤로, 기록에 남는 오버롤은 그대로예요.
   const ovr0 = run.ovr0 + run.bonus;
   const ov0 = Math.round(run.ovr0);
   const fx = combinedEffect(SPECIALTIES.filter((s) => run.spec.includes(s.key)).map((spec) => ({ spec, bonus: 0 })));
@@ -572,8 +578,10 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: Set<Inve
   const gap = p.pot - ov;
   const headroom = base <= 0 ? 1 : gap <= 0 ? 0.05 : clamp(0.3 + gap / 8, 0.3, 1.7);
   // 출전 시간: 10대는 영향이 작고, 성인은 크게 받아요. 주전급(28분)이어야 제대로 커요.
-  const minutesFactor =
-    age < 19 ? 0.75 + 0.25 * Math.min(1, min / 20) : Math.min(1.05, 0.35 + 0.7 * Math.min(1, min / 28));
+  // NCAA 선수는 벤치에 있어도 팀 훈련으로 크고(NCAA_PRACTICE), 성장 한계도 깎이지 않아요(아래).
+  const ncaa = c.stage === "college" && c.team?.lg === "ncaa";
+  const played = age < 19 ? 0.75 + 0.25 * Math.min(1, min / 20) : Math.min(1.05, 0.35 + 0.7 * Math.min(1, min / 28));
+  const minutesFactor = ncaa ? Math.max(played, NCAA_PRACTICE) : played;
   const perf = rating >= 7.5 ? 1.1 : 1;
   const decline: Record<AttrKey, number> = { ath: 1.6, sht: 0.7, iq: 0.25, hdl: 0.9, pas: 0.5, def: 1.1 };
   const delta: Partial<Record<AttrKey, number>> = {};
@@ -602,7 +610,7 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: Set<Inve
     delta[k] = addAttr(p.attrs, k, g);
   }
   c.lastDelta = delta;
-  if (age >= 19 && min < 15 && base > 0 && c.stage !== "hs") {
+  if (age >= 19 && min < 15 && base > 0 && c.stage !== "hs" && !ncaa) {
     const before = p.pot;
     p.pot = Math.max(Math.round(ovrOf(p.attrs, p.pos)) + 1, p.pot - ri(1, min < 8 ? 3 : 2));
     if (p.pot < before) addNews(c, tag, "bad", "출전 시간이 부족해 성장 한계가 조금 낮아졌어요.");

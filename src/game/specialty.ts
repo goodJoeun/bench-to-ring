@@ -1,8 +1,8 @@
 import type { AttrKey, Attrs } from "./types";
 
 /*
- * 특화: 여러 능력치가 고르게 적당한 선수보다, 두 능력치가 함께 두드러진 선수를 더 높게 평가해요.
- * BQ를 뺀 다섯 능력치(슛·볼 핸들링·패스·수비·운동능력)의 두 개짜리 조합 10가지가 특화이고,
+ * 히든 스탯: 여러 능력치가 고르게 적당한 선수보다, 두 능력치가 함께 두드러진 선수를 더 높게 평가해요.
+ * BQ를 뺀 다섯 능력치(슛·볼 핸들링·패스·수비·운동능력)의 두 개짜리 조합 10가지가 히든 스탯이고,
  * BQ는 혼자 유난히 높아도 '스마트 플레이어'가 돼요.
  *
  * 기준
@@ -36,7 +36,7 @@ export type SpecialtyKey =
   | "engine"
   | "smart";
 
-/** 특화가 경기 기록에 주는 작은 효과. 배수는 그 시즌 경기당 기록에, fg는 야투율(%p)에, rating은 평점에, team은 팀 승수 기여에 곱해요. */
+/** 히든 스탯이 경기 기록에 주는 작은 효과. 배수는 그 시즌 경기당 기록에, fg는 야투율(%p)에, rating은 평점에, team은 팀 승수 기여에 곱해요. */
 export interface SpecialtyEffect {
   pts?: number;
   reb?: number;
@@ -91,7 +91,7 @@ export interface SpecialtyHit {
   bonus: number;
 }
 
-/** 지금 능력치로 인정되는 특화: 두 능력치 조합 하나(있으면)와 스마트 플레이어(있으면) */
+/** 지금 능력치로 인정되는 히든 스탯: 두 능력치 조합 하나(있으면)와 스마트 플레이어(있으면) */
 export function specialtiesOf(a: Attrs): SpecialtyHit[] {
   const hits: SpecialtyHit[] = [];
   let best: { spec: Specialty; margin: number; low: number } | null = null;
@@ -108,10 +108,10 @@ export function specialtiesOf(a: Attrs): SpecialtyHit[] {
   return hits;
 }
 
-/** 평가 오버롤에 더하는 특화 보너스 합계 */
+/** 평가 오버롤에 더하는 히든 스탯 보너스 합계 */
 export const specialtyBonus = (a: Attrs): number => Math.min(BONUS_CAP, specialtiesOf(a).reduce((t, h) => t + h.bonus, 0));
 
-/** 여러 특화의 기록 효과를 하나로 합쳐요. */
+/** 여러 히든 스탯의 기록 효과를 하나로 합쳐요. */
 export function combinedEffect(hits: SpecialtyHit[]): Required<SpecialtyEffect> {
   const e: Required<SpecialtyEffect> = { pts: 1, reb: 1, ast: 1, stl: 1, blk: 1, fg: 0, rating: 0, team: 1, dpoy: 0 };
   for (const { spec } of hits) {

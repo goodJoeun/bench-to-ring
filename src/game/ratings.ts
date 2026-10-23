@@ -15,7 +15,7 @@ export function ovrOf(a: Attrs, pos: PosKey): number {
 export const ovr = (p: Player): number => Math.round(ovrOf(p.attrs, p.pos));
 
 /**
- * 평가 오버롤: 오버롤에 특화 보너스(specialty.ts)를 더한 값. 출전 시간·계약 제안·드래프트·연봉·시상처럼
+ * 평가 오버롤: 오버롤에 히든 스탯 보너스(specialty.ts)를 더한 값. 출전 시간·계약 제안·드래프트·연봉·시상처럼
  * 구단과 리그가 선수를 평가하는 곳에 써요. 화면과 기록에는 오버롤을 그대로 보여줘요.
  */
 export const evalOvrOf = (a: Attrs, pos: PosKey): number => ovrOf(a, pos) + specialtyBonus(a);

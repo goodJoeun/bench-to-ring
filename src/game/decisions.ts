@@ -51,7 +51,7 @@ export const projectKbl = (c: Career): string =>
 /* ---------- 진로 결정 ---------- */
 
 export function highSchoolGraduation(c: Career): Decision {
-  // 진학·드래프트 기준은 특화까지 반영한 평가 오버롤로 봐요.
+  // 진학·드래프트 기준은 히든 스탯까지 반영한 평가 오버롤로 봐요.
   const o = evalOvr(c.p);
   const opts: DecisionOption[] = [];
   const uc = pickTeam("ncaa");
@@ -64,10 +64,11 @@ export function highSchoolGraduation(c: Career): Decision {
     tag: "NCAA",
     act: { k: "school", lg: "ncaa", team: uc, walk },
   });
-  // NCAA: 해외 경로는 NCAA 평균 - 5부터 장학생, 그 아래 - 7까지는 워크온이고, 더 낮으면 받아 주는 학교가 없어요.
+  // NCAA: 해외 경로는 NCAA 평균 - 8부터 장학생, 그 아래 - 10까지는 워크온이고, 더 낮으면 받아 주는 학교가 없어요.
+  // 고교 졸업생 대부분은 기준에 못 미쳐서, 진학은 가끔 있는 일이에요.
   // 국내 경로는 NCAA 평균 - 1은 돼야 스카우트가 찾아와요.
   if (c.p.path === "abroad") {
-    if (o >= avg("ncaa") - 7) opts.push(abroad(o < avg("ncaa") - 5));
+    if (o >= avg("ncaa") - 10) opts.push(abroad(o < avg("ncaa") - 8));
   } else if (o >= avg("ncaa") - 1) opts.push({ ...abroad(false), label: `${uc.name} 스카우트 제안` });
   opts.push({
     label: `${kc.name} 진학`,
@@ -144,7 +145,7 @@ const RESIGN_BELOW: Partial<Record<LeagueKey, number>> = { nba: 3, euro: 8, kbl:
 
 /** 계약 제안. current는 재계약을 제안할 수 있는 지금 팀이고, avoid 팀은 제안 목록에서 빼요(이적 요청). */
 export function generateOffers(c: Career, current: CurrentTeam | null, rating: number, avoid?: string): DecisionOption[] {
-  // 구단은 특화까지 반영한 평가 오버롤로 제안 여부와 연봉을 정해요.
+  // 구단은 히든 스탯까지 반영한 평가 오버롤로 제안 여부와 연봉을 정해요.
   const o = evalOvr(c.p);
   const age = c.age;
   const out: DecisionOption[] = [];

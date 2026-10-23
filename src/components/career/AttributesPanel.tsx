@@ -2,7 +2,7 @@ import { ATTRS, POS, evalOvr, isCoreAttr, money, ovr, specialtiesOf, type Career
 import { Radar } from "./Radar";
 
 /**
- * 지금 가진 특화와 평가 오버롤. 특화의 조건과 종류는 일부러 보여주지 않아요(이스터에그).
+ * 지금 가진 히든 스탯과 평가 오버롤. 히든 스탯의 조건과 종류는 일부러 보여주지 않아요(이스터에그).
  * 조건을 처음 채우면 시즌 결산 소식으로 알려주고, 그때부터 여기에 나타나요. 아직 없으면 이 칸 자체가 없어요.
  */
 function Specialties({ career: c }: { career: Career }) {
@@ -13,7 +13,7 @@ function Specialties({ career: c }: { career: Career }) {
   return (
     <div className="spec">
       <div className="spec-head">
-        <span className="label">특화</span>
+        <span className="label">히든 스탯</span>
         {evaluated > base && (
           <span className="spec-eval">
             평가 오버롤 {base} → <b>{evaluated}</b>

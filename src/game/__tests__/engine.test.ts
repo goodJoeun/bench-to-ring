@@ -1090,18 +1090,18 @@ describe("닮은 꼴 선수", () => {
   });
 });
 
-describe("특화", () => {
+describe("히든 스탯", () => {
   const attrs = (o: Partial<Record<AttrKey, number>>, rest = 55) =>
     ({ sht: rest, hdl: rest, pas: rest, def: rest, iq: rest, ath: rest, ...o }) as Record<AttrKey, number>;
 
-  it("두 능력치가 함께 높고 나머지보다 두드러지면 특화가 되고, 낮은 쪽이 높을수록 보너스가 커요", () => {
+  it("두 능력치가 함께 높고 나머지보다 두드러지면 히든 스탯이 되고, 낮은 쪽이 높을수록 보너스가 커요", () => {
     expect(specialtiesOf(attrs({ sht: 72, def: 71 })).map((h) => [h.spec.name, h.bonus])).toEqual([["투웨이 플레이어", 1]]);
     expect(specialtiesOf(attrs({ hdl: 84, sht: 82 }))[0]).toMatchObject({ spec: { key: "scorer" }, bonus: 2 });
     expect(specialtiesOf(attrs({ def: 93, ath: 91 }))[0]).toMatchObject({ spec: { key: "stopper" }, bonus: 3 });
     expect(specialtiesOf(attrs({ pas: 75, hdl: 76 }))[0].spec.name).toBe("메인 핸들러");
   });
 
-  it("여러 능력치가 고르게 적당하면 특화가 없고, 조합은 하나만 인정해요", () => {
+  it("여러 능력치가 고르게 적당하면 히든 스탯이 없고, 조합은 하나만 인정해요", () => {
     // 모두 72: 높지만 두드러지지 않아요.
     expect(specialtiesOf(attrs({}, 72))).toEqual([]);
     // 한쪽만 높으면 조합이 아니에요.
@@ -1120,10 +1120,63 @@ describe("특화", () => {
     expect(specialtyBonus(both)).toBe(4);
   });
 
-  it("평가 오버롤은 오버롤에 특화 보너스를 더한 값이에요", () => {
+  it("평가 오버롤은 오버롤에 히든 스탯 보너스를 더한 값이에요", () => {
     const a = attrs({ sht: 82, def: 81 });
     expect(evalOvrOf(a, "SF") - ovrOf(a, "SF")).toBe(2);
     const plain = attrs({}, 70);
     expect(evalOvrOf(plain, "SF")).toBe(ovrOf(plain, "SF"));
+  });
+});
+
+describe("NCAA 벤치 성장", () => {
+  /** 19세, 리그 평균보다 한참 낮아 거의 못 뛰는 선수 */
+  function benchPlayer(id: string, lg: "ncaa" | "kbl", collegeYears = 0): Career {
+    const c = createCareer({ name: "벤치", num: 0, nat: "미국", pos: "SG", path: "abroad" }, generateCandidates("SG")[0], id);
+    for (const k of ATTR_KEYS) c.p.attrs[k] = LEAGUES[lg].avg - 15;
+    c.p.pot = 90;
+    c.age = 19;
+    c.mil = { s: "exempt" };
+    c.stage = lg === "ncaa" ? "college" : "pro";
+    c.collegeYears = collegeYears;
+    c.team = lg === "ncaa" ? { name: "듀크대", color: "#003087", q: 0.5, lg } : { name: "서울 SK 나이츠", color: "#D7141A", q: 0.5, lg };
+    if (lg === "kbl") c.contract = { years: 3, salary: 1 };
+    return c;
+  }
+
+  it("NCAA 선수는 학년과 상관없이 벤치에 있어도 성장 한계가 깎이지 않고, 프로 벤치는 깎여요", () => {
+    setRandom(seeded(101));
+    const fresh = benchPlayer("ncaa1", "ncaa", 0);
+    simulateSeason(fresh);
+    expect(fresh.last!.min).toBeLessThan(15);
+    expect(fresh.p.pot).toBe(90);
+
+    setRandom(seeded(101));
+    const junior = benchPlayer("ncaa3", "ncaa", 2);
+    simulateSeason(junior);
+    expect(junior.p.pot).toBe(90);
+
+    setRandom(seeded(101));
+    const pro = benchPlayer("kbl", "kbl");
+    simulateSeason(pro);
+    expect(pro.last!.min).toBeLessThan(15);
+    expect(pro.p.pot).toBeLessThan(90);
+  });
+
+  it("NCAA 선수는 거의 못 뛰어도 팀 훈련으로 프로 벤치보다 더 커요", () => {
+    let ncaa = 0;
+    let kbl = 0;
+    for (let i = 0; i < 30; i++) {
+      setRandom(seeded(200 + i));
+      const a = benchPlayer(`n${i}`, "ncaa");
+      const before = ovrOf(a.p.attrs, a.p.pos);
+      simulateSeason(a);
+      ncaa += ovrOf(a.p.attrs, a.p.pos) - before;
+      setRandom(seeded(200 + i));
+      const b = benchPlayer(`k${i}`, "kbl");
+      const before2 = ovrOf(b.p.attrs, b.p.pos);
+      simulateSeason(b);
+      kbl += ovrOf(b.p.attrs, b.p.pos) - before2;
+    }
+    expect(ncaa).toBeGreaterThan(kbl * 1.3);
   });
 });
