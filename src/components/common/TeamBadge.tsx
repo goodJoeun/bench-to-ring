@@ -1,5 +1,6 @@
 import { useId } from "react";
 import { emblemOf, type EmblemKind } from "./emblem";
+import { LOGOS } from "./logos.generated";
 
 /** 리그마다 다른 엠블럼 바탕 모양 (viewBox 0 0 40 44) */
 const SHAPES: Record<EmblemKind, string> = {
@@ -43,10 +44,28 @@ interface TeamBadgeProps {
   decorative?: boolean;
 }
 
-/** 구단·학교 엠블럼. 실제 로고 대신 이름과 대표색으로 만든 자체 디자인이에요. 모르는 이름이면 아무것도 그리지 않아요. */
+/**
+ * 구단·학교 엠블럼. public/logos/에 그 팀 로고 파일이 있으면 로고를, 없으면 이름과 대표색으로 만든 엠블럼을 보여줘요.
+ * 모르는 이름이면 아무것도 그리지 않아요.
+ */
 export function TeamBadge({ name, kind, color, size = 28, className, decorative = true }: TeamBadgeProps) {
   // clipPath id에 쓸 수 없는 글자를 빼요.
   const id = `badge${useId().replace(/[^A-Za-z0-9_-]/g, "")}`;
+  const logo = LOGOS[name] ?? LOGOS[name.replace(/ 대표팀$/, "")];
+  if (logo)
+    return (
+      // 크기가 정해진 작은 정적 이미지라 next/image의 최적화가 필요 없어요.
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        className={className ? `badge logo ${className}` : "badge logo"}
+        src={logo}
+        width={size}
+        height={(size * 44) / 40}
+        alt={decorative ? "" : `${name} 로고`}
+        aria-hidden={decorative || undefined}
+        decoding="async"
+      />
+    );
   const e = emblemOf(name, kind, color);
   if (!e) return null;
   const shape = SHAPES[e.kind];

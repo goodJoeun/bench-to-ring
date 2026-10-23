@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 원본 로고 (scripts/logos.mjs가 public/logos/로 변환해요). 변환된 파일만 올려요.
+logos-src/*
+!logos-src/.gitkeep

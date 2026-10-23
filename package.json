@@ -3,14 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/logos.mjs --quiet",
     "dev": "next dev",
+    "prebuild": "node scripts/logos.mjs --quiet",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "balance": "vitest run --config vitest.balance.mts --reporter=verbose"
+    "balance": "vitest run --config vitest.balance.mts --reporter=verbose",
+    "logos": "node scripts/logos.mjs"
   },
   "dependencies": {
     "@fontsource/black-han-sans": "^5.3.0",
@@ -26,6 +29,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
+    "sharp": "^0.35.5",
     "typescript": "^5",
     "vitest": "4.1.11"
   },
