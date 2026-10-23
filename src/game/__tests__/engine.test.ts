@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   ARCHETYPES,
   ATTR_KEYS,
+  LEAGUES,
   NATIONS,
   POS_KEYS,
   RECORD_BOARDS,
@@ -496,7 +497,8 @@ describe("드래프트 진행", () => {
   it("지명되면 그 순위에 지명한 팀과 내 이름이 있고, 라운드마다 모든 팀이 한 번씩 뽑아요", () => {
     setRandom(seeded(11));
     for (const [d, size, teams] of [["nba", 60, 30], ["kbl", 20, 10]] as const) {
-      const c = prospect(d === "nba" ? 74 : 62);
+      // 지명될 만한 유망주: NBA 평균 바로 아래, KBL은 평균보다 조금 아래
+      const c = prospect(d === "nba" ? LEAGUES.nba.avg - 1 : 62);
       applyAction(c, { k: "draft", d });
       const show = c.draftShow!;
       expect(show.name).toBe(`2031 ${d === "nba" ? "NBA 드래프트" : "KBL 신인드래프트"}`);
@@ -873,7 +875,8 @@ describe("체력과 빅매치", () => {
 
   it("오래 뛸수록 경기마다 건강이 많이 닳아요", () => {
     setRandom(seeded(81));
-    const star = healthAtHalf(nba("star", 40));
+    // 후보는 오버롤 45로 시작하니, NBA 평균보다 10 높은 주전과 거의 못 뛰는 벤치 선수를 비교해요.
+    const star = healthAtHalf(nba("star", LEAGUES.nba.avg + 10 - 45));
     setRandom(seeded(81));
     const bench = healthAtHalf(nba("bench", 0));
     expect(star).toBeLessThan(bench - 8);

@@ -3,8 +3,15 @@ import { LEAGUES } from "./leagues";
 import { addNews, pickTeam } from "./log";
 import { chance, ri, rnd } from "./random";
 import { currentExpectedMinutes, expectedMinutes, ovr, ovrOf, roleOf, salaryFor } from "./ratings";
-import type { Action, Career, CurrentTeam, Decision, DecisionOption, ProLeagueKey, Team } from "./types";
+import type { Action, Career, CurrentTeam, Decision, DecisionOption, LeagueKey, ProLeagueKey, Team } from "./types";
 import { clamp, money, roundSalary } from "./util";
+
+/*
+ * 진로·계약 기준은 모두 그 리그 평균 오버롤에서 얼마나 떨어져 있는지로 정해요.
+ * 리그 평균(leagues.ts)을 바꾸면 드래프트·계약 제안·진학 기준이 같이 움직여서,
+ * 어느 리그든 들어갔을 때의 출전 시간은 비슷하고 들어가기 어려운 정도만 달라져요.
+ */
+const avg = (lg: LeagueKey) => LEAGUES[lg].avg;
 
 /* ---------- 드래프트 평가 ---------- */
 
@@ -18,10 +25,10 @@ export function kblDraftScore(c: Career, noise: number): number {
   return o + (c.p.pot - o) * 0.25 + (21 - c.age) * 0.6 + noise;
 }
 
-/** NBA 드래프트: 2라운드 전체 1~60순위, 61 이상이면 미지명 */
-export const nbaPick = (score: number): number => Math.max(1, Math.round(60 - (score - 71) * 3.6));
-/** KBL 신인드래프트: 2라운드 전체 1~20순위, 21 이상이면 미지명 */
-export const kblPick = (score: number): number => Math.max(1, Math.round(20 - (score - 54) * 1.3));
+/** NBA 드래프트: 2라운드 전체 1~60순위, 61 이상이면 미지명. 평가 점수가 NBA 평균 - 4이면 60순위예요. */
+export const nbaPick = (score: number): number => Math.max(1, Math.round(60 - (score - (avg("nba") - 4)) * 3.6));
+/** KBL 신인드래프트: 2라운드 전체 1~20순위, 21 이상이면 미지명. 평가 점수가 KBL 평균 - 11이면 20순위예요. */
+export const kblPick = (score: number): number => Math.max(1, Math.round(20 - (score - (avg("kbl") - 11)) * 1.3));
 
 /** 예상 지명 순위를 스카우트 문구로 바꿔요. tiers는 [이 순위까지, 문구] 목록이에요. */
 const projection = (pick: number, tiers: [number, string][]): string => tiers.find(([n]) => pick <= n)?.[1] ?? "지명 불확실";
@@ -56,15 +63,18 @@ export function highSchoolGraduation(c: Career): Decision {
     tag: "NCAA",
     act: { k: "school", lg: "ncaa", team: uc, walk },
   });
-  if (c.p.path === "abroad") opts.push(abroad(o < 56));
-  else if (o >= 60) opts.push({ ...abroad(false), label: `${uc.name} 스카우트 제안` });
+  // NCAA: 해외 경로는 NCAA 평균 - 5부터 장학생, 그 아래 - 7까지는 워크온이고, 더 낮으면 받아 주는 학교가 없어요.
+  // 국내 경로는 NCAA 평균 - 1은 돼야 스카우트가 찾아와요.
+  if (c.p.path === "abroad") {
+    if (o >= avg("ncaa") - 7) opts.push(abroad(o < avg("ncaa") - 5));
+  } else if (o >= avg("ncaa") - 1) opts.push({ ...abroad(false), label: `${uc.name} 스카우트 제안` });
   opts.push({
     label: `${kc.name} 진학`,
     sub: `대학농구 U-리그 · 예상 역할 ${roleOf(expectedMinutes(c, "kuniv"))}`,
     tag: "U-리그",
     act: { k: "school", lg: "kuniv", team: kc },
   });
-  if (o >= 56)
+  if (o >= avg("kbl") - 9)
     opts.push({
       label: "KBL 신인드래프트 고졸 참가",
       sub: `대학을 건너뛰고 바로 프로에 도전해요 · 스카우트 예상 ${projectKbl(c)}`,
@@ -86,7 +96,7 @@ export function collegeSeasonEnd(c: Career): Decision {
       tag: "잔류",
       act: { k: "stay" },
     });
-  if (lg === "ncaa" || o >= 68)
+  if (lg === "ncaa" || o >= avg("nba") - 7)
     opts.push({
       label: "NBA 드래프트 신청",
       sub: `세계 최고 리그 · 스카우트 예상 ${projectNba(c)}`,
@@ -128,7 +138,8 @@ function offerOption(c: Career, lg: ProLeagueKey, t: Team, years: number, sal: n
 /** 소속팀 없이 한 시즌을 보내는 선택지 */
 const skipOption = (sub: string): DecisionOption => ({ label: "무소속으로 1년 개인 훈련", sub, act: { k: "skip" } });
 
-const RESIGN_MIN: Partial<Record<string, number>> = { nba: 72, euro: 62, kbl: 53, gleague: 58 };
+/** 재계약 제안을 받는 오버롤: 리그 평균에서 이만큼 아래까지 */
+const RESIGN_BELOW: Partial<Record<LeagueKey, number>> = { nba: 3, euro: 8, kbl: 12, gleague: 9 };
 
 export function generateOffers(c: Career, current: CurrentTeam | null, rating: number): DecisionOption[] {
   const o = ovr(c.p);
@@ -142,18 +153,22 @@ export function generateOffers(c: Career, current: CurrentTeam | null, rating: n
     used.add(t.name);
     out.push(offerOption(c, lg, t, y, sal, note));
   };
-  if (current && rating >= 5.6 && LEAGUES[current.lg].pro && eff >= (RESIGN_MIN[current.lg] ?? 99)) {
+  const resign = RESIGN_BELOW[current?.lg ?? "hs"];
+  if (current && rating >= 5.6 && LEAGUES[current.lg].pro && resign !== undefined && eff >= avg(current.lg) - resign) {
     const lg = current.lg as ProLeagueKey;
     used.add(current.name);
     out.push(offerOption(c, lg, { name: current.name, color: current.color, q: current.q }, years(), salaryFor(lg, o) * 1.05, "재계약"));
   }
-  if (eff >= 75) {
-    const n = eff >= 84 ? 3 : eff >= 79 ? 2 : 1;
+  // NBA는 평균 이상이면 정식 제안(평균 +4면 두 팀, +9면 세 팀), 평균 - 3까지는 가끔 최저 연봉 제안이 와요.
+  const nba = avg("nba");
+  if (eff >= nba) {
+    const n = eff >= nba + 9 ? 3 : eff >= nba + 4 ? 2 : 1;
     for (let i = 0; i < n; i++) add("nba", years(), salaryFor("nba", o));
-  } else if (eff >= 72 && rnd(0, 1) < 0.45) add("nba", 1, 17, "최저 연봉");
-  if (eff >= 63 && out.length < 4) add("euro", years(), salaryFor("euro", o));
-  if (eff >= 53 && out.length < 4) add("kbl", years(), salaryFor("kbl", o));
-  if (age <= 27 && eff >= 58 && eff < 74 && out.length < 4 && rnd(0, 1) < 0.7) add("gleague", 1, 0.6);
+  } else if (eff >= nba - 3 && rnd(0, 1) < 0.45) add("nba", 1, 17, "최저 연봉");
+  if (eff >= avg("euro") - 7 && out.length < 4) add("euro", years(), salaryFor("euro", o));
+  if (eff >= avg("kbl") - 12 && out.length < 4) add("kbl", years(), salaryFor("kbl", o));
+  // G리그는 NBA를 노리는 젊은 선수의 길이라, NBA 정식 제안을 받을 실력이면 오지 않아요.
+  if (age <= 27 && eff >= avg("gleague") - 9 && eff < nba - 1 && out.length < 4 && rnd(0, 1) < 0.7) add("gleague", 1, 0.6);
   return out.slice(0, 4);
 }
 
@@ -189,7 +204,8 @@ export function nbaOffer(c: Career): Decision | null {
   const lg = c.team.lg;
   const o = ovr(c.p);
   const fromDev = lg === "gleague";
-  if (!(lg === "kbl" || lg === "euro" || fromDev) || o < (fromDev ? 74 : 77)) return null;
+  // G리그에서는 NBA 평균 - 1이면 콜업, KBL·유로리그에서는 평균 + 2는 돼야 바이아웃을 내고 데려가요.
+  if (!(lg === "kbl" || lg === "euro" || fromDev) || o < avg("nba") + (fromDev ? -1 : 2)) return null;
   const t = pickTeam("nba");
   const sal = fromDev ? 17 : roundSalary(salaryFor("nba", o));
   const years = fromDev ? 2 : 3;

@@ -44,11 +44,14 @@ export function ageBase(age: number): number {
   return t[age] ?? 3;
 }
 
-/** 리그별 연봉 (억 원). NBA 최저 연봉 ≈ 17억, 최고 ≈ 800억 */
+/**
+ * 리그별 연봉 (억 원). NBA 최저 연봉 ≈ 17억, 최고 ≈ 800억
+ * 리그 평균 대비 실력으로 정해서, 리그 평균을 바꿔도 그 리그 안의 연봉 수준은 그대로예요.
+ */
 const SALARY: Record<ProLeagueKey, (o: number) => number> = {
-  nba: (o) => clamp(12 * Math.pow(1.25, o - 70), 17, 800),
-  euro: (o) => clamp(2 * Math.pow(1.2, o - 64), 2, 55),
-  kbl: (o) => clamp(1 * Math.pow(1.17, o - 60), 0.7, 9),
+  nba: (o) => clamp(12 * Math.pow(1.25, o - (LEAGUES.nba.avg - 5)), 17, 800),
+  euro: (o) => clamp(2 * Math.pow(1.2, o - (LEAGUES.euro.avg - 6)), 2, 55),
+  kbl: (o) => clamp(1 * Math.pow(1.17, o - (LEAGUES.kbl.avg - 5)), 0.7, 9),
   gleague: () => 0.6,
 };
 export const salaryFor = (lg: ProLeagueKey, o: number): number => SALARY[lg](o);
