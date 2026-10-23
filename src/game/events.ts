@@ -1049,6 +1049,38 @@ export function bigGameDecision(c: Career, label: string, final: boolean): Decis
   };
 }
 
+/** 클러치 플레이: 공격 셋, 수비 둘. 각자 맡은 능력치가 높을수록 성공하기 쉬워요. */
+const CLUTCH_PLAYS: { attr: AttrKey; side: "공격" | "수비"; label: string; play: string }[] = [
+  { attr: "sht", side: "공격", label: "풀업 점퍼로 끝낸다", play: "종료 버저와 함께 풀업 점퍼" },
+  { attr: "hdl", side: "공격", label: "아이솔레이션으로 돌파한다", play: "수비 둘을 제치는 돌파 레이업" },
+  { attr: "pas", side: "공격", label: "더블팀을 끌어내 빈 동료에게 준다", play: "더블팀 사이로 찌른 결승 어시스트" },
+  { attr: "def", side: "수비", label: "상대 에이스를 끝까지 막는다", play: "상대 에이스의 마지막 슛을 막아 낸 수비" },
+  { attr: "ath", side: "수비", label: "블록슛을 노린다", play: "마지막 슛을 쳐 낸 블록슛" },
+];
+
+/**
+ * 주전 이상일 때 중요한 경기에서 마지막 플레이를 맡는 결정. 고른 플레이의 능력치가 리그 평균보다 높을수록 성공하기 쉬워요.
+ * 성공하면 그 경기를 이기고 그 능력치가 오르고, 실패하면 져요. 확률은 숫자로 보여주지 않아요.
+ */
+export function clutchDecision(c: Career, label: string, leagueAvg: number): Decision {
+  const a = c.p.attrs;
+  return {
+    title: `클러치 · ${label}`,
+    body: "동점으로 맞선 4쿼터 마지막 24초. 감독이 작전 타임에서 당신에게 마지막 플레이를 맡겼어요. 어디에 모든 걸 걸까요?",
+    opts: CLUTCH_PLAYS.map((x) => ({
+      label: x.label,
+      sub: `${SHORT[x.attr]} ${Math.round(a[x.attr])} · 성공하면 경기 승리, ${SHORT[x.attr]} +1 · 실패하면 패배`,
+      tag: x.side,
+      act: {
+        k: "clutch",
+        attr: x.attr,
+        play: x.play,
+        p: clamp(0.45 + (a[x.attr] - leagueAvg) / 40 + (c.p.trait === "승부사" ? 0.1 : 0), 0.12, 0.88),
+      },
+    })),
+  };
+}
+
 /** 같은 이벤트는 이 기간 안에 다시 나오지 않아요. */
 const COOLDOWN = 3;
 

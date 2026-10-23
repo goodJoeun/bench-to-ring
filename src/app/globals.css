@@ -504,6 +504,7 @@ main.grid:not([data-tab="season"]) .col-l{display:contents}
 .games li[data-win="true"] .gwl{color:var(--good)}
 .gopp{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gopp small{margin-left:6px;font-family:var(--f-num);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.gclutch{margin-left:6px;padding:1px 7px;border-radius:999px;font-style:normal;font-size:11px;font-weight:800;color:var(--gold);border:1px solid currentColor}
 .games .gme{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .games li:first-child{animation:fade .3s ease both}
 .rounds li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;padding:8px 12px;border-radius:8px;background:var(--panel2);font-size:13.5px}

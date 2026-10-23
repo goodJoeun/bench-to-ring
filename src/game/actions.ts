@@ -8,9 +8,8 @@ import { addNews, decisionTag, joinTeam, leaveTeam, setTeam } from "./log";
 import { applyMilitary } from "./military";
 import { runNationalTeam } from "./national";
 import { chance, shuffle } from "./random";
-import { ovr } from "./ratings";
 import type { Action, Boost, Career, ProLeagueKey, Team } from "./types";
-import { clamp, money, round2, roundSalary } from "./util";
+import { clamp, josa, money, ro, round2, roundSalary } from "./util";
 
 /** 이벤트 효과를 적용하고 소식을 남겨요. */
 function applyBoost(c: Career, b: Boost, tag: string): void {
@@ -38,7 +37,7 @@ function applyBoost(c: Career, b: Boost, tag: string): void {
     run.out += b.injure;
     run.outWhy = "부상";
   }
-  c.peakOvr = Math.max(c.peakOvr, ovr(p));
+  // 최고 오버롤은 시즌을 마칠 때만 기록해요(시즌 기록의 오버롤과 맞추려고요).
   if (msg) addNews(c, tag, b.t ?? "good", msg.trim());
 }
 
@@ -116,6 +115,25 @@ export function applyAction(c: Career, a: Action): void {
     case "gamble":
       applyBoost(c, chance(a.p) ? a.win : a.lose, tag);
       break;
+    case "clutch": {
+      // 결과는 바로 다음 경기에 반영돼요(season.ts playGame).
+      const ok = chance(a.p);
+      if (c.run) {
+        c.run.forced = ok ? "win" : "loss";
+        c.run.form = clamp(c.run.form + (ok ? 0.8 : -0.4), -2, 2);
+      }
+      // 최고 오버롤은 시즌을 마칠 때 기록해요.
+      if (ok) addAttr(p.attrs, a.attr, 1);
+      addNews(
+        c,
+        tag,
+        ok ? "good" : "info",
+        ok
+          ? `클러치 성공! ${ro(a.play)} 승리를 이끌었어요. ${SHORT[a.attr]} +1`
+          : `클러치 실패. ${josa(a.play, "을", "를")} 노렸지만 아쉽게 졌어요.`,
+      );
+      break;
+    }
     case "retire":
       retire(c);
       break;

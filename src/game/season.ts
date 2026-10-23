@@ -2,7 +2,7 @@ import { chooseOption } from "./actions";
 import { HEALTH_RANGE, addAttr, addHealth, clampTrust } from "./condition";
 import { ATTRS, POS, ROLE_RANK } from "./data";
 import { currentDecision } from "./decisions";
-import { bigGameDecision, injuryDecision, seasonEvent } from "./events";
+import { bigGameDecision, clutchDecision, injuryDecision, seasonEvent } from "./events";
 import { LEAGUES, SCORING_TITLE } from "./leagues";
 import { FINAL_SCORE, finalScore, gameScore, makeLiveGame } from "./live";
 import { addNews, giveAward, pickTeam } from "./log";
@@ -42,6 +42,9 @@ const EVENT_CHANCE = 0.5;
 const ASK_RETURN_AT = 6;
 /** 빅매치에서 출전 여부를 물을 확률 (확인 시점마다) */
 const BIG_GAME_CHANCE = 0.6;
+/** 클러치 상황이 올 확률 (확인 시점마다). 주전(예상 26분) 이상일 때만 와요. */
+const CLUTCH_CHANCE = 0.6;
+const STARTER_MIN = 26;
 /** 결장하는 경기마다 돌아오는 건강 */
 const REST_HEAL = 0.8;
 /** 경기를 뛴 날 사이사이 돌아오는 건강 */
@@ -149,6 +152,8 @@ export function startSeason(c: Career): void {
     checks: [],
     bigs: [],
     clutch: false,
+    shots: [],
+    forced: null,
     back,
     tot: { gp: 0, min: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, rating: 0 },
     log: [],
@@ -222,6 +227,8 @@ function planTeamSeason(c: Career, run: SeasonRun): void {
   run.checks = [Math.round(L.games * rnd(0.25, 0.4)), Math.round(L.games * rnd(0.6, 0.8))];
   // 빅매치는 시즌 중반과 막판 순위 싸움에 한 번씩 올 수 있어요.
   run.bigs = [Math.round(L.games * rnd(0.42, 0.55)), Math.round(L.games * rnd(0.85, 0.95))];
+  // 클러치 상황은 시즌 초중반과 중후반에 한 번씩 올 수 있어요.
+  run.shots = [Math.round(L.games * rnd(0.3, 0.5)), Math.round(L.games * rnd(0.65, 0.8))];
 }
 
 /** 한 칸 진행한 결과. final이면 결승 중계를, done이면 시즌 결산을 보여줄 차례예요. */
@@ -281,12 +288,21 @@ function playGame(c: Career, run: SeasonRun, tag: string): void {
   const team = c.team!;
   const lg = team.lg;
   if (run.out === 0 && chance(injuryRisk(c, run.min, run.inv) / run.games)) startInjury(c, run, tag);
-  const win = random() < (run.wins - run.w) / (run.games - run.g);
+  let win = random() < (run.wins - run.w) / (run.games - run.g);
+  // 클러치 결과로 정해진 경기: 정해 둔 시즌 승수를 하나 옮겨서라도 결과를 맞춰요.
+  const forced = run.forced;
+  run.forced = null;
+  if (forced) {
+    if (forced === "win" && !win && run.wins - run.w <= 0) run.wins++;
+    if (forced === "loss" && win && run.games - run.g - (run.wins - run.w) <= 0) run.wins--;
+    win = forced === "win";
+  }
   const n = ++run.g;
   if (win) run.w++;
   else run.l++;
   const [us, them] = gameScore(FINAL_SCORE[lg], win);
   const line: GameLine = { n, opp: pickTeam(lg, new Set([team.name])).name, us, them, win };
+  if (forced) line.clutch = forced;
   if (run.out > 0) {
     line.out = run.outWhy;
     addHealth(c, REST_HEAL);
@@ -303,6 +319,9 @@ function playGame(c: Career, run: SeasonRun, tag: string): void {
   // 빅매치: 다음 경기에 몸을 던질지 고르게 해요. 로테이션 이상이고 뛸 수 있을 때만이에요.
   else if (run.bigs.includes(n) && run.out === 0 && run.min >= 10 && n < run.games && chance(BIG_GAME_CHANCE))
     c.queue.push(bigGameDecision(c, pick(BIG_GAMES), false));
+  // 클러치: 주전 이상이 다음 경기의 마지막 플레이를 맡아요.
+  else if (run.shots.includes(n) && run.out === 0 && run.min >= STARTER_MIN && n < run.games && chance(CLUTCH_CHANCE))
+    c.queue.push(clutchDecision(c, pick(BIG_GAMES), LEAGUES[lg].avg));
 }
 
 /**

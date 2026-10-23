@@ -135,6 +135,8 @@ function normalize(c: Career): Career {
     c.run.bigs ??= [];
     c.run.clutch ??= false;
     c.run.spec ??= [];
+    c.run.shots ??= [];
+    c.run.forced ??= null;
     c.run.bonus ??= 0;
   }
   c.owned ??= [];

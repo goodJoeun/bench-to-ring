@@ -163,6 +163,8 @@ export interface GameLine {
   me?: { min: number; pts: number; reb: number; ast: number; rating: number };
   /** 결장 사유: 부상, 휴식, 합류 전 */
   out?: string;
+  /** 클러치 상황에서 내가 마지막 플레이를 맡은 경기 */
+  clutch?: "win" | "loss";
 }
 
 /** 플레이오프(전국대회) 한 라운드 */
@@ -232,6 +234,10 @@ export interface SeasonRun {
   bigs: number[];
   /** 결승 전에 출전 여부를 이미 물었는지 */
   clutch: boolean;
+  /** 클러치 상황을 확인할 경기 번호 (주전 이상일 때만) */
+  shots: number[];
+  /** 클러치 결과로 정해진 다음 경기 결과 */
+  forced: "win" | "loss" | null;
   /** 전역 후 합류하는 시즌 */
   back: boolean;
   tot: SeasonTotals;
@@ -347,6 +353,8 @@ export type Action =
   | ({ k: "boost" } & Boost)
   /** 확률 p로 win, 아니면 lose 효과가 나요. */
   | { k: "gamble"; p: number; win: Boost; lose: Boost }
+  /** 클러치: 확률 p로 성공하면 다음 경기를 이기고 attr이 올라요. 실패하면 져요. play는 소식에 쓰는 플레이 이름 */
+  | { k: "clutch"; attr: AttrKey; p: number; play: string }
   | { k: "retire" }
   /** 국가대표 대회 합류(join) 또는 불참 */
   | { k: "national"; ev: NatEventKey; year: number; join: boolean }

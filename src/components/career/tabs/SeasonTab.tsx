@@ -209,6 +209,7 @@ function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
                 <small>
                   {g.us}-{g.them}
                 </small>
+                {g.clutch && <em className="gclutch">클러치</em>}
               </span>
               <span className="gme">{g.me ? `${g.me.pts}점 ${g.me.reb}리바 ${g.me.ast}어시 · ${g.me.rating}` : `결장 · ${g.out}`}</span>
             </li>

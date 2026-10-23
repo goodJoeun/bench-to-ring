@@ -57,7 +57,7 @@ import {
   type Career,
   type CareerSummary,
 } from "@/game";
-import { bigGameDecision, injuryDecision, lifeEvent } from "@/game/events";
+import { bigGameDecision, clutchDecision, injuryDecision, lifeEvent } from "@/game/events";
 import { makeLiveGame } from "@/game/live";
 import { militaryDecision } from "@/game/military";
 import { nationalCallUp, runNationalTeam } from "@/game/national";
@@ -1271,5 +1271,78 @@ describe("부상 정도", () => {
     const lightShare = (h: number) => rs.filter((r) => injuryKind(h, r).name === "가벼운 부상").length / rs.length;
     expect(lightShare(90)).toBeGreaterThan(lightShare(40));
     expect(lightShare(40)).toBeGreaterThan(lightShare(20));
+  });
+});
+
+describe("클러치", () => {
+  /** KBL 팀 선수: 리그 평균 대비 rel만큼 높은 능력치 */
+  function kblPlayer(id: string, rel: number): Career {
+    const c = createCareer({ name: "클러치", num: 3, pos: "SG", path: "domestic" }, generateCandidates("SG")[0], id);
+    for (const k of ATTR_KEYS) c.p.attrs[k] = LEAGUES.kbl.avg + rel;
+    c.p.pot = 99;
+    c.age = 25;
+    c.mil = { s: "exempt" };
+    c.stage = "pro";
+    c.team = { name: "서울 SK 나이츠", color: "#D7141A", q: 0.5, lg: "kbl" };
+    c.contract = { years: 5, salary: 3 };
+    return c;
+  }
+
+  it("공격 셋·수비 둘 중에서 고르고, 그 능력치가 높을수록 성공하기 쉬워요", () => {
+    const c = kblPlayer("opts", 0);
+    c.p.attrs.sht = LEAGUES.kbl.avg + 15;
+    const d = clutchDecision(c, "라이벌전", LEAGUES.kbl.avg);
+    expect(d.opts.map((o) => o.tag)).toEqual(["공격", "공격", "공격", "수비", "수비"]);
+    const p = (attr: string) => d.opts.map((o) => o.act).find((a) => a.k === "clutch" && a.attr === attr)!;
+    const sht = p("sht");
+    const hdl = p("hdl");
+    if (sht.k !== "clutch" || hdl.k !== "clutch") throw new Error("클러치 선택지가 아니에요");
+    expect(sht.p).toBeGreaterThan(hdl.p);
+  });
+
+  it("성공하면 다음 경기를 이기고 고른 능력치가 오르고, 실패하면 다음 경기를 져요", () => {
+    setRandom(seeded(111));
+    const c = kblPlayer("win", 8);
+    startSeason(c);
+    stepSeason(c);
+    const act = clutchDecision(c, "라이벌전", LEAGUES.kbl.avg).opts[0].act;
+    const before = c.p.attrs.sht;
+    setRandom(() => 0);
+    applyAction(c, act);
+    expect(c.p.attrs.sht).toBe(before + 1);
+    setRandom(seeded(112));
+    const w = c.run!.w;
+    stepSeason(c);
+    expect(c.run!.w).toBe(w + 1);
+    expect(c.run!.log[0].clutch).toBe("win");
+
+    setRandom(() => 0.999);
+    applyAction(c, act);
+    setRandom(seeded(113));
+    const l = c.run!.l;
+    stepSeason(c);
+    expect(c.run!.l).toBe(l + 1);
+    expect(c.run!.log[0].clutch).toBe("loss");
+  });
+
+  it("클러치 상황은 주전 이상에게만 와요", () => {
+    const count = (rel: number, seed: number) => {
+      setRandom(seeded(seed));
+      let n = 0;
+      for (let i = 0; i < 25; i++) {
+        const c = kblPlayer(`s${seed}-${i}`, rel);
+        startSeason(c);
+        while (c.run) {
+          const d = currentDecision(c);
+          if (d) {
+            if (d.title.startsWith("클러치")) n++;
+            chooseOption(c, 0);
+          } else stepSeason(c);
+        }
+      }
+      return n;
+    };
+    expect(count(8, 120)).toBeGreaterThan(5);
+    expect(count(-12, 121)).toBe(0);
   });
 });
