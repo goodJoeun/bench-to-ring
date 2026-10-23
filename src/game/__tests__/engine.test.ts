@@ -39,6 +39,8 @@ import {
   requestTransfer,
   canRequestTransfer,
   careerJourney,
+  CRITICAL_HEALTH,
+  injuryKind,
   evalOvrOf,
   specialtiesOf,
   specialtyBonus,
@@ -1178,5 +1180,27 @@ describe("NCAA 벤치 성장", () => {
       kbl += ovrOf(b.p.attrs, b.p.pos) - before2;
     }
     expect(ncaa).toBeGreaterThan(kbl * 1.3);
+  });
+});
+
+describe("부상 정도", () => {
+  const rs = Array.from({ length: 101 }, (_, i) => i / 100.0001);
+
+  it("시즌 아웃급 부상은 건강이 아주 낮을 때만 나오고, 건강할수록 짧게 빠져요", () => {
+    for (const h of [CRITICAL_HEALTH, 45, 60, 100])
+      for (const r of rs) {
+        const k = injuryKind(h, r);
+        expect(k.severe).toBe(false);
+        expect(k.frac[1]).toBeLessThanOrEqual(h >= 50 ? 0.22 : 0.3);
+      }
+    const low = rs.map((r) => injuryKind(CRITICAL_HEALTH - 1, r));
+    expect(low.some((k) => k.severe)).toBe(true);
+    expect(low.filter((k) => k.severe).every((k) => k.frac[0] >= 0.5)).toBe(true);
+  });
+
+  it("건강이 낮을수록 가벼운 부상의 비율이 줄어요", () => {
+    const lightShare = (h: number) => rs.filter((r) => injuryKind(h, r).name === "가벼운 부상").length / rs.length;
+    expect(lightShare(90)).toBeGreaterThan(lightShare(40));
+    expect(lightShare(40)).toBeGreaterThan(lightShare(20));
   });
 });

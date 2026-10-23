@@ -18,13 +18,13 @@ export {
   START_CAP,
   SPIKE_CAP,
 } from "./create";
-export { simulateSeason, startSeason, stepSeason, seasonProgress, type SeasonStep } from "./season";
+export { CRITICAL_HEALTH, injuryKind, simulateSeason, startSeason, stepSeason, seasonProgress, type SeasonStep } from "./season";
 export { draftSlot } from "./draft";
 export { NATIONS, NAT_EVENTS, natColor, natEventFor, simulateTournament, teamPower } from "./national";
 export { ARMY, ENLIST_DEADLINE, SANGMU, militaryDecision, militaryUnit, owesService } from "./military";
 export { chooseOption, applyAction } from "./actions";
 export { INVESTMENTS, INVEST_SLOTS, STUDENT_ALLOWANCE, canInvest, investCost, type Investment } from "./invest";
-export { buyoutCost, canRequestTransfer, currentDecision, leverage, requestTransfer, resolveQueue } from "./decisions";
+export { buyoutCost, canRequestTransfer, currentDecision, leverage, negotiable, requestTransfer, resolveQueue } from "./decisions";
 export { DONATIONS, SHOP, buy, canBuy, canDonate, donate, owns, shopItem, type ShopItem } from "./shop";
 export {
   careerJourney,
@@ -63,7 +63,7 @@ export {
   potentialRange,
   stageLabel,
 } from "./ratings";
-export { fmtNum, money, r1, ro, stripYear } from "./util";
+export { fmtNum, josa, money, r1, ro, stripYear } from "./util";
 export {
   BONUS_CAP,
   PAIR_FLOOR,

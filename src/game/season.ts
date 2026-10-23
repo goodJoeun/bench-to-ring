@@ -80,6 +80,21 @@ function injuryRisk(c: Career, min: number, inv: InvestKey[]): number {
   return Math.max(0.02, risk * (inv.includes("rehab") ? 0.8 : 1) * gear);
 }
 
+/** 건강이 이보다 낮으면 큰 부상이 길어지고, CRITICAL_HEALTH 아래에서만 시즌 아웃급 부상이 나와요. */
+const LOW_HEALTH = 50;
+export const CRITICAL_HEALTH = 30;
+
+/**
+ * 다쳤을 때 얼마나 심한지: 이름, 결장하는 시즌 비율의 범위, 시즌 아웃급인지. r은 0~1 난수예요.
+ * 건강할수록 가벼운 부상이 많고, 시즌 절반 넘게 빠지는 부상은 건강이 아주 낮을 때만 생겨요.
+ */
+export function injuryKind(health: number, r: number): { name: string; frac: [number, number]; severe: boolean } {
+  const light = health < CRITICAL_HEALTH ? 0.45 : health < LOW_HEALTH ? 0.6 : 0.8;
+  if (r < light) return { name: "가벼운 부상", frac: [0.03, 0.1], severe: false };
+  if (health < CRITICAL_HEALTH && r >= 0.75) return { name: "시즌 아웃급 부상", frac: [0.5, 0.85], severe: true };
+  return { name: "큰 부상", frac: [0.12, health < LOW_HEALTH ? 0.3 : 0.22], severe: false };
+}
+
 /** 건강이 60 아래로 떨어지면 경기력이 떨어져요 (0~1, 건강 15면 0.6) */
 const wornOut = (health: number) => Math.max(0, (60 - health) / 75);
 
@@ -316,12 +331,10 @@ function playMinutes(c: Career, run: SeasonRun): NonNullable<GameLine["me"]> {
   return { min: Math.round(m), pts, reb, ast, rating };
 }
 
-/** 이번 경기 직전에 다쳐요. 심할수록 오래 빠지고, 시즌 아웃급이면 운동능력도 떨어져요. */
+/** 이번 경기 직전에 다쳐요. 그때 건강이 낮을수록 심하고, 시즌 아웃급이면 운동능력도 떨어져요. */
 function startInjury(c: Career, run: SeasonRun, tag: string): void {
-  const r = random();
-  const [name, frac] =
-    r < 0.6 ? ["가벼운 부상", rnd(0.05, 0.15)] : r < 0.9 ? ["큰 부상", rnd(0.2, 0.4)] : ["시즌 아웃급 부상", rnd(0.5, 0.85)];
-  const severe = r >= 0.9;
+  const { name, frac: range, severe } = injuryKind(c.health, random());
+  const frac = rnd(...range);
   const out = Math.max(1, Math.round(run.games * frac * (owns(c, "recovery") ? 0.85 : 1)));
   run.out = out;
   run.outWhy = "부상";

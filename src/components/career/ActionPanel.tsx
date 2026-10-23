@@ -5,12 +5,17 @@ import {
   FOCUS,
   currentDecision,
   currentExpectedMinutes,
+  josa,
+  money,
+  negotiable,
   ro,
   roleOf,
   seasonProgress,
   stageLabel,
   type Action,
   type Career,
+  type Decision,
+  type DecisionOption,
   type FocusKey,
   type SeasonRun,
 } from "@/game";
@@ -25,6 +30,80 @@ import { Choice } from "@/components/common/ui";
 function optionBadge(a: Action): React.ReactNode {
   if ((a.k === "sign" && !a.deal) || a.k === "school") return <TeamBadge name={a.team.name} kind={a.lg} color={a.team.color} size={30} />;
   return undefined;
+}
+
+/** 되묻는 문구: 제목, 설명, 확인 버튼 */
+interface Confirm {
+  title: string;
+  desc: string;
+  yes: string;
+}
+
+/**
+ * 되돌리기 어려운 선택(팀 고르기, 위약금 해지)은 한 번 더 물어요.
+ * 같은 팀이면 재계약, 다른 팀이면 이적, 소속팀이 없으면 입단으로 물어요.
+ */
+function confirmOf(c: Career, o: DecisionOption): Confirm | null {
+  const a = o.act;
+  if (a.k === "buyout")
+    return {
+      title: `정말 위약금 ${money(a.cost)}을 내고 계약을 해지할까요?`,
+      desc: `${josa(c.team?.name ?? "지금 팀", "을", "를")} 떠나 FA 시장에 나가요. 위약금은 돌려받을 수 없어요.`,
+      yes: "네, 해지할게요",
+    };
+  if (a.k !== "sign" || a.deal) return null;
+  const name = a.team.name;
+  const same = c.team?.name === name;
+  const nego = negotiable(a) ? " 고르면 연봉 협상을 거쳐 계약해요." : " 협상 없이 이 조건으로 바로 계약해요.";
+  const desc = `${o.sub ?? ""}.${nego}`;
+  if (same) return { title: `정말 ${josa(name, "과", "와")} 재계약할까요?`, desc, yes: "네, 재계약할게요" };
+  if (c.team) return { title: `정말 ${ro(name)} 이적할까요?`, desc: `${josa(c.team.name, "을", "를")} 떠나요. ${desc}`, yes: "네, 이적할게요" };
+  return { title: `정말 ${name}에 입단할까요?`, desc, yes: "네, 입단할게요" };
+}
+
+/** 결정 시트. 되묻는 선택지는 고르면 같은 시트 안에서 확인 화면으로 바뀌어요. */
+function DecisionSheet({ career: c, decision, kind, remaining, onHide }: { career: Career; decision: Decision; kind: string; remaining: number; onHide: () => void }) {
+  const [asking, setAsking] = useState<number | null>(null);
+  const confirm = asking !== null ? confirmOf(c, decision.opts[asking]) : null;
+  if (asking !== null && confirm)
+    return (
+      <Sheet labelledBy="confirm-title" onClose={() => setAsking(null)}>
+        <span className="sheet-kicker">{decision.title}</span>
+        <h2 id="confirm-title">{confirm.title}</h2>
+        <p className="sheet-desc">{confirm.desc}</p>
+        <button type="button" className="sheet-go" onClick={() => gameActions.choose(asking)}>
+          {confirm.yes}
+        </button>
+        <button type="button" className="sheet-later" onClick={() => setAsking(null)}>
+          다시 고를게요
+        </button>
+      </Sheet>
+    );
+  return (
+    <Sheet labelledBy="decision-title">
+      <span className="sheet-kicker">
+        {kind}
+        {remaining > 1 && ` · 남은 결정 ${remaining}개`}
+      </span>
+      <h2 id="decision-title">{decision.title}</h2>
+      <p className="sheet-desc">{decision.body}</p>
+      <div className="choices">
+        {decision.opts.map((o, i) => (
+          <Choice
+            key={`${o.label}-${i}`}
+            label={o.label}
+            tag={o.tag}
+            sub={o.sub}
+            icon={optionBadge(o.act)}
+            onClick={() => (confirmOf(c, o) ? setAsking(i) : gameActions.choose(i))}
+          />
+        ))}
+      </div>
+      <button type="button" className="sheet-later" onClick={onHide}>
+        잠시 닫고 둘러보기
+      </button>
+    </Sheet>
+  );
 }
 
 function focusHint(k: FocusKey): string {
@@ -94,29 +173,14 @@ export function ActionPanel({ career: c, playing, speed, busy, onAdvance }: Acti
           </span>
         </button>
         {decisionOpen && (
-          <Sheet key={decisionKey} labelledBy="decision-title">
-            <span className="sheet-kicker">
-              {kind}
-              {remaining > 1 && ` · 남은 결정 ${remaining}개`}
-            </span>
-            <h2 id="decision-title">{decision.title}</h2>
-            <p className="sheet-desc">{decision.body}</p>
-            <div className="choices">
-              {decision.opts.map((o, i) => (
-                <Choice
-                  key={`${o.label}-${i}`}
-                  label={o.label}
-                  tag={o.tag}
-                  sub={o.sub}
-                  icon={optionBadge(o.act)}
-                  onClick={() => gameActions.choose(i)}
-                />
-              ))}
-            </div>
-            <button type="button" className="sheet-later" onClick={() => setHiddenKey(decisionKey)}>
-              잠시 닫고 둘러보기
-            </button>
-          </Sheet>
+          <DecisionSheet
+            key={decisionKey}
+            career={c}
+            decision={decision}
+            kind={kind}
+            remaining={remaining}
+            onHide={() => setHiddenKey(decisionKey)}
+          />
         )}
       </>
     );
