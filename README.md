@@ -146,7 +146,7 @@ src/
 
 ## 확장 아이디어
 
-- 공유 랭킹: Route Handler와 데이터베이스를 붙여 은퇴 기록을 서버에 모으기
+- 온라인 기록과 리더보드: Next.js Route Handler + Postgres로 은퇴 기록을 서버에 모아 전체·포지션별 순위와 역대 Best 5 보여주기. 계획은 [docs/online-leaderboard.md](docs/online-leaderboard.md)
 - 계정과 클라우드 저장
 - 시즌 중 주요 경기 하이라이트, 라이벌 선수
 - PWA로 오프라인 플레이
