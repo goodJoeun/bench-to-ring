@@ -1,5 +1,6 @@
 import { ATTRS, POS } from "./data";
 import { LEAGUES } from "./leagues";
+import { specialtyBonus } from "./specialty";
 import type { AttrKey, Attrs, Career, LeagueKey, Player, PosKey, ProLeagueKey, Role } from "./types";
 import { clamp } from "./util";
 
@@ -12,6 +13,13 @@ export function ovrOf(a: Attrs, pos: PosKey): number {
 }
 
 export const ovr = (p: Player): number => Math.round(ovrOf(p.attrs, p.pos));
+
+/**
+ * 평가 오버롤: 오버롤에 특화 보너스(specialty.ts)를 더한 값. 출전 시간·계약 제안·드래프트·연봉·시상처럼
+ * 구단과 리그가 선수를 평가하는 곳에 써요. 화면과 기록에는 오버롤을 그대로 보여줘요.
+ */
+export const evalOvrOf = (a: Attrs, pos: PosKey): number => ovrOf(a, pos) + specialtyBonus(a);
+export const evalOvr = (p: Player): number => Math.round(evalOvrOf(p.attrs, p.pos));
 
 /** 포지션 핵심 능력치: 오버롤 가중치가 큰 능력치 (화면에 ● 표시) */
 export const isCoreAttr = (pos: PosKey, k: AttrKey): boolean => POS[pos].w[k] >= 0.18;
@@ -27,7 +35,7 @@ export function roleOf(min: number): Role {
 
 /** 해당 리그에서 예상되는 경기당 출전 시간(분) */
 export function expectedMinutes(c: Career, lg: LeagueKey, extra = 0): number {
-  return clamp(18 + (ovrOf(c.p.attrs, c.p.pos) - LEAGUES[lg].avg + extra) * 1.7, 1.5, 38);
+  return clamp(18 + (evalOvrOf(c.p.attrs, c.p.pos) - LEAGUES[lg].avg + extra) * 1.7, 1.5, 38);
 }
 
 export function currentExpectedMinutes(c: Career): number {

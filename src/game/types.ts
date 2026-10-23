@@ -204,6 +204,9 @@ export interface SeasonRun {
   step: number;
   /** 시즌을 시작할 때의 오버롤(반올림 전) */
   ovr0: number;
+  /** 시즌을 시작할 때 인정된 특화(키)와 평가 오버롤 보너스 */
+  spec: string[];
+  bonus: number;
   /** 이번 시즌에 비용을 내고 한 투자 */
   inv: InvestKey[];
   /** 정규시즌 경기 수와 치른 경기 수 */

@@ -54,6 +54,8 @@ export {
 export {
   ovr,
   ovrOf,
+  evalOvr,
+  evalOvrOf,
   isCoreAttr,
   roleOf,
   expectedMinutes,
@@ -62,4 +64,18 @@ export {
   stageLabel,
 } from "./ratings";
 export { fmtNum, money, r1, ro, stripYear } from "./util";
+export {
+  BONUS_CAP,
+  PAIR_FLOOR,
+  PAIR_GAP,
+  SMART_FLOOR,
+  SMART_GAP,
+  SPECIALTIES,
+  specialtiesOf,
+  specialtyBonus,
+  specialtyRule,
+  type Specialty,
+  type SpecialtyHit,
+  type SpecialtyKey,
+} from "./specialty";
 export { setRandom, resetRandom, seeded } from "./random";

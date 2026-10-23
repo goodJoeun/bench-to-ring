@@ -133,6 +133,8 @@ function normalize(c: Career): Career {
   if (c.run) {
     c.run.bigs ??= [];
     c.run.clutch ??= false;
+    c.run.spec ??= [];
+    c.run.bonus ??= 0;
   }
   c.owned ??= [];
   c.donated ??= 0;

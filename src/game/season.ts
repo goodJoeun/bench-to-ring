@@ -12,6 +12,7 @@ import { nationalCallUp } from "./national";
 import { runOffseason } from "./offseason";
 import { chance, pick, random, ri, rnd } from "./random";
 import { owns } from "./shop";
+import { BONUS_CAP, SPECIALTIES, combinedEffect, specialtiesOf } from "./specialty";
 import { ageBase, ovr, ovrOf, roleOf } from "./ratings";
 import type { AttrKey, Career, GameLine, InvestKey, LeagueKey, SeasonRecord, SeasonRun } from "./types";
 import { clamp, r1, sigmoid } from "./util";
@@ -110,6 +111,8 @@ export function startSeason(c: Career): void {
     plan: [],
     step: 0,
     ovr0: ovrOf(c.p.attrs, c.p.pos),
+    spec: [],
+    bonus: 0,
     inv: [...inv],
     games: 0,
     g: 0,
@@ -151,7 +154,12 @@ function planTeamSeason(c: Career, run: SeasonRun): void {
   const p = c.p;
   const team = c.team!;
   const L = LEAGUES[team.lg];
-  const ovr0 = run.ovr0;
+  // 특화: 평가 오버롤에 보너스를 더하고, 특화마다 기록에 작은 효과가 나요.
+  const hits = specialtiesOf(p.attrs);
+  const fx = combinedEffect(hits);
+  run.spec = hits.map((h) => h.spec.key);
+  run.bonus = Math.min(BONUS_CAP, hits.reduce((t, h) => t + h.bonus, 0));
+  const ovr0 = run.ovr0 + run.bonus;
   const posMid = (POS[p.pos].h[0] + POS[p.pos].h[1]) / 2;
   const heightEdge = clamp((p.h + p.wsd * 0.4 - posMid) / 5, -2, 2);
   const rel = ovr0 - L.avg + c.trust + heightEdge;
@@ -171,20 +179,20 @@ function planTeamSeason(c: Career, run: SeasonRun): void {
   const vr = p.trait === "꾸준함" ? 0.05 : 0.1;
   const st = (v: number) => Math.max(0, v * f * rnd(1 - vr, 1 + vr));
   run.mean = {
-    pts: st(2 + 0.38 * (e.sht - 25) + 0.16 * (e.ath - 25) + 0.1 * (e.hdl - 25)),
+    pts: st(2 + 0.38 * (e.sht - 25) + 0.16 * (e.ath - 25) + 0.1 * (e.hdl - 25)) * fx.pts,
     // 리바운드는 따로 능력치가 없어요. 키·윙스팬이 가장 크고, 운동능력·수비(박스아웃)·BQ(자리 잡기)가 더해요.
-    reb: st(1 + 0.3 * hd + 0.1 * wsd + 0.08 * (e.ath - 25) + 0.07 * (e.def - 25) + 0.04 * (e.iq - 25)),
-    ast: st(0.5 + 0.2 * (e.pas - 25) + 0.04 * (e.hdl - 25) + 0.06 * (e.iq - 25)),
-    stl: st(0.4 + 0.035 * (e.def - 25) + 0.02 * (e.ath - 25) + 0.02 * wsd),
-    blk: st(0.1 + 0.03 * (e.def - 25) + 0.05 * Math.max(0, hd + wsd * 0.5)),
+    reb: st(1 + 0.3 * hd + 0.1 * wsd + 0.08 * (e.ath - 25) + 0.07 * (e.def - 25) + 0.04 * (e.iq - 25)) * fx.reb,
+    ast: st(0.5 + 0.2 * (e.pas - 25) + 0.04 * (e.hdl - 25) + 0.06 * (e.iq - 25)) * fx.ast,
+    stl: st(0.4 + 0.035 * (e.def - 25) + 0.02 * (e.ath - 25) + 0.02 * wsd) * fx.stl,
+    blk: st(0.1 + 0.03 * (e.def - 25) + 0.05 * Math.max(0, hd + wsd * 0.5)) * fx.blk,
   };
-  run.fg = r1(clamp(0.4 + 0.003 * (e.sht - 50) + 0.004 * Math.max(0, hd) + rnd(-0.02, 0.02), 0.33, 0.64) * 100);
-  run.rating = clamp(6.2 + (ovr0 - L.avg) / 4.5 + rnd(-0.7, 0.7) + (min < 8 ? -0.4 : 0), 3.5, 9.9);
+  run.fg = r1(clamp(0.4 + 0.003 * (e.sht - 50) + 0.004 * Math.max(0, hd) + rnd(-0.02, 0.02), 0.33, 0.64) * 100 + fx.fg);
+  run.rating = clamp(6.2 + (ovr0 - L.avg) / 4.5 + fx.rating + rnd(-0.7, 0.7) + (min < 8 ? -0.4 : 0), 3.5, 9.9);
   run.min = min;
 
   // 팀 성적: 승수를 먼저 정하고, 경기마다 남은 승수를 나눠 줘요.
   team.q = clamp(team.q + rnd(-0.06, 0.06), 0.2, 0.8);
-  const contrib = (ovr0 - L.avg) * 0.011 * clamp(min / 30, 0, 1.2) * (gp / L.games);
+  const contrib = (ovr0 - L.avg) * 0.011 * clamp(min / 30, 0, 1.2) * (gp / L.games) * (ovr0 > L.avg ? fx.team : 1);
   run.games = L.games;
   run.wins = Math.round(L.games * clamp(team.q + contrib + rnd(-0.06, 0.06), 0.1, 0.9));
   // 시즌 중 결정은 정규시즌 초중반과 후반에 한 번씩 생길 수 있어요.
@@ -428,7 +436,12 @@ function finishSeason(c: Career): SeasonRecord {
   }
 
   c.run = null;
+  const specBefore = specialtiesOf(p.attrs).map((h) => h.spec.name);
   if (growNormally) grow(c, min, rating, tag, inv);
+  for (const h of specialtiesOf(p.attrs))
+    if (!specBefore.includes(h.spec.name)) addNews(c, tag, "big", `특화 획득 · ${h.spec.name}! ${h.spec.desc} (평가 +${h.bonus})`);
+  for (const name of specBefore)
+    if (!specialtiesOf(p.attrs).some((h) => h.spec.name === name)) addNews(c, tag, "info", `특화 '${name}'의 조건에서 벗어났어요.`);
   if (inv.size) rec.invest = [...inv];
   rec.ovr1 = ovr(p);
   // 시즌이 끝난 여름의 국가대표 대회. 성장까지 반영한 오버롤로 발탁해요.
@@ -451,8 +464,10 @@ function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord 
   const team = c.team!;
   const lg = team.lg;
   const L = LEAGUES[lg];
-  const ovr0 = run.ovr0;
-  const ov0 = Math.round(ovr0);
+  // 시상은 특화까지 반영한 평가 오버롤로, 기록에 남는 오버롤은 그대로예요.
+  const ovr0 = run.ovr0 + run.bonus;
+  const ov0 = Math.round(run.ovr0);
+  const fx = combinedEffect(SPECIALTIES.filter((s) => run.spec.includes(s.key)).map((spec) => ({ spec, bonus: 0 })));
   const t = run.tot;
   const gp = t.gp;
   const avg = (v: number) => (gp ? r1(v / gp) : 0);
@@ -480,7 +495,7 @@ function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord 
       giveAward(c, "allleague", lg === "nba" ? "올-NBA 퍼스트팀" : `${sh} 베스트5`, rec);
     if (L.pro && c.proSeasons === 0 && impact >= 0 && chance(sigmoid((impact - 2.5) / 1.5)))
       giveAward(c, "roy", lg === "nba" ? "NBA 올해의 신인" : `${sh} 신인왕`, rec);
-    if (p.attrs.def - L.avg >= 13 && min >= 24 && chance(0.45)) giveAward(c, "dpoy", `${sh} 올해의 수비수`, rec);
+    if (p.attrs.def - L.avg >= 13 - fx.dpoy && min >= 24 && chance(0.45)) giveAward(c, "dpoy", `${sh} 올해의 수비수`, rec);
     if (rec.pts >= SCORING_TITLE[lg] && chance(0.6)) giveAward(c, "scoring", `${sh} 득점왕`, rec);
     if (L.pro && min >= 18 && min < 26 && impact >= 3 && chance(0.4)) giveAward(c, "sixth", `${sh} 식스맨상`, rec);
   }

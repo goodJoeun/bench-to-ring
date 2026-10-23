@@ -1,5 +1,64 @@
-import { ATTRS, POS, isCoreAttr, money, type Career } from "@/game";
+import {
+  ATTRS,
+  PAIR_FLOOR,
+  PAIR_GAP,
+  POS,
+  SPECIALTIES,
+  evalOvr,
+  isCoreAttr,
+  money,
+  ovr,
+  specialtiesOf,
+  specialtyRule,
+  type Career,
+} from "@/game";
 import { Radar } from "./Radar";
+
+/** 지금 인정된 특화와 평가 오버롤 보너스, 그리고 특화 11가지의 조건 */
+function Specialties({ career: c }: { career: Career }) {
+  const hits = specialtiesOf(c.p.attrs);
+  const base = ovr(c.p);
+  const evaluated = evalOvr(c.p);
+  const on = new Set(hits.map((h) => h.spec.key));
+  return (
+    <div className="spec">
+      <div className="spec-head">
+        <span className="label">특화</span>
+        {evaluated > base && (
+          <span className="spec-eval">
+            평가 오버롤 {base} → <b>{evaluated}</b>
+          </span>
+        )}
+      </div>
+      {hits.length ? (
+        <div className="spec-chips">
+          {hits.map((h) => (
+            <span className="spec-chip" key={h.spec.key} title={h.spec.desc}>
+              <b>{h.spec.name}</b> +{h.bonus}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="hint">
+          아직 특화가 없어요. 두 능력치를 함께 {PAIR_FLOOR} 이상, 나머지 평균보다 {PAIR_GAP} 높게 키우면 특화가 생겨 구단 평가가
+          올라가요.
+        </p>
+      )}
+      <details className="spec-all">
+        <summary>특화 {SPECIALTIES.length}가지 조건 보기</summary>
+        <ul>
+          {SPECIALTIES.map((s) => (
+            <li key={s.key} data-on={on.has(s.key) || undefined}>
+              <b>{s.name}</b>
+              <span>{specialtyRule(s)}</span>
+              <small>{s.desc}</small>
+            </li>
+          ))}
+        </ul>
+      </details>
+    </div>
+  );
+}
 
 export function AttributesPanel({ career: c }: { career: Career }) {
   const p = c.p;
@@ -37,6 +96,7 @@ export function AttributesPanel({ career: c }: { career: Career }) {
           })}
         </div>
       </div>
+      <Specialties career={c} />
       <div className="phys">
         <span>
           키 <b>{p.h}cm</b>

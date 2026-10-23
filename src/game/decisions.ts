@@ -2,7 +2,7 @@ import { clampTrust } from "./condition";
 import { LEAGUES } from "./leagues";
 import { addNews, pickTeam } from "./log";
 import { chance, ri, rnd } from "./random";
-import { currentExpectedMinutes, expectedMinutes, ovr, ovrOf, roleOf, salaryFor } from "./ratings";
+import { currentExpectedMinutes, evalOvr, evalOvrOf, expectedMinutes, ovr, roleOf, salaryFor } from "./ratings";
 import type { Action, Career, CurrentTeam, Decision, DecisionOption, LeagueKey, ProLeagueKey, Team } from "./types";
 import { clamp, money, roundSalary } from "./util";
 
@@ -16,12 +16,12 @@ const avg = (lg: LeagueKey) => LEAGUES[lg].avg;
 /* ---------- 드래프트 평가 ---------- */
 
 export function nbaDraftScore(c: Career, noise: number): number {
-  const o = ovrOf(c.p.attrs, c.p.pos);
+  const o = evalOvrOf(c.p.attrs, c.p.pos);
   return o + (c.p.pot - o) * 0.35 + (22 - c.age) * 1.2 + c.p.wsd * 0.2 + noise;
 }
 
 export function kblDraftScore(c: Career, noise: number): number {
-  const o = ovrOf(c.p.attrs, c.p.pos);
+  const o = evalOvrOf(c.p.attrs, c.p.pos);
   return o + (c.p.pot - o) * 0.25 + (21 - c.age) * 0.6 + noise;
 }
 
@@ -51,7 +51,8 @@ export const projectKbl = (c: Career): string =>
 /* ---------- 진로 결정 ---------- */
 
 export function highSchoolGraduation(c: Career): Decision {
-  const o = ovr(c.p);
+  // 진학·드래프트 기준은 특화까지 반영한 평가 오버롤로 봐요.
+  const o = evalOvr(c.p);
   const opts: DecisionOption[] = [];
   const uc = pickTeam("ncaa");
   const kc = pickTeam("kuniv");
@@ -81,11 +82,11 @@ export function highSchoolGraduation(c: Career): Decision {
       tag: "드래프트",
       act: { k: "draft", d: "kbl" },
     });
-  return { title: "고교 졸업, 진로 선택", body: `고교 3년 동안 오버롤 ${o}까지 성장했어요. 다음 무대를 고르세요.`, opts };
+  return { title: "고교 졸업, 진로 선택", body: `고교 3년 동안 오버롤 ${ovr(c.p)}까지 성장했어요. 다음 무대를 고르세요.`, opts };
 }
 
 export function collegeSeasonEnd(c: Career): Decision {
-  const o = ovr(c.p);
+  const o = evalOvr(c.p);
   const lg = c.team?.lg;
   const years = c.collegeYears;
   const opts: DecisionOption[] = [];
@@ -111,7 +112,7 @@ export function collegeSeasonEnd(c: Career): Decision {
   });
   return {
     title: years >= 4 ? "대학 졸업, 드래프트" : "대학 시즌 종료",
-    body: years >= 4 ? "졸업 학년이에요. 드래프트에 나설 차례예요." : `대학 ${years}학년 시즌을 마쳤어요. 지금 오버롤은 ${o}예요.`,
+    body: years >= 4 ? "졸업 학년이에요. 드래프트에 나설 차례예요." : `대학 ${years}학년 시즌을 마쳤어요. 지금 오버롤은 ${ovr(c.p)}예요.`,
     opts,
   };
 }
@@ -142,7 +143,8 @@ const skipOption = (sub: string): DecisionOption => ({ label: "무소속으로 1
 const RESIGN_BELOW: Partial<Record<LeagueKey, number>> = { nba: 3, euro: 8, kbl: 12, gleague: 9 };
 
 export function generateOffers(c: Career, current: CurrentTeam | null, rating: number): DecisionOption[] {
-  const o = ovr(c.p);
+  // 구단은 특화까지 반영한 평가 오버롤로 제안 여부와 연봉을 정해요.
+  const o = evalOvr(c.p);
   const age = c.age;
   const out: DecisionOption[] = [];
   const used = new Set<string>();
@@ -202,7 +204,7 @@ export function undrafted(c: Career): Decision {
 export function nbaOffer(c: Career): Decision | null {
   if (!c.team || !c.contract) return null;
   const lg = c.team.lg;
-  const o = ovr(c.p);
+  const o = evalOvr(c.p);
   const fromDev = lg === "gleague";
   // G리그에서는 NBA 평균 - 1이면 콜업, KBL·유로리그에서는 평균 + 2는 돼야 바이아웃을 내고 데려가요.
   if (!(lg === "kbl" || lg === "euro" || fromDev) || o < avg("nba") + (fromDev ? -1 : 2)) return null;
@@ -234,7 +236,7 @@ export const negotiable = (a: SignAction): boolean => !a.deal && a.lg !== "gleag
  */
 export function leverage(c: Career, lg: ProLeagueKey): number {
   const rating = c.last?.rating || 6;
-  return clamp(0.45 + (ovr(c.p) - LEAGUES[lg].avg) / 25 + (rating - 6.5) * 0.1 + (c.perks.agency ? 0.1 : 0), 0.15, 0.85);
+  return clamp(0.45 + (evalOvr(c.p) - LEAGUES[lg].avg) / 25 + (rating - 6.5) * 0.1 + (c.perks.agency ? 0.1 : 0), 0.15, 0.85);
 }
 
 /**
@@ -294,7 +296,7 @@ export function requestTransfer(c: Career): boolean {
   const team = c.team!;
   const lg = team.lg;
   const tag = `${c.year - 1} 오프시즌`;
-  const star = Math.max(0, ovr(c.p) - LEAGUES[lg].avg - 6);
+  const star = Math.max(0, evalOvr(c.p) - LEAGUES[lg].avg - 6);
   const p = clamp(
     0.45 + (currentExpectedMinutes(c) < 20 ? 0.2 : 0) - star * 0.04 + (c.perks.agency ? 0.1 : 0) - (c.trust >= 2 ? 0.1 : 0),
     0.1,

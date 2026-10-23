@@ -39,6 +39,9 @@ import {
   requestTransfer,
   canRequestTransfer,
   careerJourney,
+  evalOvrOf,
+  specialtiesOf,
+  specialtyBonus,
   COMPS,
   careerProfile,
   similarPlayers,
@@ -1081,5 +1084,43 @@ describe("닮은 꼴 선수", () => {
     expect(top.reasons).toContain("MVP 수상");
     // NBA에서 뛰었으니 KBL은 "KBL로 치면"이에요.
     expect(careerProfile(c, "kbl")!.played).toBe(false);
+  });
+});
+
+describe("특화", () => {
+  const attrs = (o: Partial<Record<AttrKey, number>>, rest = 55) =>
+    ({ sht: rest, hdl: rest, pas: rest, def: rest, iq: rest, ath: rest, ...o }) as Record<AttrKey, number>;
+
+  it("두 능력치가 함께 높고 나머지보다 두드러지면 특화가 되고, 낮은 쪽이 높을수록 보너스가 커요", () => {
+    expect(specialtiesOf(attrs({ sht: 72, def: 71 })).map((h) => [h.spec.name, h.bonus])).toEqual([["투웨이 플레이어", 1]]);
+    expect(specialtiesOf(attrs({ hdl: 84, sht: 82 }))[0]).toMatchObject({ spec: { key: "scorer" }, bonus: 2 });
+    expect(specialtiesOf(attrs({ def: 93, ath: 91 }))[0]).toMatchObject({ spec: { key: "stopper" }, bonus: 3 });
+    expect(specialtiesOf(attrs({ pas: 75, hdl: 76 }))[0].spec.name).toBe("메인 핸들러");
+  });
+
+  it("여러 능력치가 고르게 적당하면 특화가 없고, 조합은 하나만 인정해요", () => {
+    // 모두 72: 높지만 두드러지지 않아요.
+    expect(specialtiesOf(attrs({}, 72))).toEqual([]);
+    // 한쪽만 높으면 조합이 아니에요.
+    expect(specialtiesOf(attrs({ sht: 90 }))).toEqual([]);
+    // 세 능력치가 높으면 나머지와 차이가 가장 큰 조합 하나만
+    const hits = specialtiesOf(attrs({ sht: 80, def: 80, ath: 74 }, 50));
+    expect(hits).toHaveLength(1);
+    expect(hits[0].spec.key).toBe("twoway");
+  });
+
+  it("BQ는 혼자 유난히 높아도 스마트 플레이어가 되고, 보너스는 합쳐서 4까지예요", () => {
+    expect(specialtiesOf(attrs({ iq: 84 })).map((h) => h.spec.key)).toEqual(["smart"]);
+    expect(specialtiesOf(attrs({ iq: 80 }))).toEqual([]);
+    const both = attrs({ def: 95, ath: 95, iq: 95 }, 55);
+    expect(specialtiesOf(both).map((h) => h.spec.key)).toEqual(["stopper", "smart"]);
+    expect(specialtyBonus(both)).toBe(4);
+  });
+
+  it("평가 오버롤은 오버롤에 특화 보너스를 더한 값이에요", () => {
+    const a = attrs({ sht: 82, def: 81 });
+    expect(evalOvrOf(a, "SF") - ovrOf(a, "SF")).toBe(2);
+    const plain = attrs({}, 70);
+    expect(evalOvrOf(plain, "SF")).toBe(ovrOf(plain, "SF"));
   });
 });

@@ -114,6 +114,24 @@ main.grid{max-width:var(--t-max);margin:0 auto;padding-top:4px}
 .ar .v{font-family:var(--f-num);font-weight:700;font-size:17px;text-align:right;font-variant-numeric:tabular-nums}
 .d{font-family:var(--f-num);font-size:14px;font-weight:600;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
 .d.up{color:var(--good)}.d.dn{color:var(--bad)}
+/* 특화: 지금 인정된 조합과 평가 오버롤, 11가지 조건 */
+.spec{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:10px}
+.spec-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.spec-eval{font-size:13px;color:var(--muted)}
+.spec-eval b{font-family:var(--f-num);font-size:16px;color:var(--accent);font-variant-numeric:tabular-nums}
+.spec-chips{display:flex;flex-wrap:wrap;gap:6px}
+.spec-chip{display:inline-flex;align-items:baseline;gap:6px;padding:4px 12px;border-radius:999px;font-size:13px;font-weight:700;
+  color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel2));border:1px solid color-mix(in srgb,var(--accent) 40%,transparent)}
+.spec-chip b{color:var(--ink)}
+.spec-all summary{cursor:pointer;font-size:13px;color:var(--muted);text-decoration:underline;text-underline-offset:3px;width:max-content}
+.spec-all ul{list-style:none;margin:8px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+@media (max-width:560px){.spec-all ul{grid-template-columns:1fr}}
+.spec-all li{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border-radius:8px;background:var(--panel2);font-size:12.5px}
+.spec-all li b{font-size:13.5px}
+.spec-all li span{color:var(--muted)}
+.spec-all li small{color:var(--muted);font-size:12px}
+.spec-all li[data-on]{outline:1.5px solid var(--accent)}
+.spec-all li[data-on] b{color:var(--accent)}
 .phys{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
 .phys b{color:var(--ink);font-weight:700}
 
