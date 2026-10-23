@@ -73,7 +73,6 @@ export {
   SPECIALTIES,
   specialtiesOf,
   specialtyBonus,
-  specialtyRule,
   type Specialty,
   type SpecialtyHit,
   type SpecialtyKey,

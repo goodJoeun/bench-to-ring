@@ -142,12 +142,13 @@ const skipOption = (sub: string): DecisionOption => ({ label: "무소속으로 1
 /** 재계약 제안을 받는 오버롤: 리그 평균에서 이만큼 아래까지 */
 const RESIGN_BELOW: Partial<Record<LeagueKey, number>> = { nba: 3, euro: 8, kbl: 12, gleague: 9 };
 
-export function generateOffers(c: Career, current: CurrentTeam | null, rating: number): DecisionOption[] {
+/** 계약 제안. current는 재계약을 제안할 수 있는 지금 팀이고, avoid 팀은 제안 목록에서 빼요(이적 요청). */
+export function generateOffers(c: Career, current: CurrentTeam | null, rating: number, avoid?: string): DecisionOption[] {
   // 구단은 특화까지 반영한 평가 오버롤로 제안 여부와 연봉을 정해요.
   const o = evalOvr(c.p);
   const age = c.age;
   const out: DecisionOption[] = [];
-  const used = new Set<string>();
+  const used = new Set<string>(avoid ? [avoid] : []);
   const eff = o - (age >= 33 ? 4 : 0);
   const years = () => (age < 26 ? ri(2, 4) : age < 31 ? ri(2, 3) : ri(1, 2));
   const add = (lg: ProLeagueKey, y: number, sal: number, note?: string) => {
@@ -304,7 +305,7 @@ export function requestTransfer(c: Career): boolean {
   );
   const stay: DecisionOption = { label: `${team.name}에 남는다`, sub: `남은 계약 ${c.contract!.years}년을 채워요`, act: { k: "none" } };
   if (chance(p)) {
-    const offers = generateOffers(c, null, c.last?.rating || 6).filter((o) => o.act.k === "sign" && o.act.team.name !== team.name);
+    const offers = generateOffers(c, null, c.last?.rating || 6, team.name).filter((o) => o.act.k === "sign");
     if (!offers.length) {
       addNews(c, tag, "info", "구단은 이적을 허락했지만 관심을 보이는 팀이 없었어요.");
       return true;

@@ -1,4 +1,3 @@
-import { SHORT } from "./data";
 import type { AttrKey, Attrs } from "./types";
 
 /*
@@ -10,6 +9,8 @@ import type { AttrKey, Attrs } from "./types";
  * - 두 능력치가 모두 PAIR_FLOOR 이상이고, 둘 다 나머지 세 능력치(BQ 제외) 평균보다 PAIR_GAP 이상 높아야 해요.
  *   여러 조합이 걸리면 나머지와의 차이가 가장 큰 조합 하나만 인정해요.
  * - 스마트 플레이어: BQ가 SMART_FLOOR 이상이고 나머지 다섯 능력치 평균보다 SMART_GAP 이상 높아야 해요.
+ *
+ * 조건은 게임 화면에 보여주지 않는 숨은 요소예요. 처음 채우면 시즌 결산 소식으로만 알려줘요.
  *
  * 보너스는 '평가 오버롤'에 더해져 출전 시간·계약 제안·드래프트·연봉·시상에 쓰여요. 화면의 오버롤은 그대로예요.
  * 두 능력치 중 낮은 쪽이 높을수록(70·80·90) 보너스가 +1·+2·+3이고, 스마트 플레이어는 +1(92 이상 +2), 합계는 BONUS_CAP까지예요.
@@ -109,12 +110,6 @@ export function specialtiesOf(a: Attrs): SpecialtyHit[] {
 
 /** 평가 오버롤에 더하는 특화 보너스 합계 */
 export const specialtyBonus = (a: Attrs): number => Math.min(BONUS_CAP, specialtiesOf(a).reduce((t, h) => t + h.bonus, 0));
-
-/** 특화 조건을 사람이 읽는 말로: "슛·수비 65 이상, 나머지보다 8 높게" */
-export function specialtyRule(spec: Specialty): string {
-  if (spec.attrs.length === 1) return `${SHORT.iq} ${SMART_FLOOR} 이상, 나머지 평균보다 ${SMART_GAP} 높게`;
-  return `${spec.attrs.map((k) => SHORT[k]).join("·")} ${PAIR_FLOOR} 이상, 나머지 평균보다 ${PAIR_GAP} 높게`;
-}
 
 /** 여러 특화의 기록 효과를 하나로 합쳐요. */
 export function combinedEffect(hits: SpecialtyHit[]): Required<SpecialtyEffect> {

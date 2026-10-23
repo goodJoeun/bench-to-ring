@@ -3,13 +3,13 @@ import type { League, LeagueKey } from "./types";
 /* 리그와 구단 */
 
 export const LEAGUES: Record<LeagueKey, League> = {
-  hs: { name: "고교농구", short: "고교", avg: 45, games: 24, pro: false },
-  kuniv: { name: "대학농구 U-리그", short: "U-리그", avg: 55, games: 16, pro: false },
-  ncaa: { name: "NCAA 디비전 I", short: "NCAA", avg: 70, games: 32, pro: false },
-  kbl: { name: "KBL", short: "KBL", avg: 65, games: 54, pro: true },
-  gleague: { name: "NBA G리그", short: "G리그", avg: 75, games: 50, pro: true },
-  euro: { name: "유로리그", short: "유로리그", avg: 77, games: 38, pro: true },
-  nba: { name: "NBA", short: "NBA", avg: 85, games: 82, pro: true },
+  hs: { name: "고교농구", short: "고교", avg: 50, games: 24, pro: false },
+  kuniv: { name: "대학농구 U-리그", short: "U-리그", avg: 60, games: 16, pro: false },
+  ncaa: { name: "NCAA 디비전 I", short: "NCAA", avg: 75, games: 32, pro: false },
+  kbl: { name: "KBL", short: "KBL", avg: 70, games: 54, pro: true },
+  gleague: { name: "NBA G리그", short: "G리그", avg: 80, games: 50, pro: true },
+  euro: { name: "유로리그", short: "유로리그", avg: 82, games: 38, pro: true },
+  nba: { name: "NBA", short: "NBA", avg: 90, games: 82, pro: true },
 };
 
 /**

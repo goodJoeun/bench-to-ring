@@ -491,6 +491,8 @@ describe("드래프트 진행", () => {
   const prospect = (attr: number) => {
     const c = createCareer({ name: "드래프티", num: 1, nat: "대한민국", pos: "SG", path: "abroad" }, generateCandidates("SG")[0], "dr");
     for (const k of ATTR_KEYS) c.p.attrs[k] = attr;
+    // 잠재력이 지금보다 낮으면 스카우트 평가가 깎이니, 아직 클 여지가 있는 유망주로 맞춰요.
+    c.p.pot = Math.min(99, attr + 6);
     c.age = 21;
     c.year = 2032;
     c.stage = "college";
@@ -501,7 +503,7 @@ describe("드래프트 진행", () => {
     setRandom(seeded(11));
     for (const [d, size, teams] of [["nba", 60, 30], ["kbl", 20, 10]] as const) {
       // 지명될 만한 유망주: NBA 평균 바로 아래, KBL은 평균보다 조금 아래
-      const c = prospect(d === "nba" ? LEAGUES.nba.avg - 1 : 62);
+      const c = prospect(d === "nba" ? LEAGUES.nba.avg - 1 : LEAGUES.kbl.avg - 3);
       applyAction(c, { k: "draft", d });
       const show = c.draftShow!;
       expect(show.name).toBe(`2031 ${d === "nba" ? "NBA 드래프트" : "KBL 신인드래프트"}`);
@@ -911,7 +913,8 @@ describe("체력과 빅매치", () => {
 describe("연봉 협상과 이적 요청", () => {
   function kbl(id: string): Career {
     const c = createCareer({ name: "협상", num: 2, nat: "대한민국", pos: "PG", path: "domestic" }, generateCandidates("PG")[0], id);
-    for (const k of ATTR_KEYS) c.p.attrs[k] += 22;
+    // 후보는 오버롤 45로 시작하니, KBL 평균보다 조금 높은 주전으로 만들어요.
+    for (const k of ATTR_KEYS) c.p.attrs[k] += LEAGUES.kbl.avg + 2 - 45;
     c.age = 26;
     c.mil = { s: "exempt" };
     c.stage = "pro";

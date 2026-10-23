@@ -1,25 +1,15 @@
-import {
-  ATTRS,
-  PAIR_FLOOR,
-  PAIR_GAP,
-  POS,
-  SPECIALTIES,
-  evalOvr,
-  isCoreAttr,
-  money,
-  ovr,
-  specialtiesOf,
-  specialtyRule,
-  type Career,
-} from "@/game";
+import { ATTRS, POS, evalOvr, isCoreAttr, money, ovr, specialtiesOf, type Career } from "@/game";
 import { Radar } from "./Radar";
 
-/** 지금 인정된 특화와 평가 오버롤 보너스, 그리고 특화 11가지의 조건 */
+/**
+ * 지금 가진 특화와 평가 오버롤. 특화의 조건과 종류는 일부러 보여주지 않아요(이스터에그).
+ * 조건을 처음 채우면 시즌 결산 소식으로 알려주고, 그때부터 여기에 나타나요. 아직 없으면 이 칸 자체가 없어요.
+ */
 function Specialties({ career: c }: { career: Career }) {
   const hits = specialtiesOf(c.p.attrs);
+  if (!hits.length) return null;
   const base = ovr(c.p);
   const evaluated = evalOvr(c.p);
-  const on = new Set(hits.map((h) => h.spec.key));
   return (
     <div className="spec">
       <div className="spec-head">
@@ -30,32 +20,13 @@ function Specialties({ career: c }: { career: Career }) {
           </span>
         )}
       </div>
-      {hits.length ? (
-        <div className="spec-chips">
-          {hits.map((h) => (
-            <span className="spec-chip" key={h.spec.key} title={h.spec.desc}>
-              <b>{h.spec.name}</b> +{h.bonus}
-            </span>
-          ))}
-        </div>
-      ) : (
-        <p className="hint">
-          아직 특화가 없어요. 두 능력치를 함께 {PAIR_FLOOR} 이상, 나머지 평균보다 {PAIR_GAP} 높게 키우면 특화가 생겨 구단 평가가
-          올라가요.
-        </p>
-      )}
-      <details className="spec-all">
-        <summary>특화 {SPECIALTIES.length}가지 조건 보기</summary>
-        <ul>
-          {SPECIALTIES.map((s) => (
-            <li key={s.key} data-on={on.has(s.key) || undefined}>
-              <b>{s.name}</b>
-              <span>{specialtyRule(s)}</span>
-              <small>{s.desc}</small>
-            </li>
-          ))}
-        </ul>
-      </details>
+      <div className="spec-chips">
+        {hits.map((h) => (
+          <span className="spec-chip" key={h.spec.key} title={h.spec.desc}>
+            <b>{h.spec.name}</b> +{h.bonus}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
