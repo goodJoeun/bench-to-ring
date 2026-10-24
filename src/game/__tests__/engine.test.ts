@@ -793,11 +793,36 @@ describe("시즌 진행", () => {
       expect(rec.gp).toBeLessThanOrEqual(games);
       expect(steps.at(-1)).toBe("done");
       expect(steps.filter((s) => s === "done").length).toBe(1);
-      // 프리시즌 + 경기 수 + 플레이오프 라운드(0~3) + 결산, 결승 직전 출전 결정을 물으면 한 칸 더
+      // 프리시즌 + 경기 수 + 플레이오프 라운드(NBA 0~4) + 결산, 결승 직전 출전 결정을 물으면 한 칸 더
       expect(steps.length).toBeGreaterThanOrEqual(games + 2);
-      expect(steps.length).toBeLessThanOrEqual(games + 6);
+      expect(steps.length).toBeLessThanOrEqual(games + 7);
       if (c.live?.key === `league-${year}`) expect(steps).toContain("final");
     }
+  });
+
+  it("NBA 플레이오프는 1라운드 → 컨퍼런스 세미파이널 → 컨퍼런스 파이널 → 파이널 순서예요", () => {
+    setRandom(seeded(63));
+    const order = ["플레이오프 1라운드", "컨퍼런스 세미파이널", "컨퍼런스 파이널", "NBA 파이널"];
+    const exits = new Set<string>();
+    let champs = 0;
+    for (let i = 0; i < 80; i++) {
+      const c = proCareer(`po${i}`);
+      startSeason(c);
+      while (c.run && c.run.phase !== "post" && c.run.phase !== "end") {
+        if (c.queue.length) chooseOption(c, 0);
+        else stepSeason(c);
+      }
+      if (!c.run || c.run.phase !== "post") continue;
+      const names = c.run.post.map((r) => r.name);
+      expect(names).toEqual(order.slice(0, names.length));
+      if (c.run.champ) {
+        champs++;
+        expect(names).toEqual(order);
+      } else exits.add(c.run.result);
+    }
+    expect(champs).toBeGreaterThan(0);
+    expect([...exits].every((r) => ["플레이오프 1라운드", "컨퍼런스 세미파이널", "컨퍼런스 파이널", "파이널 준우승"].includes(r))).toBe(true);
+    expect(exits.size).toBeGreaterThanOrEqual(3);
   });
 
   it("미리 정한 승수를 경기마다 나눠 주어 정규시즌 승수가 정확히 맞아요", () => {

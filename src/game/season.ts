@@ -116,6 +116,27 @@ const FINAL_NAME: Record<LeagueKey, string> = {
   hs: "전국대회 결승",
 };
 
+/**
+ * 플레이오프 라운드 이름과, 그 라운드에서 졌을 때의 시즌 성적. NBA는 실제처럼 컨퍼런스를 거치는 4라운드예요.
+ * lose의 마지막은 결승에서 진 경우예요.
+ */
+function playoffRounds(lg: LeagueKey): { names: string[]; lose: string[] } {
+  if (lg === "nba")
+    return {
+      names: ["플레이오프 1라운드", "컨퍼런스 세미파이널", "컨퍼런스 파이널", FINAL_NAME.nba],
+      lose: ["플레이오프 1라운드", "컨퍼런스 세미파이널", "컨퍼런스 파이널", "파이널 준우승"],
+    };
+  if (!LEAGUES[lg].pro)
+    return { names: ["전국대회 8강", "전국대회 4강", FINAL_NAME[lg]], lose: ["전국대회 8강", "전국대회 4강", "전국대회 준우승"] };
+  return { names: ["플레이오프 1라운드", "플레이오프 4강", FINAL_NAME[lg]], lose: ["플레이오프 1라운드", "플레이오프 4강", "챔피언결정전 준우승"] };
+}
+
+/**
+ * 우승하지 못한 팀이 몇 라운드에서 떨어지는지 정하는 누적 확률. 결승에서 질 확률(18%)은 리그마다 같고,
+ * NBA는 3라운드제의 '4강'(32%)을 컨퍼런스 세미파이널(20%)과 컨퍼런스 파이널(12%)로 나눴어요.
+ */
+const EXIT_AT: Record<number, number[]> = { 3: [0.5, 0.82], 4: [0.5, 0.7, 0.82] };
+
 const seasonTag = (run: SeasonRun) => `${run.year} 시즌`;
 /** 평균을 지키며 정수로 반올림해요. 0.3이면 30% 확률로 1이에요. */
 const sround = (v: number) => Math.floor(v + random());
@@ -380,16 +401,17 @@ function endRegularSeason(c: Career, run: SeasonRun, tag: string): void {
   const playoffs = wp >= 0.55 || (wp >= 0.47 && chance(0.4));
   const champ = playoffs && chance(sigmoid((wp - 0.63) / 0.05) * 0.6 + (c.p.trait === "승부사" ? 0.06 : 0));
   // 몇 라운드를 치르는지: 우승이면 결승까지 모두, 아니면 진 라운드까지
+  const { names, lose } = playoffRounds(lg);
+  const total = names.length;
   let rounds = 0;
   if (champ) {
-    rounds = 3;
+    rounds = total;
     run.result = amateur ? "전국대회 우승" : "리그 우승";
   } else if (playoffs) {
     const r = random();
-    rounds = r < 0.5 ? 1 : r < 0.82 ? 2 : 3;
-    run.result = amateur
-      ? ["전국대회 8강", "전국대회 4강", "전국대회 준우승"][rounds - 1]
-      : ["플레이오프 1라운드", "플레이오프 4강", "챔피언결정전 준우승"][rounds - 1];
+    const cut = EXIT_AT[total].findIndex((p) => r < p);
+    rounds = cut < 0 ? total : cut + 1;
+    run.result = lose[rounds - 1];
   } else run.result = amateur ? "전국대회 예선 탈락" : "플레이오프 진출 실패";
   run.champ = champ;
 
@@ -400,7 +422,6 @@ function endRegularSeason(c: Career, run: SeasonRun, tag: string): void {
     return;
   }
   addNews(c, tag, "good", `정규시즌 ${run.w}승 ${run.l}패 · ${stage} 진출!`);
-  const names = amateur ? ["전국대회 8강", "전국대회 4강", FINAL_NAME[lg]] : ["플레이오프 1라운드", "플레이오프 4강", FINAL_NAME[lg]];
   // NBA·KBL은 7전 4선승제 시리즈, 나머지는 단판이에요.
   const best7 = lg === "nba" || lg === "kbl";
   const used = new Set([team.name]);
@@ -410,9 +431,10 @@ function endRegularSeason(c: Career, run: SeasonRun, tag: string): void {
     used.add(opp.name);
     const other = ri(0, 3);
     const series = best7 ? (win ? `4-${other}` : `${other}-4`) : undefined;
-    const [us, them] = i === 2 ? finalScore(FINAL_SCORE[lg], win) : gameScore(FINAL_SCORE[lg], win);
+    const isFinal = i === total - 1;
+    const [us, them] = isFinal ? finalScore(FINAL_SCORE[lg], win) : gameScore(FINAL_SCORE[lg], win);
     run.post.push({ name: names[i], opp: opp.name, color: opp.color, win, score: series ?? `${us}-${them}` });
-    if (i === 2) run.final = { opp: opp.name, us, them, win, series };
+    if (isFinal) run.final = { opp: opp.name, us, them, win, series };
   }
   run.phase = "post";
 }
