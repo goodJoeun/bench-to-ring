@@ -36,7 +36,7 @@ img{max-width:100%}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:env(safe-area-inset-top,0px) calc(48px + env(safe-area-inset-bottom,0px))}
 button{font:inherit;color:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.file:focus-within{outline:3px solid var(--paint);outline-offset:2px}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--paint);outline-offset:2px}
 .label{font-size:11.5px;letter-spacing:.08em;color:var(--muted);font-weight:700}
 .hint{color:var(--muted);font-size:13px;margin:0}
 .empty{color:var(--muted);margin:0}
@@ -229,7 +229,6 @@ tr:last-child td{border-bottom:0}
 .b5{background:var(--panel2);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:2px;min-width:0}
 .b5 .p{font-family:var(--f-num);font-weight:700;color:var(--accent);letter-spacing:.06em}
 .b5 .nm{font-weight:700;overflow-wrap:anywhere}
-.unofficial{display:inline-block;margin-left:6px;padding:0 6px;border:1px solid currentColor;border-radius:999px;color:var(--muted);font-size:11px;font-weight:700;line-height:1.5;vertical-align:1px;white-space:nowrap}
 
 /* forms */
 .btn{border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:9px 14px;font-weight:700;cursor:pointer;font-size:14px;display:inline-flex;align-items:center}
@@ -256,8 +255,7 @@ tr:last-child td{border-bottom:0}
 .owned-fx{grid-column:1/-1;font-size:12.5px;color:var(--muted)}
 .meta-row [data-warn] b{color:var(--bad)}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-textarea,input,select{font:inherit;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%;min-width:0}
-textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize:vertical}
+input,select{font:inherit;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%;min-width:0}
 
 /* creation */
 .intro{max-width:var(--t-max);margin:0 auto;padding-block:8px 22px}
@@ -505,7 +503,7 @@ textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize
 
 /* 앱 레이아웃: 하단 탭 바와 고정 버튼. 탭 바와 버튼도 가운데 앱 기둥(--t-max) 폭을 따라가요. */
 body{padding-top:0;padding-bottom:calc(32px + var(--safe-b))}
-input,select,textarea{font-size:16px}
+input,select{font-size:16px}
 
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;width:100%;max-width:calc(var(--t-max) + 32px);margin-inline:auto;
   display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:6px 4px calc(6px + var(--safe-b));

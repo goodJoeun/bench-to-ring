@@ -1,6 +1,6 @@
 /*
  * 게임 엔진의 모든 타입. 대부분은 Career와 그 안에 든 값, 곧 저장 데이터의 모양이에요.
- * 저장 코드에 그대로 들어가니, 필드를 바꾸면 storage.ts의 불러오기·마이그레이션도 같이 고쳐야 해요.
+ * localStorage에 그대로 저장되니, 필드를 바꾸면 storage.ts의 불러오기·마이그레이션도 같이 고쳐야 해요.
  */
 
 /* ---------- 기본 키 ---------- */
@@ -514,8 +514,6 @@ export interface CareerSummary {
   academy?: boolean;
   /** 은퇴 기록에 남는 산 것들 (아카데미, 재단 등) */
   legacyItems?: string[];
-  /** 저장 코드로 불러온 커리어 (비공인, 온라인 랭킹에 올리지 않아요) */
-  imported?: boolean;
 }
 
 export interface Career {
@@ -580,8 +578,6 @@ export interface Career {
   shop: { year: number; keys: ShopKey[]; bought: ShopKey[] } | null;
   /** 기부한 돈 합계 (억) */
   donated: number;
-  /** 저장 코드로 불러온 커리어 (비공인, 온라인 랭킹에 올리지 않아요) */
-  imported?: boolean;
   /** 마지막으로 이적을 요청한 오프시즌 (다음 시즌 연도) */
   moveAsked: number | null;
 }

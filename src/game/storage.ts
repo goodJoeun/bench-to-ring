@@ -151,15 +151,19 @@ function normalize(c: Career): Career {
   return c;
 }
 
-export function loadCareer(): Career | null {
-  const raw = read(SAVE_KEY);
-  if (!raw) return null;
+/** 저장한 JSON을 지금 모양의 커리어로 읽어요. 예전 저장도 바꿔서 읽고, 읽지 못하면 null이에요. */
+export function parseCareer(json: string): Career | null {
   try {
-    const c = upgrade(JSON.parse(raw));
+    const c = upgrade(JSON.parse(json));
     return c ? normalize(c) : null;
   } catch {
     return null;
   }
+}
+
+export function loadCareer(): Career | null {
+  const raw = read(SAVE_KEY);
+  return raw ? parseCareer(raw) : null;
 }
 
 export function saveCareer(c: Career | null): void {
@@ -177,39 +181,4 @@ export function loadHall(): CareerSummary[] {
 
 export function saveHall(h: CareerSummary[]): void {
   write(HALL_KEY, JSON.stringify(h.slice(-HALL_LIMIT)));
-}
-
-/* ---------- 저장 코드 (UTF-8 JSON → Base64) ---------- */
-
-export function encodeSave(c: Career): string {
-  const bytes = new TextEncoder().encode(JSON.stringify(c));
-  let bin = "";
-  for (const b of bytes) bin += String.fromCharCode(b);
-  return btoa(bin);
-}
-
-export function decodeSave(code: string): Career | null {
-  const text = code.trim();
-  if (!text) return null;
-  try {
-    let json = text;
-    if (!text.startsWith("{")) {
-      const bin = atob(text);
-      const bytes = Uint8Array.from(bin, (ch) => ch.charCodeAt(0));
-      json = new TextDecoder().decode(bytes);
-    }
-    const c = upgrade(JSON.parse(json));
-    return c ? normalize(c) : null;
-  } catch {
-    return null;
-  }
-}
-
-/** 저장 코드로 불러온 커리어는 비공인이에요. 명예의 전당에 표시하고, 온라인 랭킹에는 올리지 않아요. */
-export function importCareer(code: string): Career | null {
-  const c = decodeSave(code);
-  if (!c) return null;
-  c.imported = true;
-  if (c.summary) c.summary.imported = true;
-  return c;
 }

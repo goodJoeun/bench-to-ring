@@ -191,7 +191,6 @@ export function careerSummary(c: Career): CareerSummary {
     draft: c.draft,
     donated: c.donated,
     legacyItems: ownedItems(c).filter((i) => i.legacy).map((i) => i.name),
-    imported: c.imported,
   };
   return { ...base, legacy: legacyOf(base) };
 }

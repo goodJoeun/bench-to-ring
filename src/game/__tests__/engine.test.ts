@@ -63,7 +63,7 @@ import { makeLiveGame } from "@/game/live";
 import { giveAward, setTeam } from "@/game/log";
 import { militaryDecision } from "@/game/military";
 import { nationalCallUp, runNationalTeam } from "@/game/national";
-import { decodeSave, encodeSave, importCareer } from "@/game/storage";
+import { parseCareer } from "@/game/storage";
 import { refreshShop, shopPerks } from "@/game/shop";
 
 afterEach(() => resetRandom());
@@ -219,33 +219,13 @@ describe("커리어 시뮬레이션", () => {
   });
 });
 
-describe("저장 코드", () => {
+describe("저장", () => {
   it("한글이 들어간 커리어도 그대로 되돌려요", () => {
     setRandom(seeded(3));
     const c = createCareer({ name: "벤치의 왕", num: 23, nat: "대한민국", pos: "SF", path: "domestic" }, generateCandidates("SF")[1], "save");
     simulateSeason(c);
-    expect(decodeSave(encodeSave(c))).toEqual(c);
-    expect(decodeSave("이건 저장 코드가 아니에요")).toBeNull();
-  });
-
-  it("불러온 커리어는 비공인으로 표시하고, 은퇴 기록에도 남겨요", () => {
-    const rand = seeded(5);
-    setRandom(rand);
-    const c = createCareer({ name: "불러온 선수", num: 7, nat: "대한민국", pos: "PG", path: "domestic" }, generateCandidates("PG")[0], "imp");
-    simulateSeason(c);
-    expect(c.imported).toBeUndefined();
-
-    const loaded = importCareer(encodeSave(c))!;
-    expect(loaded.imported).toBe(true);
-    playToRetirement(loaded, rand);
-    expect(loaded.summary?.imported).toBe(true);
-
-    // 이미 은퇴한 커리어를 불러와도 은퇴 기록이 비공인이 돼요.
-    const retired = createCareer({ name: "은퇴 선수", num: 8, nat: "대한민국", pos: "C", path: "domestic" }, generateCandidates("C")[0], "ret");
-    playToRetirement(retired, rand);
-    expect(retired.summary?.imported).toBeUndefined();
-    expect(importCareer(encodeSave(retired))!.summary?.imported).toBe(true);
-    expect(importCareer("이건 저장 코드가 아니에요")).toBeNull();
+    expect(parseCareer(JSON.stringify(c))).toEqual(c);
+    expect(parseCareer("이건 저장 파일이 아니에요")).toBeNull();
   });
 });
 
@@ -259,7 +239,7 @@ describe("예전 저장 파일", () => {
     old.focus = "reb";
     old.perks = { trainer: "reb" };
     old.queue = [{ title: "이벤트", body: "", opts: [{ label: "훈련", act: { k: "boost", attrs: { reb: 2 } } }] }];
-    const m = decodeSave(JSON.stringify(old))!;
+    const m = parseCareer(JSON.stringify(old))!;
     expect(Object.keys(m.p.attrs).sort()).toEqual([...ATTR_KEYS].sort());
     // 예전 센터 가중치로 계산한 오버롤
     const oldOvr = 30 * 0.06 + 34 * 0.06 + 60 * 0.26 + 70 * 0.32 + 55 * 0.18 + 40 * 0.12;
@@ -270,10 +250,10 @@ describe("예전 저장 파일", () => {
     expect(m.perks.trainer).toBe("def");
     expect(m.queue[0]).toMatchObject({ opts: [{ act: { k: "boost", attrs: { def: 2 } } }] });
     // 이미 새 능력치인 저장은 그대로예요.
-    expect(decodeSave(encodeSave(m))!.p.attrs).toEqual(m.p.attrs);
+    expect(parseCareer(JSON.stringify(m))!.p.attrs).toEqual(m.p.attrs);
   });
 
-  it("v1(가상 리그) 저장 코드를 실제 리그 키로 바꿔서 불러와요", () => {
+  it("v1(가상 리그) 저장을 실제 리그 키로 바꿔서 불러와요", () => {
     setRandom(seeded(11));
     const c = createCareer({ name: "옛 저장", num: 3, nat: "대한민국", pos: "PG", path: "abroad" }, generateCandidates("PG")[0], "old");
     simulateSeason(c);
@@ -282,8 +262,7 @@ describe("예전 저장 파일", () => {
     v1.hist[0].lg = "gbl";
     v1.awards = { mvp_gbl: 2, ring: 1 };
     v1.awardLog = [{ y: 2027, k: "mvp_gbl", n: "GBL MVP" }];
-    const code = btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(v1))));
-    const loaded = decodeSave(code)!;
+    const loaded = parseCareer(JSON.stringify(v1))!;
     expect(loaded.v).toBe(2);
     expect(loaded.team?.lg).toBe("kbl");
     expect(loaded.hist[0].lg).toBe("nba");
@@ -332,7 +311,7 @@ describe("생활 이벤트", () => {
     const old = JSON.parse(JSON.stringify(c));
     delete old.events;
     delete old.perks;
-    const loaded = decodeSave(JSON.stringify(old))!;
+    const loaded = parseCareer(JSON.stringify(old))!;
     expect(loaded.events).toEqual({});
     expect(loaded.perks).toEqual({});
   });
@@ -884,7 +863,7 @@ describe("시즌 진행", () => {
       if (c.queue.length) chooseOption(c, 0);
       stepSeason(c);
     }
-    const loaded = decodeSave(encodeSave(c))!;
+    const loaded = parseCareer(JSON.stringify(c))!;
     expect(loaded).toEqual(c);
     expect(loaded.run?.g).toBeGreaterThan(0);
     simulateSeason(loaded);
@@ -1469,7 +1448,7 @@ describe("축하 팝업", () => {
     delete old.cheers;
     delete old.milestones;
     old.hist = [{ year: 2033, lg: "nba", team: "LA 레이커스", awards: [] }];
-    const loaded = decodeSave(JSON.stringify(old))!;
+    const loaded = parseCareer(JSON.stringify(old))!;
     expect(loaded.milestones).toContain("nba");
     setTeam(loaded, "nba", { name: "보스턴 셀틱스", color: "#007A33", q: 0.5 });
     expect(loaded.cheers).toEqual([]);

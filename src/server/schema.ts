@@ -12,10 +12,7 @@ export const players = pgTable("players", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-/**
- * 제출한 은퇴 기록. CareerSummary에서 순위·화면에 필요한 값만 따로 칸으로 둬요.
- * 저장 코드로 불러온 커리어는 제출하지 않아서 여기 없어요.
- */
+/** 제출한 은퇴 기록. CareerSummary에서 순위·화면에 필요한 값만 따로 칸으로 둬요. */
 export const careers = pgTable(
   "careers",
   {

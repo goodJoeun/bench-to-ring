@@ -4,8 +4,7 @@ import { useState } from "react";
 import { TEAMS, type CareerSummary } from "@/game";
 import { gameActions, type CreationDraft } from "@/lib/game-store";
 import { HallOfFame } from "@/components/common/HallOfFame";
-import { ImportForm } from "@/components/common/ImportForm";
-import { Panel, Segmented } from "@/components/common/ui";
+import { Segmented } from "@/components/common/ui";
 import { CandidateCard } from "./CandidateCard";
 import { ConfirmStartSheet } from "./ConfirmStartSheet";
 import { POSITIONS } from "./options";
@@ -89,10 +88,6 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
           이 선수로 커리어 시작
         </button>
       </section>
-
-      <Panel title="저장 코드로 이어하기" className="resume">
-        <ImportForm placeholder="다른 기기에서 복사한 저장 코드를 붙여넣으세요" />
-      </Panel>
 
       {confirmOpen && <ConfirmStartSheet draft={draft} onClose={() => setConfirmOpen(false)} />}
 

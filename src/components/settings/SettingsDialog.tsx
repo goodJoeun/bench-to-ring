@@ -17,7 +17,7 @@ const LEAGUE_ORDER: LeagueKey[] = ["hs", "kuniv", "kbl", "ncaa", "gleague", "eur
 
 interface SettingsDialogProps {
   onClose: () => void;
-  /** 커리어 중이면 저장 코드·은퇴 같은 커리어 설정 탭을 열어요. */
+  /** 커리어 중이면 은퇴·새 커리어 같은 커리어 설정 탭을 열어요. */
   onCareerSettings?: () => void;
 }
 
@@ -83,7 +83,7 @@ export function SettingsDialog({ onClose, onCareerSettings }: SettingsDialogProp
 
       {onCareerSettings && (
         <button type="button" className="btn set-link" onClick={onCareerSettings}>
-          저장 코드 · 커리어 관리
+          커리어 관리
         </button>
       )}
       <button type="button" className="sheet-go" onClick={onClose}>

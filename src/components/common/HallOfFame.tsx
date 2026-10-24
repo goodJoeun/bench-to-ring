@@ -1,15 +1,6 @@
 import { bestFive, fmtNum, rankHall, type CareerSummary } from "@/game";
 import { Panel } from "./ui";
 
-/** 저장 코드로 불러온 커리어 표시 */
-function Unofficial() {
-  return (
-    <span className="unofficial" title="저장 코드로 불러온 커리어예요">
-      비공인
-    </span>
-  );
-}
-
 export function HallOfFame({ hall }: { hall: CareerSummary[] }) {
   if (!hall.length)
     return (
@@ -27,10 +18,7 @@ export function HallOfFame({ hall }: { hall: CareerSummary[] }) {
         {bestFive(hall).map(({ pos, career }) => (
           <div className="b5" key={pos}>
             <span className="p">{pos}</span>
-            <span className="nm">
-              {career ? career.name : "비어 있음"}
-              {career?.imported && <Unofficial />}
-            </span>
+            <span className="nm">{career ? career.name : "비어 있음"}</span>
             <span className="hint">{career ? `OVR ${career.peak} · MVP ${career.mvp}` : "기록 없음"}</span>
           </div>
         ))}
@@ -56,7 +44,6 @@ export function HallOfFame({ hall }: { hall: CareerSummary[] }) {
                 <td>{rank}</td>
                 <td className="l t">
                   <b>{h.name}</b> #{h.num}
-                  {h.imported && <Unofficial />}
                 </td>
                 <td className="l">{h.pos}</td>
                 <td className="l t">{h.legacy}</td>

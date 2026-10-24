@@ -24,7 +24,7 @@ import {
   type SeasonStep,
   type ShopKey,
 } from "@/game";
-import { importCareer, loadCareer, loadHall, saveCareer, saveHall } from "@/game/storage";
+import { loadCareer, loadHall, saveCareer, saveHall } from "@/game/storage";
 
 /** 선수 생성 화면의 입력값 */
 export interface CreationDraft {
@@ -333,14 +333,5 @@ export const gameActions = {
   newCareer() {
     saveCareer(null);
     set({ career: null, draft: freshDraft(snapshot.draft), playing: false, final: false });
-  },
-  /** 성공하면 true */
-  importSave(code: string): boolean {
-    const c = importCareer(code);
-    if (!c) return false;
-    resolveQueue(c);
-    saveCareer(c);
-    set({ career: c, playing: false, final: false });
-    return true;
   },
 };

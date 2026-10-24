@@ -58,7 +58,7 @@ src/
 │  │  ├─ Sprite.tsx        Canvas 도트 캐릭터 (도트 그림 데이터 포함)
 │  │  ├─ TeamBadge.tsx     구단·학교 로고, 로고 파일이 없으면 엠블럼 (emblem.ts가 모양·약칭·무늬를 정해요)
 │  │  ├─ logos.generated.ts public/logos/ 로고 목록 (scripts/logos.mjs가 만들어요)
-│  │  └─ Toast · ImportForm · HallOfFame
+│  │  └─ Toast · HallOfFame
 │  ├─ create/              선수 생성 화면 (후보 카드, 유형 툴팁, 시작 확인 시트)
 │  ├─ career/              커리어 진행 화면
 │  │  ├─ GameScreen.tsx    코트 카드, 전광판, 능력치, 탭 배치
@@ -96,7 +96,7 @@ src/
    ├─ ratings.ts           오버롤, 출전 시간, 연봉, 잠재력 추정
    ├─ condition.ts         능력치·건강·코치 신뢰의 범위와 바꾸는 함수
    ├─ log.ts               소식·수상 기록, 팀 입단·무소속 처리
-   ├─ storage.ts           localStorage 저장, 저장 코드
+   ├─ storage.ts           localStorage 저장, 예전 저장 바꾸기
    ├─ random.ts            난수 (테스트용 시드 고정 지원)
    └─ util.ts              숫자·금액·조사 같은 작은 도우미
 ```
@@ -144,7 +144,7 @@ src/
 
 ## 저장
 
-진행 내용은 브라우저 localStorage에 자동 저장돼요. 설정 탭에서 저장 코드를 복사하거나 파일로 받아 다른 기기에서 불러올 수 있어요.
+진행 내용은 브라우저 localStorage에 자동 저장돼요. 다른 기기로 옮기는 기능은 없어요.
 
 ## 확장 아이디어
 
