@@ -3,13 +3,11 @@
 import { POS, ovrOf } from "@/game";
 import { gameActions, type CreationDraft } from "@/lib/game-store";
 import { Sheet } from "@/components/common/Sheet";
-import { PATHS } from "./options";
 
 export function ConfirmStartSheet({ draft, onClose }: { draft: CreationDraft; onClose: () => void }) {
   const cand = draft.candidates[draft.selected];
   if (!cand) return null;
   const name = draft.name.trim() || "무명의 루키";
-  const path = PATHS.find((p) => p.key === draft.path);
   return (
     <Sheet labelledBy="confirm-title" onClose={onClose}>
       <span className="sheet-kicker">커리어 시작 확인</span>
@@ -33,10 +31,6 @@ export function ConfirmStartSheet({ draft, onClose }: { draft: CreationDraft; on
         <div>
           <dt>고등학교</dt>
           <dd>{draft.school || "무작위 배정"}</dd>
-        </div>
-        <div>
-          <dt>커리어 경로</dt>
-          <dd>{path?.big}</dd>
         </div>
         <div>
           <dt>키 · 윙스팬</dt>

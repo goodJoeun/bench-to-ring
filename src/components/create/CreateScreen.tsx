@@ -8,7 +8,7 @@ import { ImportForm } from "@/components/common/ImportForm";
 import { Panel, Segmented } from "@/components/common/ui";
 import { CandidateCard } from "./CandidateCard";
 import { ConfirmStartSheet } from "./ConfirmStartSheet";
-import { PATHS, POSITIONS } from "./options";
+import { POSITIONS } from "./options";
 
 export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: CareerSummary[] }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -26,17 +26,6 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
             고교 벤치 멤버로 시작해 드래프트, 주전, 올스타를 거쳐 MVP와 우승 반지까지. 시즌마다 쌓이는 기록과 선택으로 나만의
             농구 인생을 완성하세요.
           </p>
-        </div>
-        <div className="ladder" aria-label="커리어 단계">
-          <span>
-            <b>고교 벤치</b>
-          </span>
-          <span>대학 · 드래프트</span>
-          <span>로테이션 → 주전</span>
-          <span>올스타 · 국가대표</span>
-          <span>
-            <b>MVP · 우승 반지</b>
-          </span>
         </div>
       </section>
 
@@ -79,18 +68,6 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
         <div className="field">
           <span className="label">포지션</span>
           <Segmented label="포지션" options={POSITIONS} value={draft.pos} onChange={gameActions.choosePosition} />
-        </div>
-
-        <div className="field">
-          <span className="label">커리어 경로</span>
-          <Segmented
-            label="커리어 경로"
-            className="path"
-            options={PATHS}
-            value={draft.path}
-            onChange={(path) => gameActions.editDraft({ path })}
-          />
-          <p className="hint">어느 경로든 중간에 다른 리그로 옮길 수 있어요. 경로는 고교 졸업 때 받는 제안을 바꿔요.</p>
         </div>
 
         <div className="field">

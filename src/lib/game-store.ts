@@ -77,7 +77,8 @@ const emptyDraft = (): CreationDraft => ({
   name: "",
   num: "",
   pos: "SG",
-  path: "abroad",
+  // 커리어 경로는 국내 경로(고교 → U-리그·KBL)로 고정이에요. 해외 진출은 실력이 되면 제안으로 와요.
+  path: "domestic",
   school: "",
   candidates: [],
   pool: {},
@@ -183,7 +184,7 @@ export function useGame(): GameSnapshot {
 }
 
 export const gameActions = {
-  editDraft(patch: Partial<Pick<CreationDraft, "name" | "num" | "path" | "school" | "selected">>) {
+  editDraft(patch: Partial<Pick<CreationDraft, "name" | "num" | "school" | "selected">>) {
     set({ draft: { ...snapshot.draft, ...patch } });
   },
   /** 포지션을 바꿔요. 처음 고르는 포지션만 새로 뽑고, 이미 본 포지션은 그때 후보를 그대로 보여줘요. */
