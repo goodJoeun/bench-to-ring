@@ -57,6 +57,7 @@ import {
   type Career,
   type CareerSummary,
 } from "@/game";
+import { awardName, conferenceFinalsMvpName, nbaConference } from "@/game/awards";
 import { bigGameDecision, clutchDecision, injuryDecision, lifeEvent } from "@/game/events";
 import { makeLiveGame } from "@/game/live";
 import { militaryDecision } from "@/game/military";
@@ -1369,5 +1370,50 @@ describe("클러치", () => {
     };
     expect(count(8, 120)).toBeGreaterThan(5);
     expect(count(-12, 121)).toBe(0);
+  });
+});
+
+describe("리그별 시상", () => {
+  it("같은 상도 리그마다 실제 이름으로 불러요", () => {
+    expect(awardName("nba", "allleague")).toBe("올-NBA 퍼스트팀");
+    expect(awardName("nba", "allleague2", 2)).toBe("올-NBA 세컨드팀");
+    expect(awardName("nba", "allleague2", 3)).toBe("올-NBA 서드팀");
+    expect(awardName("nba", "alldef", 2)).toBe("NBA 올-디펜시브 세컨드팀");
+    expect(awardName("nba", "dpoy")).toContain("하킴 올라주원");
+    expect(awardName("kbl", "allleague")).toBe("KBL 베스트5");
+    expect(awardName("kbl", "alldef")).toBe("KBL 수비 5걸");
+    expect(awardName("kbl", "dpoy")).toBe("KBL 최우수수비상");
+    expect(awardName("kbl", "scoring")).toBe("KBL 득점왕");
+    expect(awardName("euro", "allleague2", 2)).toBe("올-유로리그 세컨드팀");
+    expect(nbaConference("LA 레이커스")).toBe("서부");
+    expect(nbaConference("보스턴 셀틱스")).toBe("동부");
+    expect(conferenceFinalsMvpName("LA 레이커스")).toContain("매직 존슨 트로피");
+    expect(conferenceFinalsMvpName("보스턴 셀틱스")).toContain("래리 버드 트로피");
+  });
+
+  it("NBA MVP는 늘 올-NBA 퍼스트팀과 올스타이고, 컨퍼런스 파이널 MVP는 파이널에 오른 시즌에만 받아요", () => {
+    setRandom(seeded(71));
+    let mvps = 0;
+    for (let i = 0; i < 120; i++) {
+      const c = createCareer({ name: "별", num: 1, nat: "미국", pos: "SF", path: "abroad" }, generateCandidates("SF")[0], `aw${i}`);
+      for (const k of ATTR_KEYS) c.p.attrs[k] = 93;
+      c.age = 26;
+      c.stage = "pro";
+      c.proSeasons = 3;
+      c.team = { name: "LA 레이커스", color: "#552583", q: 0.6, lg: "nba" };
+      c.contract = { years: 3, salary: 100 };
+      const rec = simulateSeason(c);
+      if (rec.awards.some((a) => a.startsWith("NBA MVP"))) {
+        mvps++;
+        expect(rec.awards).toContain("올-NBA 퍼스트팀");
+        expect(rec.awards).toContain("NBA 올스타");
+      }
+      const cf = rec.awards.find((a) => a.includes("컨퍼런스 파이널 MVP"));
+      if (cf) {
+        expect(cf).toContain("서부");
+        expect(rec.result === "리그 우승" || rec.result === "파이널 준우승").toBe(true);
+      }
+    }
+    expect(mvps).toBeGreaterThan(0);
   });
 });

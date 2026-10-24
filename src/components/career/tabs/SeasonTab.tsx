@@ -74,13 +74,16 @@ function ResultCard({ r }: { r: SeasonRecord }) {
         </p>
       )}
       {r.awards.length > 0 && (
-        <div className="awards">
-          {r.awards.map((a, i) => (
-            <span className="aw" key={`${a}-${i}`}>
-              {a}
-            </span>
-          ))}
-        </div>
+        <>
+          <span className="label">시즌 수상</span>
+          <div className="awards">
+            {r.awards.map((a, i) => (
+              <span className="aw" key={`${a}-${i}`}>
+                {a}
+              </span>
+            ))}
+          </div>
+        </>
       )}
     </section>
   );

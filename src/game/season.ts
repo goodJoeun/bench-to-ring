@@ -5,6 +5,7 @@ import { currentDecision } from "./decisions";
 import { bigGameDecision, clutchDecision, injuryDecision, seasonEvent } from "./events";
 import { LEAGUES, SCORING_TITLE } from "./leagues";
 import { FINAL_SCORE, finalScore, gameScore, makeLiveGame } from "./live";
+import { ALL_DEF_TIERS, ALL_LEAGUE_TIERS, awardName, conferenceFinalsMvpName } from "./awards";
 import { addNews, giveAward, pickTeam } from "./log";
 import { STUDENT_ALLOWANCE, payInvestments } from "./invest";
 import { serviceSeason } from "./military";
@@ -14,7 +15,7 @@ import { chance, pick, random, ri, rnd } from "./random";
 import { shopPerks } from "./shop";
 import { BONUS_CAP, SPECIALTIES, combinedEffect, specialtiesOf } from "./specialty";
 import { ageBase, ovr, ovrOf, roleOf } from "./ratings";
-import type { AttrKey, Career, GameLine, InvestKey, LeagueKey, SeasonRecord, SeasonRun } from "./types";
+import type { AttrKey, AwardKey, Career, GameLine, InvestKey, LeagueKey, SeasonRecord, SeasonRun } from "./types";
 import { clamp, josa, r1, sigmoid } from "./util";
 
 /*
@@ -545,28 +546,53 @@ function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord 
   };
   if (gp > 0 && run.final) rec.final = run.final;
 
-  // 시상
+  // 시상: 리그마다 실제 이름으로 줘요(awards.ts). 베스트 팀·올-디펜시브는 활약에 따라 퍼스트·세컨드·서드로 나눠요.
   const sh = L.short;
-  const impact = (ovr0 - L.avg + (p.trait === "승부사" ? 1 : 0)) * clamp(min / 30, 0, 1.15) + rnd(-2.5, 2.5);
+  const give = (k: AwardKey, tier = 1) => giveAward(c, k, awardName(lg, k, tier), rec);
+  // 영향력 = 실력 몫(core) + 운(noise)
+  const core = (ovr0 - L.avg + (p.trait === "승부사" ? 1 : 0)) * clamp(min / 30, 0, 1.15);
+  const noise = rnd(-2.5, 2.5);
+  const impact = core + noise;
+  const rookie = L.pro && c.proSeasons === 0;
   if (gp >= L.games * 0.6) {
     const mvpAt = lg === "nba" ? NBA_MVP_AT : MVP_AT;
-    if (impact >= mvpAt - 2.5 && chance(sigmoid((impact - mvpAt) / 1.2) * (wp >= 0.55 ? 1 : 0.3)))
-      giveAward(c, lg === "nba" ? "mvp_nba" : "mvp", `${sh} MVP`, rec);
-    if (L.pro && impact >= 5 && chance(sigmoid((impact - 7) / 1.4))) giveAward(c, "allstar", `${sh} 올스타`, rec);
-    if (impact >= 9 && chance(sigmoid((impact - 11.5) / 1.3)))
-      giveAward(c, "allleague", lg === "nba" ? "올-NBA 퍼스트팀" : `${sh} 베스트5`, rec);
-    if (L.pro && c.proSeasons === 0 && impact >= 0 && chance(sigmoid((impact - 2.5) / 1.5)))
-      giveAward(c, "roy", lg === "nba" ? "NBA 올해의 신인" : `${sh} 신인왕`, rec);
-    if (p.attrs.def - L.avg >= 13 - fx.dpoy && min >= 24 && chance(0.45)) giveAward(c, "dpoy", `${sh} 올해의 수비수`, rec);
-    if (rec.pts >= SCORING_TITLE[lg] && chance(0.6)) giveAward(c, "scoring", `${sh} 득점왕`, rec);
-    if (L.pro && min >= 18 && min < 26 && impact >= 3 && chance(0.4)) giveAward(c, "sixth", `${sh} 식스맨상`, rec);
+    const mvp = impact >= mvpAt - 2.5 && chance(sigmoid((impact - mvpAt) / 1.2) * (wp >= 0.55 ? 1 : 0.3));
+    if (mvp) give(lg === "nba" ? "mvp_nba" : "mvp");
+    // 스타 지수: MVP 문턱에 맞춘 영향력. NBA는 MVP 문턱이 리그 평균 + 3으로 낮고 선수 간 차이가 좁아서,
+    // 실력 몫만 펼치고 운은 그대로 더해요. 그래서 올스타·베스트 팀이 리그마다 MVP와 같은 눈높이로 뽑혀요.
+    // (NBA 평균 선수는 거의 못 뽑히고, 평균 + 1.5쯤에서 올스타가 반반이에요.)
+    const star = lg === "nba" ? MVP_AT + (core - NBA_MVP_AT) * 5.5 + noise : impact;
+    if (L.pro && (mvp || (star >= 5 && chance(sigmoid((star - 7) / 1.4))))) give("allstar");
+    // 베스트 팀: 베스트5 하나뿐인 리그는 예전 기준 그대로, 여러 팀이 있으면 기준을 낮추고 활약에 따라 팀을 나눠요. MVP는 늘 퍼스트팀이에요.
+    const tiers = ALL_LEAGUE_TIERS[lg];
+    if (mvp) give("allleague");
+    else if (tiers === 1) {
+      if (star >= 9 && chance(sigmoid((star - 11.5) / 1.3))) give("allleague");
+    } else if (star >= 7 && chance(sigmoid((star - 10) / 1.3))) {
+      const tier = star >= 11.5 ? 1 : tiers === 3 && star < 9.5 ? 3 : 2;
+      give(tier === 1 ? "allleague" : "allleague2", tier);
+    }
+    // 수비: 올해의 수비수는 예전 기준 그대로, 올-디펜시브는 그보다 조금 낮은 수비수까지 뽑혀요.
+    const defEdge = p.attrs.def - L.avg + fx.dpoy;
+    const dpoy = defEdge >= 13 && min >= 24 && chance(0.45);
+    if (dpoy) give("dpoy");
+    if (dpoy || (defEdge >= 9 && min >= 22 && chance(sigmoid((defEdge - 11) / 1.5))))
+      give("alldef", dpoy || ALL_DEF_TIERS[lg] === 1 || defEdge >= 12.5 ? 1 : 2);
+    if (rookie && impact >= 0 && chance(sigmoid((impact - 2.5) / 1.5))) give("roy");
+    if (rookie && lg === "nba" && impact >= -2 && chance(sigmoid((impact - 0.5) / 1.5))) give("allrookie");
+    if (rec.pts >= SCORING_TITLE[lg] && chance(0.6)) give("scoring");
+    if (L.pro && min >= 18 && min < 26 && impact >= 3 && chance(0.4)) give("sixth");
   }
+  // NBA 파이널에 올랐으면 컨퍼런스 파이널을 이긴 거예요. 그 시리즈를 이끈 선수에게 컨퍼런스 파이널 MVP를 줘요.
+  const wonConference = lg === "nba" && run.post.some((r) => r.name === FINAL_NAME.nba);
+  if (wonConference && gp > 0 && min >= 26 && impact >= 5 && chance(p.trait === "승부사" ? 0.8 : 0.55))
+    giveAward(c, "cfmvp", conferenceFinalsMvpName(team.name), rec);
   if (champ) {
     giveAward(c, L.pro ? "ring" : "title", L.pro ? `${sh} 우승` : `${sh} 전국대회 우승`, rec);
-    if (min >= 26 && impact >= 5 && chance(p.trait === "승부사" ? 0.85 : 0.6)) giveAward(c, "fmvp", `${sh} 파이널 MVP`, rec);
+    if (min >= 26 && impact >= 5 && chance(p.trait === "승부사" ? 0.85 : 0.6)) give("fmvp");
   }
   const prev = c.hist.length ? c.hist[c.hist.length - 1] : null;
-  if (L.pro && prev && ov0 - prev.ovr0 >= 6 && chance(0.5)) giveAward(c, "mip", `${sh} 기량발전상`, rec);
+  if (L.pro && prev && ov0 - prev.ovr0 >= 6 && chance(0.5)) give("mip");
 
   // 소식
   if (L.pro && c.proSeasons === 0) addNews(c, tag, "big", `프로 데뷔 시즌! ${team.name}에서 ${gp}경기를 뛰었어요.`);

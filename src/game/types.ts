@@ -33,6 +33,12 @@ export type AwardKey =
   | "fmvp"
   | "mvp"
   | "allleague"
+  /** 베스트 팀 세컨드·서드팀 */
+  | "allleague2"
+  | "alldef"
+  | "allrookie"
+  /** NBA 컨퍼런스 파이널 MVP */
+  | "cfmvp"
   | "allstar"
   | "roy"
   | "dpoy"

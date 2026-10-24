@@ -141,7 +141,9 @@ function afterStep(res: SeasonStep | null, before: NewsItem | undefined): void {
   if (res === "final") return set({ final: true, toast: null });
   if (res === "done") {
     const r = c.last;
-    return closeWithToast({ playing: false }, r && `${r.year} 시즌 종료 · ${r.lg ? `${r.w}승 ${r.l}패 · ` : ""}${r.result}`);
+    // 개인 수상이 있으면 첫 상과 나머지 개수를 덧붙여요. 전체 목록은 시즌 결과 카드에 있어요.
+    const awards = r?.awards.length ? ` · ${r.awards[0]}${r.awards.length > 1 ? ` 외 ${r.awards.length - 1}개` : ""}` : "";
+    return closeWithToast({ playing: false }, r && `${r.year} 시즌 종료 · ${r.lg ? `${r.w}승 ${r.l}패 · ` : ""}${r.result}${awards}`);
   }
   const msg = latestNewsSince(before, c);
   if (msg) set({ toast: toast(msg) });
