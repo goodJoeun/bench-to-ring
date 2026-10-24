@@ -38,7 +38,7 @@ h2.sec{font-family:var(--f-display);font-weight:400;font-size:18px;margin:0;lett
 
 /* header */
 .top{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:var(--t-max);margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 0 12px;background:var(--bg)}
-.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-size:20px}
+.brand{flex:none;display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-size:20px;white-space:nowrap}
 .ball{width:24px;height:24px;border-radius:50%;flex:none;
   background:linear-gradient(90deg,transparent 46%,var(--ball-line) 46% 54%,transparent 54%),linear-gradient(0deg,transparent 46%,var(--ball-line) 46% 54%,transparent 54%),var(--accent)}
 .hmeta{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:13px;min-width:0}
@@ -47,6 +47,21 @@ h2.sec{font-family:var(--f-display);font-weight:400;font-size:18px;margin:0;lett
 .icon-btn svg{width:24px;height:24px;fill:currentColor}
 .icon-btn[aria-pressed="true"]{color:var(--accent);background:var(--panel2)}
 .hmeta .saved::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--good);margin-right:6px;vertical-align:1px}
+.hright{display:flex;align-items:center;gap:10px;min-width:0}
+.guide-btn{flex:none;display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 12px 0 10px;border:1px solid var(--line);border-radius:999px;background:var(--panel);
+  color:var(--ink);font-size:13px;font-weight:700;cursor:pointer}
+.guide-btn svg{width:17px;height:17px;fill:var(--accent)}
+.guide-btn:hover{border-color:var(--ink)}
+.guide-btn[aria-expanded="true"]{background:var(--panel2)}
+
+/* 플레이 가이드: 한 시트 안의 카드 여덟 장 */
+.gd{list-style:none;margin:10px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.gd li{display:flex;flex-direction:column;gap:3px;padding:11px 12px;border-radius:12px;background:var(--panel2);min-width:0}
+.gd b{font-size:14px;color:var(--accent)}
+.gd li[data-wide]{grid-column:1/-1}
+.gd li > span{font-size:13.5px;line-height:1.5;word-break:keep-all}
+.gd-leagues{display:block;margin-top:3px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.gd-foot{margin:10px 0 0;font-size:13px;color:var(--muted);line-height:1.5}
 
 /* game grid */
 main.grid,.col-l,.col-r{display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -575,6 +590,19 @@ html:has(.sheet) .toast-zone{bottom:auto;top:calc(12px + env(safe-area-inset-top
   .brand .ball{width:20px;height:20px}
   .hmeta{font-size:12px;gap:8px}
   .hmeta .saved{display:none}
+  .hright{gap:6px}
+  .guide-btn{height:32px;padding:0 10px 0 8px;font-size:12.5px}
+}
+@media (max-width:400px){
+  /* 좁은 화면에서는 이름표를 빼고 아이콘만 둬요. 이름은 aria-label이 대신해요. */
+  .guide-btn{width:34px;padding:0;justify-content:center}
+  .guide-btn span{display:none}
+}
+@media (max-width:420px){
+  .gd{gap:6px}
+  .gd li{padding:9px 10px}
+  .gd b{font-size:13.5px}
+  .gd li > span{font-size:12.5px;line-height:1.45}
 }
 
 /* loading */
