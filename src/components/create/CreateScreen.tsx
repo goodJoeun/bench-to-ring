@@ -16,11 +16,11 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
     <>
       <section className="intro">
         <div>
-          <div className="label">농구 선수 키우기</div>
+          <div className="label">벤치 뎁혀 반지 굽기</div>
           <h1>
-            벤치 뎁혀
+            농구 선수
             <br />
-            <em>반지</em> 굽기
+            <em>키우기</em>
           </h1>
           <p className="lede">
             고교 벤치 멤버로 시작해 드래프트, 주전, 올스타를 거쳐 MVP와 우승 반지까지. 시즌마다 쌓이는 기록과 선택으로 나만의

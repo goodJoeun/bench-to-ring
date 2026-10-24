@@ -47,8 +47,8 @@ export function Game() {
       <header className="top">
         <div className="brand">
           <span className="ball" aria-hidden="true" />
-          <span>벤치 뎁혀 반지 굽기</span>
-          <span className="brand-sub">농구 선수 키우기</span>
+          <span>농구 선수 키우기</span>
+          <span className="brand-sub">벤치 뎁혀 반지 굽기</span>
         </div>
         <div className="hright">
           {inGame && (
