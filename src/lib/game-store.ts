@@ -24,7 +24,7 @@ import {
   type SeasonStep,
   type ShopKey,
 } from "@/game";
-import { decodeSave, loadCareer, loadHall, saveCareer, saveHall } from "@/game/storage";
+import { importCareer, loadCareer, loadHall, saveCareer, saveHall } from "@/game/storage";
 
 /** 선수 생성 화면의 입력값 */
 export interface CreationDraft {
@@ -336,7 +336,7 @@ export const gameActions = {
   },
   /** 성공하면 true */
   importSave(code: string): boolean {
-    const c = decodeSave(code);
+    const c = importCareer(code);
     if (!c) return false;
     resolveQueue(c);
     saveCareer(c);

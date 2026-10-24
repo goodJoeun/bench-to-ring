@@ -4,16 +4,18 @@ import type { CareerSummary } from "@/game";
 
 // 테이블 설계는 docs/online-leaderboard.md 3장을 따라요. 바꾸면 `npm run db:generate`로 마이그레이션을 만들어요.
 
-/** 플레이어(기기). 지금은 익명 토큰, 나중에 Google 로그인을 연결해요. */
+/** 플레이어(기기). 지금은 익명 토큰, 나중에 Google 로그인을 연결해요. 순위표에는 선수 이름만 보여서 닉네임은 없어요. */
 export const players = pgTable("players", {
   id: uuid("id").primaryKey().defaultRandom(),
   /** 브라우저에 저장한 익명 토큰의 해시. 토큰 원문은 두지 않아요. */
   tokenHash: text("token_hash").notNull().unique(),
-  nickname: text("nickname").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-/** 제출한 은퇴 기록. CareerSummary에서 순위·화면에 필요한 값만 따로 칸으로 둬요. */
+/**
+ * 제출한 은퇴 기록. CareerSummary에서 순위·화면에 필요한 값만 따로 칸으로 둬요.
+ * 저장 코드로 불러온 커리어는 제출하지 않아서 여기 없어요.
+ */
 export const careers = pgTable(
   "careers",
   {
@@ -25,8 +27,7 @@ export const careers = pgTable(
     ruleset: integer("ruleset").notNull(),
     /** 서버 재생 검증 통과 (2단계) */
     verified: boolean("verified").notNull().default(false),
-    /** 저장 코드로 불러온 커리어 */
-    imported: boolean("imported").notNull().default(false),
+    /** 선수 이름. 순위표에 그대로 공개해요. */
     name: text("name").notNull(),
     num: integer("num").notNull(),
     pos: text("pos").notNull(),

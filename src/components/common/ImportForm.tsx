@@ -36,7 +36,7 @@ export function ImportForm({ placeholder }: { placeholder: string }) {
           <input type="file" accept=".txt,.json" hidden onChange={(e) => onFile(e.target.files?.[0])} />
         </label>
         <span className="hint" role="status">
-          {message}
+          {message || "불러온 커리어는 명예의 전당에 비공인으로 표시돼요."}
         </span>
       </div>
     </>

@@ -204,3 +204,12 @@ export function decodeSave(code: string): Career | null {
     return null;
   }
 }
+
+/** 저장 코드로 불러온 커리어는 비공인이에요. 명예의 전당에 표시하고, 온라인 랭킹에는 올리지 않아요. */
+export function importCareer(code: string): Career | null {
+  const c = decodeSave(code);
+  if (!c) return null;
+  c.imported = true;
+  if (c.summary) c.summary.imported = true;
+  return c;
+}

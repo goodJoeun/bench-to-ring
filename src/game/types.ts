@@ -514,6 +514,8 @@ export interface CareerSummary {
   academy?: boolean;
   /** 은퇴 기록에 남는 산 것들 (아카데미, 재단 등) */
   legacyItems?: string[];
+  /** 저장 코드로 불러온 커리어 (비공인, 온라인 랭킹에 올리지 않아요) */
+  imported?: boolean;
 }
 
 export interface Career {
@@ -578,6 +580,8 @@ export interface Career {
   shop: { year: number; keys: ShopKey[]; bought: ShopKey[] } | null;
   /** 기부한 돈 합계 (억) */
   donated: number;
+  /** 저장 코드로 불러온 커리어 (비공인, 온라인 랭킹에 올리지 않아요) */
+  imported?: boolean;
   /** 마지막으로 이적을 요청한 오프시즌 (다음 시즌 연도) */
   moveAsked: number | null;
 }

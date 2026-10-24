@@ -31,21 +31,21 @@ Firebase로 시작해 나중에 백엔드로 옮기는 방법도 검토했지만
 
 ```sql
 -- 플레이어(기기). 1단계는 익명 토큰, 나중에 Google 로그인을 연결해요.
+-- 순위표에는 선수 이름을 보여줘서 닉네임은 두지 않아요(9장).
 create table players (
   id          uuid primary key default gen_random_uuid(),
   token_hash  text not null unique,          -- 브라우저에 저장한 익명 토큰의 해시
-  nickname    text not null,
   created_at  timestamptz not null default now()
 );
 
 -- 제출한 은퇴 기록. CareerSummary에서 순위·화면에 필요한 값만 따로 칸으로 둬요.
+-- 저장 코드로 불러온 커리어는 제출하지 않아요(9장).
 create table careers (
   id           text primary key,             -- Career.id (같은 커리어는 한 번만)
   player_id    uuid not null references players(id),
   ruleset      int  not null,                -- 5장
   verified     boolean not null default false, -- 4장 재생 검증 통과
-  imported     boolean not null default false, -- 저장 코드로 불러온 커리어
-  name         text not null,
+  name         text not null,                -- 선수 이름 (순위표에 공개)
   num          int  not null,
   pos          text not null check (pos in ('PG','SG','SF','PF','C')),
   mvp          int  not null,                -- NBA MVP
@@ -90,7 +90,7 @@ create table replays (
 ### 1단계: 형식 검사와 표시
 
 - 서버에서 범위를 검사해요: 최고 오버롤 20~99, MVP ≤ 프로 시즌 수, 은퇴 나이 30~41 등 엔진이 낼 수 있는 범위.
-- 저장 코드로 불러온 커리어는 `imported = true`로 올리고 순위표에 '비공인'으로 표시해요(또는 제출 금지, 9장).
+- 저장 코드로 불러온 커리어는 `Career.imported = true`로 표시하고 제출하지 않아요(9장). 명예의 전당(내 기록)에는 '비공인'으로 보여요.
 - 같은 커리어 id는 한 번만, 같은 플레이어는 1분에 한 번만 제출해요.
 - 이 단계의 기록은 `verified = false`예요. 순위표 기본 화면에서 보여줄지는 9장에서 정해요.
 
@@ -118,8 +118,7 @@ create table replays (
 | 메서드 · 경로 | 하는 일 |
 | --- | --- |
 | `POST /api/players` | 익명 플레이어 만들기. 토큰을 돌려주고 브라우저에 저장해요. |
-| `PATCH /api/players/me` | 닉네임 바꾸기 (욕설 필터) |
-| `POST /api/careers` | 은퇴 기록 제출. 응답에 전체 순위와 포지션 순위를 담아요. |
+| `POST /api/careers` | 은퇴 기록 제출. 엔딩에 도달하면 자동으로 불러요. 선수 이름 욕설 필터. 응답에 전체 순위와 포지션 순위를 담아요. |
 | `GET /api/boards?ruleset=&pos=&scope=current\|all` | 순위표 (전체 Top 50, 포지션별 Top 20, Best 5, 전체 통계). 캐시해요. |
 | `GET /api/careers/:id` | 기록 상세 (요약 전체) |
 | `POST /api/careers/:id/report` | 신고 (2단계) |
@@ -132,8 +131,8 @@ create table replays (
 - **명예의 전당 탭**: [내 기록 | 온라인 랭킹] 전환
   - 온라인 랭킹: 전체 Top 50, 포지션 탭(PG~C), **역대 Best 5**(포지션별 1위를 코트 위에 배치), 내 최고 순위
   - 룰셋 선택: 현재 / 역대 전체
-  - 비공인 기록은 표시를 달거나 숨겨요(9장).
-- **은퇴 화면**: "온라인 랭킹에 올리기" 버튼 → 닉네임 확인·공개 동의 → "전체 123위 · SG 12위" 결과와 순위표로 가는 링크
+- **은퇴 화면**: 엔딩에 도달하면 자동으로 등록하고 "전체 123위 · SG 12위" 결과와 순위표로 가는 링크를 보여줘요. 저장 코드로 불러온 커리어는 "비공인 기록이라 온라인 랭킹에 올리지 않아요"라고 알려요.
+- **공개 안내**: 선수를 만들 때 "은퇴하면 선수 이름과 기록이 온라인 랭킹에 공개돼요"라고 알리고, 설정에서 끌 수 있게 해요.
 - **재미 요소**: "전체 유저 중 NBA 진출 3.8% · 당신은 상위 2%", 포지션별 최고 기록 보유자
 - 서버가 안 되면 조용히 실패하고, 게임은 지금처럼 오프라인으로 돌아가요.
 
@@ -142,7 +141,7 @@ create table replays (
 ```
 src/
 ├─ app/api/
-│  ├─ players/route.ts         POST · players/me/route.ts PATCH
+│  ├─ players/route.ts         POST
 │  ├─ careers/route.ts         POST (제출)
 │  ├─ careers/[id]/route.ts    GET
 │  └─ boards/route.ts          GET (캐시)
@@ -158,14 +157,15 @@ src/
 
 - 엔진(`src/game`)은 바뀌지 않아요. 2단계에서만 난수 상태 저장과 행동 기록이 들어가요.
 - DB 접근 도구는 SQL에 가까운 가벼운 것(Drizzle 또는 Kysely)을 써요.
-- 환경 변수: `DATABASE_URL`, `TOKEN_SECRET`. `.env.example`에 이름만 남겨요.
+- 환경 변수: `DATABASE_URL`, `DATABASE_URL_UNPOOLED`(마이그레이션), `TOKEN_SECRET`. `.env.example`에 이름만 남겨요.
 
 ## 9. 정해야 할 것
 
-- [ ] 저장 코드로 불러온 커리어: 비공인으로 올리기 / 제출 금지
+- [x] 저장 코드로 불러온 커리어: 비공인으로 표시하고 제출하지 않아요
+- [x] 등록: 엔딩(은퇴)에 도달하면 자동으로 등록해요
 - [ ] 1단계(검증 전) 기록을 순위표 기본 화면에 보여줄지
 - [ ] 로그인: 익명 토큰만 / Google 연결도 (기기를 바꿔도 기록 유지)
-- [ ] 공개 범위: 선수 이름까지 / 닉네임만
+- [x] 공개 범위: 선수 이름 (닉네임은 따로 없어요)
 - [x] DB 호스트: Neon (싱가포르 `ap-southeast-1`, 로컬은 `dev` 브랜치)
 - [ ] 배포 위치 (Vercel 등)
 
@@ -175,12 +175,12 @@ src/
 
 - [x] DB 호스트 만들기, `DATABASE_URL` 설정, 마이그레이션(3장 테이블. `replays`는 2단계에) — `npm run db:generate`, `npm run db:migrate`
 - [ ] `RULESET_VERSION` 상수 추가 (`src/game`)
-- [ ] 저장 코드로 불러온 커리어 표시 (`Career`에 `imported` 플래그)
+- [x] 저장 코드로 불러온 커리어 표시 (`Career`·`CareerSummary`의 `imported`, `importCareer`)
 - [ ] 익명 플레이어 API와 토큰 저장
 - [ ] 기록 제출 API: 형식·범위 검사, 중복·횟수 제한
 - [ ] 순위표 API: 전체·포지션별·Best 5·통계, 캐시와 제출 때 갱신
-- [ ] 명예의 전당 [온라인 랭킹] 화면, 은퇴 화면 제출 버튼
-- [ ] 닉네임 욕설 필터
+- [ ] 명예의 전당 [온라인 랭킹] 화면, 은퇴 때 자동 등록과 결과 표시, 공개 안내
+- [ ] 선수 이름 욕설 필터
 - [ ] 테스트: 범위 검사, 순위 계산(공동 순위 포함), 제출 흐름
 
 ### 2단계: 믿을 수 있는 기록

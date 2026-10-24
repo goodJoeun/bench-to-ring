@@ -63,7 +63,7 @@ import { makeLiveGame } from "@/game/live";
 import { giveAward, setTeam } from "@/game/log";
 import { militaryDecision } from "@/game/military";
 import { nationalCallUp, runNationalTeam } from "@/game/national";
-import { decodeSave, encodeSave } from "@/game/storage";
+import { decodeSave, encodeSave, importCareer } from "@/game/storage";
 import { refreshShop, shopPerks } from "@/game/shop";
 
 afterEach(() => resetRandom());
@@ -226,6 +226,26 @@ describe("저장 코드", () => {
     simulateSeason(c);
     expect(decodeSave(encodeSave(c))).toEqual(c);
     expect(decodeSave("이건 저장 코드가 아니에요")).toBeNull();
+  });
+
+  it("불러온 커리어는 비공인으로 표시하고, 은퇴 기록에도 남겨요", () => {
+    const rand = seeded(5);
+    setRandom(rand);
+    const c = createCareer({ name: "불러온 선수", num: 7, nat: "대한민국", pos: "PG", path: "domestic" }, generateCandidates("PG")[0], "imp");
+    simulateSeason(c);
+    expect(c.imported).toBeUndefined();
+
+    const loaded = importCareer(encodeSave(c))!;
+    expect(loaded.imported).toBe(true);
+    playToRetirement(loaded, rand);
+    expect(loaded.summary?.imported).toBe(true);
+
+    // 이미 은퇴한 커리어를 불러와도 은퇴 기록이 비공인이 돼요.
+    const retired = createCareer({ name: "은퇴 선수", num: 8, nat: "대한민국", pos: "C", path: "domestic" }, generateCandidates("C")[0], "ret");
+    playToRetirement(retired, rand);
+    expect(retired.summary?.imported).toBeUndefined();
+    expect(importCareer(encodeSave(retired))!.summary?.imported).toBe(true);
+    expect(importCareer("이건 저장 코드가 아니에요")).toBeNull();
   });
 });
 
