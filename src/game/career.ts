@@ -106,7 +106,7 @@ export function careerJourney(c: Career): JourneyStep[] {
       ? top.n
       : h.mil
         ? h.mil === "sangmu" ? "상무에서 군 복무" : "현역으로 군 복무"
-        : !h.lg ? "무소속 · 개인 훈련" : `${h.role} · ${h.result}`;
+        : !h.lg ? "무소속 · 개인 훈련" : h.result;
     steps.push({
       year: h.year,
       age: h.age,

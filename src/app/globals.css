@@ -448,6 +448,12 @@ textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize
 .fw-trail .ty{font-family:var(--f-num);color:var(--sim-lbl);font-variant-numeric:tabular-nums}
 .fw-trail .tt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fw-trail li[data-big] .tt{color:#FFD66B;font-weight:700}
+.fw-nav{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;margin-top:10px}
+.fw-nav .sim-skip{margin-top:0;min-height:44px}
+.fw-nav .sim-skip:disabled{opacity:.35;cursor:default}
+.fw-nav .live-go{margin-top:0;min-width:120px}
+.fw-count{font-family:var(--f-num);font-size:15px;font-weight:700;color:var(--sim-lbl);font-variant-numeric:tabular-nums}
+.fw-skip{align-self:center;margin-top:6px;border:0;text-decoration:underline;text-underline-offset:3px}
 .fw .live-ctl{margin-top:4px}
 /* 결승 문자 중계 */
 .live{display:flex;flex-direction:column;gap:12px;text-align:left}

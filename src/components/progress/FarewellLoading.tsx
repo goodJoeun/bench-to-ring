@@ -4,17 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { careerJourney, careerSummary, fmtNum, type Career } from "@/game";
 import { gameActions } from "@/lib/game-store";
 import { NO_TEAM_COLOR } from "@/components/common/format";
-import { reducedMotion, useAutoFocus, useReveal } from "@/components/common/hooks";
+import { reducedMotion, useAutoFocus } from "@/components/common/hooks";
 import { Sprite } from "@/components/common/Sprite";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { Popup } from "./Popup";
 
-/** 한 칸을 보여주는 시간(ms). 우승·MVP 같은 순간은 조금 더 오래 머물러요. 빠르게 보기는 3배속이에요. */
-const STEP_MS = 1100;
-const BIG_MS = 1900;
-const FIRST_MS = 600;
-const TAIL_MS = 1400;
-const FAST = 3;
 /** 지나온 발자취를 몇 줄 남길지 */
 const TRAIL = 3;
 
@@ -41,22 +35,19 @@ function useCountUp(target: number): number {
 
 /**
  * 은퇴 직후 엔딩 전에 보여주는 커리어 회고. 도트 선수가 커리어 길을 따라 걸어가며
- * 입단부터 시즌마다의 활약, 메달, 드래프트를 한 칸씩 보여주고, 끝나면 엔딩(은퇴 화면)으로 넘어가요.
+ * 입단부터 시즌마다의 활약, 메달, 드래프트를 한 칸씩 보여줘요. 저절로 넘어가지 않고,
+ * '다음'을 눌러야 다음 마일스톤으로 가요. 마지막 칸에서 '엔딩 보기'를 누르면 은퇴 화면으로 넘어가요.
  */
 export function FarewellLoading({ career: c }: { career: Career }) {
   const steps = useMemo(() => careerJourney(c), [c]);
   const summary = c.summary ?? careerSummary(c);
-  const [fast, setFast] = useState(false);
-  const [done, setDone] = useState(false);
-  const speed = fast ? FAST : 1;
-  const [shown, setShown] = useReveal(steps.length, (i) => (i === 0 ? FIRST_MS : steps[i - 1].big ? BIG_MS : STEP_MS) / speed, {
-    running: !done,
-    tail: TAIL_MS / speed,
-    onDone: () => setDone(true),
-  });
-  const goRef = useAutoFocus<HTMLButtonElement>(done);
-
   const n = steps.length;
+  // 첫 칸은 바로 보여줘요. shown은 지금까지 본 칸 수예요.
+  const [shown, setShown] = useState(Math.min(1, n));
+  const done = shown >= n;
+  // 열리자마자 '다음' 버튼에 초점을 둬서 Enter·스페이스로 넘길 수 있어요.
+  const goRef = useAutoFocus<HTMLButtonElement>();
+
   const at = Math.max(0, shown - 1);
   const cur = shown ? steps[at] : null;
   const color = cur?.color ?? NO_TEAM_COLOR;
@@ -66,10 +57,7 @@ export function FarewellLoading({ career: c }: { career: Career }) {
   const trophies = useCountUp(cur?.trophies ?? 0);
   const trail = steps.slice(Math.max(0, at - TRAIL), at).reverse();
 
-  const skip = () => {
-    setShown(n);
-    setDone(true);
-  };
+  const next = () => (done ? gameActions.finishFarewell() : setShown(shown + 1));
 
   return (
     <Popup labelledBy="fw-title" className="fw">
@@ -142,33 +130,35 @@ export function FarewellLoading({ career: c }: { career: Career }) {
       </div>
 
       {done ? (
-        <>
-          <p className="tour-story">
-            <b>{summary.legacy}</b> · {summary.retAge}세 은퇴 · 프로 {summary.seasons}시즌
-          </p>
-          <button type="button" ref={goRef} className="live-go" onClick={() => gameActions.finishFarewell()}>
-            엔딩 보기
-          </button>
-        </>
+        <p className="tour-story">
+          <b>{summary.legacy}</b> · {summary.retAge}세 은퇴 · 프로 {summary.seasons}시즌
+        </p>
       ) : (
-        <>
-          <ol className="fw-trail" aria-label="지나온 발자취">
-            {trail.map((s) => (
-              <li key={`${s.year}-${s.title}`} data-big={s.big || undefined}>
-                <span className="ty">{s.year}</span>
-                <span className="tt">{s.title}</span>
-              </li>
-            ))}
-          </ol>
-          <div className="live-ctl">
-            <button type="button" className="sim-skip" aria-pressed={fast} onClick={() => setFast(!fast)}>
-              빠르게 ×{FAST}
-            </button>
-            <button type="button" className="sim-skip" onClick={skip}>
-              엔딩 바로 보기
-            </button>
-          </div>
-        </>
+        <ol className="fw-trail" aria-label="지나온 발자취">
+          {trail.map((s) => (
+            <li key={`${s.year}-${s.title}`} data-big={s.big || undefined}>
+              <span className="ty">{s.year}</span>
+              <span className="tt">{s.title}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+
+      <div className="fw-nav">
+        <button type="button" className="sim-skip" disabled={shown <= 1} onClick={() => setShown(shown - 1)}>
+          이전
+        </button>
+        <span className="fw-count" aria-label={`${n}개 중 ${shown}번째`}>
+          {shown} / {n}
+        </span>
+        <button type="button" ref={goRef} className="live-go" onClick={next}>
+          {done ? "엔딩 보기" : "다음"}
+        </button>
+      </div>
+      {!done && (
+        <button type="button" className="sim-skip fw-skip" onClick={() => setShown(n)}>
+          마지막으로 건너뛰기
+        </button>
       )}
     </Popup>
   );
