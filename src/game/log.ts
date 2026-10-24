@@ -1,6 +1,6 @@
 import { TEAMS } from "./leagues";
 import { pick, rnd } from "./random";
-import type { AwardKey, Career, LeagueKey, NewsType, SeasonRecord, Team } from "./types";
+import type { AwardKey, Career, Cheer, LeagueKey, NewsType, SeasonRecord, Team } from "./types";
 
 const NEWS_LIMIT = 90;
 
@@ -9,10 +9,29 @@ export function addNews(c: Career, when: string, type: NewsType, message: string
   if (c.news.length > NEWS_LIMIT) c.news.length = NEWS_LIMIT;
 }
 
+/** 축하 팝업을 띄울 상: 각종 우승, 국가대표 금메달, NBA MVP, 파이널 MVP */
+const CHEER_KIND: Partial<Record<AwardKey, Cheer["kind"]>> = { ring: "title", title: "title", nat_gold: "gold", mvp_nba: "mvp", fmvp: "fmvp" };
+/** 보여주지 않은 축하는 이만큼만 남겨요. 화면 없이 커리어를 돌리는 테스트에서 끝없이 쌓이지 않게요. */
+const CHEER_LIMIT = 8;
+
+function cheer(c: Career, x: Cheer): void {
+  c.cheers.push(x);
+  if (c.cheers.length > CHEER_LIMIT) c.cheers.splice(0, c.cheers.length - CHEER_LIMIT);
+}
+
 export function giveAward(c: Career, k: AwardKey, name: string, rec?: SeasonRecord): void {
+  const year = rec ? rec.year : c.year - 1;
   c.awards[k] = (c.awards[k] ?? 0) + 1;
-  c.awardLog.push({ y: rec ? rec.year : c.year - 1, k, n: name });
+  c.awardLog.push({ y: year, k, n: name });
   if (rec) rec.awards.push(name);
+  const kind = CHEER_KIND[k];
+  if (!kind) return;
+  let sub: string;
+  if (kind === "gold") sub = `${c.p.nat} 대표팀 · ${year}년`;
+  else if (!rec) sub = `${year} 시즌`;
+  else if (kind === "title") sub = `${rec.team} · ${year} 시즌${rec.final?.series ? ` · 시리즈 ${rec.final.series}` : ""}`;
+  else sub = `${rec.team} · ${year} 시즌 · 경기당 ${rec.pts}점 ${rec.reb}리바 ${rec.ast}어시`;
+  cheer(c, { kind, title: name, sub, year, color: kind === "gold" ? null : (c.team?.color ?? null) });
 }
 
 export function pickTeam(lg: LeagueKey, used?: Set<string>): Team {
@@ -25,6 +44,11 @@ export const makeTeam = ([name, color]: readonly [string, string]): Team => ({ n
 
 export function setTeam(c: Career, lg: LeagueKey, t: Team): void {
   c.team = { lg, name: t.name, color: t.color, q: t.q };
+  // NBA 팀에 처음 들어가면 한 번만 축하해요. 드래프트·계약·영입 제안 어느 길로 와도 여기를 지나요.
+  if (lg === "nba" && !c.milestones.includes("nba")) {
+    c.milestones.push("nba");
+    cheer(c, { kind: "nba", title: "NBA 입성!", sub: `${t.name} 유니폼을 입어요 · ${c.age}세`, year: c.year, color: t.color });
+  }
 }
 
 /** 새 팀에 들어가요. 코치 신뢰는 처음부터 다시 쌓아요. */

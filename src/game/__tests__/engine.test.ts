@@ -60,6 +60,7 @@ import {
 import { awardName, conferenceFinalsMvpName, nbaConference } from "@/game/awards";
 import { bigGameDecision, clutchDecision, injuryDecision, lifeEvent } from "@/game/events";
 import { makeLiveGame } from "@/game/live";
+import { giveAward, setTeam } from "@/game/log";
 import { militaryDecision } from "@/game/military";
 import { nationalCallUp, runNationalTeam } from "@/game/national";
 import { decodeSave, encodeSave } from "@/game/storage";
@@ -1415,5 +1416,42 @@ describe("리그별 시상", () => {
       }
     }
     expect(mvps).toBeGreaterThan(0);
+  });
+});
+
+describe("축하 팝업", () => {
+  const fresh = (id: string) => createCareer({ name: "축하", num: 9, nat: "대한민국", pos: "SF", path: "abroad" }, generateCandidates("SF")[0], id);
+
+  it("우승·금메달·NBA MVP·파이널 MVP를 받으면 축하가 쌓이고, 다른 상은 쌓이지 않아요", () => {
+    const c = fresh("ch1");
+    c.team = { name: "보스턴 셀틱스", color: "#007A33", q: 0.6, lg: "nba" };
+    const rec = { year: 2034, team: "보스턴 셀틱스", pts: 28.1, reb: 7, ast: 6, awards: [] as string[] } as unknown as Career["hist"][number];
+    giveAward(c, "allstar", "NBA 올스타", rec);
+    giveAward(c, "mvp_nba", "NBA MVP (마이클 조던 트로피)", rec);
+    giveAward(c, "ring", "NBA 우승", rec);
+    giveAward(c, "fmvp", "NBA 파이널 MVP (빌 러셀 트로피)", rec);
+    giveAward(c, "nat_gold", "2034 아시안게임 금메달");
+    expect(c.cheers.map((x) => x.kind)).toEqual(["mvp", "title", "fmvp", "gold"]);
+    expect(c.cheers[0].sub).toContain("경기당 28.1점");
+    expect(c.cheers[1].color).toBe("#007A33");
+  });
+
+  it("NBA 첫 입성은 한 번만 축하하고, 예전 저장에서 이미 NBA를 뛰었으면 축하하지 않아요", () => {
+    const c = fresh("ch2");
+    setTeam(c, "kbl", { name: "서울 SK 나이츠", color: "#E11B22", q: 0.5 });
+    expect(c.cheers).toEqual([]);
+    setTeam(c, "nba", { name: "LA 레이커스", color: "#552583", q: 0.5 });
+    setTeam(c, "nba", { name: "보스턴 셀틱스", color: "#007A33", q: 0.5 });
+    expect(c.cheers.filter((x) => x.kind === "nba")).toHaveLength(1);
+    expect(c.cheers[0].sub).toContain("LA 레이커스");
+
+    const old = JSON.parse(JSON.stringify(fresh("ch3")));
+    delete old.cheers;
+    delete old.milestones;
+    old.hist = [{ year: 2033, lg: "nba", team: "LA 레이커스", awards: [] }];
+    const loaded = decodeSave(JSON.stringify(old))!;
+    expect(loaded.milestones).toContain("nba");
+    setTeam(loaded, "nba", { name: "보스턴 셀틱스", color: "#007A33", q: 0.5 });
+    expect(loaded.cheers).toEqual([]);
   });
 });

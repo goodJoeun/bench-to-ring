@@ -448,6 +448,17 @@ textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize
 .fw-trail .ty{font-family:var(--f-num);color:var(--sim-lbl);font-variant-numeric:tabular-nums}
 .fw-trail .tt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fw-trail li[data-big] .tt{color:#FFD66B;font-weight:700}
+/* 축하 팝업: 꽃가루가 떨어지고 트로피가 빛나요. */
+.sim-card.cheer{position:relative;overflow:hidden}
+.cheer-confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.cheer-confetti i{position:absolute;top:-16px;width:8px;height:14px;border-radius:2px;opacity:.9;animation:confetti 3.2s linear infinite}
+.cheer-confetti i:nth-child(odd){width:10px;height:8px;animation-duration:2.6s}
+@keyframes confetti{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(110vh) rotate(540deg)}}
+.cheer-trophy{width:64px;height:64px;fill:#FFD66B;filter:drop-shadow(0 0 18px rgba(255,214,107,.65));animation:cheer-pop .5s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes cheer-pop{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
+.sim-card .cheer-court{height:130px;margin-bottom:0}
+.sim-card .cheer-title{color:#FFD66B;text-wrap:balance;animation:rise .4s ease-out .15s both}
+.sim-card.cheer .live-go{position:relative;margin-top:18px}
 .fw-nav{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;margin-top:10px}
 .fw-nav .sim-skip{margin-top:0;min-height:44px}
 .fw-nav .sim-skip:disabled{opacity:.35;cursor:default}
@@ -488,7 +499,8 @@ textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize
 @keyframes dribble{from{transform:translateY(0)}to{transform:translateY(-6px)}}
 @keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
-@media (prefers-reduced-motion:reduce){.tabc,.sim,.sim-sprite,.sim-phase .dots::after,.scrim,.sheet,.toast,.tour-games li,.draft-picks li,.fw-title,.fw-trail li,.fw-walker .sprite{animation:none}
+@media (prefers-reduced-motion:reduce){.tabc,.sim,.sim-sprite,.sim-phase .dots::after,.scrim,.sheet,.toast,.tour-games li,.draft-picks li,.fw-title,.fw-trail li,.fw-walker .sprite,.cheer-trophy,.cheer-title{animation:none}
+  .cheer-confetti{display:none}
   .fw-fill,.fw-walker{transition:none}}
 
 /* 눌렀을 때 손끝에 반응이 오게 */

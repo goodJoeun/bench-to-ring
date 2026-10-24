@@ -287,6 +287,12 @@ export const gameActions = {
     const t = snapshot.career?.natLog.at(-1);
     closeWithToast({ tournament: false }, t && `${t.name} · ${t.label}`);
   },
+  /** 맨 앞의 축하 팝업을 닫아요. 남은 축하가 있으면 다음 장이 이어서 떠요. */
+  dismissCheer() {
+    mutate((c) => {
+      c.cheers.shift();
+    });
+  },
   /** 드래프트 진행 화면을 닫고 지명 결과를 알림으로 보여줘요. */
   finishDraft() {
     closeWithToast({ drafting: false }, snapshot.career?.news[0]?.m);

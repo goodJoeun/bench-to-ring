@@ -324,6 +324,18 @@ export interface NatTournament {
 
 /* ---------- 병역 ---------- */
 
+/** 축하 팝업 한 장: 우승, 금메달, NBA 첫 입성, NBA MVP, 파이널 MVP */
+export interface Cheer {
+  kind: "title" | "gold" | "nba" | "mvp" | "fmvp";
+  /** 큰 글씨: "NBA 우승", "NBA 입성" */
+  title: string;
+  /** 작은 글씨: 팀, 시즌, 기록 */
+  sub: string;
+  year: number;
+  /** 유니폼 색. 모르면 null */
+  color: string | null;
+}
+
 /** 병역. none: 아직, serving: 복무 중, served: 전역, exempt: 병역 특례 */
 export interface Military {
   s: "none" | "serving" | "served" | "exempt";
@@ -548,6 +560,10 @@ export interface Career {
   natLog: NatTournament[];
   /** 아직 보지 않은 결승전 중계. 보여준 뒤에도 다음 결승 전까지 남아 있어요. */
   live: LiveGame | null;
+  /** 아직 보여주지 않은 축하 팝업 (오래된 것부터) */
+  cheers: Cheer[];
+  /** 한 번만 축하하는 순간을 이미 겪었는지 (예: "nba" 첫 입성) */
+  milestones: string[];
   /** 가장 최근 드래프트의 지명 순서 */
   draftShow: DraftShow | null;
   /** 다음 시즌에 할 투자 (고른 순서). 시즌을 시작할 때 비용을 내요. */

@@ -152,6 +152,8 @@ export function createCareer(input: NewCareerInput, cand: Candidate, id = String
     shop: null,
     donated: 0,
     moveAsked: null,
+    cheers: [],
+    milestones: [],
   };
   refreshShop(c);
   const chosen = TEAMS.hs.find(([name]) => name === input.school);

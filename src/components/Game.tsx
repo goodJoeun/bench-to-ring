@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { gameActions, useGame } from "@/lib/game-store";
 import { CreateScreen } from "@/components/create/CreateScreen";
+import { CheerPopup } from "@/components/progress/CheerPopup";
 import { DraftLoading } from "@/components/progress/DraftLoading";
 import { FarewellLoading } from "@/components/progress/FarewellLoading";
 import { GameScreen, type TabKey } from "@/components/career/GameScreen";
@@ -21,6 +22,8 @@ export function Game() {
   const tab = career && view.id === career.id ? view.tab : "season";
   const inGame = ready && career && career.stage !== "retired";
   const [guideOpen, setGuideOpen] = useState(false);
+  // 축하 팝업은 다른 진행 화면(시즌 진행·결승 중계·대회·드래프트·회고)이 다 끝난 뒤에 한 장씩 띄워요.
+  const cheer = inGame && !playing && !final && !tournament && !drafting && !farewell ? career.cheers[0] : undefined;
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   /** 탭이 바뀌면 화면이 통째로 바뀌니 맨 위에서 시작해요. */
@@ -92,6 +95,7 @@ export function Game() {
       {tournament && career && <TournamentLoading career={career} />}
       {drafting && career?.draftShow && <DraftLoading career={career} show={career.draftShow} />}
       {farewell && career?.stage === "retired" && <FarewellLoading career={career} />}
+      {cheer && career && <CheerPopup career={career} cheer={cheer} />}
       {guideOpen && <GuideDialog onClose={() => setGuideOpen(false)} />}
       {settingsOpen && (
         <SettingsDialog
