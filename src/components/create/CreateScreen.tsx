@@ -105,7 +105,7 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
               <CandidateCard key={`${draft.pos}-${i}-${c.arch}-${c.h}`} cand={c} pos={draft.pos} index={i} selected={draft.selected === i} />
             ))}
           </div>
-          <p className="hint">스카우트 등급은 잠재력 추정치예요. 실제 잠재력과 숨겨진 성장 특성은 뛰어봐야 알 수 있어요.</p>
+          <p className="hint">잠재력과 숨겨진 성장 특성은 뛰어봐야 알 수 있어요.</p>
         </div>
 
         <button type="button" className="start" onClick={() => setConfirmOpen(true)}>

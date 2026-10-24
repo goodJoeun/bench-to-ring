@@ -314,7 +314,6 @@ textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;resize
 .confirm-sum dd{margin:2px 0 0;font-size:15px;font-weight:700}
 .covr{font-family:var(--f-num);font-weight:700;font-size:16px;color:var(--muted)}
 .cmeta{display:flex;flex-wrap:wrap;gap:2px 12px;font-size:13px;color:var(--muted)}
-.grade{font-family:var(--f-num);font-weight:700;color:var(--ink)}
 .mbars{display:flex;flex-direction:column;gap:5px}
 .mb{display:grid;grid-template-columns:56px minmax(0,1fr) 24px;gap:8px;align-items:center;font-size:12.5px}
 .mb b{font-family:var(--f-num);text-align:right;font-variant-numeric:tabular-nums}

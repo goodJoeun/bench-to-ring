@@ -36,9 +36,6 @@ export function CandidateCard({ cand, pos, index, selected }: { cand: Candidate;
             키 {cand.h}cm{arch && ` · 성인 예상 ${bodyOf(pos, arch).h.join("–")}cm`}
           </span>
           <span>윙스팬 {cand.h + cand.wsd}cm</span>
-          <span>
-            스카우트 등급 <span className="grade">{cand.grade}</span>
-          </span>
         </span>
         <span className="mbars">
           {ATTR_KEYS.map((k) => (

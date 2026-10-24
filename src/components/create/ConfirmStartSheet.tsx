@@ -45,10 +45,8 @@ export function ConfirmStartSheet({ draft, onClose }: { draft: CreationDraft; on
           </dd>
         </div>
         <div>
-          <dt>오버롤 · 스카우트 등급</dt>
-          <dd>
-            {Math.round(ovrOf(cand.attrs, draft.pos))} · {cand.grade}
-          </dd>
+          <dt>오버롤</dt>
+          <dd>{Math.round(ovrOf(cand.attrs, draft.pos))}</dd>
         </div>
       </dl>
       <button type="button" className="sheet-go" onClick={gameActions.startCareer}>
