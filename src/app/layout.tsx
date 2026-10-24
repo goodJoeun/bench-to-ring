@@ -11,7 +11,7 @@ import "./globals.css";
 import { THEME_BOOT } from "@/lib/theme";
 
 export const metadata: Metadata = {
-  title: "벤치에서 반지까지",
+  title: "벤치 뎁혀 반지 굽기 · 농구 선수 키우기",
   description: "고교 벤치 멤버로 시작해 KBL과 NBA를 거쳐 MVP와 우승 반지에 도전하는 농구 커리어 게임.",
 };
 

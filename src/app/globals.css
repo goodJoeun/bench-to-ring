@@ -45,6 +45,7 @@ h2.sec{font-family:var(--f-display);font-weight:400;font-size:18px;margin:0;lett
 /* header */
 .top{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:var(--t-max);margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 0 12px;background:var(--bg)}
 .brand{flex:none;display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-size:20px;white-space:nowrap}
+.brand-sub{font-family:var(--f-body);font-size:12px;font-weight:700;color:var(--muted)}
 .ball{width:24px;height:24px;border-radius:50%;flex:none;
   background:linear-gradient(90deg,transparent 46%,var(--ball-line) 46% 54%,transparent 54%),linear-gradient(0deg,transparent 46%,var(--ball-line) 46% 54%,transparent 54%),var(--accent)}
 .hmeta{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:13px;min-width:0}
@@ -623,6 +624,7 @@ html:has(.sheet) .toast-zone{bottom:auto;top:calc(12px + env(safe-area-inset-top
 @media (max-width:640px){
   .brand{font-size:17px;gap:8px}
   .brand .ball{width:20px;height:20px}
+  .brand-sub{display:none}
   .hmeta{font-size:12px;gap:8px}
   .hmeta .saved{display:none}
   .hright{gap:6px}
