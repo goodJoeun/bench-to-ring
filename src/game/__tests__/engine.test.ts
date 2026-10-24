@@ -16,7 +16,11 @@ import {
   ovrOf,
   placeOnBoard,
   rankHall,
+  rankScore,
   resetRandom,
+  scoreParts,
+  SCORE_AWARDS,
+  SCORE_OTHER,
   seeded,
   setRandom,
   START_CAP,
@@ -318,18 +322,68 @@ describe("생활 이벤트", () => {
 });
 
 describe("명예의 전당 순위", () => {
-  it("네 항목이 모두 같으면 공동 순위예요", () => {
-    const base = { mvp: 1, peak: 90, personal: 5, pts: 10000 } as CareerSummary;
+  const nbaTeam = TEAMS.nba[0][0];
+  const kblTeam = TEAMS.kbl[0][0];
+  const base = {
+    mvp: 1,
+    peak: 90,
+    personal: 5,
+    pts: 10000,
+    reb: 3000,
+    ast: 2000,
+    teams: [nbaTeam],
+    awards: { mvp_nba: 1 },
+  } as CareerSummary;
+
+  it("점수와 나머지 세 항목이 모두 같으면 공동 순위예요", () => {
     const ranked = rankHall([
       { ...base, id: "a" },
       { ...base, id: "b" },
-      { ...base, id: "c", mvp: 2 },
+      { ...base, id: "c", mvp: 2, awards: { mvp_nba: 2 } },
     ]);
     expect(ranked.map((r) => [r.career.id, r.rank])).toEqual([
       ["c", 1],
       ["a", 2],
       ["b", 2],
     ]);
+  });
+
+  it("NBA에서 받은 상과 쌓은 기록을 다른 리그보다 크게 쳐요", () => {
+    const share = { seasons: 8, gp: 600, pts: 10000, reb: 3000, ast: 2000, awards: { mvp_nba: 1, fmvp: 2, ring: 2 } };
+    const nba = { ...base, awards: { mvp_nba: 1, fmvp: 2, ring: 2 }, nba: share };
+    // 같은 상을 NBA 밖에서 받았으면 30%만 쳐요.
+    const abroad = { ...nba, nba: { ...share, awards: { mvp_nba: 1 } } };
+    expect(rankScore(nba)).toBeGreaterThan(rankScore(abroad));
+    expect(scoreParts(nba).awards - scoreParts(abroad).awards).toBeCloseTo((2 * 20 + 2 * 12) * (1 - SCORE_OTHER));
+    // KBL에서만 MVP 9번을 받은 레전드보다 NBA MVP 2번이 위예요.
+    const kblLegend = {
+      ...base,
+      mvp: 0,
+      teams: [kblTeam],
+      awards: { mvp: 9, allleague: 12, allstar: 12, ring: 4, fmvp: 3 },
+      pts: 20000,
+      nba: { seasons: 0, gp: 0, pts: 0, reb: 0, ast: 0, awards: {} },
+    };
+    const nbaStar = { ...base, mvp: 2, awards: { mvp_nba: 2, allleague: 3, allstar: 4 }, nba: { ...share, awards: { mvp_nba: 2, allleague: 3, allstar: 4 } } };
+    expect(rankScore(nbaStar)).toBeGreaterThan(rankScore(kblLegend));
+  });
+
+  it("NBA 몫이 없는 예전 기록도 NBA MVP는 NBA 상으로 쳐요", () => {
+    expect(scoreParts(base).awards).toBe(SCORE_AWARDS.mvp_nba);
+    expect(scoreParts(base).nba).toBe(10);
+    expect(scoreParts({ ...base, teams: [kblTeam] }).nba).toBe(0);
+  });
+
+  it("은퇴 요약에 NBA 몫과 도트 색이 남아요", () => {
+    const rand = seeded(21);
+    setRandom(rand);
+    const c = createCareer({ name: "요약", num: 1, nat: "대한민국", pos: "SF", path: "abroad" }, generateCandidates("SF")[0], "sum");
+    playToRetirement(c, rand);
+    const s = c.summary!;
+    expect(s.nba).toBeDefined();
+    expect(s.nba!.seasons).toBeLessThanOrEqual(s.seasons);
+    expect(s.nba!.awards.mvp_nba ?? 0).toBe(s.mvp);
+    expect(s.look).toMatchObject({ skin: expect.stringMatching(/^#/), hair: expect.stringMatching(/^#/) });
   });
 });
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AWARDS, PERSONAL_AWARDS, POS_KEYS, RULESET_VERSION, START_YEAR, legacyOf, type AwardKey, type CareerSummary, type PosKey } from "@/game";
+import { AWARDS, PERSONAL_AWARDS, POS_KEYS, RULESET_VERSION, START_YEAR, legacyOf, playedNba, type AwardKey, type CareerSummary, type PosKey } from "@/game";
 import { RETIRE_AGE } from "@/game/offseason";
 import type { BoardScope } from "@/lib/leaderboard/types";
 
@@ -8,6 +8,7 @@ import type { BoardScope } from "@/lib/leaderboard/types";
 
 const AWARD_KEYS = AWARDS.map(([k]) => k) as [AwardKey, ...AwardKey[]];
 const count = z.int().min(0);
+const hexColor = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
 
 const summarySchema = z.object({
   id: z.string().min(1).max(64),
@@ -38,6 +39,17 @@ const summarySchema = z.object({
   academy: z.boolean().optional(),
   legacyItems: z.array(z.string().max(40)).max(20).optional(),
   ruleset: z.int().min(1).max(RULESET_VERSION),
+  nba: z
+    .object({
+      seasons: z.int().min(0).max(30),
+      gp: count,
+      pts: count,
+      reb: count,
+      ast: count,
+      awards: z.partialRecord(z.enum(AWARD_KEYS), count.max(100)),
+    })
+    .optional(),
+  look: z.object({ skin: hexColor, hair: hexColor }).optional(),
 });
 
 export type SubmittedSummary = z.infer<typeof summarySchema> & CareerSummary;
@@ -96,6 +108,19 @@ export function checkSummary(input: unknown): CheckResult {
   if (Math.abs(s.retYear - (START_YEAR - 17 + s.retAge)) > 1) return { ok: false, error: "은퇴 연도가 맞지 않아요." };
   const { legacy, ...rest } = s;
   if (legacy !== legacyOf(rest)) return { ok: false, error: "레거시 등급이 맞지 않아요." };
+  // NBA 몫은 전체의 일부예요. NBA MVP는 NBA에서만 받아요.
+  const n = s.nba;
+  if (n) {
+    const over =
+      n.seasons > s.seasons ||
+      n.gp > s.gp ||
+      n.pts > s.pts ||
+      n.reb > s.reb ||
+      n.ast > s.ast ||
+      (Object.entries(n.awards) as [AwardKey, number][]).some(([k, v]) => v > (a[k] ?? 0));
+    if (over || (n.awards.mvp_nba ?? 0) !== s.mvp || (n.seasons > 0 && !playedNba(s)))
+      return { ok: false, error: "NBA 기록이 맞지 않아요." };
+  }
 
   return { ok: true, summary: { ...s, name: cleanName(s.name) } };
 }

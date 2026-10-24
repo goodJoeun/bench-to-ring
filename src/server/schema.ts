@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { boolean, check, index, integer, jsonb, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, doublePrecision, index, integer, jsonb, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 import type { CareerSummary } from "@/game";
 
 // 테이블 설계는 docs/online-leaderboard.md 3장을 따라요. 바꾸면 `npm run db:generate`로 마이그레이션을 만들어요.
@@ -29,6 +29,8 @@ export const careers = pgTable(
     name: text("name").notNull(),
     num: integer("num").notNull(),
     pos: text("pos").notNull(),
+    /** 랭킹 점수 (rankScore). 순위는 이 점수 → NBA MVP → 최고 오버롤 → 통산 득점 순이에요. */
+    score: doublePrecision("score").notNull().default(0),
     /** NBA MVP */
     mvp: integer("mvp").notNull(),
     /** 최고 오버롤 */
@@ -52,17 +54,9 @@ export const careers = pgTable(
   (t) => [
     check("careers_pos_check", sql`${t.pos} in ('PG','SG','SF','PF','C')`),
     unique("careers_player_career").on(t.playerId, t.careerId),
-    // 순위 정렬: compareCareers와 같은 순서 (NBA MVP → 최고 오버롤 → 개인상 → 통산 득점)
-    index("careers_rank").on(t.ruleset, t.verified, t.mvp.desc(), t.peak.desc(), t.personal.desc(), t.pts.desc()),
-    index("careers_pos_rank").on(
-      t.ruleset,
-      t.verified,
-      t.pos,
-      t.mvp.desc(),
-      t.peak.desc(),
-      t.personal.desc(),
-      t.pts.desc(),
-    ),
+    // 순위 정렬: compareCareers와 같은 순서 (랭킹 점수 → NBA MVP → 최고 오버롤 → 통산 득점)
+    index("careers_score").on(t.ruleset, t.score.desc(), t.mvp.desc(), t.peak.desc(), t.pts.desc()),
+    index("careers_pos_score").on(t.ruleset, t.pos, t.score.desc(), t.mvp.desc(), t.peak.desc(), t.pts.desc()),
     // 내 기록 목록과 제출 횟수 제한 (플레이어마다 최근 제출 시각)
     index("careers_player").on(t.playerId, t.createdAt.desc()),
   ],

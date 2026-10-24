@@ -3,7 +3,7 @@ import { LEAGUES, teamColor } from "./leagues";
 import { militaryUnit } from "./military";
 import { natColor } from "./national";
 import { ownedItems } from "./shop";
-import type { AwardKey, Career, CareerSummary, SeasonRecord } from "./types";
+import type { AwardKey, Career, CareerSummary, NbaShare, SeasonRecord } from "./types";
 import { stripYear } from "./util";
 
 export interface CareerTotals {
@@ -162,6 +162,15 @@ export function legacyOf(o: Omit<CareerSummary, "legacy">): string {
   return "프로의 꿈을 이룬 선수";
 }
 
+/** NBA 시즌의 통산 기록과, 그 시즌에 받은 상 (국가대표 메달은 빼요) */
+export function nbaShare(c: Career): NbaShare {
+  const rows = c.hist.filter((h) => h.pro && h.lg === "nba");
+  const years = new Set(rows.map((h) => h.year));
+  const awards: Partial<Record<AwardKey, number>> = {};
+  for (const a of c.awardLog) if (years.has(a.y) && !a.k.startsWith("nat_")) awards[a.k] = (awards[a.k] ?? 0) + 1;
+  return { seasons: years.size, ...sumSeasons(rows), awards };
+}
+
 export function careerSummary(c: Career): CareerSummary {
   const pro = sumSeasons(c.hist.filter((h) => h.pro));
   const teams: string[] = [];
@@ -192,6 +201,8 @@ export function careerSummary(c: Career): CareerSummary {
     donated: c.donated,
     legacyItems: ownedItems(c).filter((i) => i.legacy).map((i) => i.name),
     ruleset: RULESET_VERSION,
+    nba: nbaShare(c),
+    look: { skin: c.p.skin, hair: c.p.hair },
   };
   return { ...base, legacy: legacyOf(base) };
 }

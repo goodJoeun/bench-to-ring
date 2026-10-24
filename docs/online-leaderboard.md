@@ -58,13 +58,14 @@ create table careers (
   seasons      int  not null,                -- 프로 시즌
   ret_age      int  not null,
   legacy       text not null,                -- 레거시 등급 문구
+  score        double precision not null default 0, -- 랭킹 점수 (아래 순위 계산)
   summary      jsonb not null,               -- CareerSummary 전체 (화면 상세용)
   created_at   timestamptz not null default now()
 );
 
--- 순위 정렬: compareCareers와 같은 순서 (NBA MVP → 최고 오버롤 → 개인상 → 통산 득점)
-create index careers_rank     on careers (ruleset, verified, mvp desc, peak desc, personal desc, pts desc);
-create index careers_pos_rank on careers (ruleset, verified, pos, mvp desc, peak desc, personal desc, pts desc);
+-- 순위 정렬: compareCareers와 같은 순서 (랭킹 점수 → NBA MVP → 최고 오버롤 → 통산 득점)
+create index careers_score     on careers (ruleset, score desc, mvp desc, peak desc, pts desc);
+create index careers_pos_score on careers (ruleset, pos, score desc, mvp desc, peak desc, pts desc);
 
 -- (2단계) 재생 검증용 행동 기록
 create table replays (
@@ -77,10 +78,18 @@ create table replays (
 
 ### 순위 계산
 
-- 정렬은 지금 명예의 전당과 같아요(`src/game/hall.ts`의 `compareCareers`). 네 값이 모두 같으면 공동 순위예요.
+- 정렬은 명예의 전당과 같아요(`src/game/hall.ts`의 `compareCareers`): **랭킹 점수** → NBA MVP → 최고 오버롤 → 통산 득점. 네 값이 모두 같으면 공동 순위예요.
+- **랭킹 점수**(`rankScore`, `scoreParts`): 아래를 더해요. 가중치는 `SCORE_AWARDS`, `SCORE_OTHER`, `SCORE_NBA`에 있어요.
+  - 수상: NBA MVP 30, 파이널 MVP 20, 리그 MVP 20, 우승 반지 12, 베스트 퍼스트팀·올해의 수비수 8, 컨퍼런스 파이널 MVP·국가대표 금 6, 세컨드·서드팀·신인왕·득점왕 5, 올스타·올-디펜시브·식스맨·기량발전·국가대표 은 3, 그 밖 2
+  - 프로 통산 기록: 득점 400·리바운드 800·어시스트 560마다 1점
+  - 최고 오버롤이 60을 넘는 만큼
+  - NBA 진출 10점, NBA 시즌마다 1점
+  - **NBA 밖(KBL·유로리그·G리그·아마추어)에서 받은 상과 쌓은 기록은 30%만** 쳐요(국가대표 메달은 그대로). 은퇴 요약의 `nba`(NBA 시즌의 통산 기록과 그 시즌에 받은 상)로 나눠요. `nba`가 없는 예전 기록은 NBA에서만 주는 상(NBA MVP, 컨퍼런스 파이널 MVP, 올-루키)만 NBA 몫으로 쳐요.
+  - 무작위 플레이 1,500명으로 맞춰 봤어요: NBA MVP 여러 번이 맨 위, KBL MVP를 9번 받은 레전드는 상위 1% 언저리예요.
+- 점수는 서버가 제출받을 때 다시 계산해 `score` 칸에 둬요. 가중치를 바꾸면 `npm run db:rescore`로 저장된 기록을 모두 다시 계산해요(바뀐 기록만 고쳐요).
 - **포지션별 순위**: `where pos = $1` + 위 인덱스
 - **역대 Best 5**: 포지션마다 1위 한 명 (`bestFive`와 같은 규칙). `distinct on (pos)`로 한 번에 구해요.
-- **내 순위**: `rank() over (order by mvp desc, peak desc, personal desc, pts desc)`
+- **내 순위**: `rank() over (order by score desc, mvp desc, peak desc, pts desc)`에서 내 플레이어 기록만 골라요(`GET /api/careers/mine`).
 - **전체 통계**: 제출된 커리어 수, NBA 진출 비율(`summary->'teams'` 또는 별도 칸), NBA MVP 비율. "전체 유저 중 상위 2%" 같은 문구에 써요.
 
 ## 4. 기록 조작 막기
@@ -121,7 +130,8 @@ create table replays (
 | --- | --- |
 | `POST /api/players` | 익명 플레이어 만들기. 토큰을 돌려주고 브라우저에 저장해요. |
 | `POST /api/careers` | 은퇴 기록 제출. 엔딩에 도달하면 자동으로 불러요. 선수 이름 욕설 필터. 응답에 전체 순위와 포지션 순위를 담아요. |
-| `GET /api/boards?ruleset=&pos=&scope=current\|all` | 순위표. 기본은 현재 룰셋 전체 Top 50, `pos`를 주면 그 포지션 Top 20이에요. 역대 Best 5와 전체 통계(커리어 수, NBA 진출, NBA MVP)를 함께 담아요. 캐시해요. |
+| `GET /api/boards?ruleset=&pos=&scope=current\|all` | 순위표. 기본은 현재 룰셋 전체 Top 100, `pos`를 주면 그 포지션 Top 50이에요. 역대 Best 5와 전체 통계(커리어 수, NBA 진출, NBA MVP)를 함께 담아요. 캐시해요. |
+| `GET /api/careers/mine` | 내 플레이어(토큰)가 올린 기록의 지금 전체·포지션 순위. 랭킹 페이지 '나의 기록'에서 써요. |
 | `GET /api/careers/:id` | 기록 상세 (요약 전체) |
 | `POST /api/careers/:id/report` | 신고 (2단계) |
 
@@ -132,11 +142,13 @@ create table replays (
 
 ## 7. 화면
 
-- **명예의 전당 탭**: [내 기록 | 온라인 랭킹] 전환
-  - 온라인 랭킹: 전체 Top 50, 포지션 탭(PG~C), **역대 Best 5**(포지션별 1위를 코트 위에 배치), 내 최고 순위
+- **랭킹 페이지** (`/rankings`, `src/components/rankings/`): 상단 헤더의 [랭킹] 버튼과 명예의 전당의 링크로 들어가요. 탭은 주소의 `#best5` · `#ranking` · `#mine`을 따라가요.
+  - **베스트 5**: 하프 코트 위에 포지션별 랭킹 점수 1위를 도트 선수로 세워요(점수 배지, 이름·포지션·최고 오버롤). 아래에 등록된 커리어·NBA 진출·NBA MVP 수
+  - **랭킹 100**: 포지션 칩(전체·PG~C), 1~3위 단상, 4위부터 목록(포지션·OVR·NBA MVP·파이널 MVP·리그 MVP·반지·통산 득점, 점수)
+  - **나의 기록**: 이 브라우저에서 은퇴한 선수를 랭킹 점수로 줄 세우고, 온라인 전체·포지션 순위(또는 등록 대기 중 / 온라인 기록 없음)를 붙여요. 내 기록은 순위표에서도 '나'로 표시해요. 서버의 `career_id`(브라우저 커리어 id)로 맞춰서 정확해요
+  - 도트 색은 은퇴 요약의 `look`에서, 유니폼 색은 마지막 소속팀에서 가져와요. `look`이 없는 예전 기록은 기록 id로 색을 정해요
   - 룰셋 선택: 현재 / 역대 전체 (룰셋이 2가 되면 넣어요. 지금은 현재 룰셋만 보여줘요)
-  - 만든 것(`src/components/common/OnlineBoard.tsx`): 포지션 탭, 통계 타일(등록된 커리어·NBA 진출·NBA MVP 비율), Best 5 카드(코트 배치는 아직), 순위표, 내 최고 순위 문구. 서버 기록에는 브라우저 커리어 id가 없어서, 이 브라우저의 명예의 전당과 순위 값(이름·등번호·포지션·MVP·최고 오버롤·개인상·득점)이 모두 같은 기록을 '나'로 표시해요
-  - 시작 화면에서도 내 기록이 없을 때 명예의 전당을 보여줘서, 첫 커리어 전에도 온라인 랭킹을 볼 수 있어요
+- **명예의 전당 탭**: 이 브라우저의 기록(랭킹 점수 칸 포함)과 랭킹 페이지로 가는 링크. 시작 화면에서도 늘 보여요
 - **은퇴 화면**: 엔딩에 도달하면 자동으로 등록하고 "전체 123위 · SG 12위" 결과와 순위표로 가는 링크를 보여줘요.- **공개 안내**: 선수를 만들 때 "은퇴하면 선수 이름과 기록이 온라인 랭킹에 공개돼요"라고 알리고, 설정에서 끌 수 있게 해요.
 - **재미 요소**: "전체 유저 중 NBA 진출 3.8% · 당신은 상위 2%", 포지션별 최고 기록 보유자
 - 서버가 안 되면 조용히 실패하고, 게임은 지금처럼 오프라인으로 돌아가요.
@@ -185,8 +197,9 @@ src/
 - [x] 기록 제출 API: 형식·범위 검사, 중복·횟수 제한
 - [x] 은퇴 때 자동 등록(실패하면 다음 접속 때 다시), 순위 알림, 시작 확인 창의 공개 안내
 - [x] 순위표 API: 전체·포지션별·Best 5·통계, 캐시와 제출 때 갱신 (`GET /api/boards`, 화면용 `fetchBoard`)
-- [ ] 순위 인덱스에서 `verified`를 빼거나 뒤로 옮기기: 지금 순위표는 `verified`로 거르지 않아서, `(ruleset, verified, …)` 인덱스로는 정렬을 건너뛰지 못해요. 기록이 수천 건을 넘기 전에 고쳐요
-- [x] 명예의 전당 [내 기록 | 온라인 랭킹] 화면
+- [x] 순위 인덱스를 랭킹 점수 기준으로 바꾸고 `verified` 빼기 (`0003_career_score`)
+- [x] 랭킹 점수(NBA 기록 우대)와 `db:rescore`
+- [x] 랭킹 페이지: 베스트 5 코트, 랭킹 100, 나의 기록 (`GET /api/careers/mine`)
 - [ ] 은퇴 화면의 순위 결과, 설정에서 공개 끄기, 룰셋 선택(룰셋 2부터)
 - [x] 선수 이름 욕설 필터
 - [x] 테스트: 범위 검사, 이름 필터 (`src/server/__tests__/validate.test.ts`)

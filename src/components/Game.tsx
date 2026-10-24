@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { gameActions, useGame } from "@/lib/game-store";
 import { CreateScreen } from "@/components/create/CreateScreen";
@@ -59,6 +60,12 @@ export function Game() {
               <span className="saved">자동 저장</span>
             </div>
           )}
+          <Link className="guide-btn" href="/rankings" aria-label="랭킹">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 4h10v2h3v3a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 15.9V18h3v2H8v-2h3v-2.1A5 5 0 0 1 8.4 13H8a4 4 0 0 1-4-4V6h3zm0 4H6v1a2 2 0 0 0 1 1.7zm10 0v2.7A2 2 0 0 0 18 9V8z" />
+            </svg>
+            <span>랭킹</span>
+          </Link>
           <button
             type="button"
             className="guide-btn"
@@ -113,7 +120,7 @@ export function Game() {
       )}
       <Toast toast={toast} />
       <p className="foot">
-        비공식 팬 게임이에요. 리그·구단·대회 명칭과 로고의 권리는 각 권리자에게 있어요. 진행 내용은 이 브라우저에만 저장돼요.
+        비공식 팬 게임이에요. 리그·구단·대회 명칭과 로고의 권리는 각 권리자에게 있어요.
       </p>
     </>
   );

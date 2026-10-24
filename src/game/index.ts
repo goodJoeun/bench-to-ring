@@ -54,7 +54,7 @@ export {
   type JourneyStep,
   type TitleEntry,
 } from "./career";
-export { rankHall, bestFive, compareCareers } from "./hall";
+export { SCORE_AWARDS, SCORE_NBA, SCORE_OTHER, bestFive, compareCareers, playedNba, rankHall, rankScore, scoreParts, type ScoreParts } from "./hall";
 export { COMPS, careerProfile, similarPlayers, type CompLeague, type CompMatch, type CompPlayer, type CompProfile } from "./comps";
 export {
   RECORD_BOARDS,

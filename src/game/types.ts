@@ -516,6 +516,20 @@ export interface CareerSummary {
   legacyItems?: string[];
   /** 은퇴할 때의 밸런스 버전 (RULESET_VERSION). 예전 기록에는 없어요. */
   ruleset?: number;
+  /** NBA에서 낸 몫. 랭킹 점수가 NBA 기록을 더 크게 쳐요. 예전 기록에는 없어요. */
+  nba?: NbaShare;
+  /** 도트 캐릭터 색. 예전 기록에는 없어요. */
+  look?: { skin: string; hair: string };
+}
+
+/** 커리어 가운데 NBA 시즌에서 쌓은 기록과 상 */
+export interface NbaShare {
+  seasons: number;
+  gp: number;
+  pts: number;
+  reb: number;
+  ast: number;
+  awards: Partial<Record<AwardKey, number>>;
 }
 
 export interface Career {

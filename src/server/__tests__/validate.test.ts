@@ -54,6 +54,11 @@ describe("은퇴 기록 검사", () => {
     const s = summaries.find((x) => x.seasons >= 5)!;
     const bad: Partial<CareerSummary>[] = [
       { mvp: s.mvp + 1 },
+      // NBA 몫이 전체보다 크거나, NBA에서 뛴 적 없는데 NBA 시즌이 있으면 안 돼요.
+      { nba: { ...s.nba!, pts: s.pts + 1 } },
+      { nba: { ...s.nba!, awards: { ...s.nba!.awards, ring: s.rings + 1 } } },
+      { nba: { ...s.nba!, seasons: 1 }, teams: ["창원 LG 세이커스"] },
+      { look: { skin: "red", hair: "#000000" } },
       { awards: { ...s.awards, mvp_nba: (s.awards.mvp_nba ?? 0) + 1 }, mvp: s.mvp + 1 },
       { peak: 120 },
       { pts: s.gp * 100 },

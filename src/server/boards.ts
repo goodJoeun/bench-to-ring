@@ -1,8 +1,8 @@
 import "server-only";
 import { count, eq, sql, type SQL } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
-import { POS_KEYS, TEAMS, type PosKey } from "@/game";
-import type { Board, BoardEntry, BoardScope } from "@/lib/leaderboard/types";
+import { POS_KEYS, RULESET_VERSION, TEAMS, type PosKey } from "@/game";
+import type { Board, BoardEntry, BoardScope, MyRanks } from "@/lib/leaderboard/types";
 import { db } from "./db";
 import { careers } from "./schema";
 
@@ -11,16 +11,18 @@ import { careers } from "./schema";
 /** 순위표 캐시 태그. 기록이 제출되면 이 태그를 비워요. */
 export const BOARDS_TAG = "boards";
 
-const TOP = 50;
-const POS_TOP = 20;
+const TOP = 100;
+const POS_TOP = 50;
 const NBA_TEAMS = TEAMS.nba.map(([name]) => name);
 
-// compareCareers와 같은 순서 (NBA MVP → 최고 오버롤 → 개인상 → 통산 득점). 네 값이 모두 같으면 공동 순위예요.
-const order = sql`${careers.mvp} desc, ${careers.peak} desc, ${careers.personal} desc, ${careers.pts} desc`;
+// compareCareers와 같은 순서 (랭킹 점수 → NBA MVP → 최고 오버롤 → 통산 득점). 네 값이 모두 같으면 공동 순위예요.
+const order = sql`${careers.score} desc, ${careers.mvp} desc, ${careers.peak} desc, ${careers.pts} desc`;
 
 function inScope(scope: BoardScope): SQL | undefined {
   return scope === "all" ? undefined : eq(careers.ruleset, scope.ruleset);
 }
+
+const award = (k: string) => sql<number>`coalesce((${careers.summary}->'awards'->>${k})::int, 0)`;
 
 function ranked(scope: BoardScope) {
   return db()
@@ -29,10 +31,15 @@ function ranked(scope: BoardScope) {
       db()
         .select({
           id: careers.id,
+          playerId: careers.playerId,
+          careerId: careers.careerId,
           name: careers.name,
           num: careers.num,
           pos: careers.pos,
+          score: careers.score,
           mvp: careers.mvp,
+          fmvp: award("fmvp").as("fmvp"),
+          leagueMvp: award("mvp").as("league_mvp"),
           peak: careers.peak,
           personal: careers.personal,
           pts: careers.pts,
@@ -41,6 +48,8 @@ function ranked(scope: BoardScope) {
           rings: careers.rings,
           seasons: careers.seasons,
           legacy: careers.legacy,
+          team: sql<string | null>`${careers.summary}->'teams'->> -1`.as("team"),
+          look: sql<{ skin: string; hair: string } | null>`${careers.summary}->'look'`.as("look"),
           ruleset: careers.ruleset,
           verified: careers.verified,
           createdAt: careers.createdAt,
@@ -52,9 +61,9 @@ function ranked(scope: BoardScope) {
     );
 }
 
-type RankedRow = Omit<BoardEntry, "pos"> & { pos: string; createdAt: Date };
+type RankedRow = Omit<BoardEntry, "pos"> & { pos: string; playerId: string; careerId: string; createdAt: Date };
 
-/** 정렬에만 쓰는 제출 시각은 빼요. */
+/** 플레이어와 정렬에만 쓰는 값은 내보내지 않아요. */
 function toEntry(r: RankedRow): BoardEntry {
   return {
     id: r.id,
@@ -63,7 +72,10 @@ function toEntry(r: RankedRow): BoardEntry {
     name: r.name,
     num: r.num,
     pos: r.pos as PosKey,
+    score: r.score,
     mvp: r.mvp,
+    fmvp: r.fmvp,
+    leagueMvp: r.leagueMvp,
     peak: r.peak,
     personal: r.personal,
     pts: r.pts,
@@ -72,6 +84,8 @@ function toEntry(r: RankedRow): BoardEntry {
     rings: r.rings,
     seasons: r.seasons,
     legacy: r.legacy,
+    team: r.team,
+    look: r.look,
     ruleset: r.ruleset,
     verified: r.verified,
   };
@@ -116,4 +130,20 @@ export async function getBoard(scope: BoardScope, pos: PosKey | null): Promise<B
     best5: POS_KEYS.map((p) => ({ pos: p, career: firsts.get(p) ?? null })),
     stats,
   };
+}
+
+/** 한 플레이어가 올린 기록의 지금 순위 (현재 룰셋). 플레이어마다 달라서 캐시하지 않아요. */
+export async function myRanks(playerId: string): Promise<MyRanks> {
+  const scope = { ruleset: RULESET_VERSION };
+  const r = ranked(scope);
+  const [mine, [{ total }]] = await Promise.all([
+    db()
+      .with(r)
+      .select({ careerId: r.careerId, id: r.id, rank: r.rank, posRank: r.posRank, score: r.score })
+      .from(r)
+      .where(eq(r.playerId, playerId))
+      .orderBy(r.rank),
+    db().select({ total: count() }).from(careers).where(inScope(scope)),
+  ]);
+  return { total, careers: mine };
 }

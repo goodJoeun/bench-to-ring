@@ -1,5 +1,6 @@
 import "server-only";
 import { and, count, desc, eq, sql } from "drizzle-orm";
+import { rankScore } from "@/game";
 import type { SubmitResult } from "@/lib/leaderboard/types";
 import { db } from "./db";
 import { careers } from "./schema";
@@ -27,6 +28,7 @@ export async function insertCareer(playerId: string, s: SubmittedSummary): Promi
       playerId,
       careerId: s.id,
       ruleset: s.ruleset,
+      score: rankScore(s),
       name: s.name,
       num: s.num,
       pos: s.pos,
@@ -49,10 +51,10 @@ export async function insertCareer(playerId: string, s: SubmittedSummary): Promi
 
 /**
  * 같은 룰셋 안의 전체 순위와 포지션 순위. compareCareers와 같은 순서
- * (NBA MVP → 최고 오버롤 → 개인상 → 통산 득점)로, 네 값이 모두 같으면 공동 순위예요.
+ * (랭킹 점수 → NBA MVP → 최고 오버롤 → 통산 득점)로, 네 값이 모두 같으면 공동 순위예요.
  */
 export async function ranksOf(s: SubmittedSummary): Promise<SubmitResult> {
-  const better = sql`(${careers.mvp}, ${careers.peak}, ${careers.personal}, ${careers.pts}) > (${s.mvp}, ${s.peak}, ${s.personal}, ${s.pts})`;
+  const better = sql`(${careers.score}, ${careers.mvp}, ${careers.peak}, ${careers.pts}) > (${rankScore(s)}::float8, ${s.mvp}, ${s.peak}, ${s.pts})`;
   const samePos = eq(careers.pos, s.pos);
   const [row] = await db()
     .select({

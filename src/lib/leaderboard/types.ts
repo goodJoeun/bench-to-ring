@@ -30,7 +30,14 @@ export interface BoardEntry {
   name: string;
   num: number;
   pos: PosKey;
+  /** 랭킹 점수 (rankScore) */
+  score: number;
+  /** NBA MVP */
   mvp: number;
+  /** 파이널 MVP (리그를 가리지 않아요) */
+  fmvp: number;
+  /** NBA 밖 리그의 MVP */
+  leagueMvp: number;
   peak: number;
   personal: number;
   pts: number;
@@ -39,9 +46,28 @@ export interface BoardEntry {
   rings: number;
   seasons: number;
   legacy: string;
+  /** 마지막 소속팀 (유니폼 색) */
+  team: string | null;
+  /** 도트 캐릭터 색. 예전 기록에는 없어요. */
+  look: { skin: string; hair: string } | null;
   ruleset: number;
   /** 서버 재생 검증 통과 (2단계). 1단계 기록은 모두 false예요. */
   verified: boolean;
+}
+
+/** GET /api/careers/mine: 이 플레이어가 올린 기록의 지금 순위 (현재 룰셋) */
+export interface MyRanks {
+  /** 현재 룰셋에 올라온 기록 수 */
+  total: number;
+  careers: {
+    /** 브라우저의 커리어 id (CareerSummary.id) */
+    careerId: string;
+    /** 서버의 기록 id */
+    id: string;
+    rank: number;
+    posRank: number;
+    score: number;
+  }[];
 }
 
 /** GET /api/boards */
@@ -49,7 +75,7 @@ export interface Board {
   scope: BoardScope;
   /** 포지션을 골랐으면 그 포지션 순위표예요. */
   pos: PosKey | null;
-  /** 전체 Top 50, 포지션을 골랐으면 그 포지션 Top 20 */
+  /** 전체 Top 100, 포지션을 골랐으면 그 포지션 Top 50 */
   top: BoardEntry[];
   /** 포지션마다 1위 (역대 Best 5). 기록이 없는 포지션은 null이에요. */
   best5: { pos: PosKey; career: BoardEntry | null }[];

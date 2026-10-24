@@ -22,6 +22,13 @@
       "when": 1792844375425,
       "tag": "0002_career_per_player",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792856380894,
+      "tag": "0003_career_score",
+      "breakpoints": true
     }
   ]
 }

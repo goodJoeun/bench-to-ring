@@ -1,5 +1,5 @@
 import { RULESET_VERSION, type CareerSummary, type PosKey } from "@/game";
-import type { Board, BoardScope, PlayerCreated, SubmitResult } from "./types";
+import type { Board, BoardScope, MyRanks, PlayerCreated, SubmitResult } from "./types";
 
 // 온라인 랭킹에 은퇴 기록을 올려요. 서버가 안 되면 조용히 실패하고, 보내지 못한 기록은 다음에 다시 보내요.
 
@@ -101,6 +101,21 @@ export async function fetchBoard(scope: BoardScope = { ruleset: RULESET_VERSION 
     return null;
   }
 }
+
+/** 이 브라우저(플레이어)가 올린 기록의 지금 순위. 아직 올린 적이 없거나 서버가 안 되면 null이에요. */
+export async function fetchMine(): Promise<MyRanks | null> {
+  const t = read(TOKEN_KEY);
+  if (!t) return null;
+  try {
+    const res = await fetch("/api/careers/mine", { headers: { authorization: `Bearer ${t}` } });
+    return res.ok ? ((await res.json()) as MyRanks) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** 아직 서버에 올리지 못하고 기다리는 기록의 커리어 id */
+export const pendingIds = (): Set<string> => new Set(loadPending().map((s) => s.id));
 
 /** 은퇴 기록을 올려요. 올라가면 순위를, 아니면 null을 돌려줘요. */
 export async function submitCareer(s: CareerSummary): Promise<SubmitResult | null> {
