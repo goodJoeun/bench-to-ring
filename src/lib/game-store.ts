@@ -214,7 +214,8 @@ export const gameActions = {
   startCareer() {
     const d = snapshot.draft;
     const cand = d.candidates[d.selected];
-    if (!cand) return;
+    // 이름은 반드시 지어야 해요. 화면에서 먼저 안내해요.
+    if (!cand || !d.name.trim()) return;
     const c = createCareer({ name: d.name, num: Number(d.num), pos: d.pos, path: d.path, school: d.school || undefined }, cand);
     saveCareer(c);
     set({ career: c });

@@ -7,7 +7,7 @@ import { Sheet } from "@/components/common/Sheet";
 export function ConfirmStartSheet({ draft, onClose }: { draft: CreationDraft; onClose: () => void }) {
   const cand = draft.candidates[draft.selected];
   if (!cand) return null;
-  const name = draft.name.trim() || "무명의 루키";
+  const name = draft.name.trim();
   return (
     <Sheet labelledBy="confirm-title" onClose={onClose}>
       <span className="sheet-kicker">커리어 시작 확인</span>

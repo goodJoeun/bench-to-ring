@@ -1,16 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { TEAMS, type CareerSummary } from "@/game";
 import { gameActions, type CreationDraft } from "@/lib/game-store";
 import { HallOfFame } from "@/components/common/HallOfFame";
 import { Segmented } from "@/components/common/ui";
 import { CandidateCard } from "./CandidateCard";
 import { ConfirmStartSheet } from "./ConfirmStartSheet";
+import { NameRequiredSheet } from "./NameRequiredSheet";
 import { POSITIONS } from "./options";
 
 export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: CareerSummary[] }) {
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [sheet, setSheet] = useState<"confirm" | "name" | null>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const hasName = draft.name.trim().length > 0;
+
+  // 시트가 닫히며 시작 버튼으로 초점을 돌려놓은 뒤에 이름 칸으로 옮겨요.
+  const goToName = () => {
+    setSheet(null);
+    requestAnimationFrame(() => {
+      nameRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+      nameRef.current?.focus({ preventScroll: true });
+    });
+  };
+
   return (
     <>
       <section className="intro">
@@ -34,8 +47,11 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
             선수 이름
             <input
               id="f-name"
+              ref={nameRef}
               maxLength={12}
-              placeholder="닉네임을 추천해요"
+              required
+              aria-required="true"
+              placeholder="이름을 지어 주세요"
               value={draft.name}
               onChange={(e) => gameActions.editDraft({ name: e.target.value })}
             />
@@ -84,12 +100,13 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
           <p className="hint">잠재력과 숨겨진 성장 특성은 뛰어봐야 알 수 있어요.</p>
         </div>
 
-        <button type="button" className="start" onClick={() => setConfirmOpen(true)}>
+        <button type="button" className="start" onClick={() => setSheet(hasName ? "confirm" : "name")}>
           이 선수로 커리어 시작
         </button>
       </section>
 
-      {confirmOpen && <ConfirmStartSheet draft={draft} onClose={() => setConfirmOpen(false)} />}
+      {sheet === "confirm" && <ConfirmStartSheet draft={draft} onClose={() => setSheet(null)} />}
+      {sheet === "name" && <NameRequiredSheet onClose={() => setSheet(null)} onName={goToName} />}
 
       {hall.length > 0 && (
         <div className="resume">
