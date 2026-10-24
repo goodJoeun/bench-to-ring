@@ -184,7 +184,7 @@ src/
 - [ ] 로그인: 익명 토큰만 / Google 연결도 (기기를 바꿔도 기록 유지)
 - [x] 공개 범위: 선수 이름 (닉네임은 따로 없어요)
 - [x] DB 호스트: Neon (싱가포르 `ap-southeast-1`, 로컬은 `dev` 브랜치)
-- [ ] 배포 위치 (Vercel 등)
+- [x] 배포 위치: Vercel (https://bench-to-ring.vercel.app). 함수는 DB와 같은 싱가포르(`sin1`, `vercel.json`)에서 돌려요. 배포 DB는 Neon `main` 브랜치이고, 마이그레이션은 `DATABASE_URL_UNPOOLED`를 main 주소로 지정해 `db:migrate`로 넣어요
 
 ## 10. 단계별 작업
 
