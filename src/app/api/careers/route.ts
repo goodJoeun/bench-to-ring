@@ -1,4 +1,6 @@
+import { revalidateTag } from "next/cache";
 import { playerFrom } from "@/server/auth";
+import { BOARDS_TAG } from "@/server/boards";
 import { SUBMIT_INTERVAL_MS, insertCareer, lastSubmittedAt, ranksOf } from "@/server/careers";
 import { checkSummary } from "@/server/validate";
 import type { ApiError, SubmitResult } from "@/lib/leaderboard/types";
@@ -28,6 +30,8 @@ export async function POST(req: Request) {
   if (last && Date.now() - last.getTime() < SUBMIT_INTERVAL_MS) return fail(429, "잠시 뒤에 다시 제출해 주세요.");
 
   if (!(await insertCareer(playerId, checked.summary))) return fail(409, "이미 제출한 커리어예요.");
+  // 은퇴하고 바로 순위표를 열면 내 기록이 보이게, 묵은 순위표를 내주지 않고 바로 다시 계산해요.
+  revalidateTag(BOARDS_TAG, { expire: 0 });
   const ranks = await ranksOf(checked.summary);
   return Response.json(ranks satisfies SubmitResult, { status: 201 });
 }

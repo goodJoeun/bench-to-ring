@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { AWARDS, PERSONAL_AWARDS, POS_KEYS, RULESET_VERSION, START_YEAR, legacyOf, type AwardKey, type CareerSummary, type PosKey } from "@/game";
 import { RETIRE_AGE } from "@/game/offseason";
+import type { BoardScope } from "@/lib/leaderboard/types";
 
-// 제출한 은퇴 기록이 엔진이 낼 수 있는 모양과 범위인지 봐요 (docs/online-leaderboard.md 4장 1단계).
+// 제출한 은퇴 기록이 엔진이 낼 수 있는 모양과 범위인지 봐요 (docs/online-leaderboard.md 4장 1단계). 순위표 조회 조건도 여기서 읽어요.
 // DB를 쓰지 않아서 테스트에서 바로 불러요.
 
 const AWARD_KEYS = AWARDS.map(([k]) => k) as [AwardKey, ...AwardKey[]];
@@ -40,6 +41,26 @@ const summarySchema = z.object({
 });
 
 export type SubmittedSummary = z.infer<typeof summarySchema> & CareerSummary;
+
+const boardQuerySchema = z.object({
+  scope: z.enum(["current", "all"]).default("current"),
+  ruleset: z.coerce.number().pipe(z.int().min(1).max(RULESET_VERSION)).optional(),
+  pos: z.enum(POS_KEYS as [PosKey, ...PosKey[]]).optional(),
+});
+
+export type BoardQueryResult = { ok: true; scope: BoardScope; pos: PosKey | null } | { ok: false; error: string };
+
+/**
+ * GET /api/boards의 `?scope=current|all&ruleset=&pos=`.
+ * 기본은 현재 룰셋이고, `ruleset`으로 지난 룰셋을 고를 수 있어요. `scope=all`이면 룰셋을 가리지 않아요.
+ */
+export function parseBoardQuery(params: URLSearchParams): BoardQueryResult {
+  const parsed = boardQuerySchema.safeParse(Object.fromEntries(params));
+  if (!parsed.success) return { ok: false, error: "순위표 조건이 맞지 않아요." };
+  const q = parsed.data;
+  if (q.scope === "all" && q.ruleset !== undefined) return { ok: false, error: "역대 전체에는 룰셋을 고를 수 없어요." };
+  return { ok: true, scope: q.scope === "all" ? "all" : { ruleset: q.ruleset ?? RULESET_VERSION }, pos: q.pos ?? null };
+}
 
 /** 욕설이 들어간 선수 이름은 이 이름으로 바꿔서 올려요. 기록은 살려요. */
 export const HIDDEN_NAME = "익명의 선수";

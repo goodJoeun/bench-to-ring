@@ -14,7 +14,7 @@ import {
   type Career,
   type CareerSummary,
 } from "@/game";
-import { HIDDEN_NAME, checkSummary, cleanName } from "@/server/validate";
+import { HIDDEN_NAME, checkSummary, cleanName, parseBoardQuery } from "@/server/validate";
 
 afterEach(() => resetRandom());
 
@@ -81,5 +81,22 @@ describe("선수 이름 필터", () => {
     expect(cleanName("씨발")).toBe(HIDDEN_NAME);
     expect(cleanName("씨 1 발 놈")).toBe(HIDDEN_NAME);
     expect(cleanName("F.u.c.k")).toBe(HIDDEN_NAME);
+  });
+});
+
+describe("순위표 조건", () => {
+  const q = (s: string) => parseBoardQuery(new URLSearchParams(s));
+
+  it("기본은 현재 룰셋 전체 순위예요", () => {
+    expect(q("")).toEqual({ ok: true, scope: { ruleset: RULESET_VERSION }, pos: null });
+    expect(q("scope=current&pos=SG")).toEqual({ ok: true, scope: { ruleset: RULESET_VERSION }, pos: "SG" });
+    expect(q(`ruleset=${RULESET_VERSION}`)).toEqual({ ok: true, scope: { ruleset: RULESET_VERSION }, pos: null });
+    expect(q("scope=all&pos=C")).toEqual({ ok: true, scope: "all", pos: "C" });
+  });
+
+  it("모르는 값이나 맞지 않는 조합은 거절해요", () => {
+    for (const s of ["scope=week", "pos=G", "ruleset=0", `ruleset=${RULESET_VERSION + 1}`, "ruleset=1.5", "ruleset=abc", "scope=all&ruleset=1"]) {
+      expect(q(s), s).toMatchObject({ ok: false });
+    }
   });
 });

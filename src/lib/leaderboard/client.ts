@@ -1,5 +1,5 @@
-import type { CareerSummary } from "@/game";
-import type { PlayerCreated, SubmitResult } from "./types";
+import { RULESET_VERSION, type CareerSummary, type PosKey } from "@/game";
+import type { Board, BoardScope, PlayerCreated, SubmitResult } from "./types";
 
 // 온라인 랭킹에 은퇴 기록을 올려요. 서버가 안 되면 조용히 실패하고, 보내지 못한 기록은 다음에 다시 보내요.
 
@@ -88,6 +88,18 @@ export function flushPending(): Promise<Map<string, SubmitResult>> {
     return results;
   })().finally(() => (flushing = null));
   return flushing;
+}
+
+/** 순위표를 가져와요. 서버가 안 되면 null이에요. */
+export async function fetchBoard(scope: BoardScope = { ruleset: RULESET_VERSION }, pos: PosKey | null = null): Promise<Board | null> {
+  const q = new URLSearchParams(scope === "all" ? { scope: "all" } : { ruleset: String(scope.ruleset) });
+  if (pos) q.set("pos", pos);
+  try {
+    const res = await fetch(`/api/boards?${q}`);
+    return res.ok ? ((await res.json()) as Board) : null;
+  } catch {
+    return null;
+  }
 }
 
 /** 은퇴 기록을 올려요. 올라가면 순위를, 아니면 null을 돌려줘요. */
