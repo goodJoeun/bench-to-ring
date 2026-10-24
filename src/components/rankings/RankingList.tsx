@@ -1,7 +1,7 @@
 import { fmtNum } from "@/game";
 import type { BoardEntry } from "@/lib/leaderboard/types";
 import { Sprite } from "@/components/common/Sprite";
-import { fmtScore, jerseyOf, lookOf } from "./look";
+import { jerseyOf, lookOf, medalOf } from "./look";
 
 /** 이름 아래 한 줄: 포지션·최고 오버롤과 큰 상 */
 function line(e: BoardEntry): string {
@@ -14,28 +14,43 @@ function line(e: BoardEntry): string {
   return parts.join(" · ");
 }
 
+/** 순위 숫자. 1~3위는 금·은·동 메달로 보여줘요. */
+export function RankMark({ rank }: { rank: number }) {
+  return (
+    <span className="rk-r" data-medal={medalOf(rank)}>
+      {rank}
+    </span>
+  );
+}
+
+/** 시상대 한 칸: 선수가 위에 서고, 아래 단에 메달과 순위가 있어요. 1위 단이 가장 높아요. */
 function Podium({ e, place, rank, mine }: { e: BoardEntry; place: 1 | 2 | 3; rank: number; mine: boolean }) {
+  const medal = medalOf(rank) ?? "bronze";
   return (
     <div className="rk-pod" data-place={place} data-mine={mine || undefined}>
-      <span className="rk-r">{rank}</span>
       <Sprite {...lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={3} className="rk-sprite" label={`${e.name} 도트 캐릭터`} />
       <b className="nm">
         {e.name}
         {mine && <span className="me">나</span>}
       </b>
       <span className="sub">
-        {e.pos} · OVR {e.peak} · {e.legacy}
+        {e.pos} · OVR {e.peak}
       </span>
-      <span className="rk-badge">{fmtScore(e.score)}점</span>
+      <div className="rk-step" data-medal={medal}>
+        <span className="rk-medal" aria-hidden="true">
+          {rank}
+        </span>
+        <span className="lbl">{rank}위</span>
+      </div>
     </div>
   );
 }
 
-/** 랭킹: 1~3위는 단상, 그 아래는 줄로 보여줘요. 포지션을 골랐으면 포지션 순위예요. */
+/** 랭킹: 1~3위는 시상대, 그 아래는 줄로 보여줘요. 포지션을 골랐으면 포지션 순위예요. */
 export function RankingList({ rows, byPos, mine }: { rows: BoardEntry[]; byPos: boolean; mine: Set<string> }) {
   const rankOf = (e: BoardEntry) => (byPos ? e.posRank : e.rank);
   const podium = rows.slice(0, 3);
-  // 단상은 2·1·3위 순서로 놓아요.
+  // 시상대는 2·1·3위 순서로 놓아요.
   const order = [podium[1], podium[0], podium[2]];
   return (
     <>
@@ -45,10 +60,10 @@ export function RankingList({ rows, byPos, mine }: { rows: BoardEntry[]; byPos: 
         )}
       </div>
       {rows.length > 3 && (
-        <ol className="rk-list" start={4}>
+        <ol className="rk-list">
           {rows.slice(3).map((e) => (
             <li key={e.id} data-mine={mine.has(e.id) || undefined}>
-              <span className="rk-r">{rankOf(e)}</span>
+              <RankMark rank={rankOf(e)} />
               <Sprite {...lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={2} className="rk-mini" label={`${e.name} 도트 캐릭터`} />
               <span className="rk-who">
                 <b>
@@ -57,7 +72,6 @@ export function RankingList({ rows, byPos, mine }: { rows: BoardEntry[]; byPos: 
                 </b>
                 <span className="sub">{line(e)}</span>
               </span>
-              <span className="rk-score">{fmtScore(e.score)}</span>
             </li>
           ))}
         </ol>

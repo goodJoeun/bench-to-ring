@@ -1,5 +1,4 @@
 import { fmtNum, type CareerSummary, type PosKey } from "@/game";
-import { fmtScore } from "@/components/rankings/look";
 
 /* 명예의 전당(이 브라우저의 기록) 표와 Best 5 */
 
@@ -8,8 +7,6 @@ type HallCareer = Pick<CareerSummary, "name" | "num" | "pos" | "legacy" | "mvp" 
 export interface HallRow {
   key: string;
   rank: number;
-  /** 랭킹 점수 */
-  score: number;
   career: HallCareer;
 }
 
@@ -35,7 +32,6 @@ export function HallTable({ rows }: { rows: HallRow[] }) {
           <tr>
             <th>순위</th>
             <th className="l">선수</th>
-            <th>점수</th>
             <th className="l">POS</th>
             <th className="l">레거시</th>
             <th>MVP</th>
@@ -46,13 +42,12 @@ export function HallTable({ rows }: { rows: HallRow[] }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ key, rank, score, career: h }) => (
+          {rows.map(({ key, rank, career: h }) => (
             <tr key={key}>
               <td>{rank}</td>
               <td className="l t">
                 <b>{h.name}</b> #{h.num}
               </td>
-              <td>{fmtScore(score)}</td>
               <td className="l">{h.pos}</td>
               <td className="l t">{h.legacy}</td>
               <td>{h.mvp}</td>

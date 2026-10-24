@@ -1,7 +1,7 @@
 import type { PosKey } from "@/game";
 import type { BoardEntry } from "@/lib/leaderboard/types";
 import { Sprite } from "@/components/common/Sprite";
-import { fmtScore, jerseyOf, lookOf } from "./look";
+import { jerseyOf, lookOf } from "./look";
 
 /** 하프 코트 위 자리 (가로·세로 %). 골대가 위에 있어요. */
 const SPOTS: Record<PosKey, { x: number; y: number }> = {
@@ -28,7 +28,7 @@ function CourtLines() {
   );
 }
 
-/** 역대 Best 5: 포지션마다 랭킹 점수 1위를 코트 위에 세워요. */
+/** 역대 Best 5: 포지션마다 1위를 코트 위에 세워요. */
 export function BestFiveCourt({ best5, mine }: { best5: { pos: PosKey; career: BoardEntry | null }[]; mine: Set<string> }) {
   return (
     <div className="rk-court">
@@ -37,9 +37,6 @@ export function BestFiveCourt({ best5, mine }: { best5: { pos: PosKey; career: B
         <div className="rk-spot" key={pos} style={{ left: `${SPOTS[pos].x}%`, top: `${SPOTS[pos].y}%` }}>
           {e ? (
             <>
-              <span className="rk-badge" title="랭킹 점수">
-                {fmtScore(e.score)}
-              </span>
               <Sprite {...lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={3} className="rk-sprite" label={`${e.name} 도트 캐릭터`} />
               <span className="rk-plate" data-mine={mine.has(e.id) || undefined}>
                 <b>{e.name}</b>

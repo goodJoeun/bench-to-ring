@@ -18,5 +18,6 @@ export function lookOf(id: string, look: { skin: string; hair: string } | null |
 /** 마지막 소속팀 유니폼 색 */
 export const jerseyOf = (team: string | null | undefined): string => (team && teamColor(team)) || NO_TEAM_COLOR;
 
-/** 점수는 소수 첫째 자리까지, 정수면 소수점 없이 */
-export const fmtScore = (n: number): string => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+/** 1~3위의 메달 색 (금·은·동). 4위부터는 없어요. */
+export const medalOf = (rank: number): "gold" | "silver" | "bronze" | undefined =>
+  rank === 1 ? "gold" : rank === 2 ? "silver" : rank === 3 ? "bronze" : undefined;

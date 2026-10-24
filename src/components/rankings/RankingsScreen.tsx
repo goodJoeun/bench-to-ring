@@ -100,7 +100,7 @@ export function RankingsScreen() {
         <div className="rk-head">
           <h1>랭킹</h1>
           <p className="hint">
-            랭킹 점수 순 · NBA MVP·파이널 MVP·리그 MVP·우승 반지·수상과 통산 기록, 최고 오버롤을 더해요. NBA 밖에서 쌓은 상과 기록은 30%만
+            NBA MVP·파이널 MVP·리그 MVP·우승 반지·수상과 통산 기록, 최고 오버롤을 종합해 순위를 매겨요. NBA에서 쌓은 기록을 더 크게
             쳐요.
           </p>
         </div>

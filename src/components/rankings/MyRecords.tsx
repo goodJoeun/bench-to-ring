@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { fmtNum, rankHall, rankScore, type CareerSummary } from "@/game";
+import { fmtNum, rankHall, type CareerSummary } from "@/game";
 import type { MyRanks } from "@/lib/leaderboard/types";
 import { Sprite } from "@/components/common/Sprite";
 import { StatTiles } from "@/components/common/ui";
-import { fmtScore, jerseyOf, lookOf } from "./look";
+import { jerseyOf, lookOf } from "./look";
+import { RankMark } from "./RankingList";
 
 interface MyRecordsProps {
   /** 이 브라우저에서 은퇴한 선수들 */
@@ -14,7 +15,7 @@ interface MyRecordsProps {
   pending: Set<string>;
 }
 
-/** 나의 기록: 이 브라우저에서 은퇴한 선수들을 랭킹 점수로 줄 세우고, 온라인 순위를 붙여요. */
+/** 나의 기록: 이 브라우저에서 은퇴한 선수들을 랭킹과 같은 기준으로 줄 세우고, 온라인 순위를 붙여요. */
 export function MyRecords({ hall, mine, pending }: MyRecordsProps) {
   if (!hall.length)
     return (
@@ -34,7 +35,6 @@ export function MyRecords({ hall, mine, pending }: MyRecordsProps) {
       <StatTiles
         items={[
           ["은퇴한 선수", `${fmtNum(hall.length)}명`],
-          ["최고 점수", fmtScore(Math.max(...hall.map(rankScore)))],
           ["온라인 최고 순위", best ? `${fmtNum(best.rank)}위` : "–"],
           ["올라온 전체 기록", mine ? `${fmtNum(mine.total)}명` : "–"],
         ]}
@@ -51,7 +51,7 @@ export function MyRecords({ hall, mine, pending }: MyRecordsProps) {
                 : "온라인 기록 없음";
           return (
             <li key={s.id}>
-              <span className="rk-r">{rank}</span>
+              <RankMark rank={rank} />
               <Sprite {...lookOf(s.id, s.look)} color={jerseyOf(s.teams.at(-1))} scale={2} className="rk-mini" label={`${s.name} 도트 캐릭터`} />
               <span className="rk-who">
                 <b>
@@ -64,7 +64,6 @@ export function MyRecords({ hall, mine, pending }: MyRecordsProps) {
                   {status}
                 </span>
               </span>
-              <span className="rk-score">{fmtScore(rankScore(s))}</span>
             </li>
           );
         })}

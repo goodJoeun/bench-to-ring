@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { bestFive, rankHall, rankScore, type CareerSummary } from "@/game";
+import { bestFive, rankHall, type CareerSummary } from "@/game";
 import { Best5, HallTable } from "./HallTable";
 import { Panel } from "./ui";
 
@@ -11,10 +11,10 @@ export function HallOfFame({ hall }: { hall: CareerSummary[] }) {
       {hall.length ? (
         <>
           <p className="hint">
-            이 브라우저에서 은퇴한 선수들이에요. NBA MVP·파이널 MVP·우승·수상과 통산 기록을 더한 랭킹 점수로 줄을 세워요.
+            이 브라우저에서 은퇴한 선수들이에요. NBA MVP·파이널 MVP·우승·수상과 통산 기록을 종합해 줄을 세워요.
           </p>
           <Best5 items={bestFive(hall)} />
-          <HallTable rows={ranked.map(({ rank, career }) => ({ key: career.id, rank, score: rankScore(career), career }))} />
+          <HallTable rows={ranked.map(({ rank, career }) => ({ key: career.id, rank, career }))} />
         </>
       ) : (
         <p className="empty">은퇴한 선수가 아직 없어요. 프로 무대를 밟은 선수가 은퇴하면 여기와 온라인 랭킹에 올라가요.</p>
