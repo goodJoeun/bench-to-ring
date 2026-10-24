@@ -166,14 +166,14 @@ src/
 - [ ] 1단계(검증 전) 기록을 순위표 기본 화면에 보여줄지
 - [ ] 로그인: 익명 토큰만 / Google 연결도 (기기를 바꿔도 기록 유지)
 - [ ] 공개 범위: 선수 이름까지 / 닉네임만
-- [ ] DB 호스트: Neon / Supabase
+- [x] DB 호스트: Neon (싱가포르 `ap-southeast-1`, 로컬은 `dev` 브랜치)
 - [ ] 배포 위치 (Vercel 등)
 
 ## 10. 단계별 작업
 
 ### 1단계: 순위표 열기
 
-- [ ] DB 호스트 만들기, `DATABASE_URL` 설정, 마이그레이션(3장 테이블)
+- [x] DB 호스트 만들기, `DATABASE_URL` 설정, 마이그레이션(3장 테이블. `replays`는 2단계에) — `npm run db:generate`, `npm run db:migrate`
 - [ ] `RULESET_VERSION` 상수 추가 (`src/game`)
 - [ ] 저장 코드로 불러온 커리어 표시 (`Career`에 `imported` 플래그)
 - [ ] 익명 플레이어 API와 토큰 저장
