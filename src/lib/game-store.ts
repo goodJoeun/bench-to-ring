@@ -25,6 +25,7 @@ import {
   type ShopKey,
 } from "@/game";
 import { loadCareer, loadHall, saveCareer, saveHall } from "@/game/storage";
+import { flushPending, submitCareer } from "@/lib/leaderboard/client";
 
 /** 선수 생성 화면의 입력값 */
 export interface CreationDraft {
@@ -109,6 +110,8 @@ function ensureLoaded(): void {
   const career = loadCareer();
   if (career) resolveQueue(career);
   snapshot = { ...SERVER_SNAPSHOT, ready: true, career, draft: freshDraft(), hall: loadHall() };
+  // 지난번에 보내지 못한 은퇴 기록을 온라인 랭킹에 다시 보내요.
+  void flushPending();
 }
 
 function set(patch: Partial<GameSnapshot>): void {
@@ -150,7 +153,14 @@ function afterStep(res: SeasonStep | null, before: NewsItem | undefined): void {
   if (msg) set({ toast: toast(msg) });
 }
 
-/** 커리어 복사본에 엔진 함수를 적용하고 저장해요. 은퇴하면 명예의 전당에도 올려요. */
+/** 은퇴 기록을 온라인 랭킹에 올리고, 올라가면 순위를 알려요. 실패하면 조용히 넘어가요. */
+function submitOnline(s: CareerSummary): void {
+  void submitCareer(s).then((r) => {
+    if (r) set({ toast: toast(`온라인 랭킹 전체 ${r.rank}위 · ${r.pos} ${r.posRank}위 (${r.total}명 중)`) });
+  });
+}
+
+/** 커리어 복사본에 엔진 함수를 적용하고 저장해요. 은퇴하면 명예의 전당과 온라인 랭킹에도 올려요. */
 function mutate(fn: (c: Career) => void): void {
   if (!snapshot.career) return;
   const wasRetired = snapshot.career.stage === "retired";
@@ -164,6 +174,7 @@ function mutate(fn: (c: Career) => void): void {
   if (c.stage === "retired" && s && s.seasons > 0 && !hall.some((h) => h.id === s.id)) {
     hall = [...hall, s];
     saveHall(hall);
+    submitOnline(s);
   }
   saveCareer(c);
   set(farewell ? { career: c, hall, farewell, playing: false, toast: null } : { career: c, hall });

@@ -514,6 +514,8 @@ export interface CareerSummary {
   academy?: boolean;
   /** 은퇴 기록에 남는 산 것들 (아카데미, 재단 등) */
   legacyItems?: string[];
+  /** 은퇴할 때의 밸런스 버전 (RULESET_VERSION). 예전 기록에는 없어요. */
+  ruleset?: number;
 }
 
 export interface Career {

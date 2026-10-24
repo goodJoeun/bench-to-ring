@@ -12,7 +12,9 @@ export function ConfirmStartSheet({ draft, onClose }: { draft: CreationDraft; on
     <Sheet labelledBy="confirm-title" onClose={onClose}>
       <span className="sheet-kicker">커리어 시작 확인</span>
       <h2 id="confirm-title">{name} 선수로 시작할까요?</h2>
-      <p className="sheet-desc">시작하면 포지션과 후보는 바꿀 수 없어요.</p>
+      <p className="sheet-desc">
+        시작하면 포지션과 후보는 바꿀 수 없어요. 프로 무대를 밟고 은퇴하면 선수 이름과 기록이 온라인 랭킹에 공개돼요.
+      </p>
       <dl className="confirm-sum">
         <div>
           <dt>포지션</dt>

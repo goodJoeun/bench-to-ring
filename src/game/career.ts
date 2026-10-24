@@ -1,4 +1,4 @@
-import { AWARDS, PERSONAL_AWARDS } from "./data";
+import { AWARDS, PERSONAL_AWARDS, RULESET_VERSION } from "./data";
 import { LEAGUES, teamColor } from "./leagues";
 import { militaryUnit } from "./military";
 import { natColor } from "./national";
@@ -191,6 +191,7 @@ export function careerSummary(c: Career): CareerSummary {
     draft: c.draft,
     donated: c.donated,
     legacyItems: ownedItems(c).filter((i) => i.legacy).map((i) => i.name),
+    ruleset: RULESET_VERSION,
   };
   return { ...base, legacy: legacyOf(base) };
 }

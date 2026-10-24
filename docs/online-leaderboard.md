@@ -40,8 +40,9 @@ create table players (
 
 -- 제출한 은퇴 기록. CareerSummary에서 순위·화면에 필요한 값만 따로 칸으로 둬요.
 create table careers (
-  id           text primary key,             -- Career.id (같은 커리어는 한 번만)
+  id           uuid primary key default gen_random_uuid(),
   player_id    uuid not null references players(id),
+  career_id    text not null,                -- 브라우저의 Career.id (시작 시각이라 플레이어끼리 겹칠 수 있어요)
   ruleset      int  not null,                -- 5장
   verified     boolean not null default false, -- 4장 재생 검증 통과
   name         text not null,                -- 선수 이름 (순위표에 공개)
@@ -89,7 +90,10 @@ create table replays (
 ### 1단계: 형식 검사와 표시
 
 - 서버에서 범위를 검사해요: 최고 오버롤 20~99, MVP ≤ 프로 시즌 수, 은퇴 나이 30~41 등 엔진이 낼 수 있는 범위.
-- 같은 커리어 id는 한 번만, 같은 플레이어는 1분에 한 번만 제출해요.
+- 같은 커리어는 플레이어마다 한 번만(`unique (player_id, career_id)`), 같은 플레이어는 1분에 한 번만 제출해요.
+- 값끼리 맞는지도 봐요: MVP·반지 수와 수상 기록, 개인상 합계, 시즌당 경기 수, 경기당 기록, 은퇴 나이와 연도, 레거시 등급(`legacyOf`로 다시 계산). 범위 안에서 조금 고친 값은 못 막아요(2단계).
+- 욕설이 들어간 선수 이름은 "익명의 선수"로 바꿔서 올려요.
+- 클라이언트는 은퇴하면 기록을 대기열(`b2r-pending-v1`)에 넣고 보내요. 실패하면 다음에 접속할 때 다시 보내요.
 - 이 단계의 기록은 `verified = false`예요. 순위표 기본 화면에서 보여줄지는 9장에서 정해요.
 
 ### 2단계: 서버 재생 검증
@@ -171,14 +175,17 @@ src/
 ### 1단계: 순위표 열기
 
 - [x] DB 호스트 만들기, `DATABASE_URL` 설정, 마이그레이션(3장 테이블. `replays`는 2단계에) — `npm run db:generate`, `npm run db:migrate`
-- [ ] `RULESET_VERSION` 상수 추가 (`src/game`)
+- [x] `RULESET_VERSION` 상수 추가 (`src/game/data.ts`, 은퇴 기록의 `ruleset`)
 - [x] 저장 코드로 이어하기 없애기
-- [ ] 익명 플레이어 API와 토큰 저장
-- [ ] 기록 제출 API: 형식·범위 검사, 중복·횟수 제한
+- [x] 익명 플레이어 API와 토큰 저장
+- [x] 기록 제출 API: 형식·범위 검사, 중복·횟수 제한
+- [x] 은퇴 때 자동 등록(실패하면 다음 접속 때 다시), 순위 알림, 시작 확인 창의 공개 안내
 - [ ] 순위표 API: 전체·포지션별·Best 5·통계, 캐시와 제출 때 갱신
-- [ ] 명예의 전당 [온라인 랭킹] 화면, 은퇴 때 자동 등록과 결과 표시, 공개 안내
-- [ ] 선수 이름 욕설 필터
-- [ ] 테스트: 범위 검사, 순위 계산(공동 순위 포함), 제출 흐름
+- [ ] 명예의 전당 [온라인 랭킹] 화면, 은퇴 화면의 순위 결과, 설정에서 공개 끄기
+- [x] 선수 이름 욕설 필터
+- [x] 테스트: 범위 검사, 이름 필터 (`src/server/__tests__/validate.test.ts`)
+- [ ] 테스트: 순위 계산(공동 순위 포함)은 DB가 있어야 해서 지금은 수동 확인만
+- [ ] 플레이어 만들기 횟수 제한 (지금은 새 토큰을 계속 만들면 1분 제한을 피할 수 있어요)
 
 ### 2단계: 믿을 수 있는 기록
 

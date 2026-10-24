@@ -15,6 +15,13 @@
       "when": 1792843524583,
       "tag": "0001_public_player_name",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792844375425,
+      "tag": "0002_career_per_player",
+      "breakpoints": true
     }
   ]
 }

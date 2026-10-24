@@ -4,6 +4,12 @@ import type { AttrKey, Attrs, AwardKey, FocusKey, PosKey, Role } from "./types";
 
 export const START_YEAR = 2027;
 
+/**
+ * 밸런스 버전. 리그 평균·진출 기준처럼 같은 플레이라도 결과가 달라지는 값을 바꾸면 올려요.
+ * 은퇴 기록에 남고, 온라인 랭킹은 같은 버전끼리 줄을 세워요.
+ */
+export const RULESET_VERSION = 1;
+
 export const ATTRS: ReadonlyArray<readonly [AttrKey, string]> = [
   ["sht", "슛"],
   ["hdl", "볼 핸들링"],
