@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { POS_KEYS, fmtNum, type PosKey } from "@/game";
+import { POS, POS_KEYS, type PosKey } from "@/game";
 import { useGame } from "@/lib/game-store";
 import { fetchBoard, fetchMine, pendingIds } from "@/lib/leaderboard/client";
 import type { Board, MyRanks } from "@/lib/leaderboard/types";
@@ -13,12 +13,13 @@ import { RankingList } from "./RankingList";
 const TABS = [
   ["best5", "베스트 5"],
   ["ranking", "랭킹 100"],
+  ["position", "포지션별 랭킹"],
   ["mine", "나의 기록"],
 ] as const;
 type Tab = (typeof TABS)[number][0];
 type PosFilter = PosKey | "all";
 
-// 탭은 주소의 #best5 · #ranking · #mine을 따라가요. 링크로 바로 열 수 있고 뒤로 가기도 돼요.
+// 탭은 주소의 #best5 · #ranking · #position · #mine을 따라가요. 링크로 바로 열 수 있고 뒤로 가기도 돼요.
 const subscribeHash = (cb: () => void) => {
   window.addEventListener("hashchange", cb);
   return () => window.removeEventListener("hashchange", cb);
@@ -67,7 +68,7 @@ function useMine() {
 
 export function RankingsScreen() {
   const tab = useSyncExternalStore(subscribeHash, readTab, () => "best5" as Tab);
-  const [pos, setPos] = useState<PosFilter>("all");
+  const [pos, setPos] = useState<PosKey>("PG");
   const { hall } = useGame();
   const mine = useMine();
   const pending = useSyncExternalStore(
@@ -76,11 +77,11 @@ export function RankingsScreen() {
     () => "",
   );
   const all = useBoard("all");
-  const filtered = useBoard(pos);
+  const byPos = useBoard(pos);
   const myIds = new Set((mine?.careers ?? []).map((c) => c.id));
 
-  // 베스트 5는 전체 순위표에, 랭킹 탭은 고른 포지션 순위표에 들어 있어요.
-  const shown = tab === "ranking" ? filtered : all;
+  // 베스트 5와 랭킹 100은 전체 순위표에, 포지션별 랭킹은 고른 포지션 순위표에 들어 있어요.
+  const shown = tab === "position" ? byPos : all;
   const failed = shown.loaded && !shown.board;
 
   return (
@@ -115,16 +116,13 @@ export function RankingsScreen() {
             <MyRecords hall={hall} mine={mine} pending={new Set(pending ? pending.split("\n") : [])} />
           ) : (
             <>
-              {tab === "ranking" && (
-                <div className="rk-filter">
-                  <div className="rk-chips" role="group" aria-label="포지션 고르기">
-                    {(["all", ...POS_KEYS] as const).map((p) => (
-                      <button key={p} type="button" aria-pressed={pos === p} onClick={() => setPos(p)}>
-                        {p === "all" ? "전체" : p}
-                      </button>
-                    ))}
-                  </div>
-                  {shown.board && <span className="hint">{fmtNum(shown.board.stats.careers)}명</span>}
+              {tab === "position" && (
+                <div className="rk-chips" role="group" aria-label="포지션 고르기">
+                  {POS_KEYS.map((p) => (
+                    <button key={p} type="button" aria-pressed={pos === p} onClick={() => setPos(p)}>
+                      {p} <span>{POS[p].name}</span>
+                    </button>
+                  ))}
                 </div>
               )}
               {!shown.loaded ? (
@@ -142,20 +140,13 @@ export function RankingsScreen() {
                 </div>
               ) : !shown.board!.top.length ? (
                 <div className="rk-empty">
-                  <b>{pos !== "all" && tab === "ranking" ? `${pos}로 올라온 기록이 아직 없어요` : "아직 올라온 기록이 없어요"}</b>
+                  <b>{tab === "position" ? `${POS[pos].name}(${pos})로 올라온 기록이 아직 없어요` : "아직 올라온 기록이 없어요"}</b>
                   <span>프로 무대를 밟은 선수가 은퇴하면 첫 기록이 돼요.</span>
                 </div>
               ) : tab === "best5" ? (
-                <>
-                  <BestFiveCourt best5={shown.board!.best5} mine={myIds} />
-                  <p className="hint">
-                    포지션마다 랭킹 점수 1위가 뽑혀요. 같은 점수면 NBA MVP → 최고 오버롤 → 통산 득점 순이고, 그래도 같으면 먼저 올린 선수가 자리를
-                    지켜요. 등록된 커리어 {fmtNum(shown.board!.stats.careers)}명 · NBA 진출 {fmtNum(shown.board!.stats.nba)}명 · NBA MVP{" "}
-                    {fmtNum(shown.board!.stats.nbaMvp)}명
-                  </p>
-                </>
+                <BestFiveCourt best5={shown.board!.best5} mine={myIds} />
               ) : (
-                <RankingList rows={shown.board!.top} byPos={pos !== "all"} mine={myIds} />
+                <RankingList rows={shown.board!.top} byPos={tab === "position"} mine={myIds} />
               )}
             </>
           )}
