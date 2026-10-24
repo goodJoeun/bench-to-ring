@@ -108,11 +108,10 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
       {sheet === "confirm" && <ConfirmStartSheet draft={draft} onClose={() => setSheet(null)} />}
       {sheet === "name" && <NameRequiredSheet onClose={() => setSheet(null)} onName={goToName} />}
 
-      {hall.length > 0 && (
-        <div className="resume">
-          <HallOfFame hall={hall} />
-        </div>
-      )}
+      {/* 내 기록이 없어도 온라인 랭킹을 볼 수 있게 늘 보여줘요. */}
+      <div className="resume">
+        <HallOfFame hall={hall} />
+      </div>
     </>
   );
 }
