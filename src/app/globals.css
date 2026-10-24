@@ -15,13 +15,19 @@
 }
 @media (min-width:641px){:root{--t-max:min(640px,calc(100vw - 48px))}}
 @media (min-width:1100px){:root{--t-max:min(800px,calc(100vw - 96px))}}
+/* 어두운 테마: 설정에서 고르면(data-theme) 그대로, '시스템'이면 기기 설정을 따라가요. */
 @media (prefers-color-scheme: dark){
-  :root{
+  :root:not([data-theme="light"]){
   --bg:#0C121B; --panel:#141C28; --panel2:#1B2534; --ink:#E6EBF2; --muted:#93A0B3; --line:#2A3649;
   --accent:#EE6A2A; --accent-ink:#1B0E06; --paint:#6B98EA; --key:#24457F; --court-line:#E9E2D2;
   --good:#45C07A; --bad:#F06B5B; --gold:#E2B640; --wood1:#7E5B33; --wood2:#74532E;
   --score-bg:#060A11; --score-fg:#FFB547; --score-lbl:#7F8BA0; --ball-line:#3A1B0A; color-scheme:dark}
 }
+:root[data-theme="dark"]{
+  --bg:#0C121B; --panel:#141C28; --panel2:#1B2534; --ink:#E6EBF2; --muted:#93A0B3; --line:#2A3649;
+  --accent:#EE6A2A; --accent-ink:#1B0E06; --paint:#6B98EA; --key:#24457F; --court-line:#E9E2D2;
+  --good:#45C07A; --bad:#F06B5B; --gold:#E2B640; --wood1:#7E5B33; --wood2:#74532E;
+  --score-bg:#060A11; --score-fg:#FFB547; --score-lbl:#7F8BA0; --ball-line:#3A1B0A; color-scheme:dark}
 
 html{-webkit-text-size-adjust:100%}
 body{margin:0}
@@ -54,6 +60,22 @@ h2.sec{font-family:var(--f-display);font-weight:400;font-size:18px;margin:0;lett
 .guide-btn:hover{border-color:var(--ink)}
 .guide-btn[aria-expanded="true"]{background:var(--panel2)}
 
+/* 설정 시트: 화면 테마와 구단 목록 */
+.set-sec{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.set-sec h3{margin:0;font-size:13px;font-weight:800;color:var(--paint)}
+.theme-seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.theme-seg button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);cursor:pointer;text-align:left}
+.theme-seg button b{font-size:14px}
+.theme-seg button span{font-size:12px;color:var(--muted)}
+.theme-seg button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--panel)}
+.theme-seg button[aria-pressed="true"] span{color:inherit;opacity:.75}
+.team-count{font-size:12.5px;color:var(--muted);margin:0}
+.team-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.team-list li{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:10px;background:var(--panel2);font-size:13px;font-weight:700;min-width:0}
+.team-list li span{min-width:0;line-height:1.3;word-break:keep-all}
+.set-link{align-self:flex-start;margin-top:14px}
+@media (max-width:640px){.team-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 /* 플레이 가이드: 한 시트 안의 카드 여덟 장 */
 .gd{list-style:none;margin:10px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .gd li{display:flex;flex-direction:column;gap:3px;padding:11px 12px;border-radius:12px;background:var(--panel2);min-width:0}
@@ -85,7 +107,8 @@ main.grid{max-width:var(--t-max);margin:0 auto;padding-top:4px}
 /* 실제 로고는 밝은 배경용으로 만든 게 많아요. 어두운 테마와 파란 진행 팝업에서는 밝은 타일 위에 올려요. */
 .badge.logo{object-fit:contain;box-sizing:border-box;border-radius:24%;background:var(--logo-tile,transparent);padding:var(--logo-pad,0)}
 .sim{--logo-tile:rgba(255,255,255,.94);--logo-pad:2px}
-@media (prefers-color-scheme: dark){:root{--logo-tile:#E9EDF3;--logo-pad:2px}}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--logo-tile:#E9EDF3;--logo-pad:2px}}
+:root[data-theme="dark"]{--logo-tile:#E9EDF3;--logo-pad:2px}
 .badge-mono{font-family:var(--f-display);font-weight:400;letter-spacing:-.02em}
 .badge-mono.latin{font-family:var(--f-num);font-weight:700;letter-spacing:0}
 .plate-badge{position:absolute;top:10px;right:10px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.18))}
