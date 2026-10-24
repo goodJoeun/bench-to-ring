@@ -24,17 +24,22 @@ const subscribeHash = (cb: () => void) => {
   window.addEventListener("hashchange", cb);
   return () => window.removeEventListener("hashchange", cb);
 };
+/** 바뀔 일이 없는 값을 useSyncExternalStore로 읽을 때 써요. 서버와 브라우저 값만 갈라요. */
+const subscribeNever = () => () => {};
 const readTab = (): Tab => {
   const h = window.location.hash.slice(1);
   return TABS.some(([k]) => k === h) ? (h as Tab) : "best5";
 };
 
-/** 한 번 불러온 순위표는 이 화면에 있는 동안 다시 부르지 않아요. null은 불러오지 못한 것이에요. */
-function useBoard(pos: PosFilter) {
+/**
+ * 순위표는 그 순위표를 쓰는 탭을 열 때(`needed`) 처음 불러와요.
+ * 한 번 불러온 순위표는 이 화면에 있는 동안 다시 부르지 않아요. null은 불러오지 못한 것이에요.
+ */
+function useBoard(pos: PosFilter, needed: boolean) {
   const [boards, setBoards] = useState<Partial<Record<PosFilter, Board | null>>>({});
   const loaded = pos in boards;
   useEffect(() => {
-    if (loaded) return;
+    if (loaded || !needed) return;
     let live = true;
     void fetchBoard(undefined, pos === "all" ? null : pos).then((b) => {
       if (live) setBoards((m) => ({ ...m, [pos]: b }));
@@ -42,7 +47,7 @@ function useBoard(pos: PosFilter) {
     return () => {
       live = false;
     };
-  }, [pos, loaded]);
+  }, [pos, loaded, needed]);
   const retry = () =>
     setBoards((m) => {
       const next = { ...m };
@@ -72,12 +77,18 @@ export function RankingsScreen() {
   const { hall } = useGame();
   const mine = useMine();
   const pending = useSyncExternalStore(
-    () => () => {},
+    subscribeNever,
     () => pendingKey(),
     () => "",
   );
-  const all = useBoard("all");
-  const byPos = useBoard(pos);
+  // 하이드레이션 중에는 탭이 서버 기본값(베스트 5)이라, 주소의 탭을 읽은 뒤에 불러와요.
+  const hydrated = useSyncExternalStore(
+    subscribeNever,
+    () => true,
+    () => false,
+  );
+  const all = useBoard("all", hydrated && (tab === "best5" || tab === "ranking"));
+  const byPos = useBoard(pos, hydrated && tab === "position");
   const myIds = new Set((mine?.careers ?? []).map((c) => c.id));
 
   // 베스트 5와 랭킹 100은 전체 순위표에, 포지션별 랭킹은 고른 포지션 순위표에 들어 있어요.
