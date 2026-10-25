@@ -198,12 +198,15 @@ export const gameActions = {
   editDraft(patch: Partial<Pick<CreationDraft, "name" | "num" | "school" | "selected">>) {
     set({ draft: { ...snapshot.draft, ...patch } });
   },
-  /** 포지션을 바꿔요. 처음 고르는 포지션만 새로 뽑고, 이미 본 포지션은 그때 후보를 그대로 보여줘요. */
+  /**
+   * 포지션을 바꿔요. 처음 고르는 포지션만 새로 뽑고, 이미 본 포지션은 그때 후보를 그대로 보여줘요.
+   * 다시 뽑기 기회는 포지션을 바꿀 때마다 처음 횟수로 돌아가요.
+   */
   choosePosition(pos: PosKey) {
     const d = snapshot.draft;
     if (pos === d.pos) return;
     const candidates = d.pool[pos] ?? generateCandidates(pos);
-    set({ draft: { ...d, pos, candidates, pool: { ...d.pool, [pos]: candidates }, selected: 0 } });
+    set({ draft: { ...d, pos, candidates, pool: { ...d.pool, [pos]: candidates }, selected: 0, rerolls: REROLLS } });
   },
   reroll() {
     const d = snapshot.draft;
