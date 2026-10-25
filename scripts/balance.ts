@@ -3,11 +3,13 @@
  * 실행: npx vitest run scripts/balance.ts  (또는 npm run balance)
  */
 import { test } from "vitest";
-import { ARCHETYPES, POS_KEYS, chooseOption, createCareer, currentDecision, generateCandidate, ovrOf, seeded, setRandom, simulateSeason } from "@/game";
+import { ARCHETYPES, ATTR_KEYS, POS_KEYS, chooseOption, createCareer, currentDecision, generateCandidate, ovrOf, seeded, setRandom, simulateSeason } from "@/game";
 
 /** 돌릴 커리어 수. BALANCE_N으로 바꿀 수 있어요. */
 const N = Number(process.env.BALANCE_N) || 600;
 const SEED = 20270101;
+/** 실제 플레이처럼 시즌마다 능력치 하나를 무작위로 골라 집중 훈련해요. BALANCE_FOCUS=bal이면 늘 균형으로 훈련해요. */
+const BALANCED = process.env.BALANCE_FOCUS === "bal";
 const pct = (arr: number[], p: number) => arr[Math.min(arr.length - 1, Math.floor(arr.length * p))];
 
 /** 터미널에서 한글은 두 칸을 차지해서, 글자 수가 아니라 화면 너비로 칸을 맞춰요. */
@@ -52,6 +54,7 @@ test("balance report", () => {
       else {
         const h0 = c.health;
         const pro = c.stage === "pro";
+        if (!BALANCED) c.focus = ATTR_KEYS[Math.floor(rand() * ATTR_KEYS.length)];
         simulateSeason(c);
         if (pro && c.last?.pro) {
           proHealth.push([h0, c.last.min]);
@@ -80,7 +83,7 @@ test("balance report", () => {
   const health = (f: (min: number) => boolean) => avg(proHealth.filter(([, m]) => f(m)).map(([h]) => h)).toFixed(0);
   console.log(
     [
-      `밸런스 리포트 · 커리어 ${N}개 · 시드 ${SEED}`,
+      `밸런스 리포트 · 커리어 ${N}개 · 시드 ${SEED} · 훈련 초점 ${BALANCED ? "균형" : "시즌마다 무작위 능력치"}`,
       section(
         "오버롤 분포",
         table([["", "평균", "하위 10%", "중앙값", "상위 10%", "최고"], dist("18세", at18), dist("22세", at22), dist("최고 오버롤", peaks), dist("최고점 나이", peakAges)]),

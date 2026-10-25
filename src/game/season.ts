@@ -669,7 +669,8 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: Set<Inve
   const gear = shopPerks(c);
   const delta: Partial<Record<AttrKey, number>> = {};
   for (const [k] of ATTRS) {
-    const focus = c.focus === "bal" ? 1 : c.focus === "rest" ? 0.6 : c.focus === k ? 1.5 : 0.85;
+    // 균형은 모든 능력치가 1.1배, 집중은 고른 능력치만 1.5배로 커요.
+    const focus = c.focus === "bal" ? 1.1 : c.focus === "rest" ? 0.6 : c.focus === k ? 1.5 : 1;
     let g: number;
     if (base > 0) g = base * headroom * minutesFactor * tf * perf * focus * rnd(0.55, 1.4);
     else {
