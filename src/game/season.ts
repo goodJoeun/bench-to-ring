@@ -655,10 +655,10 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: Set<Inve
     if (t === "대기만성" && age <= 32) tf = 0.5;
     if (t === "강철몸") tf = 0.7;
   }
-  // 잠재력까지 남은 여유가 클수록 빨리 커요. 잠재력에 가까워져도 0.3배는 남겨 20대 중반까지 조금씩 크고,
-  // 잠재력에 닿으면 거의 멈춰요.
+  // 잠재력까지 남은 여유가 클수록 빨리 커요. 잠재력에 가까워져도 0.3배는 남겨요.
+  // 27세까지는 잠재력에 닿아도 0.45배로 조금씩 더 커서, 20대 중반에도 성장이 이어져요. 그 뒤로는 거의 멈춰요.
   const gap = p.pot - ov;
-  const headroom = base <= 0 ? 1 : gap <= 0 ? 0.05 : clamp(0.3 + gap / 8, 0.3, 1.7);
+  const headroom = base <= 0 ? 1 : gap <= 0 ? (age <= 27 ? 0.45 : 0.05) : clamp(0.3 + gap / 8, 0.3, 1.7);
   // 출전 시간: 10대는 영향이 작고, 성인은 크게 받아요. 주전급(28분)이어야 제대로 커요.
   // NCAA 선수는 벤치에 있어도 팀 훈련으로 크고(NCAA_PRACTICE), 성장 한계도 깎이지 않아요(아래).
   const ncaa = c.stage === "college" && c.team?.lg === "ncaa";

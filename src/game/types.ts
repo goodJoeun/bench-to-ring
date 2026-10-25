@@ -563,7 +563,6 @@ export interface Career {
   news: NewsItem[];
   last: SeasonRecord | null;
   lastDelta: Partial<Record<AttrKey, number>>;
-  potOff: number;
   posAsked: Partial<Record<PosKey, 1>>;
   draft: DraftInfo | null;
   summary: CareerSummary | null;

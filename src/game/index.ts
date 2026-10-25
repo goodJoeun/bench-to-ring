@@ -76,7 +76,6 @@ export {
   roleOf,
   expectedMinutes,
   currentExpectedMinutes,
-  potentialRange,
   stageLabel,
 } from "./ratings";
 export { fmtNum, josa, money, r1, ro, stripYear } from "./util";

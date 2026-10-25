@@ -4,11 +4,10 @@ import { forcedRetirement, nbaOffer, resolveQueue, retirementPrompt } from "./de
 import { lifeEvent } from "./events";
 import { addNews, joinTeam, pickTeam } from "./log";
 import { endService, militaryDecision } from "./military";
-import { chance, ri, rnd } from "./random";
+import { chance, ri } from "./random";
 import { refreshShop } from "./shop";
-import { ovr, ovrOf, scoutError } from "./ratings";
+import { ovr, ovrOf } from "./ratings";
 import type { Career, Decision, QueueItem } from "./types";
-import { r1 } from "./util";
 
 export const RETIRE_AGE = 40;
 
@@ -36,8 +35,6 @@ export function runOffseason(c: Career, finishedYear: number, natCall: Decision 
     p.traitKnown = true;
     addNews(c, tag, "info", `코치진 분석 결과 숨겨진 특성 '${p.trait}'이 드러났어요. ${TRAITS[p.trait]}`);
   }
-  const u = scoutError(c.age);
-  c.potOff = r1(rnd(-u / 2, u / 2));
 
   // 포지션 전환 제안
   const next = POS_GROWTH[p.pos];

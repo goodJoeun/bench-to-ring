@@ -9,7 +9,7 @@ import { ovrOf } from "./ratings";
 export const HOME_NATION = "대한민국";
 import { refreshShop } from "./shop";
 import type { Archetype, AttrKey, Attrs, Candidate, Career, Grade, NewCareerInput, PosKey } from "./types";
-import { clamp, r1 } from "./util";
+import { clamp } from "./util";
 
 export const START_OVR = 45;
 /** 시작 능력치 범위. 주특기도 55까지이고, 아주 드물게(SPIKE_CHANCE) 가장 강한 능력치 하나만 5 더 열려요. */
@@ -135,7 +135,6 @@ export function createCareer(input: NewCareerInput, cand: Candidate, id = String
     news: [],
     last: null,
     lastDelta: {},
-    potOff: r1(rnd(-4, 4)),
     posAsked: {},
     draft: null,
     summary: null,

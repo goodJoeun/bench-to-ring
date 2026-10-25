@@ -1,4 +1,4 @@
-import { ovr, potentialRange, type Career } from "@/game";
+import { ovr, type Career } from "@/game";
 
 export function Scoreboard({ career: c }: { career: Career }) {
   return (
@@ -6,10 +6,6 @@ export function Scoreboard({ career: c }: { career: Career }) {
       <div className="cell">
         <span className="k">오버롤</span>
         <span className="v big">{ovr(c.p)}</span>
-      </div>
-      <div className="cell">
-        <span className="k">잠재력 추정</span>
-        <span className="v">{potentialRange(c)}</span>
       </div>
       <div className="cell">
         <span className="k">나이</span>

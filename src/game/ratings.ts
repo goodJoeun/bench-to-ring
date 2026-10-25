@@ -42,11 +42,14 @@ export function currentExpectedMinutes(c: Career): number {
   return c.team ? expectedMinutes(c, c.team.lg, c.trust) : 0;
 }
 
-/** 나이별 기본 성장량 (능력치당, 시즌당). 20대 초반을 조금 낮추고 26세까지 성장이 이어지게 했어요. */
+/**
+ * 나이별 기본 성장량 (능력치당, 시즌당). 10대 후반에 가장 빨리 크고, 20대 중반에도 조금씩 커서
+ * 평균 28세 무렵에 최고 오버롤에 닿아요. 30세부터 떨어지기 시작해요.
+ */
 export function ageBase(age: number): number {
   const t: Record<number, number> = {
-    16: 3, 17: 3, 18: 3, 19: 2.4, 20: 2.2, 21: 2, 22: 1.9, 23: 1.9, 24: 1.9, 25: 1.9,
-    26: 1.7, 27: 1, 28: 0.4, 29: 0, 30: -0.5, 31: -0.9, 32: -1.3, 33: -1.8, 34: -2.3,
+    16: 3.5, 17: 3.25, 18: 3.25, 19: 3, 20: 2.75, 21: 2.5, 22: 2.4, 23: 2.3, 24: 2.2, 25: 2.1,
+    26: 1.9, 27: 1.6, 28: 1.25, 29: 1, 30: 0, 31: -0.5, 32: -1, 33: -1.8, 34: -2.3,
   };
   if (age >= 35) return -3 - (age - 35) * 0.3;
   return t[age] ?? 3;
@@ -63,19 +66,6 @@ const SALARY: Record<ProLeagueKey, (o: number) => number> = {
   gleague: () => 0.6,
 };
 export const salaryFor = (lg: ProLeagueKey, o: number): number => SALARY[lg](o);
-
-/** 스카우트 잠재력 추정의 오차 폭. 16세 ±9에서 나이가 들수록 좁아져요. */
-export const scoutError = (age: number): number => Math.max(1, Math.round(9 - (age - 16) * 1.1));
-
-/** 스카우트 잠재력 추정 범위 */
-export function potentialRange(c: Career): string {
-  const p = c.p;
-  const u = scoutError(c.age);
-  const o = ovr(p);
-  const lo = clamp(Math.round(p.pot - u + c.potOff), o, 99);
-  const hi = clamp(Math.max(Math.round(p.pot + u + c.potOff), o), o, 99);
-  return lo >= hi ? String(hi) : `${lo}–${hi}`;
-}
 
 export function stageLabel(c: Career): string {
   switch (c.stage) {
