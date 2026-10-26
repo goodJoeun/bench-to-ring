@@ -95,7 +95,7 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
 
         <div className="field">
           <span className="label">포지션</span>
-          <Segmented label="포지션" options={POSITIONS} value={draft.pos} onChange={gameActions.choosePosition} />
+          <Segmented className="pos-seg" label="포지션" options={POSITIONS} value={draft.pos} onChange={gameActions.choosePosition} />
         </div>
 
         <div className="field">
