@@ -109,9 +109,9 @@ function DecisionSheet({ career: c, decision, kind, remaining, onHide }: { caree
 }
 
 function focusHint(k: FocusKey): string {
-  if (k === "bal") return "모든 능력치 성장이 1.1배로 빨라져요.";
+  if (k === "bal") return "모든 능력치를 고르게 훈련해요.";
   if (k === "rest") return "성장은 느려지지만 건강을 회복하고 부상 위험이 줄어요.";
-  return `${focusName(k)} 성장이 1.5배로 빨라져요.`;
+  return `${focusName(k)} 위주로 집중적으로 훈련해요.`;
 }
 
 /**
