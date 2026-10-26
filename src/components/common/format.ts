@@ -7,6 +7,12 @@ export const NO_TEAM_COLOR = "#5A6577";
 
 export const focusName = (k: FocusKey): string => FOCUS.find(([f]) => f === k)?.[1] ?? "";
 
+/**
+ * 한 줄 문구가 어색하게 끊기지 않게: 가운뎃점(·)은 앞 낱말에 붙여서 줄 첫머리에 오지 않고,
+ * 점수(4-2, 113-106)는 '-'에서 갈라지지 않아요. 소식처럼 엔진이 만든 문장에 써요.
+ */
+export const keepTogether = (s: string): string => s.replace(/ · /g, " · ").replace(/(\d)-(\d)/g, "$1⁠-⁠$2");
+
 /** 병역 상태 한 줄. 대한민국 선수만 보여줘요. */
 export function militaryLine(c: Career): string | null {
   if (c.p.nat !== "대한민국") return null;

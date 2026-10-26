@@ -2,9 +2,10 @@
 
 import { natColor, type Career, type Cheer } from "@/game";
 import { gameActions } from "@/lib/game-store";
-import { NO_TEAM_COLOR } from "@/components/common/format";
+import { NO_TEAM_COLOR, keepTogether } from "@/components/common/format";
 import { useAutoFocus } from "@/components/common/hooks";
 import { Sprite } from "@/components/common/Sprite";
+import { AwardName } from "@/components/common/ui";
 import { Popup } from "./Popup";
 
 const KICKER: Record<Cheer["kind"], string> = {
@@ -57,9 +58,9 @@ export function CheerPopup({ career: c, cheer }: { career: Career; cheer: Cheer 
         {KICKER[cheer.kind]} · {c.p.name} #{c.p.num}
       </span>
       <h2 id="cheer-title" className="cheer-title">
-        {cheer.title}
+        <AwardName name={cheer.title} />
       </h2>
-      <p className="sim-phase">{cheer.sub}</p>
+      <p className="sim-phase">{keepTogether(cheer.sub)}</p>
       <button type="button" ref={goRef} className="live-go" onClick={() => gameActions.dismissCheer()}>
         {left > 0 ? `계속 · 축하 ${left}개 더` : "계속"}
       </button>

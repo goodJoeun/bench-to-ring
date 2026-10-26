@@ -1,5 +1,5 @@
 import { AWARDS, type Career } from "@/game";
-import { Panel } from "@/components/common/ui";
+import { AwardName, Panel } from "@/components/common/ui";
 
 export function TrophyTab({ career: c }: { career: Career }) {
   const log = [...c.awardLog].reverse();
@@ -23,8 +23,10 @@ export function TrophyTab({ career: c }: { career: Career }) {
           <ul className="loglist">
             {log.map((l, i) => (
               <li key={`${l.y}-${l.k}-${i}`}>
-                <span>{l.y}</span>
-                {l.n}
+                <span className="y">{l.y}</span>
+                <span>
+                  <AwardName name={l.n} />
+                </span>
               </li>
             ))}
           </ul>

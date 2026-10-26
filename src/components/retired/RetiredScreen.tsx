@@ -7,7 +7,7 @@ import { RecordBoards } from "./RecordBoards";
 import { SimilarPlayers } from "./SimilarPlayers";
 import { HallOfFame } from "@/components/common/HallOfFame";
 import { TeamBadge } from "@/components/common/TeamBadge";
-import { CourtStage, Panel, StatTiles } from "@/components/common/ui";
+import { AwardName, CourtStage, Panel, StatTiles } from "@/components/common/ui";
 
 /** 커리어 요약의 수상: 팀·개인·국가대표 줄로 나눠, 리그·대회 이름별로 횟수를 보여줘요. 받은 게 없는 줄은 숨겨요. */
 function AwardRows({ career: c }: { career: Career }) {
@@ -28,8 +28,7 @@ function AwardRows({ career: c }: { career: Career }) {
             <dd className="awards">
               {list.map((a) => (
                 <span className="aw" key={a.name}>
-                  {a.name}
-                  {a.count > 1 && ` ×${a.count}`}
+                  <AwardName name={a.name} after={a.count > 1 && ` ×${a.count}`} />
                 </span>
               ))}
             </dd>
@@ -97,8 +96,8 @@ export function RetiredScreen({ career: c, hall }: { career: Career; hall: Caree
                   <b>{t.name}</b>
                   <span>
                     {t.team}
-                    {t.league && ` · ${t.league}`}
-                    {t.age !== null && ` · ${t.age}세`}
+                    {t.league && ` · ${t.league}`}
+                    {t.age !== null && ` · ${t.age}세`}
                   </span>
                 </span>
                 {t.fmvp && <span className="aw">파이널 MVP</span>}

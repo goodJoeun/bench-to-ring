@@ -72,6 +72,28 @@ export function StatTiles({ items }: { items: readonly (readonly [string, React.
   );
 }
 
+/** 상 이름 끝의 괄호 속 트로피 이름: "NBA MVP (마이클 조던 트로피)", "NCAA 올해의 선수 (네이스미스 상)" */
+const TROPHY_NAME = /^(.*\S)\s+(\([^()]*(?:트로피| 상)\))$/;
+
+/** 상 이름. 끝의 트로피 이름은 다음 줄에 보여줘요. after는 첫 줄 끝에 붙여요(횟수 ×3 등). 소식처럼 상 이름으로 끝나는 문장에도 써요. */
+export function AwardName({ name, after }: { name: string; after?: React.ReactNode }) {
+  const m = TROPHY_NAME.exec(name);
+  if (!m)
+    return (
+      <>
+        {name}
+        {after}
+      </>
+    );
+  return (
+    <>
+      {m[1]}
+      {after}
+      <span className="aw-sub">{m[2]}</span>
+    </>
+  );
+}
+
 type ChoiceProps = {
   label: React.ReactNode;
   /** 오른쪽 끝 작은 꼬리표 */

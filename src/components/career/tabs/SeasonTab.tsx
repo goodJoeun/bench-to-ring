@@ -1,6 +1,7 @@
 import { LEAGUES, currentExpectedMinutes, militaryUnit, r1, roleOf, seasonProgress, type Career, type SeasonRecord, type SeasonRun } from "@/game";
+import { keepTogether } from "@/components/common/format";
 import { TeamBadge } from "@/components/common/TeamBadge";
-import { Panel } from "@/components/common/ui";
+import { AwardName, Panel } from "@/components/common/ui";
 import { ContractPanel } from "../ContractPanel";
 import { ShopPanel } from "../ShopPanel";
 
@@ -33,7 +34,7 @@ function ResultCard({ r }: { r: SeasonRecord }) {
           <TeamBadge name={r.team} size={40} />
           <div>
             <span className="label">
-              {r.year} 시즌 · {r.team} · {r.lg ? LEAGUES[r.lg].short : "D리그"}
+              {r.year} 시즌 · {r.team}&nbsp;· {r.lg ? LEAGUES[r.lg].short : "D리그"}
             </span>
             <h2 className="sec">
               {r.role} · {r.w}승 {r.l}패 · {r.result}
@@ -79,7 +80,7 @@ function ResultCard({ r }: { r: SeasonRecord }) {
           <div className="awards">
             {r.awards.map((a, i) => (
               <span className="aw" key={`${a}-${i}`}>
-                {a}
+                <AwardName name={a} />
               </span>
             ))}
           </div>
@@ -144,7 +145,7 @@ function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
           {team && <TeamBadge name={team.name} kind={team.lg} color={team.color} size={40} />}
           <div>
             <span className="label">
-              {run.year} 시즌 · {team?.name} · {team ? LEAGUES[team.lg].short : ""}
+              {run.year} 시즌 · {team?.name}&nbsp;· {team ? LEAGUES[team.lg].short : ""}
             </span>
             <h2 className="sec">
               {seasonProgress(run).label} · {run.w}승 {run.l}패
@@ -248,7 +249,9 @@ export function SeasonTab({ career: c }: { career: Career }) {
               <span className="dot" />
               <div>
                 <div className="when">{n.w}</div>
-                <div className="m">{n.m}</div>
+                <div className="m">
+                  <AwardName name={keepTogether(n.m)} />
+                </div>
               </div>
             </li>
           ))}

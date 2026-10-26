@@ -34,7 +34,8 @@ body{margin:0}
 [hidden]{display:none!important}
 img{max-width:100%}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:env(safe-area-inset-top,0px) calc(48px + env(safe-area-inset-bottom,0px))}
+/* 한글은 글자 사이가 아니라 띄어쓰기에서만 줄을 바꿔요. 한 낱말이 한 줄보다 길면 그때만 낱말 안에서 끊고, 마지막 줄에 한 낱말만 외로 남지 않게 해요. */
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;word-break:keep-all;overflow-wrap:break-word;text-wrap:pretty;padding-inline:16px;padding-block:env(safe-area-inset-top,0px) calc(48px + env(safe-area-inset-bottom,0px))}
 button{font:inherit;color:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--paint);outline-offset:2px}
 .label{font-size:11.5px;letter-spacing:.08em;color:var(--muted);font-weight:700}
@@ -73,7 +74,7 @@ h2.sec{font-family:var(--f-display);font-weight:400;font-size:18px;margin:0;lett
 .team-count{font-size:12.5px;color:var(--muted);margin:0}
 .team-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .team-list li{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:10px;background:var(--panel2);font-size:13px;font-weight:700;min-width:0}
-.team-list li span{min-width:0;line-height:1.3;word-break:keep-all}
+.team-list li span{min-width:0;line-height:1.3}
 .set-link{align-self:flex-start;margin-top:14px}
 @media (max-width:640px){.team-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
@@ -82,7 +83,7 @@ h2.sec{font-family:var(--f-display);font-weight:400;font-size:18px;margin:0;lett
 .gd li{display:flex;flex-direction:column;gap:3px;padding:11px 12px;border-radius:12px;background:var(--panel2);min-width:0}
 .gd b{font-size:14px;color:var(--accent)}
 .gd li[data-wide]{grid-column:1/-1}
-.gd li > span{font-size:13.5px;line-height:1.5;word-break:keep-all}
+.gd li > span{font-size:13.5px;line-height:1.5}
 .gd-leagues{display:block;margin-top:3px;font-size:12.5px;font-weight:700;color:var(--muted)}
 .gd-foot{margin:10px 0 0;font-size:13px;color:var(--muted);line-height:1.5}
 
@@ -200,8 +201,11 @@ main.grid{max-width:var(--t-max);margin:0 auto;padding-top:4px}
 .funds-k{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--muted)}
 .funds-v{font-family:var(--f-num);font-size:26px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--ink)}
 .funds-note{font-size:12.5px;color:var(--muted)}
-.awards{display:flex;flex-wrap:wrap;gap:6px}
-.aw{display:inline-flex;align-items:center;border:1px solid var(--gold);color:var(--gold);border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:700}
+.awards{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.aw{display:inline-block;border:1px solid var(--gold);color:var(--gold);border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:700}
+/* 상 이름 끝의 트로피 이름(괄호)은 다음 줄에 조금 작게 */
+.aw-sub{display:block;font-size:.88em;font-weight:500;opacity:.85}
+.aw:has(.aw-sub){border-radius:12px;padding-block:4px}
 /* 은퇴 화면 커리어 요약의 수상: 팀·개인·국가대표 줄 */
 .aw-rows{display:flex;flex-direction:column;gap:10px;margin:0}
 .aw-rows > div{display:grid;grid-template-columns:64px minmax(0,1fr);gap:10px;align-items:start}
@@ -237,7 +241,8 @@ tr:last-child td{border-bottom:0}
 .tro.has .c{color:var(--gold)}
 .tro.zero{opacity:.55}
 .loglist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:14px}
-.loglist span{font-family:var(--f-num);color:var(--muted);margin-right:8px}
+.loglist li{display:flex}
+.loglist .y{flex:none;font-family:var(--f-num);color:var(--muted);margin-right:8px}
 /* 불러오는 동안: 도는 표시와 안내, 목록 자리를 잡아 두는 반짝이는 빈 줄 (명예의 전당, 랭킹 페이지) */
 .loading{display:flex;flex-direction:column;gap:14px;padding:8px 0}
 .loading-head{display:flex;align-items:center;justify-content:center;gap:10px;min-height:44px;font-size:14px;font-weight:600;color:var(--muted)}
@@ -324,7 +329,7 @@ input,select{font:inherit;color:var(--ink);background:var(--panel2);border:1px s
 .arch{font-family:var(--f-display);font-size:19px}
 .cbody{position:relative}
 .arch-name{display:flex;align-items:center;gap:6px;min-width:0}
-.cdesc{font-size:13px;line-height:1.45;color:var(--muted);word-break:keep-all}
+.cdesc{font-size:13px;line-height:1.45;color:var(--muted)}
 /* 유형 툴팁: 카드 본문 위에 겹쳐 떠요. 터치 기기는 ⓘ를 눌러 열고 닫아요. */
 .tip-btn{position:relative;flex:none;display:inline-grid;place-items:center;width:20px;height:20px;padding:0;border-radius:50%;border:1.5px solid var(--muted);background:none;color:var(--muted);
   font-family:Georgia,serif;font-style:italic;font-weight:700;font-size:12px;line-height:1;cursor:pointer}
@@ -475,8 +480,9 @@ input,select{font:inherit;color:var(--ink);background:var(--panel2);border:1px s
 .fw-team{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:700;color:var(--sim-soft)}
 .sim-card .fw-title{font-size:clamp(23px,6.5vw,30px);text-wrap:balance;animation:rise .35s ease-out both}
 .fw-title[data-big]{color:#FFD66B}
-.fw-awards{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.fw-awards{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px}
 .fw-awards > span:not(.fw-more),.fw-more > button{padding:2px 10px;border:1px solid rgba(255,214,107,.6);border-radius:999px;font-size:12px;font-weight:700;color:#FFD66B}
+.fw-awards > span:has(.aw-sub){border-radius:12px}
 .fw-more{position:relative;display:inline-flex}
 .fw-more > button{border-style:dashed;background:none;font-family:inherit;line-height:inherit;cursor:pointer}
 .fw-more[data-open] > button{background:rgba(255,214,107,.15)}
@@ -505,6 +511,7 @@ input,select{font:inherit;color:var(--ink);background:var(--panel2);border:1px s
 @keyframes cheer-pop{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
 .sim-card .cheer-court{height:130px;margin-bottom:0}
 .sim-card .cheer-title{color:#FFD66B;text-wrap:balance;animation:rise .4s ease-out .15s both}
+.sim-card h2 .aw-sub{font-size:.6em;margin-top:4px;opacity:1}
 .sim-card.cheer .live-go{position:relative;margin-top:18px}
 .fw-nav{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;margin-top:10px}
 .fw-nav .sim-skip{margin-top:0;min-height:44px}
@@ -720,7 +727,7 @@ html:has(.sheet) .toast-zone{bottom:auto;top:calc(12px + env(safe-area-inset-top
 .rk-back{flex:none;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--ink);font-size:13px;font-weight:700;text-decoration:none}
 .top a.brand{color:inherit;text-decoration:none}
 .rk-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:4px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
-.rk-tabs a{display:grid;place-items:center;border-radius:9px;padding:10px 4px;font-weight:700;font-size:14px;line-height:1.25;color:var(--muted);text-align:center;text-decoration:none;word-break:keep-all}
+.rk-tabs a{display:grid;place-items:center;border-radius:9px;padding:10px 4px;font-weight:700;font-size:14px;line-height:1.25;color:var(--muted);text-align:center;text-decoration:none}
 @media (max-width:480px){.rk-tabs a{font-size:13px;padding:8px 2px}}
 .rk-chips button span{font-family:var(--f-body);font-weight:500;font-size:12px;letter-spacing:0;opacity:.75}
 .rk-tabs a[aria-selected="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}

@@ -7,6 +7,7 @@ import { NO_TEAM_COLOR } from "@/components/common/format";
 import { reducedMotion, useAutoFocus, useEscapeKey } from "@/components/common/hooks";
 import { Sprite } from "@/components/common/Sprite";
 import { TeamBadge } from "@/components/common/TeamBadge";
+import { AwardName } from "@/components/common/ui";
 import { Popup } from "./Popup";
 
 /** 지나온 발자취를 몇 줄 남길지 */
@@ -34,7 +35,9 @@ function AwardChips({ awards }: { awards: string[] }) {
   return (
     <div className="fw-awards">
       {shown.map((a) => (
-        <span key={a}>{a}</span>
+        <span key={a}>
+          <AwardName name={a} />
+        </span>
       ))}
       {rest.length > 0 && (
         // 마우스는 올리면, 터치는 누르면 열려요.
@@ -44,7 +47,9 @@ function AwardChips({ awards }: { awards: string[] }) {
           </button>
           <span id={id} role="tooltip">
             {rest.map((a) => (
-              <span key={a}>{a}</span>
+              <span key={a}>
+                <AwardName name={a} />
+              </span>
             ))}
           </span>
         </span>
@@ -133,7 +138,7 @@ export function FarewellLoading({ career: c }: { career: Career }) {
             {cur.team}
           </span>
           <h2 id="fw-title" key={at} className="fw-title" data-big={cur.big || undefined}>
-            {cur.title}
+            <AwardName name={cur.title} />
           </h2>
           <p className="sim-phase" role="status" aria-live="polite">
             {cur.detail}
