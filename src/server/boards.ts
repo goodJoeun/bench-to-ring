@@ -18,7 +18,7 @@ const NBA_TEAMS = TEAMS.nba.map(([name]) => name);
 // compareCareers와 같은 순서 (랭킹 점수 → NBA MVP → 최고 오버롤 → 통산 득점). 네 값이 모두 같으면 공동 순위예요.
 const order = sql`${careers.score} desc, ${careers.mvp} desc, ${careers.peak} desc, ${careers.pts} desc`;
 
-function inScope(scope: BoardScope): SQL | undefined {
+export function inScope(scope: BoardScope): SQL | undefined {
   return scope === "all" ? undefined : eq(careers.ruleset, scope.ruleset);
 }
 

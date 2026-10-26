@@ -1,5 +1,5 @@
 import { RULESET_VERSION, type CareerSummary, type PosKey } from "@/game";
-import type { Board, BoardScope, MyRanks, PlayerCreated, SubmitResult } from "./types";
+import type { Board, BoardScope, MyRanks, PlayerCreated, StatBoard, StatKey, SubmitResult } from "./types";
 
 // 온라인 랭킹에 은퇴 기록을 올려요. 서버가 안 되면 조용히 실패하고, 보내지 못한 기록은 다음에 다시 보내요.
 
@@ -100,6 +100,17 @@ export async function fetchBoard(scope: BoardScope = { ruleset: RULESET_VERSION 
   try {
     const res = await fetch(`/api/boards?${q}`, { signal: AbortSignal.timeout(BOARD_TIMEOUT_MS) });
     return res.ok ? ((await res.json()) as Board) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** 스탯 랭킹(프로 통산 상위 50명)을 가져와요. 서버가 안 되거나 BOARD_TIMEOUT_MS 안에 응답이 없으면 null이에요. */
+export async function fetchStatBoard(stat: StatKey, scope: BoardScope = { ruleset: RULESET_VERSION }): Promise<StatBoard | null> {
+  const q = new URLSearchParams(scope === "all" ? { scope: "all", stat } : { ruleset: String(scope.ruleset), stat });
+  try {
+    const res = await fetch(`/api/stats?${q}`, { signal: AbortSignal.timeout(BOARD_TIMEOUT_MS) });
+    return res.ok ? ((await res.json()) as StatBoard) : null;
   } catch {
     return null;
   }

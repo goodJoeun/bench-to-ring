@@ -3,7 +3,7 @@ import { LEAGUES, teamColor } from "./leagues";
 import { militaryUnit } from "./military";
 import { natColor } from "./national";
 import { ownedItems } from "./shop";
-import type { AwardKey, Career, CareerSummary, LeagueKey, NbaShare, SeasonRecord } from "./types";
+import type { AwardKey, Career, CareerSummary, LeagueKey, LeagueShare, NbaShare, SeasonRecord } from "./types";
 import { stripYear } from "./util";
 
 export interface CareerTotals {
@@ -13,10 +13,25 @@ export interface CareerTotals {
   ast: number;
 }
 
-/** 시즌 기록을 더한 통산 기록. 시즌 기록은 경기당 평균이라 경기 수를 곱해 더해요. */
-export function sumSeasons(rows: SeasonRecord[]): CareerTotals {
-  const total = (f: "pts" | "reb" | "ast") => Math.round(rows.reduce((t, h) => t + h[f] * h.gp, 0));
-  return { gp: rows.reduce((t, h) => t + h.gp, 0), pts: total("pts"), reb: total("reb"), ast: total("ast") };
+/** 통산 기록에 스틸·블록·3점슛까지 */
+export interface SeasonTotals extends CareerTotals {
+  stl: number;
+  blk: number;
+  tpm: number;
+}
+
+/** 시즌 기록을 더한 통산 기록. 시즌 기록은 경기당 평균이라 경기 수를 곱해 더해요. 3점슛이 없는 예전 시즌은 0으로 쳐요. */
+export function sumSeasons(rows: SeasonRecord[]): SeasonTotals {
+  const total = (f: "pts" | "reb" | "ast" | "stl" | "blk" | "tpm") => Math.round(rows.reduce((t, h) => t + (h[f] ?? 0) * h.gp, 0));
+  return {
+    gp: rows.reduce((t, h) => t + h.gp, 0),
+    pts: total("pts"),
+    reb: total("reb"),
+    ast: total("ast"),
+    stl: total("stl"),
+    blk: total("blk"),
+    tpm: total("tpm"),
+  };
 }
 
 export interface TitleEntry {
@@ -232,7 +247,22 @@ export function nbaShare(c: Career): NbaShare {
   const years = new Set(rows.map((h) => h.year));
   const awards: Partial<Record<AwardKey, number>> = {};
   for (const a of c.awardLog) if (years.has(a.y) && !a.k.startsWith("nat_")) awards[a.k] = (awards[a.k] ?? 0) + 1;
-  return { seasons: years.size, ...sumSeasons(rows), awards };
+  const { gp, pts, reb, ast } = sumSeasons(rows);
+  return { seasons: years.size, gp, pts, reb, ast, awards };
+}
+
+/** 리그마다 쌓은 시즌·기록과 그 시즌에 받은 상 (국가대표 메달은 빼요). 랭킹 점수가 리그 수준에 따라 다르게 쳐요. */
+export function leagueShares(c: Career): Partial<Record<LeagueKey, LeagueShare>> {
+  const out: Partial<Record<LeagueKey, LeagueShare>> = {};
+  for (const lg of new Set(c.hist.map((h) => h.lg))) {
+    if (!lg) continue;
+    const rows = c.hist.filter((h) => h.lg === lg);
+    const years = new Set(rows.map((h) => h.year));
+    const awards: Partial<Record<AwardKey, number>> = {};
+    for (const a of c.awardLog) if (years.has(a.y) && !a.k.startsWith("nat_")) awards[a.k] = (awards[a.k] ?? 0) + 1;
+    out[lg] = { seasons: years.size, ...sumSeasons(rows), awards };
+  }
+  return out;
 }
 
 export function careerSummary(c: Career): CareerSummary {
@@ -252,6 +282,9 @@ export function careerSummary(c: Career): CareerSummary {
     pts: pro.pts,
     reb: pro.reb,
     ast: pro.ast,
+    stl: pro.stl,
+    blk: pro.blk,
+    tpm: pro.tpm,
     gp: pro.gp,
     seasons: c.proSeasons,
     retAge: c.age,
@@ -266,6 +299,7 @@ export function careerSummary(c: Career): CareerSummary {
     legacyItems: ownedItems(c).filter((i) => i.legacy).map((i) => i.name),
     ruleset: RULESET_VERSION,
     nba: nbaShare(c),
+    leagues: leagueShares(c),
     look: { skin: c.p.skin, hair: c.p.hair },
   };
   return { ...base, legacy: legacyOf(base) };

@@ -4,23 +4,25 @@ import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { POS, POS_KEYS, type PosKey } from "@/game";
 import { useGame } from "@/lib/game-store";
-import { fetchBoard, fetchMine, pendingIds } from "@/lib/leaderboard/client";
-import type { Board, MyRanks } from "@/lib/leaderboard/types";
+import { fetchBoard, fetchMine, fetchStatBoard, pendingIds } from "@/lib/leaderboard/client";
+import { STAT_KEYS, type Board, type MyRanks, type StatBoard, type StatKey } from "@/lib/leaderboard/types";
 import { Loading } from "@/components/common/ui";
 import { BestFiveCourt } from "./BestFiveCourt";
 import { MyRecords } from "./MyRecords";
 import { RankingList } from "./RankingList";
+import { STAT_LABELS, StatList } from "./StatList";
 
 const TABS = [
   ["best5", "베스트 5"],
   ["ranking", "랭킹 100"],
   ["position", "포지션별 랭킹"],
+  ["stats", "스탯 랭킹"],
   ["mine", "나의 기록"],
 ] as const;
 type Tab = (typeof TABS)[number][0];
 type PosFilter = PosKey | "all";
 
-// 탭은 주소의 #best5 · #ranking · #position · #mine을 따라가요. 링크로 바로 열 수 있고 뒤로 가기도 돼요.
+// 탭은 주소의 #best5 · #ranking · #position · #stats · #mine을 따라가요. 링크로 바로 열 수 있고 뒤로 가기도 돼요.
 const subscribeHash = (cb: () => void) => {
   window.addEventListener("hashchange", cb);
   return () => window.removeEventListener("hashchange", cb);
@@ -56,6 +58,65 @@ function useBoard(pos: PosFilter, needed: boolean) {
       return next;
     });
   return { board: boards[pos], loaded, retry };
+}
+
+/**
+ * 스탯 랭킹 탭: 스탯을 고르면 그 스탯의 프로 통산 상위 50명을 불러와요.
+ * 한 번 불러온 스탯은 이 화면에 있는 동안 다시 부르지 않아요. null은 불러오지 못한 것이에요.
+ */
+function StatsPanel({ mine }: { mine: Set<string> }) {
+  const [stat, setStat] = useState<StatKey>("pts");
+  const [boards, setBoards] = useState<Partial<Record<StatKey, StatBoard | null>>>({});
+  const loaded = stat in boards;
+  useEffect(() => {
+    if (loaded) return;
+    let live = true;
+    void fetchStatBoard(stat).then((b) => {
+      if (live) setBoards((m) => ({ ...m, [stat]: b }));
+    });
+    return () => {
+      live = false;
+    };
+  }, [stat, loaded]);
+  const board = boards[stat];
+  const retry = () =>
+    setBoards((m) => {
+      const next = { ...m };
+      delete next[stat];
+      return next;
+    });
+
+  return (
+    <>
+      <div className="rk-chips" role="group" aria-label="스탯 고르기">
+        {STAT_KEYS.map((k) => (
+          <button key={k} type="button" aria-pressed={stat === k} onClick={() => setStat(k)}>
+            {STAT_LABELS[k].name}
+          </button>
+        ))}
+      </div>
+      {!loaded ? (
+        <Loading label={`${STAT_LABELS[stat].name} 랭킹을 불러오고 있어요`} rows={8} />
+      ) : !board ? (
+        <div className="row">
+          <p className="empty" role="status">
+            스탯 랭킹을 불러오지 못했어요. 잠시 뒤에 다시 해 주세요.
+          </p>
+          <button type="button" className="btn" onClick={retry}>
+            다시 불러오기
+          </button>
+        </div>
+      ) : !board.top.length ? (
+        <div className="rk-empty">
+          <b>아직 {STAT_LABELS[stat].name} 기록이 없어요</b>
+          <span>프로 무대를 밟은 선수가 은퇴하면 첫 기록이 돼요.</span>
+        </div>
+      ) : (
+        <StatList rows={board.top} stat={stat} mine={mine} />
+      )}
+      <p className="hint">프로 통산 기록으로 줄을 세워요. 스틸·블록·3점슛은 이 랭킹이 생긴 뒤 은퇴한 기록부터 세요.</p>
+    </>
+  );
 }
 
 function useMine() {
@@ -126,6 +187,8 @@ export function RankingsScreen() {
         <section className="rk-panel" role="tabpanel" id="rk-panel" aria-labelledby={`rk-tab-${tab}`}>
           {tab === "mine" ? (
             <MyRecords hall={hall} mine={mine} pending={new Set(pending ? pending.split("\n") : [])} />
+          ) : tab === "stats" ? (
+            hydrated && <StatsPanel mine={myIds} />
           ) : (
             <>
               {tab === "position" && (

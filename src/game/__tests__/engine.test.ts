@@ -17,6 +17,8 @@ import {
   placeOnBoard,
   rankHall,
   rankScore,
+  sumSeasons,
+  SCORE_CAP,
   resetRandom,
   scoreParts,
   SCORE_AWARDS,
@@ -1235,6 +1237,38 @@ describe("자금 쓰기", () => {
     expect(careerSummary(c).donated).toBe(10);
     startSeason(c);
     expect(buy(c, "shoes")).toBe(false);
+  });
+});
+
+describe("랭킹 점수", () => {
+  /** 리그 하나에서 MVP 한 번만 받은 프로 커리어 */
+  const mvpIn = (lg: LeagueKey, caps = 0): CareerSummary => {
+    const awards = { mvp: 1 };
+    return {
+      awards, pts: 0, reb: 0, ast: 0, peak: 60, teams: [], caps,
+      leagues: { [lg]: { seasons: 1, gp: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tpm: 0, awards } },
+    } as unknown as CareerSummary;
+  };
+
+  it("같은 상이라도 리그 수준에 따라 다르게 치고, 국가대표 출전도 더해요", () => {
+    expect(rankScore(mvpIn("euro"))).toBeGreaterThan(rankScore(mvpIn("kbl")));
+    expect(rankScore(mvpIn("kbl"))).toBeGreaterThan(rankScore(mvpIn("ncaa")));
+    expect(rankScore(mvpIn("ncaa"))).toBeGreaterThan(rankScore(mvpIn("hs")));
+    expect(rankScore(mvpIn("kbl", 100))).toBeCloseTo(rankScore(mvpIn("kbl")) + 100 * SCORE_CAP, 1);
+  });
+
+  it("엔진이 만든 은퇴 기록에는 리그별 몫과 스틸·블록·3점슛 통산이 있고, 리그별 몫이 없는 예전 기록도 점수를 매겨요", () => {
+    const rand = seeded(55);
+    setRandom(rand);
+    const c = createCareer({ name: "점수", num: 7, nat: "대한민국", pos: "SG", path: "domestic" }, generateCandidates("SG")[0], "rs1");
+    playToRetirement(c, rand);
+    const s = careerSummary(c);
+    expect(s.leagues?.hs?.seasons).toBeGreaterThan(0);
+    expect(s.stl).toBeGreaterThanOrEqual(0);
+    expect(s.tpm).toBe(sumSeasons(c.hist.filter((h) => h.pro)).tpm);
+    if (s.gp > 0) expect(c.hist.filter((h) => h.pro && h.gp > 0).every((h) => (h.tpm ?? -1) >= 0)).toBe(true);
+    const old = { ...s, leagues: undefined };
+    expect(rankScore(old)).toBeGreaterThan(0);
   });
 });
 

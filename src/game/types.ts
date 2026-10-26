@@ -155,6 +155,8 @@ export interface SeasonRecord {
   ast: number;
   stl: number;
   blk: number;
+  /** 경기당 3점슛 성공. 예전 기록에는 없어요. */
+  tpm?: number;
   fg: number;
   rating: number;
   w: number;
@@ -534,8 +536,27 @@ export interface CareerSummary {
   ruleset?: number;
   /** NBA에서 낸 몫. 랭킹 점수가 NBA 기록을 더 크게 쳐요. 예전 기록에는 없어요. */
   nba?: NbaShare;
+  /** 프로 통산 스틸·블록·3점슛. 예전 기록에는 없어요. */
+  stl?: number;
+  blk?: number;
+  tpm?: number;
+  /** 리그마다 낸 몫. 랭킹 점수가 리그 수준에 따라 상과 기록을 다르게 쳐요. 예전 기록에는 없어요. */
+  leagues?: Partial<Record<LeagueKey, LeagueShare>>;
   /** 도트 캐릭터 색. 예전 기록에는 없어요. */
   look?: { skin: string; hair: string };
+}
+
+/** 커리어 가운데 한 리그에서 쌓은 시즌·기록과 그 시즌에 받은 상 (국가대표 메달은 빼요) */
+export interface LeagueShare {
+  seasons: number;
+  gp: number;
+  pts: number;
+  reb: number;
+  ast: number;
+  stl: number;
+  blk: number;
+  tpm: number;
+  awards: Partial<Record<AwardKey, number>>;
 }
 
 /** 커리어 가운데 NBA 시즌에서 쌓은 기록과 상 */

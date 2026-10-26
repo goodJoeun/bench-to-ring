@@ -1,4 +1,4 @@
-import { fmtNum, type CareerSummary, type PosKey } from "@/game";
+import type { CareerSummary, PosKey } from "@/game";
 
 /* 명예의 전당(이 브라우저의 기록) 표와 Best 5 */
 
@@ -24,6 +24,10 @@ export function Best5({ items }: { items: { pos: PosKey; career: HallCareer | nu
   );
 }
 
+/**
+ * 명예의 전당 표: 순위·선수·포지션·레거시·최고 OVR. 순위는 리그별 MVP·우승·파이널 MVP·개인상, 국가대표, 통산 기록을
+ * 종합한 랭킹 점수(rankScore)로 매기고, 점수 자체는 보여주지 않아요.
+ */
 export function HallTable({ rows }: { rows: HallRow[] }) {
   return (
     <div className="tbl-wrap">
@@ -32,13 +36,9 @@ export function HallTable({ rows }: { rows: HallRow[] }) {
           <tr>
             <th>순위</th>
             <th className="l">선수</th>
-            <th className="l">POS</th>
+            <th className="l">포지션</th>
             <th className="l">레거시</th>
-            <th>MVP</th>
             <th>최고 OVR</th>
-            <th>개인상</th>
-            <th>반지</th>
-            <th>통산 득점</th>
           </tr>
         </thead>
         <tbody>
@@ -50,11 +50,7 @@ export function HallTable({ rows }: { rows: HallRow[] }) {
               </td>
               <td className="l">{h.pos}</td>
               <td className="l t">{h.legacy}</td>
-              <td>{h.mvp}</td>
               <td>{h.peak}</td>
-              <td>{h.personal}</td>
-              <td>{h.rings}</td>
-              <td>{fmtNum(h.pts)}</td>
             </tr>
           ))}
         </tbody>

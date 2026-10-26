@@ -55,6 +55,7 @@ export {
 } from "./shop";
 export {
   awardGroups,
+  leagueShares,
   careerJourney,
   careerSummary,
   retire,
@@ -65,10 +66,11 @@ export {
   type AwardCount,
   type AwardGroups,
   type CareerTotals,
+  type SeasonTotals,
   type JourneyStep,
   type TitleEntry,
 } from "./career";
-export { SCORE_AWARDS, SCORE_NBA, SCORE_OTHER, bestFive, compareCareers, playedNba, rankHall, rankScore, scoreParts, type ScoreParts } from "./hall";
+export { LEAGUE_WEIGHT, SCORE_AWARDS, SCORE_CAP, SCORE_NBA, SCORE_OTHER, bestFive, compareCareers, playedNba, rankHall, rankScore, scoreParts, type ScoreParts } from "./hall";
 export { COMPS, careerProfile, similarPlayers, type CompLeague, type CompMatch, type CompPlayer, type CompProfile } from "./comps";
 export { namuWikiUrl } from "./namu";
 export {

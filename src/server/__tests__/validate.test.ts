@@ -14,7 +14,7 @@ import {
   type Career,
   type CareerSummary,
 } from "@/game";
-import { HIDDEN_NAME, checkSummary, cleanName, parseBoardQuery } from "@/server/validate";
+import { HIDDEN_NAME, checkSummary, cleanName, parseBoardQuery, parseStatQuery } from "@/server/validate";
 
 afterEach(() => resetRandom());
 
@@ -68,6 +68,9 @@ describe("은퇴 기록 검사", () => {
       { ruleset: 0 },
       { ruleset: undefined },
       { pos: "G" as never },
+      // 리그별 몫을 더한 상이 전체보다 많으면 안 돼요.
+      { leagues: { ...s.leagues, nba: { seasons: 1, gp: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tpm: 0, awards: { ring: s.rings + 1 } } } },
+      { stl: s.gp * 20 },
     ];
     for (const patch of bad) expect(checkSummary({ ...s, ...patch }), JSON.stringify(patch)).toMatchObject({ ok: false });
     expect(checkSummary("기록")).toMatchObject({ ok: false });
@@ -97,6 +100,13 @@ describe("순위표 조건", () => {
     expect(q("scope=current&pos=SG")).toEqual({ ok: true, scope: { ruleset: RULESET_VERSION }, pos: "SG" });
     expect(q(`ruleset=${RULESET_VERSION}`)).toEqual({ ok: true, scope: { ruleset: RULESET_VERSION }, pos: null });
     expect(q("scope=all&pos=C")).toEqual({ ok: true, scope: "all", pos: "C" });
+  });
+
+  it("스탯 랭킹은 스탯을 꼭 고르고, 범위는 순위표와 같아요", () => {
+    const sq = (s: string) => parseStatQuery(new URLSearchParams(s));
+    expect(sq("stat=tpm")).toEqual({ ok: true, scope: { ruleset: RULESET_VERSION }, stat: "tpm" });
+    expect(sq("stat=pts&scope=all")).toEqual({ ok: true, scope: "all", stat: "pts" });
+    for (const s of ["", "stat=dunk", "stat=pts&pos=C", "stat=pts&scope=week"]) expect(sq(s), s).toMatchObject({ ok: false });
   });
 
   it("모르는 값이나 맞지 않는 조합은 거절해요", () => {

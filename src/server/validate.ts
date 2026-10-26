@@ -1,12 +1,13 @@
 import { z } from "zod";
-import { AWARDS, PERSONAL_AWARDS, POS_KEYS, RULESET_VERSION, START_YEAR, legacyOf, playedNba, type AwardKey, type CareerSummary, type PosKey } from "@/game";
+import { AWARDS, LEAGUES, PERSONAL_AWARDS, POS_KEYS, RULESET_VERSION, START_YEAR, legacyOf, playedNba, type AwardKey, type CareerSummary, type LeagueKey, type LeagueShare, type PosKey } from "@/game";
 import { RETIRE_AGE } from "@/game/offseason";
-import type { BoardScope } from "@/lib/leaderboard/types";
+import { STAT_KEYS, type BoardScope, type StatKey } from "@/lib/leaderboard/types";
 
 // 제출한 은퇴 기록이 엔진이 낼 수 있는 모양과 범위인지 봐요 (docs/online-leaderboard.md 4장 1단계). 순위표 조회 조건도 여기서 읽어요.
 // DB를 쓰지 않아서 테스트에서 바로 불러요.
 
 const AWARD_KEYS = AWARDS.map(([k]) => k) as [AwardKey, ...AwardKey[]];
+const LEAGUE_KEYS = Object.keys(LEAGUES) as [LeagueKey, ...LeagueKey[]];
 const count = z.int().min(0);
 const hexColor = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
 
@@ -50,6 +51,25 @@ const summarySchema = z.object({
     })
     .optional(),
   look: z.object({ skin: hexColor, hair: hexColor }).optional(),
+  stl: count.optional(),
+  blk: count.optional(),
+  tpm: count.optional(),
+  leagues: z
+    .partialRecord(
+      z.enum(LEAGUE_KEYS),
+      z.object({
+        seasons: z.int().min(0).max(30),
+        gp: count,
+        pts: count,
+        reb: count,
+        ast: count,
+        stl: count,
+        blk: count,
+        tpm: count,
+        awards: z.partialRecord(z.enum(AWARD_KEYS), count.max(100)),
+      }),
+    )
+    .optional(),
 });
 
 export type SubmittedSummary = z.infer<typeof summarySchema> & CareerSummary;
@@ -72,6 +92,19 @@ export function parseBoardQuery(params: URLSearchParams): BoardQueryResult {
   const q = parsed.data;
   if (q.scope === "all" && q.ruleset !== undefined) return { ok: false, error: "역대 전체에는 룰셋을 고를 수 없어요." };
   return { ok: true, scope: q.scope === "all" ? "all" : { ruleset: q.ruleset ?? RULESET_VERSION }, pos: q.pos ?? null };
+}
+
+export type StatQueryResult = { ok: true; scope: BoardScope; stat: StatKey } | { ok: false; error: string };
+
+/** GET /api/stats의 `?stat=&scope=&ruleset=`. 범위는 순위표와 같고, 포지션은 고를 수 없어요. */
+export function parseStatQuery(params: URLSearchParams): StatQueryResult {
+  const stat = params.get("stat");
+  if (!STAT_KEYS.includes(stat as StatKey)) return { ok: false, error: "스탯 종류가 맞지 않아요." };
+  const rest = new URLSearchParams(params);
+  rest.delete("stat");
+  if (rest.has("pos")) return { ok: false, error: "스탯 랭킹은 포지션을 고를 수 없어요." };
+  const q = parseBoardQuery(rest);
+  return q.ok ? { ok: true, scope: q.scope, stat: stat as StatKey } : q;
 }
 
 /** 욕설이 들어간 선수 이름은 이 이름으로 바꿔서 올려요. 기록은 살려요. */
@@ -104,6 +137,7 @@ export function checkSummary(input: unknown): CheckResult {
   // 정규 시즌과 플레이오프를 합쳐도 시즌마다 110경기를 넘지 않아요.
   if (s.gp > s.seasons * 110) return { ok: false, error: "경기 수가 너무 많아요." };
   if (s.pts > s.gp * 60 || s.reb > s.gp * 30 || s.ast > s.gp * 25) return { ok: false, error: "통산 기록이 너무 많아요." };
+  if ((s.stl ?? 0) > s.gp * 10 || (s.blk ?? 0) > s.gp * 10 || (s.tpm ?? 0) > s.gp * 15) return { ok: false, error: "통산 기록이 너무 많아요." };
   // 16세에 START_YEAR로 시작해 나이와 연도가 같이 늘어요.
   if (Math.abs(s.retYear - (START_YEAR - 17 + s.retAge)) > 1) return { ok: false, error: "은퇴 연도가 맞지 않아요." };
   const { legacy, ...rest } = s;
@@ -120,6 +154,19 @@ export function checkSummary(input: unknown): CheckResult {
       (Object.entries(n.awards) as [AwardKey, number][]).some(([k, v]) => v > (a[k] ?? 0));
     if (over || (n.awards.mvp_nba ?? 0) !== s.mvp || (n.seasons > 0 && !playedNba(s)))
       return { ok: false, error: "NBA 기록이 맞지 않아요." };
+  }
+
+  // 리그별 몫은 전체의 일부예요. 프로 리그 기록을 모두 더해도 프로 통산을 넘지 않고, 리그마다 받은 상을 더해도 전체 상을 넘지 않아요.
+  if (s.leagues) {
+    const shares = Object.entries(s.leagues) as [LeagueKey, LeagueShare][];
+    const pro = shares.filter(([lg]) => LEAGUES[lg].pro).map(([, v]) => v);
+    // 리그마다 따로 반올림해서, 리그 수만큼은 통산보다 많아도 괜찮아요.
+    const over = (f: "gp" | "pts" | "reb" | "ast" | "stl" | "blk" | "tpm", total: number) => pro.reduce((t, v) => t + v[f], 0) > total + pro.length;
+    const statsOver =
+      over("gp", s.gp) || over("pts", s.pts) || over("reb", s.reb) || over("ast", s.ast) ||
+      over("stl", s.stl ?? 0) || over("blk", s.blk ?? 0) || over("tpm", s.tpm ?? 0);
+    const awardsOver = AWARD_KEYS.some((k) => shares.reduce((t, [, v]) => t + (v.awards[k] ?? 0), 0) > (a[k] ?? 0));
+    if (statsOver || awardsOver) return { ok: false, error: "리그별 기록이 맞지 않아요." };
   }
 
   return { ok: true, summary: { ...s, name: cleanName(s.name) } };

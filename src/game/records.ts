@@ -171,7 +171,10 @@ export const RECORD_BOARDS: RecordBoard[] = [
 
 /** 리그별(NBA·KBL) 정규리그 통산과 올림픽 통산 */
 export function careerTotals(c: Career): Record<RecordGroup, CareerTotals> {
-  const league = (lg: "nba" | "kbl"): CareerTotals => sumSeasons(c.hist.filter((h) => h.lg === lg));
+  const league = (lg: "nba" | "kbl"): CareerTotals => {
+    const { gp, pts, reb, ast } = sumSeasons(c.hist.filter((h) => h.lg === lg));
+    return { gp, pts, reb, ast };
+  };
   // 올림픽은 경기마다 내 득점만 남아요. 실제 기록처럼 본선만 세고, 최종예선과 불참한 대회는 빼요.
   const games = c.natLog.filter((t) => t.ev === "olympics" && t.joined).flatMap((t) => t.games);
   const played = games.filter((g) => g.pts !== undefined && !g.stage.startsWith("최종예선"));

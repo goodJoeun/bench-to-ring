@@ -89,6 +89,34 @@ export interface Board {
   };
 }
 
+/** 스탯 랭킹 종류: 프로 통산 득점·리바운드·어시스트·스틸·블록·3점슛 */
+export const STAT_KEYS = ["pts", "reb", "ast", "stl", "blk", "tpm"] as const;
+export type StatKey = (typeof STAT_KEYS)[number];
+
+/** 스탯 랭킹의 한 줄 */
+export interface StatEntry {
+  id: string;
+  /** 같은 범위 안의 순위. 값이 같으면 공동 순위예요. */
+  rank: number;
+  name: string;
+  num: number;
+  pos: PosKey;
+  /** 프로 통산 값 */
+  value: number;
+  /** 프로 통산 경기 수 */
+  gp: number;
+  team: string | null;
+  look: { skin: string; hair: string } | null;
+}
+
+/** GET /api/stats */
+export interface StatBoard {
+  scope: BoardScope;
+  stat: StatKey;
+  /** 상위 50명. 스틸·블록·3점슛은 그 기록이 남은 커리어만 세요. */
+  top: StatEntry[];
+}
+
 export interface ApiError {
   error: string;
 }

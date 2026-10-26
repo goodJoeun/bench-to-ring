@@ -522,6 +522,15 @@ function finishSeason(c: Career): SeasonRecord {
 }
 
 /** 팀 시즌의 경기 기록을 합치고 시상해요. */
+/**
+ * 경기당 3점슛 성공. 득점 가운데 3점으로 넣은 몫을 슛 능력과 키로 정해요. 운은 쓰지 않아서 시즌 진행의 난수 흐름은 그대로예요.
+ * 슛 70인 190cm 가드가 20점을 넣으면 1.9개, 슛 50인 212cm 센터는 거의 없어요. 많아도 득점의 36%까지예요.
+ */
+function threesPerGame(pts: number, p: Career["p"]): number {
+  const share = clamp(0.1 + (p.attrs.sht - 50) * 0.009 - Math.max(0, p.h - 200) * 0.012, 0.02, 0.36);
+  return r1((pts * share) / 3);
+}
+
 function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord {
   const p = c.p;
   const team = c.team!;
@@ -545,6 +554,7 @@ function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord 
     rating: gp ? r1(clamp(t.rating / gp, 3.5, 9.9)) : 5.5, w: W, l: run.l, result: run.result, ovr0: ov0, ovr1: ov0, awards: [],
   };
   if (gp > 0 && run.final) rec.final = run.final;
+  if (gp > 0) rec.tpm = threesPerGame(rec.pts, p);
 
   // 시상: 리그마다 실제 이름으로 줘요(awards.ts). 베스트 팀·올-디펜시브는 활약에 따라 퍼스트·세컨드·서드로 나눠요.
   const sh = L.short;

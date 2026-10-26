@@ -764,6 +764,10 @@ html:has(.sheet) .toast-zone{bottom:auto;top:calc(12px + env(safe-area-inset-top
 .rk-r[data-medal="silver"]{--m:var(--silver)}
 .rk-list{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);overflow:hidden}
 .rk-list li{display:grid;grid-template-columns:30px 24px minmax(0,1fr);align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line)}
+/* 스탯 랭킹: 오른쪽에 프로 통산 값을 크게 */
+.rk-stat li{grid-template-columns:30px 24px minmax(0,1fr) auto}
+.rk-val{font-family:var(--f-num);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap}
+.rk-val small{margin-left:2px;font-size:12px;font-weight:600;color:var(--muted)}
 .rk-list li:last-child{border-bottom:0}
 .rk-list li[data-mine]{background:var(--panel2);box-shadow:inset 3px 0 0 var(--accent)}
 .rk-list li[data-mine] .rk-r{color:var(--accent)}
