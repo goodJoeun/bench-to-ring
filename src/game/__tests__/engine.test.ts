@@ -58,6 +58,7 @@ import {
   specialtiesOf,
   specialtyBonus,
   COMPS,
+  namuWikiUrl,
   careerProfile,
   similarPlayers,
   teamPower,
@@ -1312,6 +1313,20 @@ describe("은퇴 회고", () => {
 });
 
 describe("닮은 꼴 선수", () => {
+  it("나무위키 주소는 이름으로 만들고, 동명이인은 따로 적은 문서 제목으로 만들어요", () => {
+    const url = (title: string) => `https://namu.wiki/w/${encodeURIComponent(title)}`;
+    expect(namuWikiUrl("마이클 조던")).toBe(url("마이클 조던"));
+    expect(namuWikiUrl("양동근")).toBe(url("양동근(농구)"));
+    // 플레이 유형 예시의 '작은 이정현'은 닮은 꼴 선수의 이정현과 다른 사람이에요.
+    expect(namuWikiUrl("(작)이정현")).toBe(url("이정현(1999)"));
+    expect(namuWikiUrl("이정현")).toBe(url("이정현(1987)"));
+    const names = [
+      ...[...COMPS.nba, ...COMPS.kbl].map((x) => x.name),
+      ...Object.values(ARCHETYPES).flatMap((list) => list.flatMap((a) => [...a.kbl, ...a.nba])),
+    ];
+    for (const n of names) expect(namuWikiUrl(n)).toMatch(/^https:\/\/namu\.wiki\/w\/[^\s/]+$/);
+  });
+
   it("프로 기록이 있으면 KBL·NBA에서 닮은 순서로 세 명을 고르고, 없으면 비워 둬요", () => {
     const rand = seeded(98);
     setRandom(rand);

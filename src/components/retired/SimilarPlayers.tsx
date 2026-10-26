@@ -1,4 +1,4 @@
-import { LEAGUES, POS, careerProfile, similarPlayers, type Career, type CompLeague } from "@/game";
+import { LEAGUES, POS, careerProfile, namuWikiUrl, similarPlayers, type Career, type CompLeague } from "@/game";
 import { Panel } from "@/components/common/ui";
 
 const LEAGUE_ORDER: CompLeague[] = ["kbl", "nba"];
@@ -24,7 +24,15 @@ export function SimilarPlayers({ career: c }: { career: Career }) {
             <article className="comp" key={lg}>
               <span className="label">{played ? `${name}에서` : `${name}로 치면`}</span>
               <div className="comp-head">
-                <b className="comp-name">{top.player.name}</b>
+                <b className="comp-name">
+                  {/* 이름을 누르면 그 선수의 나무위키 문서를 새 탭으로 열어요. */}
+                  <a href={namuWikiUrl(top.player.name)} target="_blank" rel="noopener noreferrer" aria-label={`${top.player.name} 나무위키 문서 (새 탭)`}>
+                    {top.player.name}
+                    <span className="ext" aria-hidden="true">
+                      ↗
+                    </span>
+                  </a>
+                </b>
                 <span className="comp-score">
                   닮은 정도 <b>{top.score}%</b>
                 </span>

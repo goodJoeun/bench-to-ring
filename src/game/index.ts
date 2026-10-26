@@ -70,6 +70,7 @@ export {
 } from "./career";
 export { SCORE_AWARDS, SCORE_NBA, SCORE_OTHER, bestFive, compareCareers, playedNba, rankHall, rankScore, scoreParts, type ScoreParts } from "./hall";
 export { COMPS, careerProfile, similarPlayers, type CompLeague, type CompMatch, type CompPlayer, type CompProfile } from "./comps";
+export { namuWikiUrl } from "./namu";
 export {
   RECORD_BOARDS,
   RECORD_GROUPS,
