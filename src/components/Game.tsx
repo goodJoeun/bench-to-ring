@@ -17,7 +17,7 @@ import { Toast } from "@/components/common/Toast";
 import { TournamentLoading } from "@/components/progress/TournamentLoading";
 
 export function Game() {
-  const { ready, career, draft, hall, playing, speed, final, farewell, farewellReplay, tournament, drafting, toast } = useGame();
+  const { ready, career, draft, hall, playing, speed, final, farewell, farewellReplay, tournament, drafting, toast, outcome } = useGame();
   // 탭은 커리어마다 홈에서 시작해요.
   const [view, setView] = useState<{ id: string | null; tab: TabKey }>({ id: null, tab: "season" });
   const tab = career && view.id === career.id ? view.tab : "season";
@@ -41,7 +41,17 @@ export function Game() {
     body = farewell && !farewellReplay ? null : <RetiredScreen career={career} hall={hall} />;
   else
     body = (
-      <GameScreen career={career} hall={hall} tab={tab} onTab={openTab} playing={playing} speed={speed} busy={final || tournament || drafting} />
+      <GameScreen
+        career={career}
+        hall={hall}
+        tab={tab}
+        onTab={openTab}
+        playing={playing}
+        speed={speed}
+        // 축하 팝업을 다 닫아야 오프시즌 결정 시트가 올라와요.
+        busy={final || tournament || drafting || !!cheer}
+        outcome={outcome}
+      />
     );
 
   return (

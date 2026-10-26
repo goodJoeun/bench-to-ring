@@ -31,6 +31,11 @@ import {
   bodyOf,
   careerSummary,
   investCost,
+  investLineup,
+  investPerks,
+  chosenInvest,
+  INVESTMENTS,
+  SPECIAL_COUNT,
   startCap,
   simulateSeason,
   simulateTournament,
@@ -555,6 +560,55 @@ describe("시즌 투자", () => {
     m.invest = ["coach"];
     simulateSeason(m);
     expect(m.spent).toBe(0);
+  });
+
+  it("기본 투자는 늘 나오고, 특별 투자는 시즌마다 바뀌며 같은 시즌이면 같은 목록이에요", () => {
+    const c = pro("inv6");
+    const specialsOf = (year: number) => {
+      c.year = year;
+      const lineup = investLineup(c);
+      expect(lineup.filter((i) => !i.special).map((i) => i.key)).toEqual(["coach", "gym", "rehab", "diet", "video"]);
+      expect(investLineup(c).map((i) => i.key)).toEqual(lineup.map((i) => i.key));
+      return lineup.filter((i) => i.special).map((i) => i.key).join(",");
+    };
+    const years = Array.from({ length: 8 }, (_, i) => specialsOf(2030 + i));
+    for (const y of years) expect(y.split(",")).toHaveLength(SPECIAL_COUNT);
+    expect(new Set(years).size).toBeGreaterThan(3);
+    // 프로 전용(로드 매니지먼트)과 학생 전용(아카데미 특강)은 그 무대에서만 나와요.
+    for (let y = 2030; y < 2080; y++) {
+      c.year = y;
+      expect(investLineup(c).some((i) => i.key === "academy")).toBe(false);
+    }
+  });
+
+  it("이번 시즌에 없는 특별 투자는 고른 채로 남아 있어도 내지 않아요", () => {
+    setRandom(seeded(33));
+    const c = pro("inv7");
+    c.earnings = 10;
+    const missing = INVESTMENTS.find((i) => i.special && !investLineup(c).some((x) => x.key === i.key))!;
+    c.invest = [missing.key, "coach"];
+    expect(chosenInvest(c)).toEqual(["coach"]);
+    simulateSeason(c);
+    expect(c.last!.invest).toEqual(["coach"]);
+  });
+
+  it("특별 투자도 그 시즌에만 효과가 나고, 기본 투자 효과는 예전 수치 그대로예요", () => {
+    const p = investPerks(["coach", "gym"]);
+    expect(p.growth.ath).toBeCloseTo(1.05 * 1.2, 5);
+    expect(p.decline.ath).toBeCloseTo(0.75, 5);
+    expect(investPerks(["rehab", "diet"]).heal).toBe(14);
+    const run = (special: boolean) => {
+      setRandom(seeded(78));
+      const c = pro("inv8");
+      // 슈팅 전문 캠프가 나오는 시즌을 찾아요.
+      while (!investLineup(c).some((i) => i.key === "shootcamp")) c.year++;
+      c.earnings = 10;
+      c.invest = special ? ["shootcamp"] : [];
+      const before = c.p.attrs.sht;
+      simulateSeason(c);
+      return c.p.attrs.sht - before;
+    };
+    expect(run(true)).toBeGreaterThan(run(false));
   });
 });
 

@@ -538,6 +538,15 @@ body:has(:is(.advance,.run-bar)){padding-bottom:calc(var(--dock) + var(--cta) + 
 main.grid:not([data-tab="season"]) :is(.court,.sb,.attrs){display:none}
 main.grid:not([data-tab="season"]) .col-l{display:contents}
 .advance.pending{background:var(--ink);color:var(--panel)}
+/* 시즌 중 결정 결과: 아래 막대가 다 줄면(animationend) 시즌이 이어져요. 막대는 transform만 움직여서 화면 합성 단계에서 부드럽게 줄어요. */
+.advance.outcome{background:var(--ink);color:var(--panel);overflow:hidden}
+.advance.outcome:hover{filter:none}
+.advance.outcome .s{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.outcome-timer{position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--accent);transform-origin:left;will-change:transform;pointer-events:none;animation:outcome-hold 3.2s linear both}
+@keyframes outcome-hold{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+/* 움직임을 줄인 설정에서도 같은 시간만큼 기다렸다 이어가도록, 막대는 그대로 두고 애니메이션 시간만 재요. */
+@keyframes outcome-still{to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.outcome-timer{animation-name:outcome-still}}
 
 /* 시즌 중 진행 막대 */
 .run-bar{display:flex;align-items:center;gap:12px;border-radius:var(--r);background:var(--ink);color:var(--panel)}
@@ -619,6 +628,8 @@ html:has(.sheet){overflow:hidden}
 .invest-head span{font-family:var(--f-num);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
 .invest-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin-top:4px}
 @media (max-width:480px){.invest-grid{grid-template-columns:1fr}}
+.invest-sub{margin:10px 0 0;font-size:14px;display:flex;align-items:baseline;gap:8px}
+.invest-sub span{font-size:12px;font-weight:600;color:var(--muted)}
 .invest .hint[data-warn]{color:var(--bad)}
 .sheet-go{flex:none;margin-top:14px;min-height:56px;border:0;border-radius:16px;background:var(--accent);color:var(--accent-ink);font-family:var(--f-display);font-size:19px;cursor:pointer}
 .sheet-later{align-self:center;margin-top:4px;padding:10px 14px;background:none;border:0;color:var(--muted);font-size:14px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}

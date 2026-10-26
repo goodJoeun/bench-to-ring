@@ -7,7 +7,7 @@ import { LEAGUES, SCORING_TITLE } from "./leagues";
 import { FINAL_SCORE, finalScore, gameScore, makeLiveGame } from "./live";
 import { ALL_DEF_TIERS, ALL_LEAGUE_TIERS, awardName, conferenceFinalsMvpName } from "./awards";
 import { addNews, giveAward, pickTeam } from "./log";
-import { STUDENT_ALLOWANCE, payInvestments } from "./invest";
+import { STUDENT_ALLOWANCE, investPerks, payInvestments, type InvestPerks } from "./invest";
 import { serviceSeason } from "./military";
 import { nationalCallUp } from "./national";
 import { runOffseason } from "./offseason";
@@ -80,7 +80,7 @@ function injuryRisk(c: Career, min: number, inv: InvestKey[]): number {
     (min / 38) * 0.07 -
     (c.focus === "rest" ? 0.06 : 0) +
     (c.age > 30 ? (c.age - 30) * 0.012 : 0);
-  return Math.max(0.02, risk * (inv.includes("rehab") ? 0.8 : 1) * shopPerks(c).injury);
+  return Math.max(0.02, risk * investPerks(inv).injury * shopPerks(c).injury);
 }
 
 /** 건강이 이보다 낮으면 큰 부상이 길어지고, CRITICAL_HEALTH 아래에서만 시즌 아웃급 부상이 나와요. */
@@ -190,7 +190,7 @@ export function startSeason(c: Career): void {
   else if (c.stage === "free" || !c.team) run.plan = [...SOLO_PLAN];
   else {
     planTeamSeason(c, run);
-    run.form = shopPerks(c).form;
+    run.form = shopPerks(c).form + investPerks(inv).form;
   }
   if (run.plan.length) {
     // 팀이 없는 시즌은 프리시즌 없이 일정을 시작하고, 중반에 한 번 이벤트를 확인해요.
@@ -361,7 +361,7 @@ function playMinutes(c: Career, run: SeasonRun): NonNullable<GameLine["me"]> {
   const stl = one(run.mean.stl);
   const blk = one(run.mean.blk);
   const rating = r1(clamp(run.rating + run.form * 0.35 - tired * 1.2 + rnd(-1.2, 1.2), 1, 10));
-  addHealth(c, GAME_DAY_HEAL - fatigueOf(run.games) * (m / 30) * shopPerks(c).fatigue);
+  addHealth(c, GAME_DAY_HEAL - fatigueOf(run.games) * (m / 30) * shopPerks(c).fatigue * investPerks(run.inv).fatigue);
   const t = run.tot;
   t.gp++;
   t.min += m;
@@ -378,7 +378,7 @@ function playMinutes(c: Career, run: SeasonRun): NonNullable<GameLine["me"]> {
 function startInjury(c: Career, run: SeasonRun, tag: string): void {
   const { name, frac: range, severe } = injuryKind(c.health, random());
   const frac = rnd(...range);
-  const out = Math.max(1, Math.round(run.games * frac * shopPerks(c).rehab));
+  const out = Math.max(1, Math.round(run.games * frac * shopPerks(c).rehab * investPerks(run.inv).rehab));
   run.out = out;
   run.outWhy = "부상";
   addHealth(c, -Math.round(frac * 20) - (severe ? 12 : 0));
@@ -470,7 +470,7 @@ function finishSeason(c: Career): SeasonRecord {
   const yr = run.year;
   const tag = seasonTag(run);
   const ov0 = Math.round(run.ovr0);
-  const inv = new Set<InvestKey>(run.inv);
+  const inv = investPerks(run.inv);
   let rec: SeasonRecord;
   let min = 0;
   let rating = 6;
@@ -505,12 +505,12 @@ function finishSeason(c: Career): SeasonRecord {
     if (!specBefore.includes(h.spec.name)) addNews(c, tag, "big", `히든 스탯 발견 · ${h.spec.name}! ${h.spec.desc} (평가 +${h.bonus})`);
   for (const name of specBefore)
     if (!specialtiesOf(p.attrs).some((h) => h.spec.name === name)) addNews(c, tag, "info", `히든 스탯 ${josa(name, "을", "를")} 잃었어요.`);
-  if (inv.size) rec.invest = [...inv];
+  if (run.inv.length) rec.invest = [...run.inv];
   rec.ovr1 = ovr(p);
   // 시즌이 끝난 여름의 국가대표 대회. 성장까지 반영한 오버롤로 발탁해요.
   const call = nationalCallUp(c, rec.ovr1, played, yr);
   c.peakOvr = Math.max(c.peakOvr, rec.ovr1);
-  c.trust = c.team ? clampTrust((rating - 6.3) * 1.4 + (inv.has("video") ? 0.5 : 0)) : 0;
+  c.trust = c.team ? clampTrust((rating - 6.3) * 1.4 + inv.trust) : 0;
   if (c.contract) c.earnings += c.contract.salary;
   if (c.stage === "hs" || c.stage === "college") c.earnings += STUDENT_ALLOWANCE;
   c.hist.push(rec);
@@ -640,7 +640,7 @@ export function seasonProgress(run: SeasonRun): { label: string; pct: number } {
   return { label, pct };
 }
 
-function grow(c: Career, min: number, rating: number, tag: string, inv: Set<InvestKey>): void {
+function grow(c: Career, min: number, rating: number, tag: string, inv: InvestPerks): void {
   const p = c.p;
   const age = c.age;
   const base = ageBase(age);
@@ -680,16 +680,7 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: Set<Inve
     // 전담 트레이너: 맡은 능력치는 조금 더 크고, 노화로 떨어질 때는 덜 떨어져요.
     if (c.perks.trainer === k) g *= g > 0 ? 1.15 : 0.8;
     // 시즌 투자와 산 장비
-    if (g > 0) {
-      if (inv.has("coach")) g *= 1.05;
-      g *= gear.growth[k];
-      if (k === "ath" && inv.has("gym")) g *= 1.2;
-      if (k === "iq" && inv.has("video")) g *= 1.25;
-    } else {
-      if (k === "ath" && inv.has("gym")) g *= 0.75;
-      if (inv.has("diet")) g *= 0.9;
-      g *= gear.decline;
-    }
+    g *= g > 0 ? inv.growth[k] * gear.growth[k] : inv.decline[k] * gear.decline;
     if (k === "iq" && age >= 24 && age <= 33) g += 0.5;
     delta[k] = addAttr(p.attrs, k, g);
   }
@@ -706,9 +697,9 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: Set<Inve
  * 시즌이 끝난 뒤 쉬며 회복해요. 많이 닳았을수록 많이 돌아오지만 다 채우지는 못해서,
  * 해마다 오래 뛰는 선수는 건강이 낮은 채로 다음 시즌을 시작해요. 시즌에 D만큼 닳는 선수는 대략 112 - D에서 시작해요.
  */
-function recover(c: Career, inv: Set<InvestKey>): void {
+function recover(c: Career, inv: InvestPerks): void {
   const rest = c.focus === "rest";
-  const care = (inv.has("rehab") ? 8 : 0) + (inv.has("diet") ? 6 : 0) + shopPerks(c).heal;
+  const care = inv.heal + shopPerks(c).heal;
   const heal = (100 - c.health) * (rest ? 0.65 : 0.5) + (rest ? 10 : 6) + care;
   c.health = clamp(c.health + heal - (c.age > 28 ? (c.age - 28) * 1.6 : 0), ...HEALTH_RANGE);
 }

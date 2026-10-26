@@ -1,7 +1,7 @@
 "use client";
 
 import type { Career, CareerSummary } from "@/game";
-import type { Speed } from "@/lib/game-store";
+import type { Outcome, Speed } from "@/lib/game-store";
 import { ActionPanel } from "./ActionPanel";
 import { AttributesPanel } from "./AttributesPanel";
 import { CourtCard } from "./CourtCard";
@@ -36,11 +36,13 @@ interface GameScreenProps {
   onTab: (k: TabKey) => void;
   playing: boolean;
   speed: Speed;
-  /** 진행 팝업(결승 중계·국가대표 대회·드래프트)이 떠 있는지 */
+  /** 진행 팝업(결승 중계·국가대표 대회·드래프트)이나 축하 팝업이 떠 있는지 */
   busy: boolean;
+  /** 방금 고른 시즌 중 결정의 결과 */
+  outcome: Outcome | null;
 }
 
-export function GameScreen({ career, hall, tab, onTab, playing, speed, busy }: GameScreenProps) {
+export function GameScreen({ career, hall, tab, onTab, playing, speed, busy, outcome }: GameScreenProps) {
   const pending = career.queue.length > 0;
 
   return (
@@ -48,7 +50,7 @@ export function GameScreen({ career, hall, tab, onTab, playing, speed, busy }: G
       <div className="col-l">
         <CourtCard career={career} />
         <Scoreboard career={career} />
-        <ActionPanel career={career} playing={playing} speed={speed} busy={busy} onAdvance={() => onTab("season")} />
+        <ActionPanel career={career} playing={playing} speed={speed} busy={busy} outcome={outcome} onAdvance={() => onTab("season")} />
       </div>
       <div className="col-r">
         <AttributesPanel career={career} />

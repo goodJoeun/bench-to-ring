@@ -24,6 +24,21 @@ export function seeded(seed: number): () => number {
   };
 }
 
+/**
+ * 문자열로 정하는 난수: 같은 커리어·같은 시즌이면 언제나 같은 상점 진열·특별 투자가 나와요.
+ * 게임 난수 흐름은 건드리지 않아요.
+ */
+export function seededPick(seed: string): () => number {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619);
+  return () => {
+    h = Math.imul(h ^ (h >>> 15), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+  };
+}
+
 export const random = (): number => source();
 export const rnd = (a: number, b: number): number => a + source() * (b - a);
 export const ri = (a: number, b: number): number => Math.floor(rnd(a, b + 1));

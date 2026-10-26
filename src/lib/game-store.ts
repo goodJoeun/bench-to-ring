@@ -4,6 +4,7 @@ import {
   buy,
   canRetire,
   chooseOption,
+  chosenInvest,
   createCareer,
   currentDecision,
   donate,
@@ -64,6 +65,8 @@ export interface GameSnapshot {
   drafting: boolean;
   /** 화면 아래에 잠깐 떴다 사라지는 알림 */
   toast: Toast | null;
+  /** 방금 고른 시즌 중 결정의 결과. 떠 있는 동안 시즌이 멈춰요. */
+  outcome: Outcome | null;
 }
 
 export const SPEEDS = [1, 2, 4] as const;
@@ -71,6 +74,14 @@ export type Speed = (typeof SPEEDS)[number];
 
 export interface Toast {
   id: number;
+  msg: string;
+}
+
+export interface Outcome {
+  id: number;
+  /** 고른 선택지 */
+  label: string;
+  /** 그 결과로 생긴 소식 */
   msg: string;
 }
 
@@ -89,7 +100,7 @@ const emptyDraft = (): CreationDraft => ({
   rerolls: REROLLS,
 });
 
-const SERVER_SNAPSHOT: GameSnapshot = { ready: false, career: null, draft: emptyDraft(), hall: [], playing: false, speed: 1, final: false, farewell: false, farewellReplay: false, tournament: false, drafting: false, toast: null };
+const SERVER_SNAPSHOT: GameSnapshot = { ready: false, career: null, draft: emptyDraft(), hall: [], playing: false, speed: 1, final: false, farewell: false, farewellReplay: false, tournament: false, drafting: false, toast: null, outcome: null };
 
 let snapshot: GameSnapshot = SERVER_SNAPSHOT;
 const listeners = new Set<() => void>();
@@ -230,17 +241,18 @@ export const gameActions = {
       c.focus = focus;
     });
   },
-  /** 시즌 투자를 고르거나 빼요. 고른 순서대로 두 가지까지 남아요. */
+  /** 시즌 투자를 고르거나 빼요. 고른 순서대로 두 가지까지 남고, 이번 시즌에 없는 특별 투자는 이때 정리해요. */
   toggleInvest(key: InvestKey) {
     mutate((c) => {
-      c.invest = c.invest.includes(key) ? c.invest.filter((k) => k !== key) : [...c.invest, key].slice(0, INVEST_SLOTS);
+      const chosen = chosenInvest(c);
+      c.invest = chosen.includes(key) ? chosen.filter((k) => k !== key) : [...chosen, key].slice(0, INVEST_SLOTS);
     });
   },
   /** 시즌을 시작하고 바로 흘려 보내요. */
   startSeason() {
     if (!snapshot.career || snapshot.career.queue.length || snapshot.career.run) return;
     mutate(startSeason);
-    set({ playing: true });
+    set({ playing: true, outcome: null });
   },
   /** 시즌을 한 칸(경기·라운드·일정) 진행해요. 시계가 부르고, 결정이 남았으면 아무것도 하지 않아요. */
   step() {
@@ -292,8 +304,16 @@ export const gameActions = {
     if (opt?.act.k === "draft") return set({ drafting: true });
     if (opt?.act.k === "national" && opt.act.join) return set({ tournament: true });
     const after = snapshot.career;
-    const msg = (after && latestNewsSince(before, after)) ?? (opt?.label ? `'${opt.label}'을(를) 골랐어요` : null);
+    const news = after && latestNewsSince(before, after);
+    // 시즌 중 결정은 결과를 진행 막대 자리에 띄워 두고 시즌을 잠깐 멈춰요. 이어서 고를 결정이 있으면 알림으로만 알려요.
+    if (opt && after?.run && !currentDecision(after))
+      return set({ outcome: { id: ++toastId, label: opt.label, msg: news ?? "선택이 반영됐어요." } });
+    const msg = news ?? (opt?.label ? `'${opt.label}'을(를) 골랐어요` : null);
     if (msg) set({ toast: toast(msg) });
+  },
+  /** 결정 결과를 닫고 시즌을 이어가요. */
+  dismissOutcome(id: number) {
+    if (snapshot.outcome?.id === id) set({ outcome: null });
   },
   /** 은퇴 화면에서 커리어 회고를 다시 열어요. */
   openFarewell() {
@@ -355,6 +375,6 @@ export const gameActions = {
   },
   newCareer() {
     saveCareer(null);
-    set({ career: null, draft: freshDraft(snapshot.draft), playing: false, final: false });
+    set({ career: null, draft: freshDraft(snapshot.draft), playing: false, final: false, outcome: null });
   },
 };

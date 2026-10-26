@@ -18,8 +18,24 @@ export type CareerPath = "abroad" | "domestic";
 export type Stage = "hs" | "college" | "pro" | "free" | "military" | "retired";
 export type MilitaryKind = "sangmu" | "army";
 export type FocusKey = "bal" | AttrKey | "rest";
-/** 시즌 투자: 스킬 코치, 피지컬, 회복 관리, 영양, 영상 분석 */
-export type InvestKey = "coach" | "gym" | "rehab" | "diet" | "video";
+/** 시즌 투자: 늘 고를 수 있는 기본 투자 5가지(스킬 코치~영상 분석)와 시즌마다 바뀌는 특별 투자 */
+export type InvestKey =
+  | "coach"
+  | "gym"
+  | "rehab"
+  | "diet"
+  | "video"
+  | "shootcamp"
+  | "handlecamp"
+  | "passcamp"
+  | "defcamp"
+  | "altitude"
+  | "mentor"
+  | "pilates"
+  | "cryo"
+  | "preseason"
+  | "loadmgmt"
+  | "academy";
 /** 상점 상품 키 (shop.ts의 SHOP 목록) */
 export type ShopKey = string;
 export type Trait = "조기성장" | "대기만성" | "꾸준함" | "강철몸" | "유리몸" | "승부사";

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import {
   FOCUS,
+  canInvest,
+  chosenInvest,
   currentDecision,
   currentExpectedMinutes,
   josa,
@@ -19,7 +21,7 @@ import {
   type FocusKey,
   type SeasonRun,
 } from "@/game";
-import { gameActions, type Speed } from "@/lib/game-store";
+import { gameActions, type Outcome, type Speed } from "@/lib/game-store";
 import { focusName } from "@/components/common/format";
 import { InvestPicker } from "./InvestPicker";
 import { Sheet } from "@/components/common/Sheet";
@@ -128,16 +130,19 @@ interface ActionPanelProps {
   speed: Speed;
   /** 진행 팝업이 떠 있는 동안에는 결정 시트를 열지 않고 시즌도 멈춰요. */
   busy: boolean;
+  /** 방금 고른 시즌 중 결정의 결과. 떠 있는 동안 시즌이 멈춰요. */
+  outcome: Outcome | null;
   onAdvance: () => void;
 }
 
 /**
  * 탭 바 위에 고정된 진행 영역과, 거기서 여는 시트들.
  * - 결정이 남았으면: 결정 시트가 자동으로 올라와요. 잠시 닫았다가 버튼으로 다시 열 수 있어요.
+ * - 시즌 중 결정을 막 골랐으면: 진행 막대 자리에 결과를 잠깐 띄우고, 사라지면 시즌이 이어져요.
  * - 시즌 중이면: 진행 막대와 재생·배속·건너뛰기 버튼이 있고, 시즌이 저절로 한 칸씩 흘러가요.
  * - 시즌 사이면: 시즌 계획 시트에서 훈련 초점과 투자를 고르고 시즌을 시작해요.
  */
-export function ActionPanel({ career: c, playing, speed, busy, onAdvance }: ActionPanelProps) {
+export function ActionPanel({ career: c, playing, speed, busy, outcome, onAdvance }: ActionPanelProps) {
   const decision = currentDecision(c);
   const run = c.run;
   const [planOpen, setPlanOpen] = useState(false);
@@ -146,8 +151,8 @@ export function ActionPanel({ career: c, playing, speed, busy, onAdvance }: Acti
   const [hiddenKey, setHiddenKey] = useState<string | null>(null);
   const decisionOpen = !!decision && !busy && hiddenKey !== decisionKey;
 
-  // 시즌 시계: 재생 중이고 결정·팝업이 없으면 한 칸씩 진행해요. 칸이 바뀔 때마다 다음 칸을 예약해요.
-  const ticking = !!run && playing && !decision && !busy;
+  // 시즌 시계: 재생 중이고 결정·결과·팝업이 없으면 한 칸씩 진행해요. 칸이 바뀔 때마다 다음 칸을 예약해요.
+  const ticking = !!run && playing && !decision && !busy && !outcome;
   const beat = run ? `${run.phase}:${run.g}:${run.shown}:${run.step}` : "";
   const delay = run ? beatMs(run) / speed : 0;
   useEffect(() => {
@@ -186,8 +191,11 @@ export function ActionPanel({ career: c, playing, speed, busy, onAdvance }: Acti
     );
   }
 
+  if (run && outcome) return <OutcomeCard key={outcome.id} outcome={outcome} />;
   if (run) return <RunBar run={run} playing={playing} speed={speed} />;
 
+  // 지난 시즌에 고른 특별 투자가 이번 시즌에 없으면 세지 않아요.
+  const invest = canInvest(c) ? chosenInvest(c).length : 0;
   const sub = c.team
     ? `${stageLabel(c)} · ${c.team.name} · 예상 역할 ${roleOf(currentExpectedMinutes(c))}`
     : c.stage === "military"
@@ -201,7 +209,7 @@ export function ActionPanel({ career: c, playing, speed, busy, onAdvance }: Acti
           <span className="t">{c.year} 시즌 시작</span>
           <span className="s">
             {sub} · 훈련 {focusName(c.focus)}
-            {c.invest.length > 0 && ` · 투자 ${c.invest.length}개`}
+            {invest > 0 && ` · 투자 ${invest}개`}
           </span>
         </span>
         <span className="go" aria-hidden="true">
@@ -235,11 +243,35 @@ export function ActionPanel({ career: c, playing, speed, busy, onAdvance }: Acti
               onAdvance();
             }}
           >
-            {ro(`${focusName(c.focus)} 훈련${c.invest.length > 0 ? ` · 투자 ${c.invest.length}개` : ""}`)} 시즌 시작
+            {ro(`${focusName(c.focus)} 훈련${invest > 0 ? ` · 투자 ${invest}개` : ""}`)} 시즌 시작
           </button>
         </Sheet>
       )}
     </>
+  );
+}
+
+/**
+ * 시즌 중 결정의 결과. 배속과 상관없이 잠깐 띄워 두고, 아래 막대가 다 줄어들면 시즌이 이어져요.
+ * 시간은 타이머 대신 막대의 CSS 애니메이션이 재고, 애니메이션이 끝나면(animationend) 닫아요.
+ * 누르면 바로 이어가요. 결정 시트를 닫은 자리에 마우스가 그대로 놓이기 쉬워서, 마우스를 올려도 막대는 멈추지 않아요.
+ */
+function OutcomeCard({ outcome }: { outcome: Outcome }) {
+  const close = () => gameActions.dismissOutcome(outcome.id);
+  return (
+    <div role="status" aria-live="polite">
+      <button type="button" className="advance outcome" onClick={close}>
+        <span>
+          <span className="t">{outcome.label}</span>
+          <span className="s">{outcome.msg}</span>
+        </span>
+        <span className="sr-only">눌러서 바로 시즌 이어가기</span>
+        <span className="go" aria-hidden="true">
+          ▶
+        </span>
+        <span className="outcome-timer" aria-hidden="true" onAnimationEnd={close} />
+      </button>
+    </div>
   );
 }
 

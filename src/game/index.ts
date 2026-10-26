@@ -24,7 +24,18 @@ export { draftSlot } from "./draft";
 export { NATIONS, NAT_EVENTS, natColor, natEventFor, simulateTournament, teamPower } from "./national";
 export { ARMY, ENLIST_DEADLINE, SANGMU, militaryDecision, militaryUnit, owesService } from "./military";
 export { chooseOption, applyAction } from "./actions";
-export { INVESTMENTS, INVEST_SLOTS, STUDENT_ALLOWANCE, canInvest, investCost, type Investment } from "./invest";
+export {
+  INVESTMENTS,
+  INVEST_SLOTS,
+  SPECIAL_COUNT,
+  STUDENT_ALLOWANCE,
+  canInvest,
+  chosenInvest,
+  investCost,
+  investLineup,
+  investPerks,
+  type Investment,
+} from "./invest";
 export { buyoutCost, canRequestTransfer, currentDecision, leverage, negotiable, requestTransfer, resolveQueue } from "./decisions";
 export {
   DONATIONS,

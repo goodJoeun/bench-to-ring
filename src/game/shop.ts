@@ -1,7 +1,7 @@
 import { ATTR_KEYS, SHORT } from "./data";
 import { addAttr, addHealth } from "./condition";
 import { addNews } from "./log";
-import { shuffle } from "./random";
+import { seededPick, shuffle } from "./random";
 import type { AttrKey, Career, ShopKey } from "./types";
 import { money, round2 } from "./util";
 
@@ -106,18 +106,6 @@ export const DONATIONS = [0.1, 1, 10, 100] as const;
 
 export const shopItem = (key: ShopKey): ShopItem | undefined => SHOP.find((i) => i.key === key);
 export const owns = (c: Career, key: ShopKey): boolean => c.owned.includes(key);
-
-/** 문자열로 정하는 난수: 같은 커리어·같은 시즌이면 언제나 같은 진열이 나와요. 게임 난수 흐름은 건드리지 않아요. */
-function seededPick(seed: string): () => number {
-  let h = 2166136261;
-  for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619);
-  return () => {
-    h = Math.imul(h ^ (h >>> 15), 2246822507);
-    h = Math.imul(h ^ (h >>> 13), 3266489909);
-    h ^= h >>> 16;
-    return (h >>> 0) / 4294967296;
-  };
-}
 
 /** 이번 시즌 진열을 새로 골라요. 이미 가진 상품(일회성 제외)은 다시 나오지 않아요. */
 export function refreshShop(c: Career): void {
