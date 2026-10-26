@@ -54,6 +54,7 @@ export {
   type ShopItem,
 } from "./shop";
 export {
+  awardGroups,
   careerJourney,
   careerSummary,
   retire,
@@ -61,6 +62,8 @@ export {
   legacyOf,
   sumSeasons,
   titleHistory,
+  type AwardCount,
+  type AwardGroups,
   type CareerTotals,
   type JourneyStep,
   type TitleEntry,

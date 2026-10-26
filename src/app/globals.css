@@ -196,6 +196,11 @@ main.grid{max-width:var(--t-max);margin:0 auto;padding-top:4px}
 .meta-row b{color:var(--ink)}
 .awards{display:flex;flex-wrap:wrap;gap:6px}
 .aw{display:inline-flex;align-items:center;border:1px solid var(--gold);color:var(--gold);border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:700}
+/* 은퇴 화면 커리어 요약의 수상: 팀·개인·국가대표 줄 */
+.aw-rows{display:flex;flex-direction:column;gap:10px;margin:0}
+.aw-rows > div{display:grid;grid-template-columns:64px minmax(0,1fr);gap:10px;align-items:start}
+.aw-rows dt{padding-top:4px;font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--muted)}
+.aw-rows dd{margin:0}
 .tips{margin:0;padding-left:18px;color:var(--muted);font-size:14px;display:flex;flex-direction:column;gap:4px}
 .news{list-style:none;margin:0;padding:0}
 .news li{display:grid;grid-template-columns:8px minmax(0,1fr);gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}

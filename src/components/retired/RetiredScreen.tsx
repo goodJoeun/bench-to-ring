@@ -1,6 +1,6 @@
 "use client";
 
-import { AWARDS, fmtNum, money, titleHistory, type Career, type CareerSummary } from "@/game";
+import { awardGroups, fmtNum, money, titleHistory, type AwardCount, type Career, type CareerSummary } from "@/game";
 import { gameActions } from "@/lib/game-store";
 import { NO_TEAM_COLOR, militaryShort } from "@/components/common/format";
 import { RecordBoards } from "./RecordBoards";
@@ -8,6 +8,36 @@ import { SimilarPlayers } from "./SimilarPlayers";
 import { HallOfFame } from "@/components/common/HallOfFame";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { CourtStage, Panel, StatTiles } from "@/components/common/ui";
+
+/** 커리어 요약의 수상: 팀·개인·국가대표 줄로 나눠, 리그·대회 이름별로 횟수를 보여줘요. 받은 게 없는 줄은 숨겨요. */
+function AwardRows({ career: c }: { career: Career }) {
+  const g = awardGroups(c);
+  const rows: [string, AwardCount[]][] = [
+    ["팀", g.team],
+    ["개인", g.personal],
+    ["국가대표", g.nat],
+  ];
+  if (!rows.some(([, list]) => list.length)) return null;
+  return (
+    <dl className="aw-rows">
+      {rows
+        .filter(([, list]) => list.length)
+        .map(([label, list]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd className="awards">
+              {list.map((a) => (
+                <span className="aw" key={a.name}>
+                  {a.name}
+                  {a.count > 1 && ` ×${a.count}`}
+                </span>
+              ))}
+            </dd>
+          </div>
+        ))}
+    </dl>
+  );
+}
 
 export function RetiredScreen({ career: c, hall }: { career: Career; hall: CareerSummary[] }) {
   const s = c.summary;
@@ -44,13 +74,7 @@ export function RetiredScreen({ career: c, hall }: { career: Career; hall: Caree
 
       <Panel title="커리어 요약">
         <StatTiles items={tiles} />
-        <div className="awards">
-          {AWARDS.filter(([k]) => c.awards[k]).map(([k, name]) => (
-            <span className="aw" key={k}>
-              {name} ×{c.awards[k]}
-            </span>
-          ))}
-        </div>
+        <AwardRows career={c} />
         <p className="hint">거쳐간 팀 · {s.teams.join(" → ")}</p>
         {(() => {
           // 예전 기록은 아카데미 여부만 있어요.

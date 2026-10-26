@@ -3,7 +3,7 @@ import { LEAGUES, teamColor } from "./leagues";
 import { militaryUnit } from "./military";
 import { natColor } from "./national";
 import { ownedItems } from "./shop";
-import type { AwardKey, Career, CareerSummary, NbaShare, SeasonRecord } from "./types";
+import type { AwardKey, Career, CareerSummary, LeagueKey, NbaShare, SeasonRecord } from "./types";
 import { stripYear } from "./util";
 
 export interface CareerTotals {
@@ -52,6 +52,54 @@ export function titleHistory(c: Career): TitleEntry[] {
       } satisfies TitleEntry;
     })
     .sort((x, y) => x.year - y.year);
+}
+
+/** 같은 이름으로 받은 수상을 묶은 것: 'KBL 우승' 3회 */
+export interface AwardCount {
+  name: string;
+  count: number;
+}
+
+/** 커리어 수상을 팀(우승), 개인(MVP·베스트 팀…), 국가대표(메달)로 나눈 것 */
+export interface AwardGroups {
+  team: AwardCount[];
+  personal: AwardCount[];
+  nat: AwardCount[];
+}
+
+/** 개인상은 MVP부터 보여줘요. 나머지는 AWARDS 순서예요. */
+const PERSONAL_ORDER: AwardKey[] = ["mvp_nba", "mvp", "fmvp", "cfmvp", ...PERSONAL_AWARDS.filter((k) => !["mvp_nba", "mvp", "fmvp", "cfmvp"].includes(k))];
+/** 수상을 보여줄 리그 순서: 프로는 리그 수준(평균 오버롤) 순, 그다음 아마추어 */
+const LEAGUE_ORDER: LeagueKey[] = ["nba", "euro", "gleague", "kbl", "ncaa", "kuniv", "hs"];
+
+/**
+ * 커리어 수상을 리그·대회 이름 그대로 세어 팀·개인·국가대표로 나눠요. 'KBL 우승'과 'NBA 우승'은 따로 세요.
+ * 팀·개인은 리그 수준 순(NBA → 유로리그 → G리그 → KBL → NCAA → U-리그 → 고교)이고, 같은 리그 안에서는 상의 순서(개인상은 MVP부터)예요.
+ * 리그는 그 상을 받은 해의 시즌 기록에서 찾아요. 국가대표 메달 이름에 붙은 연도는 떼고 세요.
+ */
+export function awardGroups(c: Career): AwardGroups {
+  const leagueRank = (y: number) => {
+    const lg = c.hist.find((h) => h.year === y)?.lg;
+    return lg ? LEAGUE_ORDER.indexOf(lg) : LEAGUE_ORDER.length;
+  };
+  const count = (keys: AwardKey[], byLeague: boolean): AwardCount[] => {
+    const out: (AwardCount & { order: number[] })[] = [];
+    for (const a of [...c.awardLog].sort((x, y) => x.y - y.y)) {
+      const kind = keys.indexOf(a.k);
+      if (kind < 0) continue;
+      const name = stripYear(a.n);
+      const hit = out.find((x) => x.name === name);
+      if (hit) hit.count++;
+      else out.push({ name, count: 1, order: [byLeague ? leagueRank(a.y) : 0, kind, a.y] });
+    }
+    out.sort((x, y) => x.order[0] - y.order[0] || x.order[1] - y.order[1] || x.order[2] - y.order[2]);
+    return out.map(({ name, count }) => ({ name, count }));
+  };
+  return {
+    team: count(["ring", "title"], true),
+    personal: count(PERSONAL_ORDER, true),
+    nat: count(["nat_gold", "nat_silver", "nat_bronze"], false),
+  };
 }
 
 /* ---------- 은퇴 회고 ---------- */

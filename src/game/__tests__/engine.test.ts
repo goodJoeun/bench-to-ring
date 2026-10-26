@@ -63,7 +63,11 @@ import {
   teamPower,
   titleHistory,
   stripYear,
+  awardGroups,
   type AttrKey,
+  type AwardKey,
+  type LeagueKey,
+  type SeasonRecord,
   type Career,
   type CareerSummary,
 } from "@/game";
@@ -1230,6 +1234,44 @@ describe("자금 쓰기", () => {
     expect(careerSummary(c).donated).toBe(10);
     startSeason(c);
     expect(buy(c, "shoes")).toBe(false);
+  });
+});
+
+describe("커리어 요약 수상", () => {
+  it("리그·대회 이름별로 세어 팀·개인·국가대표로 나누고, 리그 수준 순·같은 리그에서는 MVP부터예요", () => {
+    const c = createCareer({ name: "요약", num: 3, nat: "대한민국", pos: "SG", path: "domestic" }, generateCandidates("SG")[0], "aw1");
+    // 수상의 리그는 그해 시즌 기록에서 찾아요.
+    const season = (year: number, lg: LeagueKey) => c.hist.push({ year, lg } as SeasonRecord);
+    season(2027, "hs");
+    for (const y of [2030, 2031, 2032]) season(y, "kbl");
+    season(2035, "nba");
+    const log = (y: number, k: AwardKey, n: string) => c.awardLog.push({ y, k, n });
+    log(2027, "title", "고교 전국대회 우승");
+    log(2027, "scoring", "고교 득점왕");
+    log(2030, "ring", "KBL 우승");
+    log(2030, "fmvp", "KBL 챔피언결정전 MVP");
+    log(2030, "mvp", "KBL 정규리그 MVP");
+    log(2031, "ring", "KBL 우승");
+    log(2031, "mvp", "KBL 정규리그 MVP");
+    log(2031, "nat_gold", "2031 아시안게임 금메달");
+    log(2032, "ring", "KBL 우승");
+    log(2032, "fmvp", "KBL 챔피언결정전 MVP");
+    log(2032, "mvp", "KBL 정규리그 MVP");
+    log(2035, "ring", "NBA 우승");
+    log(2035, "sixth", "NBA 식스맨상");
+    const g = awardGroups(c);
+    expect(g.team).toEqual([
+      { name: "NBA 우승", count: 1 },
+      { name: "KBL 우승", count: 3 },
+      { name: "고교 전국대회 우승", count: 1 },
+    ]);
+    expect(g.personal).toEqual([
+      { name: "NBA 식스맨상", count: 1 },
+      { name: "KBL 정규리그 MVP", count: 3 },
+      { name: "KBL 챔피언결정전 MVP", count: 2 },
+      { name: "고교 득점왕", count: 1 },
+    ]);
+    expect(g.nat).toEqual([{ name: "아시안게임 금메달", count: 1 }]);
   });
 });
 
