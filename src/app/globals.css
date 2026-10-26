@@ -106,6 +106,9 @@ main.grid{max-width:var(--t-max);margin:0 auto;padding-top:4px}
 /* 구단·학교 엠블럼 (자체 디자인) */
 .badge{flex:none;display:inline-block;vertical-align:middle;overflow:visible}
 /* 실제 로고는 밝은 배경용으로 만든 게 많아요. 어두운 테마와 파란 진행 팝업에서는 밝은 타일 위에 올려요. */
+/* 국기: 원형으로 잘라 얇은 테두리를 둘러요(흰 바탕 국기도 경계가 보이게). */
+.badge.flag{border-radius:50%;object-fit:cover;box-shadow:0 0 0 1px rgba(0,0,0,.18)}
+.sim .badge.flag{box-shadow:0 0 0 1.5px rgba(255,255,255,.7)}
 .badge.logo{object-fit:contain;box-sizing:border-box;border-radius:24%;background:var(--logo-tile,transparent);padding:var(--logo-pad,0)}
 .sim{--logo-tile:rgba(255,255,255,.94);--logo-pad:2px}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--logo-tile:#E9EDF3;--logo-pad:2px}}

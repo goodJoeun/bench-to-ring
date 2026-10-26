@@ -46,7 +46,12 @@ export function TournamentLoading({ career: c }: { career: Career }) {
       <PopupHero
         player={c.p}
         color={color}
-        team={`${c.p.nat} 대표팀`}
+        team={
+          <span className="team-cell">
+            <TeamBadge name={c.p.nat} size={18} />
+            {c.p.nat} 대표팀
+          </span>
+        }
         title={t.name}
         titleId="tour-title"
         status={stage === "result" ? `최종 성적 · ${t.label}` : visible.length ? `${w}승 ${visible.length - w}패` : "대회 개막"}

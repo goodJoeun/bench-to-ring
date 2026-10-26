@@ -7,7 +7,14 @@ function NationalLog({ career: c }: { career: Career }) {
   const log = [...c.natLog].reverse();
   const mil = militaryLine(c);
   return (
-    <Panel title={`국가대표 기록 · ${c.nat.caps}경기`}>
+    <Panel
+      title={
+        <span className="team-cell">
+          <TeamBadge name={c.p.nat} size={20} />
+          국가대표 기록 · {c.nat.caps}경기
+        </span>
+      }
+    >
       {log.length ? (
         <ul className="natlog">
           {log.map((t, i) => {
@@ -32,7 +39,10 @@ function NationalLog({ career: c }: { career: Career }) {
                       {t.games.map((g, k) => (
                         <li key={k} data-win={g.win || undefined}>
                           <span>{g.stage}</span>
-                          <span>vs {g.opp}</span>
+                          <span className="team-cell">
+                            <TeamBadge name={g.opp} kind="nat" size={16} />
+                            vs {g.opp}
+                          </span>
                           <span className="sc">
                             {g.us}-{g.them} {g.win ? "승" : "패"}
                           </span>

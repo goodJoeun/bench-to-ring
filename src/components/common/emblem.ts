@@ -45,6 +45,7 @@ const NAT_CODE: Record<string, string> = {
   프랑스: "FRA",
   스페인: "ESP",
   세르비아: "SRB",
+  대만: "TPE",
 };
 
 const isLatin = (w: string) => /^[A-Za-z0-9]+$/.test(w);
@@ -107,7 +108,9 @@ function resolve(name: string): { kind: EmblemKind; color: string } | null {
 
 /** 엠블럼을 만들어요. kind·color를 주지 않으면 이름으로 찾고, 그래도 모르면 null이에요. */
 export function emblemOf(name: string, kind?: EmblemKind, color?: string): Emblem | null {
-  const found = kind && color ? { kind, color } : resolve(name);
+  // 국가대표 상대국처럼 이름만 아는 나라도 국가 엠블럼으로 그려요.
+  const found =
+    kind && color ? { kind, color } : (resolve(name) ?? (kind === "nat" ? { kind, color: natColor(name.replace(/ 대표팀$/, "")) } : null));
   if (!found && !color) return null;
   const k = kind ?? found?.kind ?? "kbl";
   const fill = color ?? found?.color ?? NO_TEAM_COLOR;

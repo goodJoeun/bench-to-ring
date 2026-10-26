@@ -26,6 +26,7 @@ npm run dev
 | `npm run typecheck` | 타입 검사 |
 | `npm run lint` | 린트 |
 | `npm run logos` | `logos-src/`의 원본 로고를 128×128 투명 PNG로 바꿔 팀과 연결하고, 로고가 없는 팀의 파일 이름을 리그별로 보여주기 (`dev`·`build` 전에는 요약만 보여주며 저절로 돌아요) |
+| `npm run flags` | 국가대표 대회에 나오는 나라의 국기만 `flag-icons`에서 `public/flags/`로 복사하고 나라와 연결하기 (`dev`·`build` 전에 저절로 돌아요) |
 
 ## 로고 넣기
 
@@ -40,6 +41,10 @@ npm run dev
 흰색이 아닌 배경(검정, 색 배경)은 지우지 않으니 배경이 투명한 PNG나 SVG 원본이 가장 깔끔해요. 어두운 테마와 파란 진행 팝업에서는 어두운 로고도 잘 보이게 밝은 타일 위에 올려 보여줘요. 이미 128×128로 준비한 파일은 `public/logos/`에 바로 넣어도 돼요(변환하지 않고 그대로 써요).
 
 로고는 각 구단·리그·학교의 상표예요. 사용 허락을 받았거나 쓸 수 있는 파일을 넣어 주세요. 저장소에 올리지 않고 내 컴퓨터에서만 쓰려면 `.gitignore`에 `logos-src/*`, `public/logos/*`, `!logos-src/.gitkeep`, `!public/logos/.gitkeep`을 더하고, `logos.generated.ts`의 변경도 커밋하지 않으면 돼요.
+
+## 국기
+
+국가대표 대회의 대표팀은 둥근 국기로 보여줘요. 국기는 [flag-icons](https://github.com/lipis/flag-icons) 7.5.0(MIT, 라이선스는 `public/flags/LICENSE`)의 정사각형 SVG이고, 게임에 나오는 나라(`src/game/national.ts`의 대표팀과 대회 상대국)의 국기만 `public/flags/`에 복사해요. 상대국을 늘리면 `scripts/flags.mjs`의 `CODES`에 나라 이름과 국가 코드를 더하세요. 코드가 없는 나라는 `npm run flags`가 알려주고, 그동안은 엠블럼으로 보여줘요. 대만은 국제 대회에 차이니즈 타이베이 깃발로 나오는데 flag-icons에 그 깃발이 없어서 엠블럼(TPE)으로 보여줘요.
 
 ## 구조
 
@@ -56,8 +61,9 @@ src/
 │  │  ├─ format.ts         훈련 이름, 병역 상태 같은 공통 문구와 색
 │  │  ├─ Sheet.tsx         아래에서 올라오는 선택 시트
 │  │  ├─ Sprite.tsx        Canvas 도트 캐릭터 (도트 그림 데이터 포함)
-│  │  ├─ TeamBadge.tsx     구단·학교 로고, 로고 파일이 없으면 엠블럼 (emblem.ts가 모양·약칭·무늬를 정해요)
+│  │  ├─ TeamBadge.tsx     국기, 구단·학교 로고, 둘 다 없으면 엠블럼 (emblem.ts가 모양·약칭·무늬를 정해요)
 │  │  ├─ logos.generated.ts public/logos/ 로고 목록 (scripts/logos.mjs가 만들어요)
+│  │  ├─ flags.generated.ts public/flags/ 국기 목록 (scripts/flags.mjs가 만들어요)
 │  │  └─ Toast · HallOfFame
 │  ├─ create/              선수 생성 화면 (후보 카드, 유형 툴팁, 시작 확인 시트)
 │  ├─ career/              커리어 진행 화면
