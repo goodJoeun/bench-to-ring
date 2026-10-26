@@ -57,6 +57,7 @@ import {
   similarPlayers,
   teamPower,
   titleHistory,
+  stripYear,
   type AttrKey,
   type Career,
   type CareerSummary,
@@ -1169,7 +1170,7 @@ describe("자금 쓰기", () => {
 });
 
 describe("은퇴 회고", () => {
-  it("입단에서 시작해 시즌마다 한 칸씩 지나 은퇴로 끝나고, 쌓인 기록은 줄지 않아요", () => {
+  it("입단에서 시작해 굵직한 순간이 있던 해마다 한 칸씩 지나 은퇴로 끝나고, 쌓인 기록은 줄지 않아요", () => {
     const rand = seeded(97);
     setRandom(rand);
     for (let i = 0; i < 20; i++) {
@@ -1179,14 +1180,27 @@ describe("은퇴 회고", () => {
       expect(steps[0].title).toBe("벤치에서 시작");
       expect(steps.at(-1)!.title).toBe("은퇴");
       expect(steps.at(-1)!.detail).toContain(`${c.hist.length}시즌`);
-      for (const h of c.hist) expect(steps.some((s) => s.year === h.year && s.team === h.team)).toBe(true);
+      // 한 해에 한 칸이고, 그해의 수상·메달은 모두 그 칸에 담겨요. 상도 드래프트도 없던 해는 칸이 없어요.
+      expect(new Set(steps.map((s) => s.year)).size).toBe(steps.length);
+      for (const a of c.awardLog) {
+        const s = steps.find((x) => x.year === a.y)!;
+        expect([s.title, ...s.awards]).toContain(stripYear(a.n));
+      }
+      // 칸 안의 순서: MVP → 우승 → 그 밖의 개인 수상 → 메달
+      const rank = (k: string) => (["mvp_nba", "mvp", "fmvp", "cfmvp"].includes(k) ? 0 : ["ring", "title"].includes(k) ? 1 : k.startsWith("nat_") ? 3 : 2);
+      for (const s of steps) {
+        const ranks = [s.title, ...s.awards].flatMap((n) => c.awardLog.filter((a) => a.y === s.year && stripYear(a.n) === n).map((a) => rank(a.k)));
+        expect(ranks).toEqual([...ranks].sort((x, y) => x - y));
+      }
+      for (const h of c.hist.slice(1, -1))
+        if (!c.awardLog.some((a) => a.y === h.year) && c.draft?.year !== h.year) expect(steps.some((s) => s.year === h.year)).toBe(false);
       for (let k = 1; k < steps.length; k++) {
         expect(steps[k].year).toBeGreaterThanOrEqual(steps[k - 1].year);
         expect(steps[k].pts).toBeGreaterThanOrEqual(steps[k - 1].pts);
         expect(steps[k].trophies).toBeGreaterThanOrEqual(steps[k - 1].trophies);
       }
       expect(steps.at(-1)!.trophies).toBe(c.awardLog.length);
-      if (c.awards.ring) expect(steps.some((s) => s.big && s.title.endsWith("우승"))).toBe(true);
+      if (c.awards.ring) expect(steps.some((s) => s.big && [s.title, ...s.awards].some((a) => a.endsWith("우승")))).toBe(true);
     }
   });
 });

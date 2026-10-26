@@ -1,16 +1,57 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { careerJourney, careerSummary, fmtNum, type Career } from "@/game";
 import { gameActions } from "@/lib/game-store";
 import { NO_TEAM_COLOR } from "@/components/common/format";
-import { reducedMotion, useAutoFocus } from "@/components/common/hooks";
+import { reducedMotion, useAutoFocus, useEscapeKey } from "@/components/common/hooks";
 import { Sprite } from "@/components/common/Sprite";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { Popup } from "./Popup";
 
 /** 지나온 발자취를 몇 줄 남길지 */
 const TRAIL = 3;
+/** 수상 칩을 몇 개까지 둘지. 넘치면 마지막 자리를 '외 N개'로 묶어요. */
+const CHIP_LIMIT = 3;
+
+/** 그해의 수상 칩. 많으면 앞의 몇 개만 펼치고, 나머지는 '외 N개의 우승 및 수상' 툴팁에 담아요. */
+function AwardChips({ awards }: { awards: string[] }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  const id = useId();
+  useEscapeKey(() => setOpen(false), open);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [open]);
+  if (!awards.length) return null;
+  const shown = awards.length > CHIP_LIMIT ? awards.slice(0, CHIP_LIMIT - 1) : awards;
+  const rest = awards.slice(shown.length);
+  return (
+    <div className="fw-awards">
+      {shown.map((a) => (
+        <span key={a}>{a}</span>
+      ))}
+      {rest.length > 0 && (
+        // 마우스는 올리면, 터치는 누르면 열려요.
+        <span ref={ref} className="fw-more" data-open={open || undefined}>
+          <button type="button" aria-expanded={open} aria-describedby={id} onClick={() => setOpen((o) => !o)}>
+            외 {rest.length}개의 우승 및 수상
+          </button>
+          <span id={id} role="tooltip">
+            {rest.map((a) => (
+              <span key={a}>{a}</span>
+            ))}
+          </span>
+        </span>
+      )}
+    </div>
+  );
+}
 
 /** 숫자가 목표값까지 0.5초 동안 올라가요. 중간에 목표가 바뀌면 지금 값에서 이어서 올라가요. */
 function useCountUp(target: number): number {
@@ -35,7 +76,7 @@ function useCountUp(target: number): number {
 
 /**
  * 은퇴 직후 엔딩 전에 보여주는 커리어 회고. 도트 선수가 커리어 길을 따라 걸어가며
- * 입단부터 시즌마다의 활약, 메달, 드래프트를 한 칸씩 보여줘요. 저절로 넘어가지 않고,
+ * 입단부터 우승·개인 수상, 메달, 드래프트 같은 굵직한 순간을 해마다 한 칸씩 보여줘요. 저절로 넘어가지 않고,
  * '다음'을 눌러야 다음 마일스톤으로 가요. 마지막 칸에서 '엔딩 보기'를 누르면 은퇴 화면으로 넘어가요.
  */
 export function FarewellLoading({ career: c }: { career: Career }) {
@@ -61,9 +102,6 @@ export function FarewellLoading({ career: c }: { career: Career }) {
 
   return (
     <Popup labelledBy="fw-title" className="fw">
-      <span className="sim-team">
-        {c.p.name} #{c.p.num} · 커리어 회고
-      </span>
       <div className="fw-road" aria-hidden="true" style={{ "--tc": color } as React.CSSProperties}>
         <div className="fw-track">
           <div className="fw-line">
@@ -100,13 +138,8 @@ export function FarewellLoading({ career: c }: { career: Career }) {
           <p className="sim-phase" role="status" aria-live="polite">
             {cur.detail}
           </p>
-          {cur.awards.length > 0 && (
-            <div className="fw-awards">
-              {cur.awards.slice(0, 3).map((a) => (
-                <span key={a}>{a}</span>
-              ))}
-            </div>
-          )}
+          {/* 칸이 바뀌면 열린 툴팁을 닫도록 새로 그려요. 제목도 at을 key로 쓰니 겹치지 않게 앞에 붙여요. */}
+          <AwardChips key={`awards-${at}`} awards={cur.awards} />
         </>
       ) : (
         <h2 id="fw-title" className="fw-title">

@@ -54,8 +54,10 @@ export interface GameSnapshot {
   speed: Speed;
   /** 결승전 중계를 보여주는 중인지 (c.live) */
   final: boolean;
-  /** 방금 은퇴해서 엔딩 전에 커리어 회고를 보여주는 중인지 */
+  /** 커리어 회고를 보여주는 중인지. 방금 은퇴했거나, 은퇴 화면에서 다시 열었을 때예요. */
   farewell: boolean;
+  /** 은퇴 화면에서 회고를 다시 연 것인지. 이때는 뒤에 엔딩을 그대로 둬요. */
+  farewellReplay: boolean;
   /** 국가대표 대회 진행 화면을 보여주는 중인지 (c.natLog의 마지막 대회) */
   tournament: boolean;
   /** 드래프트 진행 화면을 보여주는 중인지 (c.draftShow) */
@@ -87,7 +89,7 @@ const emptyDraft = (): CreationDraft => ({
   rerolls: REROLLS,
 });
 
-const SERVER_SNAPSHOT: GameSnapshot = { ready: false, career: null, draft: emptyDraft(), hall: [], playing: false, speed: 1, final: false, farewell: false, tournament: false, drafting: false, toast: null };
+const SERVER_SNAPSHOT: GameSnapshot = { ready: false, career: null, draft: emptyDraft(), hall: [], playing: false, speed: 1, final: false, farewell: false, farewellReplay: false, tournament: false, drafting: false, toast: null };
 
 let snapshot: GameSnapshot = SERVER_SNAPSHOT;
 const listeners = new Set<() => void>();
@@ -293,10 +295,16 @@ export const gameActions = {
     const msg = (after && latestNewsSince(before, after)) ?? (opt?.label ? `'${opt.label}'을(를) 골랐어요` : null);
     if (msg) set({ toast: toast(msg) });
   },
-  /** 커리어 회고를 닫고 엔딩(은퇴 화면)으로 가요. */
+  /** 은퇴 화면에서 커리어 회고를 다시 열어요. */
+  openFarewell() {
+    if (snapshot.career?.stage !== "retired") return;
+    set({ farewell: true, farewellReplay: true });
+  },
+  /** 커리어 회고를 닫고 엔딩(은퇴 화면)으로 가요. 은퇴 직후에는 엔딩 맨 위에서, 다시 본 뒤에는 보던 자리에서 이어져요. */
   finishFarewell() {
-    set({ farewell: false });
-    if (typeof window !== "undefined") window.scrollTo({ top: 0 });
+    const replay = snapshot.farewellReplay;
+    set({ farewell: false, farewellReplay: false });
+    if (!replay && typeof window !== "undefined") window.scrollTo({ top: 0 });
   },
   /** 대회 진행 화면을 닫고 최종 성적을 알림으로 보여줘요. */
   finishTournament() {

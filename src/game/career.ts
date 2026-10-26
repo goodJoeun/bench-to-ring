@@ -78,13 +78,23 @@ export interface JourneyStep {
   trophies: number;
 }
 
-/** 시즌 제목으로 고를 상의 순서: AWARDS 순서(MVP → 우승 → 파이널 MVP …), 메달은 따로 보여줘요. */
-const HEADLINE_ORDER: AwardKey[] = AWARDS.map(([k]) => k).filter((k) => !k.startsWith("nat_"));
+/**
+ * 그해 칸에 담는 순서: MVP → 우승 → MVP를 뺀 개인 수상 → 국가대표 메달. 맨 앞이 칸의 제목이 돼요.
+ * 메달은 소속팀 시즌과 따로 열리는 대회라 맨 뒤에 둬서, 상 없이 메달만 딴 해에만 제목이 돼요.
+ */
+const MVP_KEYS: AwardKey[] = ["mvp_nba", "mvp", "fmvp", "cfmvp"];
+const WIN_KEYS: AwardKey[] = ["ring", "title"];
+const MOMENT_ORDER: AwardKey[] = [
+  ...MVP_KEYS,
+  ...WIN_KEYS,
+  ...AWARDS.map(([k]) => k).filter((k) => !MVP_KEYS.includes(k) && !WIN_KEYS.includes(k)),
+];
 const SHINING: AwardKey[] = ["mvp_nba", "ring", "fmvp", "mvp", "title"];
 
 /**
- * 은퇴 회고용으로 커리어를 순서대로 펼쳐요: 입단 → 시즌마다 한 칸(그해 메달과 드래프트는 바로 뒤에) → 은퇴.
- * 화면은 이 목록을 한 칸씩 따라가며 보여줘요.
+ * 은퇴 회고용으로 커리어의 굵직한 순간을 해마다 한 칸씩 골라요: 입단 → 우승·개인 수상, 메달, 드래프트가 있던 해 → 은퇴.
+ * 한 해의 수상·메달·드래프트는 한 칸에 모두 담고, 아무 일도 없던 해는 칸을 만들지 않고 쌓인 경기·득점에만 더해요.
+ * 첫해와 마지막 해의 순간은 입단·은퇴 칸에 함께 담아요. 화면은 이 목록을 한 칸씩 따라가며 보여줘요.
  */
 export function careerJourney(c: Career): JourneyStep[] {
   const steps: JourneyStep[] = [];
@@ -92,50 +102,56 @@ export function careerJourney(c: Career): JourneyStep[] {
   let pts = 0;
   const trophiesBy = (y: number) => c.awardLog.filter((a) => a.y <= y).length;
   const first = c.hist[0];
-  if (first)
-    steps.push({
-      year: first.year, age: first.age, team: first.team, color: teamColor(first.team), title: "벤치에서 시작",
-      detail: `${first.team} 농구부 입단 · 오버롤 ${first.ovr0}`, awards: [], big: false, gp: 0, pts: 0, trophies: 0,
-    });
+  const last = c.hist.at(-1);
+  /** 마지막 해의 순간은 은퇴 칸에 담아요. */
+  let lastMoments: string[] = [];
   for (const h of c.hist) {
     gp += h.gp;
     pts += Math.round(h.pts * h.gp);
     const logs = c.awardLog.filter((a) => a.y === h.year);
-    const top = HEADLINE_ORDER.map((k) => logs.find((a) => a.k === k)).find(Boolean);
-    const title = top
-      ? top.n
-      : h.mil
-        ? h.mil === "sangmu" ? "상무에서 군 복무" : "현역으로 군 복무"
-        : !h.lg ? "무소속 · 개인 훈련" : h.result;
-    steps.push({
-      year: h.year,
-      age: h.age,
-      team: h.team,
-      color: h.mil ? militaryUnit(h.mil).color : teamColor(h.team),
-      title,
-      detail: h.gp ? `${h.gp}경기 · ${h.pts}점 ${h.reb}리바 ${h.ast}어시 · ${h.w}승 ${h.l}패` : `${h.result} · 오버롤 ${h.ovr1}`,
-      awards: h.awards.filter((a) => a !== top?.n),
-      big: logs.some((a) => SHINING.includes(a.k)),
-      gp, pts, trophies: trophiesBy(h.year),
-    });
-    for (const t of c.natLog.filter((t) => t.year === h.year && t.joined && t.medal))
+    const awards = MOMENT_ORDER.flatMap((k) => logs.filter((a) => a.k === k));
+    const medals = c.natLog.filter((t) => t.year === h.year && t.joined && t.medal);
+    const d = c.draft?.year === h.year ? c.draft : null;
+    // 메달은 시즌 수상 목록에도 같은 이름으로 들어 있어서 겹치지 않게 걸러요. 연도는 칸에 따로 보여줘요.
+    const moments = [
+      ...new Set([
+        ...awards.map((a) => a.n),
+        ...h.awards,
+        ...medals.map((t) => `${t.name} ${t.medal}메달`),
+        ...(d ? [`${d.lg} 드래프트 ${d.pick}순위`] : []),
+      ].map(stripYear)),
+    ];
+    const big = logs.some((a) => SHINING.includes(a.k)) || medals.some((t) => t.medal === "금") || (d?.lg === "NBA" && d.round === 1);
+    const stats = h.gp ? `${h.gp}경기 · ${h.pts}점 ${h.reb}리바 ${h.ast}어시 · ${h.w}승 ${h.l}패` : `${h.result} · 오버롤 ${h.ovr1}`;
+    const base = { year: h.year, age: h.age, gp, pts, trophies: trophiesBy(h.year), big };
+    if (h === first)
       steps.push({
-        year: t.year, age: h.age, team: `${c.p.nat} 대표팀`, color: natColor(c.p.nat), title: `${t.name} ${t.medal}메달`,
-        detail: t.label, awards: [], big: t.medal === "금", gp, pts, trophies: trophiesBy(h.year),
+        ...base, team: h.team, color: teamColor(h.team), title: "벤치에서 시작",
+        detail: `${h.team} 농구부 입단`, awards: moments,
       });
-    const d = c.draft;
-    if (d && d.year === h.year)
+    else if (h === last) {
+      lastMoments = moments;
+    } else if (awards.some((a) => !a.k.startsWith("nat_")))
       steps.push({
-        year: d.year, age: h.age + 1, team: d.team, color: teamColor(d.team), title: `${d.lg} 드래프트 ${d.pick}순위`,
-        detail: `${d.round}라운드 ${d.inRound}순위로 ${d.team}에 지명`, awards: [], big: d.lg === "NBA" && d.round === 1,
-        gp, pts, trophies: trophiesBy(h.year),
+        ...base, team: h.team, color: h.mil ? militaryUnit(h.mil).color : teamColor(h.team), title: moments[0],
+        detail: stats, awards: moments.slice(1),
+      });
+    // 상 없이 메달만 딴 해는 대표팀 칸, 드래프트만 있던 해는 지명한 팀 칸이에요.
+    else if (medals.length)
+      steps.push({
+        ...base, team: `${c.p.nat} 대표팀`, color: natColor(c.p.nat), title: moments[0], detail: medals[0].label,
+        awards: moments.slice(1),
+      });
+    else if (d)
+      steps.push({
+        ...base, age: h.age + 1, team: d.team, color: teamColor(d.team), title: moments[0],
+        detail: `${d.round}라운드 ${d.inRound}순위로 ${d.team}에 지명`, awards: moments.slice(1),
       });
   }
   const s = c.summary ?? careerSummary(c);
-  const last = c.hist.at(-1);
   steps.push({
     year: s.retYear, age: s.retAge, team: last?.team ?? "", color: last ? teamColor(last.team) : null, title: "은퇴",
-    detail: `${c.hist.length}시즌 · ${s.teams.length}개 팀을 거쳐 코트를 떠나요`, awards: [], big: true, gp, pts,
+    detail: `${c.hist.length}시즌 · ${s.teams.length}개 팀을 거쳐 코트를 떠나요`, awards: lastMoments, big: true, gp, pts,
     trophies: c.awardLog.length,
   });
   return steps;

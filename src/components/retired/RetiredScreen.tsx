@@ -89,7 +89,10 @@ export function RetiredScreen({ career: c, hall }: { career: Career; hall: Caree
 
       <RecordBoards career={c} />
 
-      <div className="row">
+      <div className="end-bar">
+        <button type="button" className="start sub" onClick={gameActions.openFarewell}>
+          커리어 회고
+        </button>
         <button type="button" className="start" onClick={gameActions.newCareer}>
           새 커리어 시작
         </button>

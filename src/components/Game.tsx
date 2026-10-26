@@ -17,7 +17,7 @@ import { Toast } from "@/components/common/Toast";
 import { TournamentLoading } from "@/components/progress/TournamentLoading";
 
 export function Game() {
-  const { ready, career, draft, hall, playing, speed, final, farewell, tournament, drafting, toast } = useGame();
+  const { ready, career, draft, hall, playing, speed, final, farewell, farewellReplay, tournament, drafting, toast } = useGame();
   // 탭은 커리어마다 홈에서 시작해요.
   const [view, setView] = useState<{ id: string | null; tab: TabKey }>({ id: null, tab: "season" });
   const tab = career && view.id === career.id ? view.tab : "season";
@@ -36,8 +36,9 @@ export function Game() {
   let body: React.ReactNode;
   if (!ready) body = <p className="boot">커리어를 불러오고 있어요…</p>;
   else if (!career) body = <CreateScreen draft={draft} hall={hall} />;
-  // 은퇴 직후에는 회고 팝업 뒤에 엔딩이 미리 보이지 않게 비워 둬요.
-  else if (career.stage === "retired") body = farewell ? null : <RetiredScreen career={career} hall={hall} />;
+  // 은퇴 직후에는 회고 팝업 뒤에 엔딩이 미리 보이지 않게 비워 둬요. 은퇴 화면에서 다시 연 회고 뒤에는 엔딩을 그대로 둬요.
+  else if (career.stage === "retired")
+    body = farewell && !farewellReplay ? null : <RetiredScreen career={career} hall={hall} />;
   else
     body = (
       <GameScreen career={career} hall={hall} tab={tab} onTab={openTab} playing={playing} speed={speed} busy={final || tournament || drafting} />
