@@ -286,6 +286,10 @@ input,select{font:inherit;color:var(--ink);background:var(--panel2);border:1px s
 .intro{max-width:var(--t-max);margin:0 auto;padding-block:8px 22px}
 .intro h1{font-family:var(--f-display);font-weight:400;font-size:clamp(44px,9vw,84px);line-height:.98;margin:4px 0 14px;text-wrap:balance}
 .intro h1 em{font-style:normal;color:var(--accent)}
+/* 제목 오른쪽 도트 그림(벤치 → MVP). 아주 좁은 화면에서는 제목이 줄바꿈되지 않게 그림을 숨겨요. */
+.intro-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.intro-art{flex:none;width:auto;height:clamp(88px,24vw,176px);margin-bottom:12px;image-rendering:pixelated}
+@media (max-width:359px){.intro-art{display:none}}
 .lede{max-width:52ch;color:var(--muted);font-size:16px;margin:0}
 .create{max-width:var(--t-max);margin:0 auto;padding:20px;gap:20px}
 .form-grid{display:grid;grid-template-columns:1.7fr .8fr 1.3fr;gap:12px}

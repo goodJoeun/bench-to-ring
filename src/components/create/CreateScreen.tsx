@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRef, useState } from "react";
 import { TEAMS, type CareerSummary } from "@/game";
 import { gameActions, type CreationDraft } from "@/lib/game-store";
@@ -27,18 +28,30 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
   return (
     <>
       <section className="intro">
-        <div>
-          <div className="label">벤치 뎁혀 반지 굽기</div>
-          <h1>
-            농구 선수
-            <br />
-            <em>키우기</em>
-          </h1>
-          <p className="lede">
-            고교 벤치 멤버로 시작해 드래프트, 주전, 올스타를 거쳐 MVP와 우승 반지까지. 시즌마다 쌓이는 기록과 선택으로 나만의
-            농구 인생을 완성하세요.
-          </p>
+        <div className="intro-head">
+          <div>
+            <div className="label">벤치 뎁혀 반지 굽기</div>
+            <h1>
+              농구 선수
+              <br />
+              <em>키우기</em>
+            </h1>
+          </div>
+          {/* 도트 그림이라 최적화(리샘플링) 없이 원본 그대로 키워 보여줘요. scripts/hero-art.mjs가 만들어요. */}
+          <Image
+            className="intro-art"
+            src="/hero/bench-to-mvp.png"
+            width={120}
+            height={80}
+            unoptimized
+            loading="eager"
+            alt="벤치에 수건을 쓰고 앉은 선수와 MVP 트로피를 번쩍 든 선수"
+          />
         </div>
+        <p className="lede">
+          고교 벤치 멤버로 시작해 드래프트, 주전, 올스타를 거쳐 MVP와 우승 반지까지. 시즌마다 쌓이는 기록과 선택으로 나만의
+          농구 인생을 완성하세요.
+        </p>
       </section>
 
       <section className="panel create">
