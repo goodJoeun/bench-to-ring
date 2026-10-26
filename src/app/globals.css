@@ -238,6 +238,17 @@ tr:last-child td{border-bottom:0}
 .tro.zero{opacity:.55}
 .loglist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:14px}
 .loglist span{font-family:var(--f-num);color:var(--muted);margin-right:8px}
+/* 불러오는 동안: 도는 표시와 안내, 목록 자리를 잡아 두는 반짝이는 빈 줄 (명예의 전당, 랭킹 페이지) */
+.loading{display:flex;flex-direction:column;gap:14px;padding:8px 0}
+.loading-head{display:flex;align-items:center;justify-content:center;gap:10px;min-height:44px;font-size:14px;font-weight:600;color:var(--muted)}
+.skeleton{display:flex;flex-direction:column;gap:8px}
+.skeleton span{height:46px;border-radius:12px;background:linear-gradient(90deg,var(--panel2) 30%,var(--line) 50%,var(--panel2) 70%);background-size:300% 100%;animation:shimmer 1.6s ease-in-out infinite}
+.skeleton span:nth-child(n+4){opacity:.6}
+@keyframes shimmer{from{background-position:100% 0}to{background-position:0 0}}
+.spinner{flex:none;width:22px;height:22px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* 움직임을 줄인 설정에서는 돌지 않고 천천히 깜빡여요. */
+@media (prefers-reduced-motion:reduce){.spinner{animation:fade 1.2s ease-in-out infinite alternate}.skeleton span{animation:none}}
 .best5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
 @media (max-width:640px){.best5{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .b5{background:var(--panel2);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:2px;min-width:0}

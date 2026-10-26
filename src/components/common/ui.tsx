@@ -36,6 +36,28 @@ export function Funds({ amount, note }: { amount: number; note?: React.ReactNode
   );
 }
 
+/**
+ * 불러오는 동안 보여줘요: 도는 표시와 안내 한 줄, 그 아래 목록 자리를 미리 잡아 두는 빈 줄(rows개).
+ * 빈 줄이 있으면 불러온 뒤 화면이 크게 출렁이지 않아요.
+ */
+export function Loading({ label, rows = 0 }: { label: string; rows?: number }) {
+  return (
+    <div className="loading" role="status">
+      <div className="loading-head">
+        <span className="spinner" aria-hidden="true" />
+        {label}
+      </div>
+      {rows > 0 && (
+        <div className="skeleton" aria-hidden="true">
+          {Array.from({ length: rows }, (_, i) => (
+            <span key={i} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** 숫자 타일 묶음: [이름, 값] 목록 */
 export function StatTiles({ items }: { items: readonly (readonly [string, React.ReactNode])[] }) {
   return (

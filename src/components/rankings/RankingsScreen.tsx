@@ -6,6 +6,7 @@ import { POS, POS_KEYS, type PosKey } from "@/game";
 import { useGame } from "@/lib/game-store";
 import { fetchBoard, fetchMine, pendingIds } from "@/lib/leaderboard/client";
 import type { Board, MyRanks } from "@/lib/leaderboard/types";
+import { Loading } from "@/components/common/ui";
 import { BestFiveCourt } from "./BestFiveCourt";
 import { MyRecords } from "./MyRecords";
 import { RankingList } from "./RankingList";
@@ -137,9 +138,7 @@ export function RankingsScreen() {
                 </div>
               )}
               {!shown.loaded ? (
-                <p className="empty" role="status">
-                  순위표를 불러오고 있어요.
-                </p>
+                <Loading label="순위표를 불러오고 있어요" rows={tab === "best5" ? 5 : 8} />
               ) : failed ? (
                 <div className="row">
                   <p className="empty" role="status">

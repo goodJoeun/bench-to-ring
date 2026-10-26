@@ -90,16 +90,45 @@ export function flushPending(): Promise<Map<string, SubmitResult>> {
   return flushing;
 }
 
-/** 순위표를 가져와요. 서버가 안 되면 null이에요. */
+/** 순위표 응답을 기다리는 시간. 이 안에 오지 않으면 서버가 안 되는 것으로 쳐요. */
+const BOARD_TIMEOUT_MS = 10000;
+
+/** 순위표를 가져와요. 서버가 안 되거나 BOARD_TIMEOUT_MS 안에 응답이 없으면 null이에요. */
 export async function fetchBoard(scope: BoardScope = { ruleset: RULESET_VERSION }, pos: PosKey | null = null): Promise<Board | null> {
   const q = new URLSearchParams(scope === "all" ? { scope: "all" } : { ruleset: String(scope.ruleset) });
   if (pos) q.set("pos", pos);
   try {
-    const res = await fetch(`/api/boards?${q}`);
+    const res = await fetch(`/api/boards?${q}`, { signal: AbortSignal.timeout(BOARD_TIMEOUT_MS) });
     return res.ok ? ((await res.json()) as Board) : null;
   } catch {
     return null;
   }
+}
+
+/** 명예의 전당이 기억해 두는 현재 룰셋 순위표. 이 시간이 지나면 다시 불러와요. */
+const BOARD_CACHE_MS = 60_000;
+let boardCache: { at: number; board: Board } | null = null;
+
+/** 마지막으로 불러온 현재 룰셋 순위표. 오래됐어도 돌려줘요. */
+export const lastBoard = (): Board | null => boardCache?.board ?? null;
+
+/** 순위가 바뀌었을 때(내 기록이 올라갔을 때) 알릴 곳 */
+const boardListeners = new Set<() => void>();
+
+/** 순위가 바뀌면 알려줘요. 돌려주는 함수를 부르면 그만 알려요. */
+export function onBoardChange(listener: () => void): () => void {
+  boardListeners.add(listener);
+  return () => boardListeners.delete(listener);
+}
+
+/** 기억한 순위표가 없거나 BOARD_CACHE_MS보다 오래됐는지 */
+export const boardStale = (): boolean => !boardCache || Date.now() - boardCache.at > BOARD_CACHE_MS;
+
+/** 현재 룰셋 순위표를 새로 불러와 기억해요. 불러오지 못하면 기억한 것은 그대로 두고 null을 돌려줘요. */
+export async function refreshBoard(): Promise<Board | null> {
+  const board = await fetchBoard();
+  if (board) boardCache = { at: Date.now(), board };
+  return board;
 }
 
 /** 이 브라우저(플레이어)가 올린 기록의 지금 순위. 아직 올린 적이 없거나 서버가 안 되면 null이에요. */
@@ -121,5 +150,11 @@ export const pendingIds = (): Set<string> => new Set(loadPending().map((s) => s.
 export async function submitCareer(s: CareerSummary): Promise<SubmitResult | null> {
   savePending([...loadPending().filter((p) => p.id !== s.id), s]);
   await flushing;
-  return (await flushPending()).get(s.id) ?? null;
+  const result = (await flushPending()).get(s.id) ?? null;
+  // 순위가 바뀌었으니 기억한 순위표는 버리고, 지금 떠 있는 명예의 전당에도 알려 새로 불러오게 해요.
+  if (result) {
+    boardCache = null;
+    boardListeners.forEach((l) => l());
+  }
+  return result;
 }
