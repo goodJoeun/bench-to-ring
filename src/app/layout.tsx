@@ -9,10 +9,25 @@ import "@fontsource/saira-condensed/600.css";
 import "@fontsource/saira-condensed/700.css";
 import "./globals.css";
 import { THEME_BOOT } from "@/lib/theme";
+import { SITE_DESCRIPTION, SITE_KEYWORDS, SITE_NAME, SITE_TITLE, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "농구 선수 키우기 · 벤치 뎁혀 반지 굽기",
-  description: "고교 벤치 멤버로 시작해 KBL과 NBA를 거쳐 MVP와 우승 반지에 도전하는 농구 커리어 게임.",
+  metadataBase: new URL(SITE_URL),
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: SITE_KEYWORDS,
+  alternates: { canonical: "/" },
+  // 미리보기 이미지는 opengraph-image.tsx가 채워요.
+  openGraph: {
+    type: "website",
+    locale: "ko_KR",
+    siteName: SITE_NAME,
+    url: "/",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: { card: "summary_large_image", title: SITE_TITLE, description: SITE_DESCRIPTION },
 };
 
 export const viewport: Viewport = {

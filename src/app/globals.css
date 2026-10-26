@@ -390,6 +390,13 @@ input,select{font:inherit;color:var(--ink);background:var(--panel2);border:1px s
 .ret .plate .name{font-size:30px}
 .legacy{font-family:var(--f-display);font-size:20px;color:var(--accent);line-height:1.25}
 .foot{max-width:var(--t-max);margin:28px auto 0;color:var(--muted);font-size:12.5px}
+/* 홈 아래 게임 소개: 검색 엔진이 읽는 글이라 게임 화면보다 눈에 덜 띄게 둬요. */
+.about{max-width:var(--t-max);margin:40px auto 0;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:13.5px}
+.about h1{font-size:15px;font-weight:700;color:var(--ink);margin:0 0 6px}
+.about h1 span{font-weight:500;color:var(--muted);margin-left:6px}
+.about p{margin:0}
+.about ul{margin:8px 0 0;padding-left:18px}
+.about + .foot{margin-top:16px}
 
 @keyframes rise{from{transform:translateY(6px);opacity:.6}to{transform:none;opacity:1}}
 

@@ -130,9 +130,6 @@ export function Game() {
         />
       )}
       <Toast toast={toast} />
-      <p className="foot">
-        비공식 팬 게임이에요. 리그·구단·대회 명칭과 로고의 권리는 각 권리자에게 있어요.
-      </p>
     </>
   );
 }
