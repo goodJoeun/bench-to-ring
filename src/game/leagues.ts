@@ -9,8 +9,8 @@ export const LEAGUES: Record<LeagueKey, League> = {
   kbl: { name: "KBL", short: "KBL", avg: 68, games: 54, pro: true },
   gleague: { name: "NBA G리그", short: "G리그", avg: 78, games: 50, pro: true },
   euro: { name: "유로리그", short: "유로리그", avg: 80, games: 38, pro: true },
-  // NBA 영입·드래프트·출전 시간·연봉 기준이 모두 이 평균을 따라가요. 난이도를 조금 낮추려 88에서 86으로 내렸어요.
-  nba: { name: "NBA", short: "NBA", avg: 86, games: 82, pro: true },
+  // NBA 영입·드래프트·출전 시간·연봉 기준이 모두 이 평균을 따라가요. 88에서 86으로 내렸다가, NBA가 너무 쉬워 87로 올렸어요.
+  nba: { name: "NBA", short: "NBA", avg: 87, games: 82, pro: true },
 };
 
 /**

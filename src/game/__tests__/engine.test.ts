@@ -1619,7 +1619,7 @@ describe("리그별 시상", () => {
     let mvps = 0;
     for (let i = 0; i < 120; i++) {
       const c = createCareer({ name: "별", num: 1, nat: "미국", pos: "SF", path: "abroad" }, generateCandidates("SF")[0], `aw${i}`);
-      for (const k of ATTR_KEYS) c.p.attrs[k] = 93;
+      for (const k of ATTR_KEYS) c.p.attrs[k] = LEAGUES.nba.avg + 10;
       c.age = 26;
       c.stage = "pro";
       c.proSeasons = 3;
@@ -1638,6 +1638,35 @@ describe("리그별 시상", () => {
       }
     }
     expect(mvps).toBeGreaterThan(0);
+  });
+
+  it("NBA MVP·올-NBA·올스타·파이널 MVP는 기록이 그 상에 걸맞은 시즌에만 받아요", () => {
+    setRandom(seeded(72));
+    const given = new Set<string>();
+    for (let i = 0; i < 300; i++) {
+      const c = createCareer({ name: "별", num: 1, nat: "미국", pos: POS_KEYS[i % 5], path: "abroad" }, generateCandidates(POS_KEYS[i % 5])[0], `fl${i}`);
+      for (const k of ATTR_KEYS) c.p.attrs[k] = LEAGUES.nba.avg + (i % 11);
+      c.age = 26;
+      c.stage = "pro";
+      c.proSeasons = 3;
+      c.team = { name: "LA 레이커스", color: "#552583", q: 0.6, lg: "nba" };
+      c.contract = { years: 3, salary: 100 };
+      const rec = simulateSeason(c);
+      const pra = rec.pts + rec.reb + rec.ast;
+      for (const a of rec.awards) {
+        const floor = a.startsWith("NBA MVP") ? [20, 32]
+          : a === "올-NBA 퍼스트팀" ? [20, 32]
+          : a === "올-NBA 세컨드팀" ? [19, 31]
+          : a === "올-NBA 서드팀" || a.includes("파이널 MVP") ? [17, 29]
+          : a === "NBA 올스타" ? [15, 26]
+          : null;
+        if (!floor) continue;
+        given.add(a);
+        expect(rec.pts, a).toBeGreaterThanOrEqual(floor[0]);
+        expect(pra, a).toBeGreaterThanOrEqual(floor[1]);
+      }
+    }
+    expect(given.has("올-NBA 퍼스트팀") && given.has("NBA 올스타")).toBe(true);
   });
 });
 

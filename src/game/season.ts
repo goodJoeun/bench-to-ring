@@ -29,11 +29,23 @@ import { clamp, josa, r1, sigmoid } from "./util";
 
 /**
  * MVP 문턱: 이 영향력(리그 평균 대비 오버롤 × 출전 비중)에서 수상 확률이 절반이에요.
- * NBA는 리그 평균이 워낙 높아 다른 리그와 같은 기준이면 오버롤 100을 훌쩍 넘어야 해서 평균 + 3으로 낮췄어요.
- * NBA까지 가는 선수 자체가 드물어서, 커리어 100개 중 1개 정도에서 NBA MVP가 나와요.
+ * NBA는 리그 평균이 워낙 높아 다른 리그와 같은 기준이면 오버롤 100을 훌쩍 넘어야 해서 평균 + 1로 낮췄어요.
+ * 실제로는 아래 기록 문턱(MVP는 20점)이 더 빡빡해서, 커리어 100개 중 5개 정도에서 NBA MVP가 나와요.
  */
 const MVP_AT = 15.5;
-const NBA_MVP_AT = 3;
+const NBA_MVP_AT = 1;
+/** NBA 올스타·올-NBA를 뽑는 스타 지수의 기준 영향력. MVP 문턱과 따로 둬서 MVP만 쉬워지게 했어요. */
+const NBA_STAR_AT = 3;
+/** NBA 에이스 득점: 리그 평균 + NBA_ACE_FROM부터 1마다 득점이 NBA_ACE_STEP씩 늘어요. NBA_ACE_CAP까지예요. */
+const NBA_ACE_FROM = 2;
+const NBA_ACE_STEP = 0.06;
+const NBA_ACE_CAP = 0.3;
+/**
+ * NBA 개인상의 기록 문턱 [경기당 득점, 득점 + 리바운드 + 어시스트]. 영향력이 넘어도 기록이 모자라면 받지 못하고,
+ * 올-NBA는 기록이 닿는 팀으로 내려가요. 13점 8리바운드로 퍼스트팀에 들거나 14점으로 MVP를 받는 어색한 시즌을 막아요.
+ * 파이널·컨퍼런스 파이널 MVP는 서드팀과 같은 문턱이에요.
+ */
+const NBA_STAT_FLOOR = { mvp: [20, 32], first: [20, 32], second: [19, 31], third: [17, 29], allstar: [15, 26] } as const;
 
 /** 최근 경기 기록을 이만큼 남겨요. */
 const LOG_LIMIT = 12;
@@ -228,8 +240,10 @@ function planTeamSeason(c: Career, run: SeasonRun): void {
   const f = min / 36;
   const vr = p.trait === "꾸준함" ? 0.05 : 0.1;
   const st = (v: number) => Math.max(0, v * f * rnd(1 - vr, 1 + vr));
+  // 에이스 몫: NBA에서 리그 평균보다 크게 앞선 선수는 공격을 더 맡아 슛을 더 많이 쏴요.
+  const ace = team.lg === "nba" ? 1 + clamp((ovr0 - L.avg - NBA_ACE_FROM) * NBA_ACE_STEP, 0, NBA_ACE_CAP) : 1;
   run.mean = {
-    pts: st(2 + 0.38 * (e.sht - 25) + 0.16 * (e.ath - 25) + 0.1 * (e.hdl - 25)) * fx.pts,
+    pts: st(2 + 0.38 * (e.sht - 25) + 0.16 * (e.ath - 25) + 0.1 * (e.hdl - 25)) * fx.pts * ace,
     // 리바운드는 따로 능력치가 없어요. 키·윙스팬이 가장 크고, 운동능력·수비(박스아웃)·BQ(자리 잡기)가 더해요.
     reb: st(1 + 0.3 * hd + 0.1 * wsd + 0.08 * (e.ath - 25) + 0.07 * (e.def - 25) + 0.04 * (e.iq - 25)) * fx.reb,
     ast: st(0.5 + 0.2 * (e.pas - 25) + 0.04 * (e.hdl - 25) + 0.06 * (e.iq - 25)) * fx.ast,
@@ -564,22 +578,25 @@ function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord 
   const noise = rnd(-2.5, 2.5);
   const impact = core + noise;
   const rookie = L.pro && c.proSeasons === 0;
+  const nba = lg === "nba";
+  const pra = rec.pts + rec.reb + rec.ast;
+  const statsOk = (k: keyof typeof NBA_STAT_FLOOR) => !nba || (rec.pts >= NBA_STAT_FLOOR[k][0] && pra >= NBA_STAT_FLOOR[k][1]);
   if (gp >= L.games * 0.6) {
-    const mvpAt = lg === "nba" ? NBA_MVP_AT : MVP_AT;
-    const mvp = impact >= mvpAt - 2.5 && chance(sigmoid((impact - mvpAt) / 1.2) * (wp >= 0.55 ? 1 : 0.3));
-    if (mvp) give(lg === "nba" ? "mvp_nba" : "mvp");
-    // 스타 지수: MVP 문턱에 맞춘 영향력. NBA는 MVP 문턱이 리그 평균 + 3으로 낮고 선수 간 차이가 좁아서,
+    const mvpAt = nba ? NBA_MVP_AT : MVP_AT;
+    // 팀 성적이 아쉬우면 MVP가 어려워요. NBA는 기록 문턱이 있어서 다른 리그보다 덜 깎아요.
+    const mvp = statsOk("mvp") && impact >= mvpAt - 2.5 && chance(sigmoid((impact - mvpAt) / 1.2) * (wp >= 0.55 ? 1 : nba ? 0.6 : 0.3));
+    if (mvp) give(nba ? "mvp_nba" : "mvp");
+    // 스타 지수: MVP 문턱에 맞춘 영향력. NBA는 리그 평균에 가까운 NBA_STAR_AT을 MVP 문턱 자리에 두고 선수 간 차이가 좁아서,
     // 실력 몫만 펼치고 운은 그대로 더해요. 그래서 올스타·베스트 팀이 리그마다 MVP와 같은 눈높이로 뽑혀요.
-    // (NBA 평균 선수는 거의 못 뽑히고, 평균 + 1.5쯤에서 올스타가 반반이에요.)
-    const star = lg === "nba" ? MVP_AT + (core - NBA_MVP_AT) * 5.5 + noise : impact;
-    if (L.pro && (mvp || (star >= 5 && chance(sigmoid((star - 7) / 1.4))))) give("allstar");
+    const star = nba ? MVP_AT + (core - NBA_STAR_AT) * 5.5 + noise : impact;
+    if (L.pro && (mvp || (statsOk("allstar") && star >= 5 && chance(sigmoid((star - 7) / 1.4))))) give("allstar");
     // 베스트 팀: 베스트5 하나뿐인 리그는 예전 기준 그대로, 여러 팀이 있으면 기준을 낮추고 활약에 따라 팀을 나눠요. MVP는 늘 퍼스트팀이에요.
     const tiers = ALL_LEAGUE_TIERS[lg];
     if (mvp) give("allleague");
     else if (tiers === 1) {
       if (star >= 9 && chance(sigmoid((star - 11.5) / 1.3))) give("allleague");
-    } else if (star >= 7 && chance(sigmoid((star - 10) / 1.3))) {
-      const tier = star >= 11.5 ? 1 : tiers === 3 && star < 9.5 ? 3 : 2;
+    } else if (statsOk("third") && star >= 7 && chance(sigmoid((star - 10) / 1.3))) {
+      const tier = star >= 11.5 && statsOk("first") ? 1 : tiers === 3 && (star < 9.5 || !statsOk("second")) ? 3 : 2;
       give(tier === 1 ? "allleague" : "allleague2", tier);
     }
     // 수비: 올해의 수비수는 예전 기준 그대로, 올-디펜시브는 그보다 조금 낮은 수비수까지 뽑혀요.
@@ -589,17 +606,17 @@ function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord 
     if (dpoy || (defEdge >= 9 && min >= 22 && chance(sigmoid((defEdge - 11) / 1.5))))
       give("alldef", dpoy || ALL_DEF_TIERS[lg] === 1 || defEdge >= 12.5 ? 1 : 2);
     if (rookie && impact >= 0 && chance(sigmoid((impact - 2.5) / 1.5))) give("roy");
-    if (rookie && lg === "nba" && impact >= -2 && chance(sigmoid((impact - 0.5) / 1.5))) give("allrookie");
+    if (rookie && nba && impact >= -2 && chance(sigmoid((impact - 0.5) / 1.5))) give("allrookie");
     if (rec.pts >= SCORING_TITLE[lg] && chance(0.6)) give("scoring");
     if (L.pro && min >= 18 && min < 26 && impact >= 3 && chance(0.4)) give("sixth");
   }
   // NBA 파이널에 올랐으면 컨퍼런스 파이널을 이긴 거예요. 그 시리즈를 이끈 선수에게 컨퍼런스 파이널 MVP를 줘요.
-  const wonConference = lg === "nba" && run.post.some((r) => r.name === FINAL_NAME.nba);
-  if (wonConference && gp > 0 && min >= 26 && impact >= 5 && chance(p.trait === "승부사" ? 0.8 : 0.55))
+  const wonConference = nba && run.post.some((r) => r.name === FINAL_NAME.nba);
+  if (wonConference && gp > 0 && min >= 26 && impact >= 5 && statsOk("third") && chance(p.trait === "승부사" ? 0.8: 0.55))
     giveAward(c, "cfmvp", conferenceFinalsMvpName(team.name), rec);
   if (champ) {
     giveAward(c, L.pro ? "ring" : "title", L.pro ? `${sh} 우승` : `${sh} 전국대회 우승`, rec);
-    if (min >= 26 && impact >= 5 && chance(p.trait === "승부사" ? 0.85 : 0.6)) give("fmvp");
+    if (min >= 26 && impact >= 5 && statsOk("third") && chance(p.trait === "승부사" ? 0.85 : 0.6)) give("fmvp");
   }
   const prev = c.hist.length ? c.hist[c.hist.length - 1] : null;
   if (L.pro && prev && ov0 - prev.ovr0 >= 6 && chance(0.5)) give("mip");
