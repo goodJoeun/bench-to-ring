@@ -6,8 +6,8 @@ import { money, round2 } from "./util";
 
 /** 한 시즌에 고를 수 있는 투자 수. 돈보다 시간이 모자라요. */
 export const INVEST_SLOTS = 2;
-/** 시즌마다 기본 투자 옆에 나오는 특별 투자 수 */
-export const SPECIAL_COUNT = 3;
+/** 시즌마다 전체 투자 중에서 골라 내놓는 수. 그중 INVEST_SLOTS개까지 해요. */
+export const INVEST_OFFER = 4;
 /** 고교·대학 선수가 시즌마다 받는 용돈·후원금 (억) */
 export const STUDENT_ALLOWANCE = 0.06;
 
@@ -44,15 +44,13 @@ export interface Investment extends InvestEffect {
   pct: number;
   /** 최저 비용 (억). 연봉이 없거나 적어도 이만큼은 들어요. */
   min: number;
-  /** 시즌마다 바뀌는 특별 투자인지. 아니면 늘 고를 수 있는 기본 투자예요. */
-  special?: boolean;
-  /** 특별 투자가 나올 수 있는 때 */
+  /** 이 투자가 나올 수 있는 때. 없으면 언제나 */
   when?: (c: Career) => boolean;
 }
 
 /**
  * 시즌마다 보유 자금으로 고르는 훈련·회복 투자. 효과는 그 시즌 한 번만 나요.
- * 특별 투자는 기본 투자와 비슷한 크기로, 한 능력치를 조금 더 키우거나 대가가 있는 대신 효과가 커요.
+ * 효과는 서로 비슷한 크기로 맞췄어요. 한 능력치를 더 키우는 것도 있고, 대가가 있는 대신 효과가 큰 것도 있어요.
  */
 export const INVESTMENTS: ReadonlyArray<Investment> = [
   { key: "coach", name: "개인 스킬 코치", effect: "모든 능력치 성장 +5%", pct: 0.3, min: 0.05, growthAll: 0.05 },
@@ -63,43 +61,42 @@ export const INVESTMENTS: ReadonlyArray<Investment> = [
   { key: "rehab", name: "회복 관리팀", effect: "부상 위험 -20%, 시즌 뒤 건강 +8", pct: 0.2, min: 0.03, injury: 0.8, heal: 8 },
   { key: "diet", name: "영양·수면 관리", effect: "시즌 뒤 건강 +6, 나이로 떨어지는 폭 -10%", pct: 0.15, min: 0.02, heal: 6, declineAll: 0.9 },
   { key: "video", name: "영상 분석관", effect: "BQ 성장 +25%, 코치 신뢰 +0.5", pct: 0.15, min: 0.02, growth: { iq: 0.25 }, trust: 0.5 },
-
-  { key: "shootcamp", name: "슈팅 전문 캠프", effect: "슛 성장 +20%", pct: 0.2, min: 0.03, special: true, growth: { sht: 0.2 } },
-  { key: "handlecamp", name: "볼 핸들링 클리닉", effect: "볼 핸들링 성장 +20%", pct: 0.15, min: 0.02, special: true, growth: { hdl: 0.2 } },
+  { key: "shootcamp", name: "슈팅 전문 캠프", effect: "슛 성장 +20%", pct: 0.2, min: 0.03, growth: { sht: 0.2 } },
+  { key: "handlecamp", name: "볼 핸들링 클리닉", effect: "볼 핸들링 성장 +20%", pct: 0.15, min: 0.02, growth: { hdl: 0.2 } },
   {
-    key: "passcamp", name: "리딩·패스 세미나", effect: "패스 성장 +15%, BQ 성장 +10%", pct: 0.15, min: 0.02, special: true,
+    key: "passcamp", name: "리딩·패스 세미나", effect: "패스 성장 +15%, BQ 성장 +10%", pct: 0.15, min: 0.02,
     growth: { pas: 0.15, iq: 0.1 },
   },
   {
-    key: "defcamp", name: "수비 전술 캠프", effect: "수비 성장 +20%, 코치 신뢰 +0.3", pct: 0.2, min: 0.03, special: true,
+    key: "defcamp", name: "수비 전술 캠프", effect: "수비 성장 +20%, 코치 신뢰 +0.3", pct: 0.2, min: 0.03,
     growth: { def: 0.2 }, trust: 0.3,
   },
   {
-    key: "altitude", name: "고지대 전지훈련", effect: "운동능력 성장 +25%, 대신 시즌 뒤 건강 -4", pct: 0.2, min: 0.03, special: true,
+    key: "altitude", name: "고지대 전지훈련", effect: "운동능력 성장 +25%, 대신 시즌 뒤 건강 -4", pct: 0.2, min: 0.03,
     growth: { ath: 0.25 }, heal: -4,
   },
   {
-    key: "mentor", name: "은퇴 레전드 멘토링", effect: "모든 능력치 성장 +3%, BQ 성장 +10%", pct: 0.25, min: 0.04, special: true,
+    key: "mentor", name: "은퇴 레전드 멘토링", effect: "모든 능력치 성장 +3%, BQ 성장 +10%", pct: 0.25, min: 0.04,
     growthAll: 0.03, growth: { iq: 0.1 },
   },
   {
     key: "pilates", name: "필라테스·유연성 프로그램", effect: "부상 위험 -12%, 운동능력이 나이로 떨어지는 폭 -15%", pct: 0.15, min: 0.02,
-    special: true, injury: 0.88, decline: { ath: 0.85 },
+    injury: 0.88, decline: { ath: 0.85 },
   },
   {
-    key: "cryo", name: "냉동 치료·재활 장비", effect: "부상 복귀가 20% 빨라지고, 시즌 뒤 건강 +4", pct: 0.15, min: 0.02, special: true,
+    key: "cryo", name: "냉동 치료·재활 장비", effect: "부상 복귀가 20% 빨라지고, 시즌 뒤 건강 +4", pct: 0.15, min: 0.02,
     rehab: 0.8, heal: 4,
   },
   {
     key: "preseason", name: "프리시즌 연습경기 투어", effect: "시즌을 경기력 상승으로 시작하고, 코치 신뢰 +0.3", pct: 0.15, min: 0.02,
-    special: true, form: 0.3, trust: 0.3, when: (c) => !!c.team,
+    form: 0.3, trust: 0.3, when: (c) => !!c.team,
   },
   {
-    key: "loadmgmt", name: "로드 매니지먼트 컨설팅", effect: "경기마다 닳는 체력 -10%", pct: 0.15, min: 0.03, special: true,
+    key: "loadmgmt", name: "로드 매니지먼트 컨설팅", effect: "경기마다 닳는 체력 -10%", pct: 0.15, min: 0.03,
     fatigue: 0.9, when: (c) => c.stage === "pro",
   },
   {
-    key: "academy", name: "농구 아카데미 특강", effect: "모든 능력치 성장 +4%", pct: 0.2, min: 0.02, special: true,
+    key: "academy", name: "농구 아카데미 특강", effect: "모든 능력치 성장 +4%", pct: 0.2, min: 0.02,
     growthAll: 0.04, when: (c) => c.stage === "hs" || c.stage === "college",
   },
 ];
@@ -107,20 +104,22 @@ export const INVESTMENTS: ReadonlyArray<Investment> = [
 const investment = (key: InvestKey): Investment => INVESTMENTS.find((i) => i.key === key)!;
 
 /**
- * 이번 시즌에 고를 수 있는 투자: 기본 투자 전부와, 시즌마다 바뀌는 특별 투자 몇 가지.
- * 특별 투자는 커리어와 연도로 정해서, 같은 시즌이면 다시 열어도 같은 목록이 나와요.
+ * 이번 시즌에 고를 수 있는 투자: 지금 나올 수 있는 투자 중 무작위 INVEST_OFFER가지를 목록 순서대로.
+ * 커리어와 연도로 정해서, 같은 시즌이면 다시 열어도 같은 목록이 나와요.
  */
 export function investLineup(c: Career): Investment[] {
   const rand = seededPick(`${c.id}:${c.year}:invest`);
-  const specials = INVESTMENTS.filter((i) => i.special && (i.when?.(c) ?? true))
-    .map((i) => ({ i, r: rand() }))
-    .sort((a, b) => a.r - b.r)
-    .slice(0, SPECIAL_COUNT)
-    .map((x) => x.i);
-  return [...INVESTMENTS.filter((i) => !i.special), ...specials];
+  const picked = new Set(
+    INVESTMENTS.filter((i) => i.when?.(c) ?? true)
+      .map((i) => ({ i, r: rand() }))
+      .sort((a, b) => a.r - b.r)
+      .slice(0, INVEST_OFFER)
+      .map((x) => x.i),
+  );
+  return INVESTMENTS.filter((i) => picked.has(i));
 }
 
-/** 고른 투자 중 이번 시즌에도 나와 있는 것. 지난 시즌에 고른 특별 투자가 이번에 없으면 빠져요. */
+/** 고른 투자 중 이번 시즌에도 나와 있는 것. 지난 시즌에 고른 투자가 이번에 없으면 빠져요. */
 export function chosenInvest(c: Career): InvestKey[] {
   const offered = new Set(investLineup(c).map((i) => i.key));
   return c.invest.filter((k) => offered.has(k)).slice(0, INVEST_SLOTS);

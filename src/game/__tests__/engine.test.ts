@@ -35,7 +35,7 @@ import {
   investPerks,
   chosenInvest,
   INVESTMENTS,
-  SPECIAL_COUNT,
+  INVEST_OFFER,
   startCap,
   simulateSeason,
   simulateTournament,
@@ -506,12 +506,18 @@ describe("시즌 투자", () => {
     c.age = 22;
     return c;
   };
+  /** 투자는 시즌마다 몇 가지만 나와요. 필요한 투자가 모두 나오는 시즌으로 옮겨요. */
+  const offering = (c: Career, keys: Career["invest"]) => {
+    while (!keys.every((k) => investLineup(c).some((i) => i.key === k))) c.year++;
+    return c.year;
+  };
 
   it("시즌을 시작할 때 연봉 비례 비용을 내고, 두 가지까지만, 가진 돈 안에서만 해요", () => {
     setRandom(seeded(31));
     const c = pro("inv1");
     expect(investCost(c, "coach")).toBe(0.6);
     expect(investCost(c, "video")).toBe(0.3);
+    offering(c, ["coach", "rehab"]);
     c.earnings = 1;
     c.invest = ["coach", "rehab", "video"];
     simulateSeason(c);
@@ -523,6 +529,7 @@ describe("시즌 투자", () => {
     expect(careerSummary(c).earn).toBe(Math.round(c.earnings + 1));
 
     const poor = pro("inv2");
+    offering(poor, ["coach", "diet"]);
     poor.earnings = 0.5;
     poor.invest = ["coach", "diet"];
     simulateSeason(poor);
@@ -531,9 +538,10 @@ describe("시즌 투자", () => {
   });
 
   it("투자한 시즌은 같은 운이라도 더 크고 더 건강해요", () => {
-    const run = (invest: Career["invest"]) => {
+    const run = (invest: Career["invest"], year: number) => {
       setRandom(seeded(77));
       const c = pro("inv3");
+      c.year = year;
       c.earnings = 10;
       c.health = 60;
       c.invest = invest;
@@ -541,10 +549,19 @@ describe("시즌 투자", () => {
       simulateSeason(c);
       return { gain: ATTR_KEYS.reduce((t, k) => t + c.p.attrs[k] - before[k], 0), ath: c.p.attrs.ath - before.ath, health: c.health };
     };
-    const none = run([]);
-    expect(run(["coach"]).gain).toBeGreaterThan(none.gain);
-    expect(run(["gym"]).ath).toBeGreaterThan(none.ath);
-    expect(run(["rehab", "diet"]).health).toBeGreaterThan(none.health);
+    // 투자한 시즌과 같은 시즌을 투자 없이 보낸 것과 비교해요.
+    const vs = (invest: Career["invest"]) => {
+      const year = offering(pro("inv3"), invest);
+      return [run(invest, year), run([], year)] as const;
+    };
+    const [coach, none1] = vs(["coach"]);
+    expect(coach.gain).toBeGreaterThan(none1.gain);
+    const [gym, none2] = vs(["gym"]);
+    expect(gym.ath).toBeGreaterThan(none2.ath);
+    const [care, none3] = vs(["rehab", "diet"]);
+    expect(care.health).toBeGreaterThan(none3.health);
+    const [shoot, none4] = vs(["shootcamp"]);
+    expect(shoot.gain).toBeGreaterThan(none4.gain);
   });
 
   it("학생 선수는 시즌마다 용돈·후원금을 받고, 복무 중에는 투자하지 않아요", () => {
@@ -562,53 +579,46 @@ describe("시즌 투자", () => {
     expect(m.spent).toBe(0);
   });
 
-  it("기본 투자는 늘 나오고, 특별 투자는 시즌마다 바뀌며 같은 시즌이면 같은 목록이에요", () => {
+  it("시즌마다 전체 투자 중 몇 가지가 무작위로 나오고, 같은 시즌이면 같은 목록이에요", () => {
     const c = pro("inv6");
-    const specialsOf = (year: number) => {
+    const lineupOf = (year: number) => {
       c.year = year;
-      const lineup = investLineup(c);
-      expect(lineup.filter((i) => !i.special).map((i) => i.key)).toEqual(["coach", "gym", "rehab", "diet", "video"]);
-      expect(investLineup(c).map((i) => i.key)).toEqual(lineup.map((i) => i.key));
-      return lineup.filter((i) => i.special).map((i) => i.key).join(",");
+      const keys = investLineup(c).map((i) => i.key);
+      expect(keys).toHaveLength(INVEST_OFFER);
+      expect(investLineup(c).map((i) => i.key)).toEqual(keys);
+      return keys.join(",");
     };
-    const years = Array.from({ length: 8 }, (_, i) => specialsOf(2030 + i));
-    for (const y of years) expect(y.split(",")).toHaveLength(SPECIAL_COUNT);
-    expect(new Set(years).size).toBeGreaterThan(3);
-    // 프로 전용(로드 매니지먼트)과 학생 전용(아카데미 특강)은 그 무대에서만 나와요.
+    const years = Array.from({ length: 8 }, (_, i) => lineupOf(2030 + i));
+    expect(new Set(years).size).toBeGreaterThan(4);
+    // 학생 전용(아카데미 특강)은 프로에게, 프로 전용(로드 매니지먼트)은 학생에게 나오지 않아요.
+    const student = createCareer({ name: "학생", num: 1, nat: "대한민국", pos: "PG", path: "domestic" }, generateCandidates("PG")[0], "inv9");
     for (let y = 2030; y < 2080; y++) {
       c.year = y;
+      student.year = y;
       expect(investLineup(c).some((i) => i.key === "academy")).toBe(false);
+      expect(investLineup(student).some((i) => i.key === "loadmgmt")).toBe(false);
     }
   });
 
-  it("이번 시즌에 없는 특별 투자는 고른 채로 남아 있어도 내지 않아요", () => {
+  it("이번 시즌에 없는 투자는 고른 채로 남아 있어도 내지 않아요", () => {
     setRandom(seeded(33));
     const c = pro("inv7");
     c.earnings = 10;
-    const missing = INVESTMENTS.find((i) => i.special && !investLineup(c).some((x) => x.key === i.key))!;
-    c.invest = [missing.key, "coach"];
-    expect(chosenInvest(c)).toEqual(["coach"]);
+    const offered = investLineup(c)[0].key;
+    const missing = INVESTMENTS.find((i) => !investLineup(c).some((x) => x.key === i.key))!.key;
+    c.invest = [missing, offered];
+    expect(chosenInvest(c)).toEqual([offered]);
     simulateSeason(c);
-    expect(c.last!.invest).toEqual(["coach"]);
+    expect(c.last!.invest).toEqual([offered]);
   });
 
-  it("특별 투자도 그 시즌에만 효과가 나고, 기본 투자 효과는 예전 수치 그대로예요", () => {
+  it("투자 효과는 그 시즌에만 나고, 예전부터 있던 투자의 수치는 그대로예요", () => {
     const p = investPerks(["coach", "gym"]);
     expect(p.growth.ath).toBeCloseTo(1.05 * 1.2, 5);
     expect(p.decline.ath).toBeCloseTo(0.75, 5);
     expect(investPerks(["rehab", "diet"]).heal).toBe(14);
-    const run = (special: boolean) => {
-      setRandom(seeded(78));
-      const c = pro("inv8");
-      // 슈팅 전문 캠프가 나오는 시즌을 찾아요.
-      while (!investLineup(c).some((i) => i.key === "shootcamp")) c.year++;
-      c.earnings = 10;
-      c.invest = special ? ["shootcamp"] : [];
-      const before = c.p.attrs.sht;
-      simulateSeason(c);
-      return c.p.attrs.sht - before;
-    };
-    expect(run(true)).toBeGreaterThan(run(false));
+    expect(investPerks(["video"]).trust).toBe(0.5);
+    expect(investPerks([]).growth.sht).toBe(1);
   });
 });
 

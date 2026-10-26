@@ -127,7 +127,7 @@ export function applyAction(c: Career, a: Action): void {
       addNews(
         c,
         tag,
-        ok ? "good" : "info",
+        ok ? "good" : "bad",
         ok
           ? `클러치 성공! ${ro(a.play)} 승리를 이끌었어요. ${SHORT[a.attr]} +1`
           : `클러치 실패. ${josa(a.play, "을", "를")} 노렸지만 아쉽게 졌어요.`,

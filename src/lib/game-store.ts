@@ -15,6 +15,7 @@ import {
   startSeason,
   stepSeason,
   type Candidate,
+  type Action,
   type Career,
   type CareerPath,
   type CareerSummary,
@@ -77,12 +78,16 @@ export interface Toast {
   msg: string;
 }
 
+/** 결정 결과의 성격: 성공, 실패, 그 밖 */
+export type OutcomeTone = "good" | "bad" | "info";
+
 export interface Outcome {
   id: number;
   /** 고른 선택지 */
   label: string;
   /** 그 결과로 생긴 소식 */
   msg: string;
+  tone: OutcomeTone;
 }
 
 const REROLLS = 5;
@@ -141,11 +146,23 @@ function closeWithToast(patch: Partial<GameSnapshot>, msg: string | null | undef
 }
 
 /** before 이후에 새로 쌓인 소식 중 가장 최근 것 */
-function latestNewsSince(before: NewsItem | undefined, c: Career): string | null {
+function latestNewsItemSince(before: NewsItem | undefined, c: Career): NewsItem | null {
   const first = c.news[0];
   if (!first) return null;
   if (before && first.w === before.w && first.t === before.t && first.m === before.m) return null;
-  return first.m;
+  return first;
+}
+
+const latestNewsSince = (before: NewsItem | undefined, c: Career): string | null => latestNewsItemSince(before, c)?.m ?? null;
+
+/**
+ * 결과 카드 색. 성공·실패가 갈리는 선택(운에 맡긴 도전, 클러치)만 결과 소식으로 초록·빨강을 정하고,
+ * 그 밖의 선택은 결과와 상관없이 기본색이에요.
+ */
+function toneOf(act: Action, news: NewsItem | null): OutcomeTone {
+  if ((act.k !== "gamble" && act.k !== "clutch") || !news) return "info";
+  if (news.t === "bad") return "bad";
+  return news.t === "good" || news.t === "award" || news.t === "big" ? "good" : "info";
 }
 
 /**
@@ -304,11 +321,11 @@ export const gameActions = {
     if (opt?.act.k === "draft") return set({ drafting: true });
     if (opt?.act.k === "national" && opt.act.join) return set({ tournament: true });
     const after = snapshot.career;
-    const news = after && latestNewsSince(before, after);
+    const news = after ? latestNewsItemSince(before, after) : null;
     // 시즌 중 결정은 결과를 진행 막대 자리에 띄워 두고 시즌을 잠깐 멈춰요. 이어서 고를 결정이 있으면 알림으로만 알려요.
     if (opt && after?.run && !currentDecision(after))
-      return set({ outcome: { id: ++toastId, label: opt.label, msg: news ?? "선택이 반영됐어요." } });
-    const msg = news ?? (opt?.label ? `'${opt.label}'을(를) 골랐어요` : null);
+      return set({ outcome: { id: ++toastId, label: opt.label, msg: news?.m ?? "선택이 반영됐어요.", tone: toneOf(opt.act, news) } });
+    const msg = news?.m ?? (opt?.label ? `'${opt.label}'을(를) 골랐어요` : null);
     if (msg) set({ toast: toast(msg) });
   },
   /** 결정 결과를 닫고 시즌을 이어가요. */

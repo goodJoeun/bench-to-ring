@@ -27,7 +27,7 @@ export { chooseOption, applyAction } from "./actions";
 export {
   INVESTMENTS,
   INVEST_SLOTS,
-  SPECIAL_COUNT,
+  INVEST_OFFER,
   STUDENT_ALLOWANCE,
   canInvest,
   chosenInvest,

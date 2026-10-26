@@ -18,7 +18,7 @@ export type CareerPath = "abroad" | "domestic";
 export type Stage = "hs" | "college" | "pro" | "free" | "military" | "retired";
 export type MilitaryKind = "sangmu" | "army";
 export type FocusKey = "bal" | AttrKey | "rest";
-/** 시즌 투자: 늘 고를 수 있는 기본 투자 5가지(스킬 코치~영상 분석)와 시즌마다 바뀌는 특별 투자 */
+/** 시즌 투자: 시즌마다 전체 중 몇 가지가 무작위로 나와요(invest.ts의 INVESTMENTS). */
 export type InvestKey =
   | "coach"
   | "gym"

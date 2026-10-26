@@ -252,7 +252,7 @@ export function ActionPanel({ career: c, playing, speed, busy, outcome, onAdvanc
 }
 
 /**
- * 시즌 중 결정의 결과. 배속과 상관없이 잠깐 띄워 두고, 아래 막대가 다 줄어들면 시즌이 이어져요.
+ * 시즌 중 결정의 결과. 성공이면 초록, 실패면 빨강 바탕이에요. 배속과 상관없이 잠깐 띄워 두고, 아래 막대가 다 줄어들면 시즌이 이어져요.
  * 시간은 타이머 대신 막대의 CSS 애니메이션이 재고, 애니메이션이 끝나면(animationend) 닫아요.
  * 누르면 바로 이어가요. 결정 시트를 닫은 자리에 마우스가 그대로 놓이기 쉬워서, 마우스를 올려도 막대는 멈추지 않아요.
  */
@@ -260,7 +260,7 @@ function OutcomeCard({ outcome }: { outcome: Outcome }) {
   const close = () => gameActions.dismissOutcome(outcome.id);
   return (
     <div role="status" aria-live="polite">
-      <button type="button" className="advance outcome" onClick={close}>
+      <button type="button" className="advance outcome" data-tone={outcome.tone} onClick={close}>
         <span>
           <span className="t">{outcome.label}</span>
           <span className="s">{outcome.msg}</span>
