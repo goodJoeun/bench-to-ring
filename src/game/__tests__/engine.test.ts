@@ -1610,7 +1610,7 @@ describe("리그별 시상", () => {
 describe("축하 팝업", () => {
   const fresh = (id: string) => createCareer({ name: "축하", num: 9, nat: "대한민국", pos: "SF", path: "abroad" }, generateCandidates("SF")[0], id);
 
-  it("우승·금메달·NBA MVP·파이널 MVP를 받으면 축하가 쌓이고, 다른 상은 쌓이지 않아요", () => {
+  it("우승·금메달·시즌 MVP·파이널 MVP를 받으면 축하가 쌓이고, 다른 상은 쌓이지 않아요", () => {
     const c = fresh("ch1");
     c.team = { name: "보스턴 셀틱스", color: "#007A33", q: 0.6, lg: "nba" };
     const rec = { year: 2034, team: "보스턴 셀틱스", pts: 28.1, reb: 7, ast: 6, awards: [] as string[] } as unknown as Career["hist"][number];
@@ -1622,6 +1622,21 @@ describe("축하 팝업", () => {
     expect(c.cheers.map((x) => x.kind)).toEqual(["mvp", "title", "fmvp", "gold"]);
     expect(c.cheers[0].sub).toContain("경기당 28.1점");
     expect(c.cheers[1].color).toBe("#007A33");
+  });
+
+  it("NBA 밖 리그도 시즌 MVP → 챔피언결정전 우승 → 파이널 MVP 순으로 축하해요", () => {
+    const c = fresh("ch4");
+    c.team = { name: "서울 SK 나이츠", color: "#E11B22", q: 0.6, lg: "kbl" };
+    const rec = { year: 2031, team: "서울 SK 나이츠", pts: 24.3, reb: 6, ast: 5, awards: [] as string[] } as unknown as Career["hist"][number];
+    giveAward(c, "mvp", "KBL 정규리그 MVP", rec);
+    giveAward(c, "allleague", "KBL 베스트5", rec);
+    giveAward(c, "ring", "KBL 우승", rec);
+    giveAward(c, "fmvp", "KBL 챔피언결정전 MVP", rec);
+    expect(c.cheers.map((x) => [x.kind, x.title])).toEqual([
+      ["mvp", "KBL 정규리그 MVP"],
+      ["title", "KBL 우승"],
+      ["fmvp", "KBL 챔피언결정전 MVP"],
+    ]);
   });
 
   it("NBA 첫 입성은 한 번만 축하하고, 예전 저장에서 이미 NBA를 뛰었으면 축하하지 않아요", () => {

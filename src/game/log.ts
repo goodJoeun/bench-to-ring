@@ -9,8 +9,18 @@ export function addNews(c: Career, when: string, type: NewsType, message: string
   if (c.news.length > NEWS_LIMIT) c.news.length = NEWS_LIMIT;
 }
 
-/** 축하 팝업을 띄울 상: 각종 우승, 국가대표 금메달, NBA MVP, 파이널 MVP */
-const CHEER_KIND: Partial<Record<AwardKey, Cheer["kind"]>> = { ring: "title", title: "title", nat_gold: "gold", mvp_nba: "mvp", fmvp: "fmvp" };
+/**
+ * 축하 팝업을 띄울 상: 각종 우승, 국가대표 금메달, 시즌 MVP(NBA MVP와 다른 리그의 정규리그 MVP), 파이널 MVP.
+ * 시즌을 마치며 시즌 MVP → 우승 → 파이널 MVP 순으로 주니, 팝업도 그 순서로 한 장씩 떠요.
+ */
+const CHEER_KIND: Partial<Record<AwardKey, Cheer["kind"]>> = {
+  ring: "title",
+  title: "title",
+  nat_gold: "gold",
+  mvp_nba: "mvp",
+  mvp: "mvp",
+  fmvp: "fmvp",
+};
 /** 보여주지 않은 축하는 이만큼만 남겨요. 화면 없이 커리어를 돌리는 테스트에서 끝없이 쌓이지 않게요. */
 const CHEER_LIMIT = 8;
 
