@@ -1,3 +1,4 @@
+import { money } from "@/game";
 import { Sprite } from "./Sprite";
 
 /* 여러 화면에서 같이 쓰는 작은 화면 조각. 모양은 globals.css의 같은 클래스 이름을 따라가요. */
@@ -21,6 +22,17 @@ export function Panel({ title, kicker, className, children }: PanelProps) {
       {title !== undefined && <h2 className="sec">{title}</h2>}
       {children}
     </section>
+  );
+}
+
+/** 보유 자금을 큰 숫자로 보여줘요. 시즌 투자·상점처럼 돈을 쓰는 곳 위에 둬요. note는 옆에 작게 붙여요. */
+export function Funds({ amount, note }: { amount: number; note?: React.ReactNode }) {
+  return (
+    <div className="funds">
+      <span className="funds-k">보유 자금</span>
+      <b className="funds-v">{money(amount)}</b>
+      {note && <span className="funds-note">{note}</span>}
+    </div>
   );
 }
 

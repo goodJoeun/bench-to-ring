@@ -2,7 +2,7 @@
 
 import { INVEST_OFFER, INVEST_SLOTS, STUDENT_ALLOWANCE, canInvest, chosenInvest, investCost, investLineup, money, type Career } from "@/game";
 import { gameActions } from "@/lib/game-store";
-import { Choice } from "@/components/common/ui";
+import { Choice, Funds } from "@/components/common/ui";
 
 /** 시즌 계획 시트 안의 시즌 투자 고르기. 이번 시즌에 나온 투자 중 두 가지까지, 보유 자금 안에서 골라요. */
 export function InvestPicker({ career: c }: { career: Career }) {
@@ -16,7 +16,7 @@ export function InvestPicker({ career: c }: { career: Career }) {
     <section className="invest" aria-labelledby="invest-title">
       <div className="invest-head">
         <h3 id="invest-title">시즌 투자</h3>
-        <span>보유 자금 {money(c.earnings)}</span>
+        <Funds amount={c.earnings} />
       </div>
       <p className="hint">
         시즌마다 투자 {INVEST_OFFER}가지가 새로 나오고, 그중 {INVEST_SLOTS}가지까지 고를 수 있어요. 비용은 시즌을 시작할 때 내고, 연봉이

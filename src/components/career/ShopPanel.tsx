@@ -18,7 +18,7 @@ import {
 } from "@/game";
 import { gameActions } from "@/lib/game-store";
 import { Sheet } from "@/components/common/Sheet";
-import { Choice, Panel } from "@/components/common/ui";
+import { Choice, Funds, Panel } from "@/components/common/ui";
 
 type Pending = { k: "buy"; key: ShopKey } | { k: "donate"; amount: number };
 
@@ -83,7 +83,8 @@ export function ShopPanel({ career: c }: { career: Career }) {
   const price = item ? item.price : pending?.k === "donate" ? pending.amount : 0;
 
   return (
-    <Panel kicker={`보유 자금 ${money(c.earnings)}${c.donated ? ` · 누적 기부 ${money(c.donated)}` : ""}`} title="자금 쓰기">
+    <Panel title="자금 쓰기">
+      <Funds amount={c.earnings} note={c.donated ? `누적 기부 ${money(c.donated)}` : undefined} />
       {c.run ? (
         <p className="hint">상점은 시즌이 끝나면 새 상품으로 다시 열려요.</p>
       ) : (

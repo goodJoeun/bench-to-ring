@@ -194,6 +194,12 @@ main.grid{max-width:var(--t-max);margin:0 auto;padding-top:4px}
 @media (max-width:480px){.statline{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .meta-row{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13.5px;color:var(--muted)}
 .meta-row b{color:var(--ink)}
+/* 보유 자금은 돈을 쓰기 전에 바로 보이게 숫자를 크게 보여줘요. */
+.meta-row .meta-funds b{font-family:var(--f-num);font-size:16px;font-variant-numeric:tabular-nums}
+.funds{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px}
+.funds-k{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--muted)}
+.funds-v{font-family:var(--f-num);font-size:26px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--ink)}
+.funds-note{font-size:12.5px;color:var(--muted)}
 .awards{display:flex;flex-wrap:wrap;gap:6px}
 .aw{display:inline-flex;align-items:center;border:1px solid var(--gold);color:var(--gold);border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:700}
 /* 은퇴 화면 커리어 요약의 수상: 팀·개인·국가대표 줄 */
@@ -637,9 +643,8 @@ html:has(.sheet){overflow:hidden}
 .choice:disabled{opacity:.45;cursor:not-allowed}
 /* 시즌 투자 */
 .invest{display:flex;flex-direction:column;gap:6px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
-.invest-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.invest-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px 10px}
 .invest-head h3{margin:0;font-size:16px}
-.invest-head span{font-family:var(--f-num);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
 .invest-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin-top:4px}
 @media (max-width:480px){.invest-grid{grid-template-columns:1fr}}
 .invest .hint[data-warn]{color:var(--bad)}

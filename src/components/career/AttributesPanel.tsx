@@ -81,7 +81,7 @@ export function AttributesPanel({ career: c }: { career: Career }) {
         <span>
           국가대표 <b>{c.nat.caps}경기</b>
         </span>
-        <span>
+        <span className="meta-funds">
           보유 자금 <b>{money(c.earnings)}</b>
         </span>
       </div>
