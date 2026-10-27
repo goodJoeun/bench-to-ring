@@ -110,4 +110,4 @@ export {
   type SpecialtyHit,
   type SpecialtyKey,
 } from "./specialty";
-export { setRandom, resetRandom, seeded } from "./random";
+export { setRandom, resetRandom, seeded, shuffle } from "./random";

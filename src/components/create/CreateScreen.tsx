@@ -2,15 +2,24 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
-import { NAME_MAX, type CareerSummary } from "@/game";
+import { NAME_MAX, NATIONS, type CareerSummary } from "@/game";
 import { gameActions, type CreationDraft } from "@/lib/game-store";
 import { HallOfFame } from "@/components/common/HallOfFame";
 import { Segmented } from "@/components/common/ui";
 import { CandidateCard } from "./CandidateCard";
 import { ConfirmStartSheet } from "./ConfirmStartSheet";
+import { NationPicker, SchoolPicker } from "./LogoPicker";
+import { LookPicker } from "./LookPicker";
 import { NameRequiredSheet } from "./NameRequiredSheet";
 import { POSITIONS } from "./options";
-import { SchoolPicker } from "./SchoolPicker";
+
+/** 고른 국적의 국가대표 발탁 기준과 병역 안내 */
+function natHint(nat: string): string {
+  const n = NATIONS.find((x) => x.name === nat);
+  if (!n) return "";
+  const duty = nat === "대한민국" ? "병역 의무가 있고, 아시안게임 금메달·올림픽 메달로 특례를 받을 수 있어요." : "병역 의무는 없어요.";
+  return `${nat} 국가대표는 오버롤 ${n.threshold}부터 뽑혀요. ${duty}`;
+}
 
 export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: CareerSummary[] }) {
   const [sheet, setSheet] = useState<"confirm" | "name" | null>(null);
@@ -56,56 +65,77 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
       </section>
 
       <section className="panel create">
-        <div className="form-grid">
-          <label className="f" htmlFor="f-name">
-            선수 이름
-            <input
-              id="f-name"
-              ref={nameRef}
-              maxLength={NAME_MAX}
-              required
-              aria-required="true"
-              placeholder="이름을 지어 주세요"
-              value={draft.name}
-              onChange={(e) => gameActions.editDraft({ name: e.target.value })}
-            />
-          </label>
-          <label className="f" htmlFor="f-num">
-            등번호
-            <input
-              id="f-num"
-              type="number"
-              min={0}
-              max={99}
-              value={draft.num}
-              onChange={(e) => gameActions.editDraft({ num: e.target.value })}
-            />
-          </label>
-          {/* label로 감싸면 목록 항목을 누를 때 버튼이 다시 눌려 목록이 또 열려서 div로 묶어요. */}
-          <div className="f">
-            <span id="f-school-label">고등학교</span>
-            <SchoolPicker labelledBy="f-school-label" value={draft.school} onChange={(school) => gameActions.editDraft({ school })} />
-          </div>
+        <div className="field">
+          <span className="label">1. 캐릭터</span>
+          <LookPicker look={draft.look} jersey={draft.jersey} looks={draft.looks} jerseys={draft.jerseys} />
         </div>
 
         <div className="field">
-          <span className="label">포지션</span>
+          <span className="label">2. 포지션</span>
           <Segmented className="pos-seg" label="포지션" options={POSITIONS} value={draft.pos} onChange={gameActions.choosePosition} />
         </div>
 
         <div className="field">
           <div className="flabel-row">
-            <span className="label">후보 선수 · 모두 오버롤 45, 시작 능력치 55 이하, 16세 기준 · 플레이 유형은 무작위</span>
+            <span className="label">3. 후보 선수 · 모두 오버롤 45, 시작 능력치 55 이하, 16세 기준 · 플레이 유형은 무작위</span>
             <button type="button" className="btn" disabled={!draft.rerolls} onClick={gameActions.reroll}>
               후보 다시 뽑기 · {draft.rerolls}회 남음
             </button>
           </div>
           <div className="cands">
             {draft.candidates.map((c, i) => (
-              <CandidateCard key={`${draft.pos}-${i}-${c.arch}-${c.h}`} cand={c} pos={draft.pos} index={i} selected={draft.selected === i} />
+              <CandidateCard
+                key={`${draft.pos}-${i}-${c.arch}-${c.h}`}
+                cand={c}
+                pos={draft.pos}
+                look={draft.look}
+                jersey={draft.jersey}
+                index={i}
+                selected={draft.selected === i}
+              />
             ))}
           </div>
           <p className="hint">잠재력과 숨겨진 성장 특성은 뛰어봐야 알 수 있어요.</p>
+        </div>
+
+        <div className="field">
+          <span className="label">4. 선수 정보</span>
+          <div className="form-grid">
+            <label className="f" htmlFor="f-name">
+              선수 이름
+              <input
+                id="f-name"
+                ref={nameRef}
+                maxLength={NAME_MAX}
+                required
+                aria-required="true"
+                placeholder="이름을 지어 주세요"
+                value={draft.name}
+                onChange={(e) => gameActions.editDraft({ name: e.target.value })}
+              />
+            </label>
+            <label className="f" htmlFor="f-num">
+              등번호
+              <input
+                id="f-num"
+                type="number"
+                min={0}
+                max={99}
+                value={draft.num}
+                onChange={(e) => gameActions.editDraft({ num: e.target.value })}
+              />
+            </label>
+            {/* label로 감싸면 목록 항목을 누를 때 버튼이 다시 눌려 목록이 또 열려서 div로 묶어요. */}
+            <div className="f">
+              <span id="f-nat-label">국적</span>
+              <NationPicker labelledBy="f-nat-label" value={draft.nat} onChange={(nat) => gameActions.editDraft({ nat })} />
+            </div>
+            <div className="f">
+              <span id="f-school-label">고등학교</span>
+              <SchoolPicker labelledBy="f-school-label" value={draft.school} onChange={(school) => gameActions.editDraft({ school })} />
+            </div>
+          </div>
+          <p className="hint">{natHint(draft.nat)}</p>
         </div>
 
         <button type="button" className="start" onClick={() => setSheet(hasName ? "confirm" : "name")}>

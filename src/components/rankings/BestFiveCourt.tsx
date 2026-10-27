@@ -38,7 +38,7 @@ export function BestFiveCourt({ best5, mine }: { best5: { pos: PosKey; career: B
         <div className="rk-spot" key={pos} style={{ left: `${SPOTS[pos].x}%`, top: `${SPOTS[pos].y}%` }}>
           {e ? (
             <>
-              <Sprite {...lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={3} className="rk-sprite" label={`${e.name} 도트 캐릭터`} />
+              <Sprite look={lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={3} className="rk-sprite" label={`${e.name} 캐릭터`} />
               <span className="rk-plate" data-mine={mine.has(e.id) || undefined}>
                 <b style={nameFit(e.name)}>{e.name}</b>
                 <span>

@@ -29,7 +29,7 @@ function Podium({ e, place, rank, mine }: { e: BoardEntry; place: 1 | 2 | 3; ran
   const medal = medalOf(rank) ?? "bronze";
   return (
     <div className="rk-pod" data-place={place} data-mine={mine || undefined}>
-      <Sprite {...lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={3} className="rk-sprite" label={`${e.name} 도트 캐릭터`} />
+      <Sprite look={lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={3} className="rk-sprite" label={`${e.name} 캐릭터`} />
       <b className="nm" style={nameFit(e.name)}>
         {e.name}
         {mine && <span className="me">나</span>}
@@ -65,7 +65,7 @@ export function RankingList({ rows, byPos, mine }: { rows: BoardEntry[]; byPos: 
           {rows.slice(3).map((e) => (
             <li key={e.id} data-mine={mine.has(e.id) || undefined}>
               <RankMark rank={rankOf(e)} />
-              <Sprite {...lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={2} className="rk-mini" label={`${e.name} 도트 캐릭터`} />
+              <Sprite look={lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={2} className="rk-mini" label={`${e.name} 캐릭터`} />
               <span className="rk-who">
                 <b style={nameFit(`${e.name} #${e.num}`)}>
                   {e.name} <span className="num">#{e.num}</span>

@@ -126,14 +126,55 @@ export interface Candidate {
   pot: number;
   grade: Grade;
   trait: Trait;
+}
+
+/** 캐릭터의 바탕 (흑인, 백인, 히스패닉, 동양인) */
+export type LookKey = "black" | "white" | "hispanic" | "asian";
+
+export type HairStyle =
+  | "buzz"
+  | "fade"
+  | "afro"
+  | "braids"
+  | "twists"
+  | "mohawk"
+  | "bald"
+  | "swept"
+  | "spiky"
+  | "curtain"
+  | "wavy"
+  | "straight";
+
+export type BeardStyle = "none" | "stubble" | "goatee" | "mustache" | "full";
+
+/** 캐릭터 생김새 가운데 피부색·머리색을 뺀 것 */
+export interface Face {
+  kind: LookKey;
+  style: HairStyle;
+  beard: BeardStyle;
+  /** 눈동자 색 */
+  eyes: string;
+  /** 헤어밴드 색. 없으면 안 써요. */
+  band?: string;
+}
+
+/** 그릴 캐릭터 전체 */
+export interface Look extends Face {
   skin: string;
   hair: string;
 }
+
+/** 저장된 캐릭터. 캐릭터를 고르기 전의 선수·기록에는 색만 있어요. */
+export type LookRecord = { skin: string; hair: string } & Partial<Face>;
 
 export interface Player extends Candidate {
   name: string;
   num: number;
   nat: string;
+  skin: string;
+  hair: string;
+  /** 캐릭터 생김새. 캐릭터를 고르기 전에 만든 선수에는 없어서 피부색으로 짐작해요(playerLook). */
+  face?: Face;
   pos: PosKey;
   path: CareerPath;
   traitKnown: boolean;
@@ -542,8 +583,8 @@ export interface CareerSummary {
   tpm?: number;
   /** 리그마다 낸 몫. 랭킹 점수가 리그 수준에 따라 상과 기록을 다르게 쳐요. 예전 기록에는 없어요. */
   leagues?: Partial<Record<LeagueKey, LeagueShare>>;
-  /** 도트 캐릭터 색. 예전 기록에는 없어요. */
-  look?: { skin: string; hair: string };
+  /** 캐릭터. 예전 기록에는 없고, 캐릭터를 고르기 전 기록에는 색만 있어요. */
+  look?: LookRecord;
 }
 
 /** 커리어 가운데 한 리그에서 쌓은 시즌·기록과 그 시즌에 받은 상 (국가대표 메달은 빼요) */
@@ -637,8 +678,10 @@ export interface Career {
 export interface NewCareerInput {
   name: string;
   num: number;
-  /** 국적. 게임에서는 대한민국으로 고정이라 생략해요. 엔진 테스트에서만 다른 나라를 넣어요. */
+  /** 국적 (NATIONS의 이름). 없으면 대한민국이에요. */
   nat?: string;
+  /** 캐릭터. 없으면 무작위로 정해요. */
+  look?: Look;
   pos: PosKey;
   path: CareerPath;
   /** 입학할 고등학교 (TEAMS.hs의 이름). 없으면 무작위로 정해요. */

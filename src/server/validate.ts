@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AWARDS, LEAGUES, NAME_MAX, PERSONAL_AWARDS, POS_KEYS, RULESET_VERSION, START_YEAR, legacyOf, playedNba, type AwardKey, type CareerSummary, type LeagueKey, type LeagueShare, type PosKey } from "@/game";
+import { AWARDS, BEARDS, HAIR_STYLES, LEAGUES, LOOK_KEYS, NAME_MAX, PERSONAL_AWARDS, POS_KEYS, RULESET_VERSION, START_YEAR, legacyOf, playedNba, type AwardKey, type CareerSummary, type LeagueKey, type BeardStyle, type HairStyle, type LeagueShare, type LookKey, type PosKey } from "@/game";
 import { RETIRE_AGE } from "@/game/offseason";
 import { STAT_KEYS, type BoardScope, type StatKey } from "@/lib/leaderboard/types";
 
@@ -50,7 +50,17 @@ const summarySchema = z.object({
       awards: z.partialRecord(z.enum(AWARD_KEYS), count.max(100)),
     })
     .optional(),
-  look: z.object({ skin: hexColor, hair: hexColor }).optional(),
+  look: z
+    .object({
+      skin: hexColor,
+      hair: hexColor,
+      kind: z.enum(LOOK_KEYS as [LookKey, ...LookKey[]]).optional(),
+      style: z.enum(Object.keys(HAIR_STYLES) as [HairStyle, ...HairStyle[]]).optional(),
+      beard: z.enum(Object.keys(BEARDS) as [BeardStyle, ...BeardStyle[]]).optional(),
+      eyes: hexColor.optional(),
+      band: hexColor.optional(),
+    })
+    .optional(),
   stl: count.optional(),
   blk: count.optional(),
   tpm: count.optional(),

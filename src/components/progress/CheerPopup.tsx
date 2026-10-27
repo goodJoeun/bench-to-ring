@@ -1,6 +1,6 @@
 "use client";
 
-import { natColor, type Career, type Cheer } from "@/game";
+import { natColor, playerLook, type Career, type Cheer } from "@/game";
 import { gameActions } from "@/lib/game-store";
 import { NO_TEAM_COLOR, keepTogether, nameFit } from "@/components/common/format";
 import { useAutoFocus } from "@/components/common/hooks";
@@ -51,7 +51,7 @@ export function CheerPopup({ career: c, cheer }: { career: Career; cheer: Cheer 
         <path d="M7 4h10v2h3v3a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 15.9V18h3v2H8v-2h3v-2.1A5 5 0 0 1 8.4 13H8a4 4 0 0 1-4-4V6h3zm0 4H6v1a2 2 0 0 0 1 1.7zm10 0v2.7A2 2 0 0 0 18 9V8z" />
       </svg>
       <div className="sim-court cheer-court" aria-hidden="true">
-        <Sprite skin={c.p.skin} hair={c.p.hair} color={color} label="" className="sprite sim-sprite" />
+        <Sprite look={playerLook(c.p)} color={color} label="" className="sprite sim-sprite" />
         <span className="sim-shadow" />
       </div>
       <span className="sim-team" style={nameFit(`${KICKER[cheer.kind]} · ${c.p.name} #${c.p.num}`)}>

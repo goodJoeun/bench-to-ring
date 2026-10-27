@@ -1,18 +1,33 @@
 "use client";
 
-import { ATTR_KEYS, SHORT, archetypeOf, bodyOf, isCoreAttr, ovrOf, type Candidate, type PosKey } from "@/game";
+import { ATTR_KEYS, SHORT, archetypeOf, bodyOf, isCoreAttr, ovrOf, type Candidate, type Look, type PosKey } from "@/game";
 import { gameActions } from "@/lib/game-store";
 import { Sprite } from "@/components/common/Sprite";
 import { ArchetypeTip } from "./ArchetypeTip";
 
-export function CandidateCard({ cand, pos, index, selected }: { cand: Candidate; pos: PosKey; index: number; selected: boolean }) {
+export function CandidateCard({
+  cand,
+  pos,
+  look,
+  jersey,
+  index,
+  selected,
+}: {
+  cand: Candidate;
+  pos: PosKey;
+  look: Look;
+  /** 캐릭터 고르기에서 입혀 본 유니폼 색 */
+  jersey: string;
+  index: number;
+  selected: boolean;
+}) {
   const arch = archetypeOf(pos, cand.arch);
   return (
     // 카드 아무 곳이나 눌러 고를 수 있어요. 키보드로는 오른쪽 위 후보 버튼을 써요.
     <div className="cand" data-selected={selected || undefined} onClick={() => gameActions.editDraft({ selected: index })}>
       <span className="floor">
         <span className="key" />
-        <Sprite skin={cand.skin} hair={cand.hair} color="#2453A6" scale={4} label={`${cand.arch} 후보 도트 캐릭터`} />
+        <Sprite look={look} color={jersey} scale={4} label={`${cand.arch} 후보 캐릭터`} />
         <button
           type="button"
           className="pick"

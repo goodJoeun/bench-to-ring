@@ -4,6 +4,13 @@ import {
   ATTR_KEYS,
   LEAGUES,
   NATIONS,
+  LOOKS,
+  LOOK_KEYS,
+  lookFromSkin,
+  owesService,
+  playerLook,
+  randomLooks,
+  toLook,
   POS_KEYS,
   RECORD_BOARDS,
   applyAction,
@@ -72,10 +79,11 @@ import {
   type LeagueKey,
   type SeasonRecord,
   type Career,
+  type Decision,
   type CareerSummary,
 } from "@/game";
 import { awardName, conferenceFinalsMvpName, nbaConference } from "@/game/awards";
-import { bigGameDecision, clutchDecision, injuryDecision, lifeEvent } from "@/game/events";
+import { bigGameDecision, clutchDecision, injuryDecision, lifeEvent, seasonEvent } from "@/game/events";
 import { makeLiveGame } from "@/game/live";
 import { giveAward, setTeam } from "@/game/log";
 import { militaryDecision } from "@/game/military";
@@ -387,7 +395,7 @@ describe("명예의 전당 순위", () => {
     expect(scoreParts({ ...base, teams: [kblTeam] }).nba).toBe(0);
   });
 
-  it("은퇴 요약에 NBA 몫과 도트 색이 남아요", () => {
+  it("은퇴 요약에 NBA 몫과 캐릭터가 남아요", () => {
     const rand = seeded(21);
     setRandom(rand);
     const c = createCareer({ name: "요약", num: 1, nat: "대한민국", pos: "SF", path: "abroad" }, generateCandidates("SF")[0], "sum");
@@ -501,6 +509,38 @@ describe("커리어 시작", () => {
       const c = createCareer({ ...input, school }, generateCandidates("PG")[0], "s2");
       expect(TEAMS.hs.map(([n]) => n)).toContain(c.team!.name);
     }
+  });
+
+  it("고른 캐릭터와 국적으로 시작하고, 대한민국 선수가 아니면 병역 의무가 없어요", () => {
+    setRandom(seeded(17));
+    for (const look of randomLooks(24)) {
+      const c = createCareer({ name: "캐릭터", num: 1, nat: "스페인", look, pos: "SF", path: "domestic" }, generateCandidates("SF")[0], "look");
+      expect(playerLook(c.p)).toEqual(look);
+      expect(c.p.nat).toBe("스페인");
+      expect(owesService(c)).toBe(false);
+    }
+    const random = createCareer({ name: "무작위", num: 2, pos: "PG", path: "domestic" }, generateCandidates("PG")[0], "rnd");
+    expect(LOOK_KEYS).toContain(random.p.face?.kind);
+  });
+
+  it("캐릭터는 바탕마다 정해진 범위에서 조합하고, 섞어 뽑으면 네 바탕이 고르게 나와요", () => {
+    setRandom(seeded(18));
+    const mixed = randomLooks(24);
+    for (const k of LOOK_KEYS) expect(mixed.filter((l) => l.kind === k).length).toBe(6);
+    for (const l of [...mixed, ...randomLooks(40, "black")]) {
+      const range = LOOKS[l.kind];
+      expect(range.skins).toContain(l.skin);
+      expect(range.hairs).toContain(l.hair);
+      expect(range.styles).toContain(l.style);
+      expect(range.eyes).toContain(l.eyes);
+    }
+    expect(new Set(randomLooks(40, "black").map((l) => l.style)).size).toBeGreaterThan(3);
+  });
+
+  it("캐릭터가 없는 예전 선수는 피부색으로 바탕을 짐작해요", () => {
+    expect(lookFromSkin("#5E3A24")).toBe("black");
+    expect(lookFromSkin("#f2d0b1")).toBe("white");
+    expect(toLook({ skin: "#C68E63", hair: "#1B1B1B" })).toMatchObject({ kind: "hispanic", style: LOOKS.hispanic.styles[0], beard: "none" });
   });
 });
 
@@ -1021,6 +1061,45 @@ describe("시즌 진행", () => {
     const steps = stepThrough(c);
     expect(steps.length).toBe(7);
     expect(c.last?.result).toBe("개인 훈련");
+  });
+});
+
+describe("기자회견", () => {
+  /** 기자회견이 나올 때까지 시즌 중 이벤트를 뽑아요. */
+  function press(w: number, l: number): Decision {
+    const c = createCareer({ name: "회견", num: 3, nat: "미국", pos: "SG", path: "abroad" }, generateCandidates("SG")[0], `press${w}-${l}`);
+    c.stage = "pro";
+    c.team = { name: "보스턴 셀틱스", color: "#007A33", q: 0.8, lg: "nba" };
+    c.contract = { years: 3, salary: 30 };
+    startSeason(c);
+    Object.assign(c.run!, { w, l });
+    for (let i = 0; i < 500; i++) {
+      c.events = {};
+      const d = seasonEvent(c);
+      if (d?.title.startsWith("기자회견")) return d;
+    }
+    throw new Error("기자회견이 나오지 않았어요");
+  }
+
+  it("프로 시즌 중에 무작위로 열리고, 팀 성적에 따라 질문이 달라져요", () => {
+    setRandom(seeded(29));
+    expect(press(20, 5).title).toBe("기자회견: 우승 후보?");
+    expect(press(4, 18).title).toBe("기자회견: 부진의 이유");
+    expect(press(8, 7).title).toBe("기자회견: 짓궂은 질문");
+    for (const d of [press(20, 5), press(4, 18), press(8, 7)]) {
+      expect(d.opts.length).toBe(2);
+      for (const o of d.opts) expect(o.sub).toBeTruthy();
+    }
+  });
+
+  it("고교 시즌에는 열리지 않아요", () => {
+    setRandom(seeded(30));
+    const c = createCareer({ name: "고교", num: 3, pos: "SG", path: "domestic" }, generateCandidates("SG")[0], "press-hs");
+    startSeason(c);
+    for (let i = 0; i < 300; i++) {
+      c.events = {};
+      expect(seasonEvent(c)?.title ?? "").not.toMatch(/^기자회견/);
+    }
   });
 });
 

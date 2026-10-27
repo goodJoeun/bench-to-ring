@@ -1,4 +1,4 @@
-import type { PosKey } from "@/game";
+import type { LookRecord, PosKey } from "@/game";
 
 // 화면과 API가 주고받는 모양
 
@@ -48,8 +48,8 @@ export interface BoardEntry {
   legacy: string;
   /** 마지막 소속팀 (유니폼 색) */
   team: string | null;
-  /** 도트 캐릭터 색. 예전 기록에는 없어요. */
-  look: { skin: string; hair: string } | null;
+  /** 선수 캐릭터와 그 색. 예전 기록에는 없어요. */
+  look: LookRecord | null;
   ruleset: number;
   /** 서버 재생 검증 통과 (2단계). 1단계 기록은 모두 false예요. */
   verified: boolean;
@@ -106,7 +106,7 @@ export interface StatEntry {
   /** 프로 통산 경기 수 */
   gp: number;
   team: string | null;
-  look: { skin: string; hair: string } | null;
+  look: LookRecord | null;
 }
 
 /** GET /api/stats */

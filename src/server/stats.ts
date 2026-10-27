@@ -1,6 +1,7 @@
 import "server-only";
 import { and, sql, type SQL } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
+import type { LookRecord } from "@/game";
 import type { BoardScope, StatBoard, StatEntry, StatKey } from "@/lib/leaderboard/types";
 import { BOARDS_TAG, inScope } from "./boards";
 import { db } from "./db";
@@ -35,7 +36,7 @@ export async function getStatBoard(scope: BoardScope, stat: StatKey): Promise<St
       value: sql<number>`${value}`,
       gp: sql<number>`coalesce((${careers.summary}->>'gp')::int, 0)`,
       team: sql<string | null>`${careers.summary}->'teams'->> -1`,
-      look: sql<{ skin: string; hair: string } | null>`${careers.summary}->'look'`,
+      look: sql<LookRecord | null>`${careers.summary}->'look'`,
       rank: sql<number>`(rank() over (order by ${value} desc))::int`,
     })
     .from(careers)

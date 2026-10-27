@@ -1,6 +1,8 @@
 import { useSyncExternalStore } from "react";
 import {
+  HOME_NATION,
   INVEST_SLOTS,
+  LOOKS,
   buy,
   canRetire,
   chooseOption,
@@ -9,6 +11,9 @@ import {
   currentDecision,
   donate,
   generateCandidates,
+  randomLooks,
+  shuffle,
+  toLook,
   requestTransfer,
   resolveQueue,
   retire,
@@ -21,6 +26,7 @@ import {
   type CareerSummary,
   type FocusKey,
   type InvestKey,
+  type Look,
   type NewsItem,
   type PosKey,
   type SeasonStep,
@@ -33,6 +39,15 @@ import { flushPending, submitCareer } from "@/lib/leaderboard/client";
 export interface CreationDraft {
   name: string;
   num: string;
+  /** 고른 캐릭터 */
+  look: Look;
+  /** 고른 캐릭터에 입혀 본 유니폼 색. 생성 화면에서만 써요. */
+  jersey: string;
+  /** 고를 수 있게 늘어놓은 캐릭터 (무작위 조합)와 저마다 입혀 본 유니폼 색 */
+  looks: Look[];
+  jerseys: string[];
+  /** 국적 (NATIONS의 이름) */
+  nat: string;
   pos: PosKey;
   path: CareerPath;
   /** 고등학교 이름. 빈 문자열이면 무작위 */
@@ -95,10 +110,32 @@ export interface Outcome {
 }
 
 const REROLLS = 5;
+/** 한 번에 늘어놓는 캐릭터 수 */
+const LOOK_COUNT = 24;
+
+/** 캐릭터 고르기에서 입혀 보는 유니폼 색. 커리어에서는 소속팀 색을 입어요. */
+const JERSEYS = ["#C8102E", "#1D428A", "#2453A6", "#00704A", "#552583", "#F2A900", "#E56020", "#111111", "#6CACE4", "#860038", "#007A7A", "#B4975A"];
+
+/** 유니폼 색 count개. 팔레트를 섞어 차례로 쓰고, 이웃한 두 칸이 같은 색이 되지 않게 해요. */
+function randomJerseys(count: number): string[] {
+  const out: string[] = [];
+  while (out.length < count) {
+    const round = shuffle(JERSEYS);
+    if (round[0] === out.at(-1)) round.push(round.shift()!);
+    out.push(...round);
+  }
+  return out.slice(0, count);
+}
 
 const emptyDraft = (): CreationDraft => ({
   name: "",
   num: "",
+  // 저장소를 읽기 전(서버 렌더링)에는 무작위 없이 정해 둬요. 화면에 나오기 전에 freshDraft가 새로 뽑아요.
+  look: toLook({ kind: "asian", skin: LOOKS.asian.skins[1], hair: LOOKS.asian.hairs[0] }),
+  jersey: "#2453A6",
+  looks: [],
+  jerseys: [],
+  nat: HOME_NATION,
   pos: "SG",
   // 커리어 경로는 국내 경로(고교 → U-리그·KBL)로 고정이에요. 해외 진출은 실력이 되면 제안으로 와요.
   path: "domestic",
@@ -117,8 +154,15 @@ const listeners = new Set<() => void>();
 function freshDraft(prev?: CreationDraft): CreationDraft {
   const base = prev ?? emptyDraft();
   const candidates = generateCandidates(base.pos);
+  // 다시 시작해도 지난번에 고른 캐릭터는 맨 앞에 남겨요.
+  const looks = prev ? [prev.look, ...randomLooks(LOOK_COUNT - 1)] : randomLooks(LOOK_COUNT);
+  const jerseys = prev ? [prev.jersey, ...randomJerseys(LOOK_COUNT - 1)] : randomJerseys(LOOK_COUNT);
   return {
     ...base,
+    look: looks[0],
+    jersey: jerseys[0],
+    looks,
+    jerseys,
     num: base.num || String(Math.floor(Math.random() * 100)),
     candidates,
     pool: { [base.pos]: candidates },
@@ -233,8 +277,20 @@ export function useGame(): GameSnapshot {
 }
 
 export const gameActions = {
-  editDraft(patch: Partial<Pick<CreationDraft, "name" | "num" | "school" | "selected">>) {
+  editDraft(patch: Partial<Pick<CreationDraft, "name" | "num" | "nat" | "school" | "selected">>) {
     set({ draft: { ...snapshot.draft, ...patch } });
+  },
+  /** 늘어놓은 캐릭터 가운데 i번째를 골라요. */
+  chooseLook(i: number) {
+    const d = snapshot.draft;
+    set({ draft: { ...d, look: d.looks[i], jersey: d.jerseys[i] } });
+  },
+  /** 캐릭터를 새로 뽑아요. 고른 캐릭터는 맨 앞에 남겨요. */
+  rerollLooks() {
+    const d = snapshot.draft;
+    const looks = [d.look, ...randomLooks(LOOK_COUNT - 1)];
+    const jerseys = [d.jersey, ...randomJerseys(LOOK_COUNT - 1)];
+    set({ draft: { ...d, looks, jerseys } });
   },
   /**
    * 포지션을 바꿔요. 처음 고르는 포지션만 새로 뽑고, 이미 본 포지션은 그때 후보를 그대로 보여줘요.
@@ -257,7 +313,10 @@ export const gameActions = {
     const cand = d.candidates[d.selected];
     // 이름은 반드시 지어야 해요. 화면에서 먼저 안내해요.
     if (!cand || !d.name.trim()) return;
-    const c = createCareer({ name: d.name, num: Number(d.num), pos: d.pos, path: d.path, school: d.school || undefined }, cand);
+    const c = createCareer(
+      { name: d.name, num: Number(d.num), nat: d.nat, look: d.look, pos: d.pos, path: d.path, school: d.school || undefined },
+      cand,
+    );
     saveCareer(c);
     set({ career: c });
   },

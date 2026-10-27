@@ -1,4 +1,5 @@
-import type { Archetype, PosKey, Trait } from "./types";
+import { chance, pick, shuffle } from "./random";
+import type { Archetype, BeardStyle, HairStyle, Look, LookKey, LookRecord, Player, PosKey, Trait } from "./types";
 
 /* 선수 생성 데이터: 플레이 유형, 숨은 특성, 외모 */
 
@@ -247,6 +248,112 @@ export const TRAITS: Record<Trait, string> = {
 
 export const TRAIT_KEYS = Object.keys(TRAITS) as Trait[];
 
+/** 캐릭터를 고르기 전에 만든 예전 선수의 피부색. 예전 기록의 캐릭터를 짐작할 때 써요. */
 export const SKINS = ["#F2D0B1", "#E3B58F", "#C68E63", "#8D5A3B", "#5E3A24"];
 
-export const HAIRS = ["#1B1B1B", "#3B2A1E", "#6B4A2E", "#B8914F", "#2B2B44"];
+/** 캐릭터의 바탕(인종). 눈·코·입 생김새와 피부색·머리색·머리 모양의 범위가 정해져요. 캐릭터는 모두 남성이에요. */
+export const LOOKS: Record<LookKey, { skins: string[]; hairs: string[]; styles: HairStyle[]; eyes: string[]; beard: number }> = {
+  black: {
+    skins: ["#3F2617", "#5A3620", "#6E4128", "#8A5634"],
+    hairs: ["#161210", "#161210", "#161210", "#3B2A1E", "#D8B25A"],
+    styles: ["buzz", "fade", "afro", "braids", "mohawk", "bald", "twists"],
+    eyes: ["#3A2416", "#2A1A10"],
+    beard: 0.35,
+  },
+  white: {
+    skins: ["#F8DEC9", "#F4D5BE", "#EBC3A3"],
+    hairs: ["#C99A4E", "#E2C88A", "#6B4A2E", "#3B2A1E", "#A4522A", "#1B1B1B"],
+    styles: ["swept", "buzz", "spiky", "curtain", "wavy", "fade", "mohawk"],
+    eyes: ["#4C7DB8", "#5B8A5A", "#6B4A2E", "#7A8A99"],
+    beard: 0.3,
+  },
+  hispanic: {
+    skins: ["#D9A27A", "#C98F62", "#B07A50"],
+    hairs: ["#2B1B12", "#1B1B1B", "#4A3020", "#B8914F"],
+    styles: ["wavy", "fade", "swept", "buzz", "spiky", "braids"],
+    eyes: ["#4A2E1A", "#2A1A10", "#6B4A2E"],
+    beard: 0.55,
+  },
+  asian: {
+    skins: ["#F6DABA", "#F1CFA4", "#E6BC8E"],
+    hairs: ["#111111", "#111111", "#2A1E18", "#4A3426", "#D9C7A0", "#8C8C96"],
+    styles: ["straight", "curtain", "spiky", "buzz", "swept", "fade"],
+    eyes: ["#2A1A10", "#3A2416"],
+    beard: 0.12,
+  },
+};
+
+export const LOOK_KEYS = Object.keys(LOOKS) as LookKey[];
+
+export const HAIR_STYLES: Record<HairStyle, string> = {
+  buzz: "버즈컷",
+  fade: "페이드",
+  afro: "아프로",
+  braids: "브레이즈",
+  twists: "트위스트",
+  mohawk: "모히칸",
+  bald: "삭발",
+  swept: "넘긴 머리",
+  spiky: "뾰족 머리",
+  curtain: "가르마",
+  wavy: "웨이브",
+  straight: "앞머리",
+};
+
+export const BEARDS: Record<BeardStyle, string> = {
+  none: "",
+  stubble: "수염 자국",
+  goatee: "염소수염",
+  mustache: "콧수염",
+  full: "턱수염",
+};
+
+const BANDS = ["#FFFFFF", "#1B1B1B", "#D7263D", "#F2A900"];
+
+/** 캐릭터 하나를 무작위로 조합해요. 바탕을 정하지 않으면 네 가지 중에서 골라요. */
+export function randomLook(kind: LookKey = pick(LOOK_KEYS)): Look {
+  const l = LOOKS[kind];
+  return {
+    kind,
+    skin: pick(l.skins),
+    hair: pick(l.hairs),
+    style: pick(l.styles),
+    beard: chance(l.beard) ? pick<BeardStyle>(["stubble", "goatee", "mustache", "full"]) : "none",
+    eyes: pick(l.eyes),
+    band: chance(0.15) ? pick(BANDS) : undefined,
+  };
+}
+
+/** 고를 캐릭터 count개. 바탕을 정하지 않으면 네 가지가 고르게 섞여요. */
+export function randomLooks(count: number, kind?: LookKey): Look[] {
+  if (kind) return Array.from({ length: count }, () => randomLook(kind));
+  return shuffle(Array.from({ length: count }, (_, i) => randomLook(LOOK_KEYS[i % LOOK_KEYS.length])));
+}
+
+/** 캐릭터 설명. 예: "웨이브 · 염소수염" */
+export function lookLabel(l: Look): string {
+  return [HAIR_STYLES[l.style], BEARDS[l.beard], l.band ? "헤어밴드" : ""].filter(Boolean).join(" · ");
+}
+
+/** 캐릭터를 고르기 전에 만든 선수의 바탕은 피부색이 가장 가까운 것으로 짐작해요. */
+export function lookFromSkin(skin: string): LookKey {
+  const i = SKINS.indexOf(skin.toUpperCase());
+  return i === 0 ? "white" : i === 1 ? "asian" : i === 2 ? "hispanic" : i >= 3 ? "black" : "asian";
+}
+
+/** 저장된 색과 얼굴(없을 수 있어요)로 그릴 캐릭터를 만들어요. 예전 선수·기록은 바탕에 맞는 기본 모양이에요. */
+export function toLook(l: LookRecord): Look {
+  const kind = l.kind ?? lookFromSkin(l.skin);
+  return {
+    kind,
+    skin: l.skin,
+    hair: l.hair,
+    style: l.style ?? LOOKS[kind].styles[0],
+    beard: l.beard ?? "none",
+    eyes: l.eyes ?? LOOKS[kind].eyes[0],
+    band: l.band,
+  };
+}
+
+/** 선수의 캐릭터 */
+export const playerLook = (p: Player): Look => toLook({ skin: p.skin, hair: p.hair, ...p.face });

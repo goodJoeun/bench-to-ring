@@ -1,4 +1,4 @@
-import { money } from "@/game";
+import { money, playerLook, type Player } from "@/game";
 import { Sprite } from "./Sprite";
 
 /* 여러 화면에서 같이 쓰는 작은 화면 조각. 모양은 globals.css의 같은 클래스 이름을 따라가요. */
@@ -150,19 +150,19 @@ export function Segmented<K extends string>({ label, options, value, onChange, c
 }
 
 interface CourtStageProps {
-  player: { name: string; skin: string; hair: string };
+  player: Player;
   /** 유니폼과 코트 색 */
   color: string;
   /** 선수 옆 이름판 내용 */
   children: React.ReactNode;
 }
 
-/** 코트 위 도트 선수와 이름판 */
+/** 코트 위 선수 캐릭터와 이름판 */
 export function CourtStage({ player, color, children }: CourtStageProps) {
   return (
     <section className="court" style={{ "--team": color } as React.CSSProperties}>
       <div className="key" aria-hidden="true" />
-      <Sprite skin={player.skin} hair={player.hair} color={color} label={`${player.name} 도트 캐릭터`} />
+      <Sprite look={playerLook(player)} color={color} label={`${player.name} 캐릭터`} />
       <div className="plate">{children}</div>
     </section>
   );

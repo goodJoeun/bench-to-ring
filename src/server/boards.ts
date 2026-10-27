@@ -1,7 +1,7 @@
 import "server-only";
 import { count, eq, sql, type SQL } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
-import { POS_KEYS, TEAMS, type PosKey } from "@/game";
+import { POS_KEYS, TEAMS, type LookRecord, type PosKey } from "@/game";
 import type { Board, BoardEntry, BoardScope, MyRanks } from "@/lib/leaderboard/types";
 import { db } from "./db";
 import { careers } from "./schema";
@@ -49,7 +49,7 @@ function ranked(scope: BoardScope) {
           seasons: careers.seasons,
           legacy: careers.legacy,
           team: sql<string | null>`${careers.summary}->'teams'->> -1`.as("team"),
-          look: sql<{ skin: string; hair: string } | null>`${careers.summary}->'look'`.as("look"),
+          look: sql<LookRecord | null>`${careers.summary}->'look'`.as("look"),
           ruleset: careers.ruleset,
           verified: careers.verified,
           createdAt: careers.createdAt,

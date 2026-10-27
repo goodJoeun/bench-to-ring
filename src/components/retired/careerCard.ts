@@ -1,4 +1,4 @@
-import { fmtNum, titleHistory, type AwardKey, type Career } from "@/game";
+import { fmtNum, playerLook, titleHistory, type AwardKey, type Career, type Look } from "@/game";
 import { emblemOf } from "@/components/common/emblem";
 import { NO_TEAM_COLOR } from "@/components/common/format";
 import { LOGOS } from "@/components/common/logos.generated";
@@ -53,7 +53,9 @@ export interface CardData {
   small: [string, string][];
   pills: string[];
   teams: { name: string; seasons: number }[];
-  look: { skin: string; hair: string; color: string };
+  look: Look;
+  /** 유니폼 색 (마지막 소속팀) */
+  color: string;
 }
 
 /** 커리어에서 카드에 들어갈 값을 뽑아요. */
@@ -104,7 +106,8 @@ export function cardData(c: Career): CardData {
       .slice(0, PILLS_MAX)
       .map(([k, label]) => (s.awards[k]! > 1 ? `${label} ${s.awards[k]}` : label)),
     teams,
-    look: { skin: c.p.skin, hair: c.p.hair, color: c.team?.color ?? NO_TEAM_COLOR },
+    look: playerLook(c.p),
+    color: c.team?.color ?? NO_TEAM_COLOR,
   };
 }
 
@@ -382,7 +385,7 @@ export async function drawCard(c: Career): Promise<Blob> {
   ctx.beginPath();
   ctx.ellipse(mid, by + box - 34, 80, 14, 0, 0, Math.PI * 2);
   ctx.fill();
-  drawSprite(ctx, d.look, 12, mid - 8 * 12, by + box - 24 * 12 - 30);
+  drawSprite(ctx, d.look, d.color, 12, mid - 8 * 12, by + box - 24 * 12 - 30);
 
   // 왼쪽: 최고 오버롤, 포지션, 국적, 등번호
   const lx = 64;

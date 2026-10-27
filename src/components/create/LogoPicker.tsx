@@ -1,44 +1,57 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { TEAMS } from "@/game";
+import { NATIONS, TEAMS } from "@/game";
 import { TeamBadge } from "@/components/common/TeamBadge";
 
-/** 맨 앞의 ""는 무작위 배정이에요. */
-const OPTIONS: readonly (readonly [string, string?])[] = [[""], ...TEAMS.hs];
+/** 고를 항목: 값, 보여줄 이름, 로고 대신 쓸 대표색. 값이 ""인 항목은 무작위예요. */
+type PickOption = readonly [value: string, label: string, color?: string];
 
-function SchoolLabel({ name, color }: { name: string; color?: string }) {
+function PickLabel({ option: [value, label, color], kind }: { option: PickOption; kind?: "hs" }) {
   return (
     <>
-      {name ? <TeamBadge name={name} kind="hs" color={color} size={22} /> : <span className="school-any" aria-hidden="true">?</span>}
-      <span className="school-name">{name || "무작위 배정"}</span>
+      {value ? <TeamBadge name={value} kind={kind} color={color} size={22} /> : <span className="lpick-any" aria-hidden="true">?</span>}
+      <span className="lpick-name">{label}</span>
     </>
   );
 }
 
 /**
- * 고등학교 고르기. 기본 select는 옵션에 로고를 넣을 수 없어서 콤보박스(선택 전용)로 직접 만들었어요.
+ * 로고(국기)가 붙은 목록에서 하나 고르기. 기본 select는 옵션에 그림을 넣을 수 없어서 콤보박스(선택 전용)로 직접 만들었어요.
  * 위아래 화살표·Home·End로 움직이고 Enter·Space로 고르며, Esc나 바깥 클릭으로 닫혀요.
  */
-export function SchoolPicker({ value, onChange, labelledBy }: { value: string; onChange: (school: string) => void; labelledBy: string }) {
+function LogoPicker({
+  options,
+  kind,
+  value,
+  onChange,
+  id: buttonId,
+  labelledBy,
+}: {
+  options: readonly PickOption[];
+  kind?: "hs";
+  value: string;
+  onChange: (value: string) => void;
+  id: string;
+  labelledBy: string;
+}) {
   const id = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const [open, setOpen] = useState(false);
   const selectedIndex = Math.max(
     0,
-    OPTIONS.findIndex(([name]) => name === value),
+    options.findIndex(([v]) => v === value),
   );
   const [active, setActive] = useState(selectedIndex);
   const optionId = (i: number) => `${id}-opt-${i}`;
-  const [current, currentColor] = OPTIONS[selectedIndex];
 
   const show = () => {
     setActive(selectedIndex);
     setOpen(true);
   };
   const pick = (i: number) => {
-    onChange(OPTIONS[i][0]);
+    onChange(options[i][0]);
     setOpen(false);
   };
 
@@ -58,7 +71,7 @@ export function SchoolPicker({ value, onChange, labelledBy }: { value: string; o
   }, [open, active]);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    const last = OPTIONS.length - 1;
+    const last = options.length - 1;
     const move = (i: number) => {
       e.preventDefault();
       if (open) setActive(i);
@@ -90,11 +103,11 @@ export function SchoolPicker({ value, onChange, labelledBy }: { value: string; o
   };
 
   return (
-    <div className="school-pick" ref={rootRef}>
+    <div className="lpick" ref={rootRef}>
       <button
         type="button"
-        id="f-school"
-        className="school-btn"
+        id={buttonId}
+        className="lpick-btn"
         role="combobox"
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -104,21 +117,21 @@ export function SchoolPicker({ value, onChange, labelledBy }: { value: string; o
         onClick={() => (open ? setOpen(false) : show())}
         onKeyDown={onKeyDown}
       >
-        <SchoolLabel name={current} color={currentColor} />
+        <PickLabel option={options[selectedIndex]} kind={kind} />
       </button>
       {open && (
         // 항목을 눌러도 버튼에서 초점이 빠지지 않게 해요.
         <ul
-          className="school-list"
+          className="lpick-list"
           id={`${id}-list`}
           role="listbox"
           aria-labelledby={labelledBy}
           ref={listRef}
           onMouseDown={(e) => e.preventDefault()}
         >
-          {OPTIONS.map(([name, color], i) => (
+          {options.map((o, i) => (
             <li
-              key={name || "random"}
+              key={o[0] || "random"}
               id={optionId(i)}
               role="option"
               aria-selected={i === selectedIndex}
@@ -126,11 +139,24 @@ export function SchoolPicker({ value, onChange, labelledBy }: { value: string; o
               onPointerEnter={() => setActive(i)}
               onClick={() => pick(i)}
             >
-              <SchoolLabel name={name} color={color} />
+              <PickLabel option={o} kind={kind} />
             </li>
           ))}
         </ul>
       )}
     </div>
   );
+}
+
+/** 맨 앞은 무작위 배정이에요. */
+const SCHOOLS: readonly PickOption[] = [["", "무작위 배정"], ...TEAMS.hs.map(([name, color]) => [name, name, color] as const)];
+
+export function SchoolPicker({ value, onChange, labelledBy }: { value: string; onChange: (school: string) => void; labelledBy: string }) {
+  return <LogoPicker id="f-school" options={SCHOOLS} kind="hs" value={value} onChange={onChange} labelledBy={labelledBy} />;
+}
+
+const NATION_OPTIONS: readonly PickOption[] = NATIONS.map((n) => [n.name, n.name] as const);
+
+export function NationPicker({ value, onChange, labelledBy }: { value: string; onChange: (nat: string) => void; labelledBy: string }) {
+  return <LogoPicker id="f-nat" options={NATION_OPTIONS} value={value} onChange={onChange} labelledBy={labelledBy} />;
 }

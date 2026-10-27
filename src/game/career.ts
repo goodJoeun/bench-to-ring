@@ -2,6 +2,7 @@ import { AWARDS, PERSONAL_AWARDS, RULESET_VERSION } from "./data";
 import { LEAGUES, teamColor } from "./leagues";
 import { militaryUnit } from "./military";
 import { natColor } from "./national";
+import { playerLook } from "./players";
 import { ownedItems } from "./shop";
 import type { AwardKey, Career, CareerSummary, LeagueKey, LeagueShare, NbaShare, SeasonRecord } from "./types";
 import { stripYear } from "./util";
@@ -300,7 +301,7 @@ export function careerSummary(c: Career): CareerSummary {
     ruleset: RULESET_VERSION,
     nba: nbaShare(c),
     leagues: leagueShares(c),
-    look: { skin: c.p.skin, hair: c.p.hair },
+    look: playerLook(c.p),
   };
   return { ...base, legacy: legacyOf(base) };
 }

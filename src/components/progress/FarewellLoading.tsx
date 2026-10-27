@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { careerJourney, careerSummary, fmtNum, type Career } from "@/game";
+import { careerJourney, careerSummary, fmtNum, playerLook, type Career } from "@/game";
 import { gameActions } from "@/lib/game-store";
 import { NO_TEAM_COLOR } from "@/components/common/format";
 import { reducedMotion, useAutoFocus, useEscapeKey } from "@/components/common/hooks";
@@ -80,7 +80,7 @@ function useCountUp(target: number): number {
 }
 
 /**
- * 은퇴 직후 엔딩 전에 보여주는 커리어 회고. 도트 선수가 커리어 길을 따라 걸어가며
+ * 은퇴 직후 엔딩 전에 보여주는 커리어 회고. 선수 캐릭터가 커리어 길을 따라 걸어가며
  * 입단부터 우승·개인 수상, 메달, 드래프트 같은 굵직한 순간을 해마다 한 칸씩 보여줘요. 저절로 넘어가지 않고,
  * '다음'을 눌러야 다음 마일스톤으로 가요. 마지막 칸에서 '엔딩 보기'를 누르면 은퇴 화면으로 넘어가요.
  */
@@ -122,7 +122,7 @@ export function FarewellLoading({ career: c }: { career: Career }) {
             />
           ))}
           <div className="fw-walker" style={{ left: `${pos}%` }}>
-            <Sprite skin={c.p.skin} hair={c.p.hair} color={color} scale={3} label="" />
+            <Sprite look={playerLook(c.p)} color={color} scale={3} label="" />
           </div>
         </div>
       </div>

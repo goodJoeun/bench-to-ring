@@ -1,11 +1,11 @@
 import { ATTR_KEYS, POS, START_YEAR } from "./data";
-import { ARCHETYPES, HAIRS, SKINS, TRAIT_KEYS } from "./players";
+import { ARCHETYPES, TRAIT_KEYS, randomLook } from "./players";
 import { TEAMS } from "./leagues";
 import { addNews, makeTeam, pickTeam, setTeam } from "./log";
 import { chance, pick, ri, rnd, shuffle, triangular } from "./random";
 import { ovrOf } from "./ratings";
 
-/** 선수 국적. 게임에서는 대한민국으로 고정이에요(병역, 국가대표, KBL 진로가 모두 한국 선수 기준이에요). */
+/** 기본 국적. 선수 생성에서 NATIONS 가운데 고를 수 있고, 병역은 대한민국 선수만 져요. */
 export const HOME_NATION = "대한민국";
 /** 선수 이름 최대 글자 수. 입력칸, 커리어 시작, 온라인 기록 검사가 함께 써요. */
 export const NAME_MAX = 20;
@@ -84,8 +84,6 @@ export function generateCandidate(pos: PosKey, archIndex: number): Candidate {
     pot,
     grade,
     trait: pick(TRAIT_KEYS),
-    skin: pick(SKINS),
-    hair: pick(HAIRS),
   };
 }
 
@@ -103,6 +101,7 @@ export function archetypeOf(pos: PosKey, name: string): Archetype | undefined {
 }
 
 export function createCareer(input: NewCareerInput, cand: Candidate, id = String(Date.now())): Career {
+  const { skin, hair, ...face } = input.look ?? randomLook();
   const c: Career = {
     v: 2,
     id,
@@ -112,6 +111,9 @@ export function createCareer(input: NewCareerInput, cand: Candidate, id = String
       name: input.name.trim().slice(0, NAME_MAX) || "무명의 루키",
       num: clamp(Math.round(input.num) || 0, 0, 99),
       nat: input.nat ?? HOME_NATION,
+      skin,
+      hair,
+      face,
       pos: input.pos,
       path: input.path,
       traitKnown: false,

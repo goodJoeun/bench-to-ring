@@ -1,5 +1,6 @@
 "use client";
 
+import { playerLook, type Player } from "@/game";
 import { useAutoFocus } from "@/components/common/hooks";
 import { Sprite } from "@/components/common/Sprite";
 
@@ -24,8 +25,8 @@ export function Popup({ labelledBy, label, className, children }: PopupProps) {
 }
 
 interface PopupHeroProps {
-  /** 코트 위 도트 캐릭터 */
-  player: { skin: string; hair: string };
+  /** 코트 위 선수 캐릭터 */
+  player: Player;
   /** 유니폼 색 */
   color: string;
   /** 제목 위 작은 줄: 팀, 소속 */
@@ -45,7 +46,7 @@ export function PopupHero({ player, color, team, title, titleId, status, busy, c
   return (
     <>
       <div className="sim-court" aria-hidden="true">
-        <Sprite skin={player.skin} hair={player.hair} color={color} label="" className="sprite sim-sprite" />
+        <Sprite look={playerLook(player)} color={color} label="" className="sprite sim-sprite" />
         <span className="sim-shadow" />
       </div>
       {children}
