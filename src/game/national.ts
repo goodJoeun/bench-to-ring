@@ -75,6 +75,16 @@ const FIELDS: Record<Exclude<NatEventKey, "wcq">, Field> = {
   ],
 };
 
+/**
+ * 올림픽 최종예선 상대. 조별리그·준결승·결승마다 만나는 나라의 수준이 달라요.
+ * 대한민국(66)은 KBL 에이스(OVR 75)가 합류하면 열 번에 한 번, NBA급(OVR 80 이상)이면 다섯 번에 한 번쯤 본선에 올라요.
+ */
+const OQT: Record<"group" | "semi" | "final", Field> = {
+  group: [["필리핀", 67], ["이집트", 66], ["앙골라", 66], ["요르단", 64], ["카보베르데", 64], ["바하마", 64]],
+  semi: [["조지아", 74], ["뉴질랜드", 72], ["멕시코", 70], ["레바논", 70], ["베네수엘라", 68]],
+  final: [["라트비아", 77], ["브라질", 77], ["크로아티아", 74], ["푸에르토리코", 74], ["도미니카공화국", 74]],
+};
+
 /** 대회에 따라 대표팀 구성이 달라지는 나라 (NBA 선수 차출 여부 등) */
 const EVENT_ADJ: Partial<Record<NatEventKey, Record<string, number>>> = {
   worldcup: { 미국: -7 },
@@ -230,13 +240,13 @@ export function simulateTournament(ev: NatEventKey, n: Nation, power: number, qu
     return done("본선 진출 실패", null, "지역 예선에서 밀려 월드컵 본선에 오르지 못했어요.");
   if (ev === "olympics" && !chance(sigmoid((form - 83) / 1.5))) {
     // 최종예선: 6개국 중 1위만 본선행. 조별 2경기 뒤 준결승·결승을 모두 이겨야 해요.
-    const pool = field.filter(([, p]) => p <= 82);
-    const oqt = () => pick(pool.length ? pool : field);
-    const gw = [g(oqt(), "최종예선 조별리그 1차전"), g(oqt(), "최종예선 조별리그 2차전")].filter((x) => x.win).length;
+    // 실제처럼 조별리그는 약체, 토너먼트로 갈수록 강호를 만나요.
+    const oqt = (tier: Field) => pick(tier.filter(([name]) => name !== n.name));
+    const gw = [g(oqt(OQT.group), "최종예선 조별리그 1차전"), g(oqt(OQT.group), "최종예선 조별리그 2차전")].filter((x) => x.win).length;
     if (gw === 0) return done("올림픽 최종예선 탈락", null, "올림픽 최종예선 조별리그에서 2패로 탈락했어요.");
-    const sf = g(oqt(), "최종예선 준결승");
+    const sf = g(oqt(OQT.semi), "최종예선 준결승");
     if (!sf.win) return done("올림픽 최종예선 탈락", null, `올림픽 최종예선 준결승에서 ${sf.opp}에 져(${score(sf)}) 본선행이 무산됐어요.`);
-    const f = g(oqt(), "최종예선 결승");
+    const f = g(oqt(OQT.final), "최종예선 결승");
     if (!f.win) return done("올림픽 최종예선 탈락", null, `올림픽 최종예선 결승에서 ${f.opp}에 져(${score(f)}) 아쉽게 본선행을 놓쳤어요.`);
   }
 

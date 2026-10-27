@@ -432,6 +432,21 @@ describe("국가대표", () => {
     expect(odds("미국", "olympics", 88).gold).toBeGreaterThan(0.6);
   });
 
+  it("약체국도 에이스가 있으면 가끔 올림픽 최종예선을 뚫어요", () => {
+    setRandom(seeded(33));
+    const qualify = (o: number, n = 3000) => {
+      let q = 0;
+      for (let i = 0; i < n; i++) if (!simulateTournament("olympics", nation("대한민국"), teamPower(nation("대한민국"), "olympics", o)).label.includes("최종예선")) q++;
+      return q / n;
+    };
+    const ordinary = qualify(66);
+    const ace = qualify(85);
+    expect(ordinary).toBeGreaterThan(0.02);
+    expect(ordinary).toBeLessThan(0.1);
+    expect(ace).toBeGreaterThan(0.12);
+    expect(ace).toBeLessThan(0.3);
+  });
+
   it("발탁되면 대회마다 합류·불참을 고르고, 합류하면 출전 기록과 결과 소식이 남아요", () => {
     setRandom(seeded(32));
     const make = () => {
