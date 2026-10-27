@@ -50,7 +50,7 @@ export async function insertCareer(playerId: string, s: SubmittedSummary): Promi
 }
 
 /**
- * 같은 룰셋 안의 전체 순위와 포지션 순위. compareCareers와 같은 순서
+ * 역대 전체(룰셋을 가리지 않는) 순위와 포지션 순위. 순위표 화면과 같은 범위예요. compareCareers와 같은 순서
  * (랭킹 점수 → NBA MVP → 최고 오버롤 → 통산 득점)로, 네 값이 모두 같으면 공동 순위예요.
  */
 export async function ranksOf(s: SubmittedSummary): Promise<SubmitResult> {
@@ -63,7 +63,6 @@ export async function ranksOf(s: SubmittedSummary): Promise<SubmitResult> {
       posTotal: count(sql`case when ${samePos} then 1 end`),
       posAbove: count(sql`case when ${and(samePos, better)} then 1 end`),
     })
-    .from(careers)
-    .where(eq(careers.ruleset, s.ruleset));
+    .from(careers);
   return { pos: s.pos, rank: row.above + 1, total: row.total, posRank: row.posAbove + 1, posTotal: row.posTotal };
 }

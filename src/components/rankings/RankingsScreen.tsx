@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { POS, POS_KEYS, RULESET_VERSION, type PosKey } from "@/game";
+import { POS, POS_KEYS, type PosKey } from "@/game";
 import { useGame } from "@/lib/game-store";
 import { fetchBoard, fetchMine, fetchStatBoard, pendingIds } from "@/lib/leaderboard/client";
-import { STAT_KEYS, type Board, type BoardScope, type MyRanks, type StatBoard, type StatKey } from "@/lib/leaderboard/types";
+import { STAT_KEYS, type Board, type MyRanks, type StatBoard, type StatKey } from "@/lib/leaderboard/types";
 import { Loading } from "@/components/common/ui";
 import { BestFiveCourt } from "./BestFiveCourt";
 import { MyRecords } from "./MyRecords";
@@ -21,14 +21,6 @@ const TABS = [
 ] as const;
 type Tab = (typeof TABS)[number][0];
 type PosFilter = PosKey | "all";
-
-/** 순위표 범위: 지금 밸런스(RULESET_VERSION)로 은퇴한 기록만, 또는 밸런스를 가리지 않고 모든 기록 */
-const SCOPES = [
-  ["current", "현재 밸런스"],
-  ["all", "역대 전체"],
-] as const;
-type Scope = (typeof SCOPES)[number][0];
-const boardScope = (s: Scope): BoardScope => (s === "all" ? "all" : { ruleset: RULESET_VERSION });
 
 // 탭은 주소의 #best5 · #ranking · #position · #stats · #mine을 따라가요. 링크로 바로 열 수 있고 뒤로 가기도 돼요.
 const subscribeHash = (cb: () => void) => {
@@ -46,53 +38,51 @@ const readTab = (): Tab => {
  * 순위표는 그 순위표를 쓰는 탭을 열 때(`needed`) 처음 불러와요.
  * 한 번 불러온 순위표는 이 화면에 있는 동안 다시 부르지 않아요. null은 불러오지 못한 것이에요.
  */
-function useBoard(scope: Scope, pos: PosFilter, needed: boolean) {
-  const [boards, setBoards] = useState<Partial<Record<`${Scope}:${PosFilter}`, Board | null>>>({});
-  const key = `${scope}:${pos}` as const;
-  const loaded = key in boards;
+function useBoard(pos: PosFilter, needed: boolean) {
+  const [boards, setBoards] = useState<Partial<Record<PosFilter, Board | null>>>({});
+  const loaded = pos in boards;
   useEffect(() => {
     if (loaded || !needed) return;
     let live = true;
-    void fetchBoard(boardScope(scope), pos === "all" ? null : pos).then((b) => {
-      if (live) setBoards((m) => ({ ...m, [key]: b }));
+    void fetchBoard(undefined, pos === "all" ? null : pos).then((b) => {
+      if (live) setBoards((m) => ({ ...m, [pos]: b }));
     });
     return () => {
       live = false;
     };
-  }, [scope, pos, key, loaded, needed]);
+  }, [pos, loaded, needed]);
   const retry = () =>
     setBoards((m) => {
       const next = { ...m };
-      delete next[key];
+      delete next[pos];
       return next;
     });
-  return { board: boards[key], loaded, retry };
+  return { board: boards[pos], loaded, retry };
 }
 
 /**
  * 스탯 랭킹 탭: 스탯을 고르면 그 스탯의 프로 통산 상위 50명을 불러와요.
  * 한 번 불러온 스탯은 이 화면에 있는 동안 다시 부르지 않아요. null은 불러오지 못한 것이에요.
  */
-function StatsPanel({ scope, mine }: { scope: Scope; mine: Set<string> }) {
+function StatsPanel({ mine }: { mine: Set<string> }) {
   const [stat, setStat] = useState<StatKey>("pts");
-  const [boards, setBoards] = useState<Partial<Record<`${Scope}:${StatKey}`, StatBoard | null>>>({});
-  const key = `${scope}:${stat}` as const;
-  const loaded = key in boards;
+  const [boards, setBoards] = useState<Partial<Record<StatKey, StatBoard | null>>>({});
+  const loaded = stat in boards;
   useEffect(() => {
     if (loaded) return;
     let live = true;
-    void fetchStatBoard(stat, boardScope(scope)).then((b) => {
-      if (live) setBoards((m) => ({ ...m, [key]: b }));
+    void fetchStatBoard(stat).then((b) => {
+      if (live) setBoards((m) => ({ ...m, [stat]: b }));
     });
     return () => {
       live = false;
     };
-  }, [scope, stat, key, loaded]);
-  const board = boards[key];
+  }, [stat, loaded]);
+  const board = boards[stat];
   const retry = () =>
     setBoards((m) => {
       const next = { ...m };
-      delete next[key];
+      delete next[stat];
       return next;
     });
 
@@ -146,7 +136,6 @@ function useMine() {
 export function RankingsScreen() {
   const tab = useSyncExternalStore(subscribeHash, readTab, () => "best5" as Tab);
   const [pos, setPos] = useState<PosKey>("PG");
-  const [scope, setScope] = useState<Scope>("current");
   const { hall } = useGame();
   const mine = useMine();
   const pending = useSyncExternalStore(
@@ -160,8 +149,8 @@ export function RankingsScreen() {
     () => true,
     () => false,
   );
-  const all = useBoard(scope, "all", hydrated && (tab === "best5" || tab === "ranking"));
-  const byPos = useBoard(scope, pos, hydrated && tab === "position");
+  const all = useBoard("all", hydrated && (tab === "best5" || tab === "ranking"));
+  const byPos = useBoard(pos, hydrated && tab === "position");
   const myIds = new Set((mine?.careers ?? []).map((c) => c.id));
 
   // 베스트 5와 랭킹 100은 전체 순위표에, 포지션별 랭킹은 고른 포지션 순위표에 들어 있어요.
@@ -196,19 +185,10 @@ export function RankingsScreen() {
           ))}
         </div>
         <section className="rk-panel" role="tabpanel" id="rk-panel" aria-labelledby={`rk-tab-${tab}`}>
-          {tab !== "mine" && (
-            <div className="rk-chips rk-scope" role="group" aria-label="기록 범위">
-              {SCOPES.map(([k, name]) => (
-                <button key={k} type="button" aria-pressed={scope === k} onClick={() => setScope(k)}>
-                  {name}
-                </button>
-              ))}
-            </div>
-          )}
           {tab === "mine" ? (
             <MyRecords hall={hall} mine={mine} pending={new Set(pending ? pending.split("\n") : [])} />
           ) : tab === "stats" ? (
-            hydrated && <StatsPanel scope={scope} mine={myIds} />
+            hydrated && <StatsPanel mine={myIds} />
           ) : (
             <>
               {tab === "position" && (

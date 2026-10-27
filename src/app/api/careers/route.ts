@@ -10,7 +10,7 @@ const MAX_BODY = 16_000;
 
 const fail = (status: number, error: string) => Response.json({ error } satisfies ApiError, { status });
 
-/** 은퇴 기록 제출. 응답에 같은 룰셋 안의 전체 순위와 포지션 순위를 담아요. */
+/** 은퇴 기록 제출. 응답에 역대 전체 순위와 포지션 순위를 담아요. */
 export async function POST(req: Request) {
   const playerId = await playerFrom(req);
   if (!playerId) return fail(401, "플레이어 토큰이 없거나 맞지 않아요.");

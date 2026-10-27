@@ -1,7 +1,7 @@
 import "server-only";
 import { count, eq, sql, type SQL } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
-import { POS_KEYS, RULESET_VERSION, TEAMS, type PosKey } from "@/game";
+import { POS_KEYS, TEAMS, type PosKey } from "@/game";
 import type { Board, BoardEntry, BoardScope, MyRanks } from "@/lib/leaderboard/types";
 import { db } from "./db";
 import { careers } from "./schema";
@@ -132,9 +132,9 @@ export async function getBoard(scope: BoardScope, pos: PosKey | null): Promise<B
   };
 }
 
-/** 한 플레이어가 올린 기록의 지금 순위 (현재 룰셋). 플레이어마다 달라서 캐시하지 않아요. */
+/** 한 플레이어가 올린 기록의 지금 순위 (역대 전체). 플레이어마다 달라서 캐시하지 않아요. */
 export async function myRanks(playerId: string): Promise<MyRanks> {
-  const scope = { ruleset: RULESET_VERSION };
+  const scope = "all";
   const r = ranked(scope);
   const [mine, [{ total }]] = await Promise.all([
     db()

@@ -7,7 +7,7 @@ export interface PlayerCreated {
   token: string;
 }
 
-/** POST /api/careers: 같은 룰셋 안의 순위 */
+/** POST /api/careers: 역대 전체 순위 */
 export interface SubmitResult {
   pos: PosKey;
   rank: number;
@@ -55,9 +55,9 @@ export interface BoardEntry {
   verified: boolean;
 }
 
-/** GET /api/careers/mine: 이 플레이어가 올린 기록의 지금 순위 (현재 룰셋) */
+/** GET /api/careers/mine: 이 플레이어가 올린 기록의 지금 순위 (역대 전체) */
 export interface MyRanks {
-  /** 현재 룰셋에 올라온 기록 수 */
+  /** 올라온 전체 기록 수 (역대 전체) */
   total: number;
   careers: {
     /** 브라우저의 커리어 id (CareerSummary.id) */
