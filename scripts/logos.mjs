@@ -88,7 +88,8 @@ const groups = [];
 const leagues = readFileSync("src/game/leagues.ts", "utf8");
 const teamsBlock = leagues.slice(leagues.indexOf("export const TEAMS"));
 let current = null;
-for (const line of teamsBlock.split("\n")) {
+// Windows에서 CRLF로 체크아웃해도 읽히게 줄바꿈을 둘 다 받아요.
+for (const line of teamsBlock.split(/\r?\n/)) {
   const head = line.match(/^ {2}(\w+): \[$/);
   if (head) {
     current = [LEAGUE_NAMES[head[1]] ?? head[1], []];
