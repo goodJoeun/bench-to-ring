@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { fmtNum, rankHall, type CareerSummary } from "@/game";
+import { RULESET_VERSION, fmtNum, rankHall, type CareerSummary } from "@/game";
 import type { MyRanks } from "@/lib/leaderboard/types";
 import { Sprite } from "@/components/common/Sprite";
 import { StatTiles } from "@/components/common/ui";
@@ -46,7 +46,9 @@ export function MyRecords({ hall, mine, pending }: MyRecordsProps) {
             ? `온라인 전체 ${fmtNum(o.rank)}위 · ${s.pos} ${fmtNum(o.posRank)}위`
             : pending.has(s.id)
               ? "온라인 등록 대기 중"
-              : mine === undefined
+              : (s.ruleset ?? 1) < RULESET_VERSION
+                ? "이전 밸런스 기록 · 역대 전체 랭킹에 있어요"
+                : mine === undefined
                 ? "온라인 순위 확인 중"
                 : "온라인 기록 없음";
           return (
