@@ -17,11 +17,14 @@ import { Toast } from "@/components/common/Toast";
 import { TournamentLoading } from "@/components/progress/TournamentLoading";
 
 export function Game() {
-  const { ready, career, draft, hall, playing, speed, final, farewell, farewellReplay, tournament, drafting, toast, outcome } = useGame();
+  const { ready, career, draft, hall, ending, playing, speed, final, farewell, farewellReplay, tournament, drafting, toast, outcome } = useGame();
   // 탭은 커리어마다 홈에서 시작해요.
   const [view, setView] = useState<{ id: string | null; tab: TabKey }>({ id: null, tab: "season" });
   const tab = career && view.id === career.id ? view.tab : "season";
-  const inGame = ready && career && career.stage !== "retired";
+  // 지난 엔딩을 보는 동안에는 진행 중인 커리어를 뒤로 물려요.
+  const inGame = ready && !ending && career && career.stage !== "retired";
+  /** 엔딩을 보여주는 커리어: 다시 연 지난 엔딩, 아니면 방금 은퇴한 지금 커리어 */
+  const retiredShown = ending ?? (career?.stage === "retired" ? career : null);
   const [guideOpen, setGuideOpen] = useState(false);
   // 축하 팝업은 다른 진행 화면(시즌 진행·결승 중계·대회·드래프트·회고)이 다 끝난 뒤에 한 장씩 띄워요.
   const cheer = inGame && !playing && !final && !tournament && !drafting && !farewell ? career.cheers[0] : undefined;
@@ -35,6 +38,7 @@ export function Game() {
 
   let body: React.ReactNode;
   if (!ready) body = <p className="boot">커리어를 불러오고 있어요…</p>;
+  else if (ending) body = <RetiredScreen career={ending} hall={hall} past />;
   else if (!career) body = <CreateScreen draft={draft} hall={hall} />;
   // 은퇴 직후에는 회고 팝업 뒤에 엔딩이 미리 보이지 않게 비워 둬요. 은퇴 화면에서 다시 연 회고 뒤에는 엔딩을 그대로 둬요.
   else if (career.stage === "retired")
@@ -113,7 +117,7 @@ export function Game() {
       )}
       {tournament && career && <TournamentLoading career={career} />}
       {drafting && career?.draftShow && <DraftLoading career={career} show={career.draftShow} />}
-      {farewell && career?.stage === "retired" && <FarewellLoading career={career} />}
+      {farewell && retiredShown && <FarewellLoading career={retiredShown} />}
       {cheer && career && <CheerPopup career={career} cheer={cheer} />}
       {guideOpen && <GuideDialog onClose={() => setGuideOpen(false)} />}
       {settingsOpen && (

@@ -801,6 +801,9 @@ html:has(.sheet) .toast-zone{bottom:auto;top:calc(12px + env(safe-area-inset-top
 .rk-list li{display:grid;grid-template-columns:30px 24px minmax(0,1fr);align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line)}
 /* 스탯 랭킹: 오른쪽에 프로 통산 값을 크게 */
 .rk-stat li{grid-template-columns:30px 24px minmax(0,1fr) auto}
+/* 나의 기록: 엔딩을 다시 볼 수 있는 선수는 오른쪽에 단추 */
+.rk-list li[data-ending]{grid-template-columns:30px 24px minmax(0,1fr) auto}
+.rk-end{padding:7px 10px;font-size:13px;white-space:nowrap}
 .rk-val{font-family:var(--f-num);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap}
 .rk-val small{margin-left:2px;font-size:12px;font-weight:600;color:var(--muted)}
 .rk-list li:last-child{border-bottom:0}

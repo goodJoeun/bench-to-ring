@@ -26,7 +26,7 @@ import {
   type SeasonStep,
   type ShopKey,
 } from "@/game";
-import { loadCareer, loadHall, saveCareer, saveHall } from "@/game/storage";
+import { loadCareer, loadEnding, loadEndingIds, loadHall, saveCareer, saveEnding, saveHall } from "@/game/storage";
 import { flushPending, submitCareer } from "@/lib/leaderboard/client";
 
 /** 선수 생성 화면의 입력값 */
@@ -50,13 +50,17 @@ export interface GameSnapshot {
   career: Career | null;
   draft: CreationDraft;
   hall: CareerSummary[];
+  /** 엔딩을 다시 볼 수 있는 은퇴 커리어 id (명예의 전당 기록과 같은 id) */
+  endings: string[];
+  /** 다시 보고 있는 지난 커리어의 엔딩. 보는 동안 지금 커리어는 그대로 있어요. */
+  ending: Career | null;
   /** 시즌이 저절로 흘러가는 중인지. 꺼져 있으면 일시정지예요. 불러온 시즌은 멈춘 채로 시작해요. */
   playing: boolean;
   /** 시즌 진행 배속 */
   speed: Speed;
   /** 결승전 중계를 보여주는 중인지 (c.live) */
   final: boolean;
-  /** 커리어 회고를 보여주는 중인지. 방금 은퇴했거나, 은퇴 화면에서 다시 열었을 때예요. */
+  /** 커리어 회고를 보여주는 중인지. 방금 은퇴했거나, 은퇴 화면(지난 엔딩 포함)에서 다시 열었을 때예요. */
   farewell: boolean;
   /** 은퇴 화면에서 회고를 다시 연 것인지. 이때는 뒤에 엔딩을 그대로 둬요. */
   farewellReplay: boolean;
@@ -105,7 +109,7 @@ const emptyDraft = (): CreationDraft => ({
   rerolls: REROLLS,
 });
 
-const SERVER_SNAPSHOT: GameSnapshot = { ready: false, career: null, draft: emptyDraft(), hall: [], playing: false, speed: 1, final: false, farewell: false, farewellReplay: false, tournament: false, drafting: false, toast: null, outcome: null };
+const SERVER_SNAPSHOT: GameSnapshot = { ready: false, career: null, draft: emptyDraft(), hall: [], endings: [], ending: null, playing: false, speed: 1, final: false, farewell: false, farewellReplay: false, tournament: false, drafting: false, toast: null, outcome: null };
 
 let snapshot: GameSnapshot = SERVER_SNAPSHOT;
 const listeners = new Set<() => void>();
@@ -127,7 +131,10 @@ function ensureLoaded(): void {
   if (snapshot.ready || typeof window === "undefined") return;
   const career = loadCareer();
   if (career) resolveQueue(career);
-  snapshot = { ...SERVER_SNAPSHOT, ready: true, career, draft: freshDraft(), hall: loadHall() };
+  // 엔딩 보관함이 생기기 전에 은퇴해 엔딩에 머물러 있던 커리어도 넣어 둬요.
+  const ids = loadEndingIds();
+  const endings = career?.stage === "retired" && career.summary?.seasons && !ids.includes(career.id) ? saveEnding(career) : ids;
+  snapshot = { ...SERVER_SNAPSHOT, ready: true, career, draft: freshDraft(), hall: loadHall(), endings };
   // 지난번에 보내지 못한 은퇴 기록을 온라인 랭킹에 다시 보내요.
   void flushPending();
 }
@@ -199,15 +206,16 @@ function mutate(fn: (c: Career) => void): void {
   resolveQueue(c);
   // 이번 변화로 은퇴했으면 엔딩 전에 회고부터 보여줘요.
   const farewell = !wasRetired && c.stage === "retired";
-  let hall = snapshot.hall;
+  let { hall, endings } = snapshot;
   const s = c.summary;
   if (c.stage === "retired" && s && s.seasons > 0 && !hall.some((h) => h.id === s.id)) {
     hall = [...hall, s];
     saveHall(hall);
+    endings = saveEnding(c);
     submitOnline(s);
   }
   saveCareer(c);
-  set(farewell ? { career: c, hall, farewell, playing: false, toast: null } : { career: c, hall });
+  set(farewell ? { career: c, hall, endings, farewell, playing: false, toast: null } : { career: c, hall, endings });
 }
 
 function subscribe(listener: () => void): () => void {
@@ -334,7 +342,7 @@ export const gameActions = {
   },
   /** 은퇴 화면에서 커리어 회고를 다시 열어요. */
   openFarewell() {
-    if (snapshot.career?.stage !== "retired") return;
+    if ((snapshot.ending ?? snapshot.career)?.stage !== "retired") return;
     set({ farewell: true, farewellReplay: true });
   },
   /** 커리어 회고를 닫고 엔딩(은퇴 화면)으로 가요. 은퇴 직후에는 엔딩 맨 위에서, 다시 본 뒤에는 보던 자리에서 이어져요. */
@@ -389,6 +397,18 @@ export const gameActions = {
     mutate((c) => {
       if (canRetire(c)) retire(c);
     });
+  },
+  /** 지난 은퇴 선수의 엔딩을 다시 열어요. 진행 중인 시즌은 멈춰요. */
+  openEnding(id: string) {
+    const ending = loadEnding(id);
+    if (!ending) return set({ endings: loadEndingIds(), toast: toast("이 선수의 엔딩을 불러오지 못했어요") });
+    set({ ending, playing: false, farewell: false, farewellReplay: false });
+    if (typeof window !== "undefined") window.scrollTo({ top: 0 });
+  },
+  /** 지난 엔딩을 닫고 원래 화면(진행 중인 커리어나 새 선수 만들기)으로 돌아가요. */
+  closeEnding() {
+    set({ ending: null, farewell: false, farewellReplay: false });
+    if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   },
   newCareer() {
     saveCareer(null);

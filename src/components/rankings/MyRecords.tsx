@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { fmtNum, rankHall, type CareerSummary } from "@/game";
+import { gameActions } from "@/lib/game-store";
 import type { MyRanks } from "@/lib/leaderboard/types";
 import { nameFit } from "@/components/common/format";
 import { Sprite } from "@/components/common/Sprite";
@@ -14,10 +15,12 @@ interface MyRecordsProps {
   mine: MyRanks | null | undefined;
   /** 아직 올리지 못하고 기다리는 커리어 id */
   pending: Set<string>;
+  /** 엔딩을 다시 볼 수 있는 커리어 id. 이 기능 전에 은퇴한 선수는 요약만 남아 없어요. */
+  endings: Set<string>;
 }
 
 /** 나의 기록: 이 브라우저에서 은퇴한 선수들을 랭킹과 같은 기준으로 줄 세우고, 온라인 순위를 붙여요. */
-export function MyRecords({ hall, mine, pending }: MyRecordsProps) {
+export function MyRecords({ hall, mine, pending, endings }: MyRecordsProps) {
   if (!hall.length)
     return (
       <div className="rk-empty">
@@ -51,7 +54,7 @@ export function MyRecords({ hall, mine, pending }: MyRecordsProps) {
                 ? "온라인 순위 확인 중"
                 : "온라인 기록 없음";
           return (
-            <li key={s.id}>
+            <li key={s.id} data-ending={endings.has(s.id) ? "" : undefined}>
               <RankMark rank={rank} />
               <Sprite {...lookOf(s.id, s.look)} color={jerseyOf(s.teams.at(-1))} scale={2} className="rk-mini" label={`${s.name} 도트 캐릭터`} />
               <span className="rk-who">
@@ -65,6 +68,11 @@ export function MyRecords({ hall, mine, pending }: MyRecordsProps) {
                   {status}
                 </span>
               </span>
+              {endings.has(s.id) && (
+                <Link className="btn rk-end" href="/" onClick={() => gameActions.openEnding(s.id)}>
+                  엔딩 보기
+                </Link>
+              )}
             </li>
           );
         })}

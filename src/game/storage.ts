@@ -7,6 +7,9 @@ import type { Action, AttrKey, Attrs, Boost, Career, CareerSummary, PosKey } fro
 const SAVE_KEY = "b2r-save-v1";
 const HALL_KEY = "b2r-hall-v1";
 const HALL_LIMIT = 60;
+/** 은퇴한 커리어 전체. 엔딩을 다시 볼 때 써요. 한 명에 50KB쯤이라 최근 것만 둬요. */
+const ENDING_KEY = "b2r-endings-v1";
+const ENDING_LIMIT = 20;
 
 function read(key: string): string | null {
   try {
@@ -16,13 +19,20 @@ function read(key: string): string | null {
   }
 }
 
-function write(key: string, value: string | null): void {
+/** 저장하고 성공했는지 알려줘요. 저장소를 쓸 수 없는 환경(시크릿 모드, 용량 초과)에서는 false예요. */
+function tryWrite(key: string, value: string | null): boolean {
   try {
     if (value === null) window.localStorage.removeItem(key);
     else window.localStorage.setItem(key, value);
+    return true;
   } catch {
-    // 저장소를 쓸 수 없는 환경(시크릿 모드 등)에서는 조용히 넘어가요.
+    return false;
   }
+}
+
+function write(key: string, value: string | null): void {
+  // 저장소를 쓸 수 없으면 조용히 넘어가요.
+  tryWrite(key, value);
 }
 
 /** v1 가상 리그 키 → v2 실제 리그 키 */
@@ -181,4 +191,36 @@ export function loadHall(): CareerSummary[] {
 
 export function saveHall(h: CareerSummary[]): void {
   write(HALL_KEY, JSON.stringify(h.slice(-HALL_LIMIT)));
+}
+
+function readEndings(): unknown[] {
+  try {
+    const o: unknown = JSON.parse(read(ENDING_KEY) ?? "[]");
+    return Array.isArray(o) ? o : [];
+  } catch {
+    return [];
+  }
+}
+
+const idOf = (o: unknown): unknown => (o && typeof o === "object" ? (o as { id?: unknown }).id : undefined);
+
+/** 엔딩을 다시 볼 수 있는 커리어 id. 오래된 것부터예요. */
+export function loadEndingIds(): string[] {
+  return readEndings()
+    .map(idOf)
+    .filter((id): id is string => typeof id === "string");
+}
+
+/** 저장해 둔 은퇴 커리어 하나. 없거나 읽지 못하면 null이에요. */
+export function loadEnding(id: string): Career | null {
+  const o = readEndings().find((x) => idOf(x) === id);
+  const c = o ? parseCareer(JSON.stringify(o)) : null;
+  return c?.stage === "retired" ? c : null;
+}
+
+/** 은퇴한 커리어를 엔딩 보관함에 넣고, 남은 id를 돌려줘요. 자리가 모자라면 오래된 것부터 지워요. */
+export function saveEnding(c: Career): string[] {
+  const list = [...readEndings().filter((x) => idOf(x) !== c.id), c].slice(-ENDING_LIMIT);
+  while (list.length && !tryWrite(ENDING_KEY, JSON.stringify(list))) list.shift();
+  return loadEndingIds();
 }

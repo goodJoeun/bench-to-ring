@@ -38,7 +38,8 @@ function AwardRows({ career: c }: { career: Career }) {
   );
 }
 
-export function RetiredScreen({ career: c, hall }: { career: Career; hall: CareerSummary[] }) {
+/** past: 나의 기록에서 다시 연 지난 엔딩이에요. 새 커리어 대신 돌아가기 단추를 보여줘요. */
+export function RetiredScreen({ career: c, hall, past = false }: { career: Career; hall: CareerSummary[]; past?: boolean }) {
   const s = c.summary;
   if (!s) return null;
   const p = c.p;
@@ -116,9 +117,15 @@ export function RetiredScreen({ career: c, hall }: { career: Career; hall: Caree
         <button type="button" className="start sub" onClick={gameActions.openFarewell}>
           커리어 회고
         </button>
-        <button type="button" className="start" onClick={gameActions.newCareer}>
-          새 커리어 시작
-        </button>
+        {past ? (
+          <button type="button" className="start" onClick={gameActions.closeEnding}>
+            돌아가기
+          </button>
+        ) : (
+          <button type="button" className="start" onClick={gameActions.newCareer}>
+            새 커리어 시작
+          </button>
+        )}
       </div>
 
       <HallOfFame hall={hall} />

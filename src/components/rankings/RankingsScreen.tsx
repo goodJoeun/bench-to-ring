@@ -136,7 +136,7 @@ function useMine() {
 export function RankingsScreen() {
   const tab = useSyncExternalStore(subscribeHash, readTab, () => "best5" as Tab);
   const [pos, setPos] = useState<PosKey>("PG");
-  const { hall } = useGame();
+  const { hall, endings } = useGame();
   const mine = useMine();
   const pending = useSyncExternalStore(
     subscribeNever,
@@ -186,7 +186,7 @@ export function RankingsScreen() {
         </div>
         <section className="rk-panel" role="tabpanel" id="rk-panel" aria-labelledby={`rk-tab-${tab}`}>
           {tab === "mine" ? (
-            <MyRecords hall={hall} mine={mine} pending={new Set(pending ? pending.split("\n") : [])} />
+            <MyRecords hall={hall} mine={mine} pending={new Set(pending ? pending.split("\n") : [])} endings={new Set(endings)} />
           ) : tab === "stats" ? (
             hydrated && <StatsPanel mine={myIds} />
           ) : (
