@@ -23,6 +23,7 @@ npm run dev
    - `DATABASE_URL`: 게임 서버용 Neon 연결 문자열 (Connection pooling을 켠 주소, 호스트에 `-pooler`)
    - `DATABASE_URL_UNPOOLED`: 마이그레이션용 연결 문자열 (pooling을 끈 주소)
    - `TOKEN_SECRET`: 플레이어 토큰 해시에 쓰는 비밀 값. `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`로 만들어요.
+   - `RESEND_API_KEY`, `FEEDBACK_TO`: 의견 보내기 메일. [Resend](https://resend.com) API 키와 의견을 받을 주소예요. 도메인을 인증하기 전에는 Resend 가입 메일 주소로만 보낼 수 있어요. 비어 있으면 의견 보내기가 "지금은 의견을 보낼 수 없어요"로 끝나요.
 2. `npm run db:migrate`로 테이블을 만들어요.
 
 로컬은 Neon의 dev 브랜치, 배포는 main 브랜치 주소를 써요.
@@ -208,6 +209,7 @@ src/
 
 ### 2026-10-27
 
+- 의견 보내기: 상단 메뉴의 "의견"에서 버그 제보·개선 제안·기타를 골라 운영자에게 보내요. 답장 받을 이메일은 적어도 되고 안 적어도 돼요.
 - 은퇴 기록 카드: 엔딩 화면의 "기록 카드 공유"에서 최고 오버롤, 우승 트로피, 통산 기록, 주요 상, 거쳐간 팀을 담은 카드 이미지를 만들어요. 휴대폰은 공유 창으로 카카오톡 등에 바로 보내고, PC는 이미지를 복사해 대화창에 붙여 넣어요. 이미지로 저장할 수도 있어요. ([카드 예시](docs/screenshots/record-card.png), [공유 시트](docs/screenshots/record-card-sheet.png))
 - 지난 엔딩 다시 보기: 랭킹 → 나의 기록에서 "엔딩 보기"를 누르면 은퇴했던 선수의 엔딩과 커리어 회고를 다시 볼 수 있어요. 최근 은퇴한 20명까지 이 브라우저에 보관하고, 이 기능 전에 은퇴한 선수는 요약만 남아 있어 다시 볼 수 없어요.
 - 선수 이름을 20자까지 지을 수 있어요. 긴 이름은 선수 카드, 랭킹, 명예의 전당, 축하 팝업에서 칸 너비에 맞춰 글자 크기를 줄여 보여줘요.
