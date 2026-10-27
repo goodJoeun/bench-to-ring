@@ -300,6 +300,19 @@ input,select{font:inherit;color:var(--ink);background:var(--panel2);border:1px s
 .form-grid{display:grid;grid-template-columns:1.7fr .8fr 1.3fr;gap:12px}
 @media (max-width:620px){.form-grid{grid-template-columns:1fr 1fr}.form-grid .f:first-child{grid-column:1/-1}}
 .f{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;color:var(--muted)}
+/* 고등학교 고르기: 로고 + 학교 이름. 버튼은 다른 입력칸과 같은 모양이에요. */
+.school-pick{position:relative;min-width:0}
+.school-btn,.school-list li{display:flex;align-items:center;gap:8px;min-width:0;font:inherit;font-size:16px;font-weight:400;color:var(--ink)}
+.school-btn{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 32px 7px 10px;min-height:44px;cursor:pointer;text-align:left;position:relative}
+.school-btn::after{content:"";position:absolute;right:12px;top:50%;width:7px;height:7px;border:solid var(--muted);border-width:0 2px 2px 0;transform:translateY(-70%) rotate(45deg)}
+.school-btn[aria-expanded="true"]::after{transform:translateY(-30%) rotate(-135deg)}
+.school-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.school-any{flex:none;display:grid;place-items:center;width:22px;height:24px;border-radius:6px;border:1.5px dashed var(--muted);color:var(--muted);font-size:13px;font-weight:700}
+.school-list{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:40;margin:0;padding:4px;list-style:none;max-height:min(320px,50vh);overflow-y:auto;
+  min-width:max-content;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.18)}
+.school-list li{padding:7px 10px;border-radius:7px;cursor:pointer}
+.school-list li[data-active]{background:var(--panel2)}
+.school-list li[aria-selected="true"]{font-weight:700;color:var(--accent)}
 .field{display:flex;flex-direction:column;gap:8px}
 .flabel-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .seg{display:flex;flex-wrap:wrap;gap:6px}

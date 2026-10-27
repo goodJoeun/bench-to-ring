@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
-import { TEAMS, type CareerSummary } from "@/game";
+import { type CareerSummary } from "@/game";
 import { gameActions, type CreationDraft } from "@/lib/game-store";
 import { HallOfFame } from "@/components/common/HallOfFame";
 import { Segmented } from "@/components/common/ui";
@@ -10,6 +10,7 @@ import { CandidateCard } from "./CandidateCard";
 import { ConfirmStartSheet } from "./ConfirmStartSheet";
 import { NameRequiredSheet } from "./NameRequiredSheet";
 import { POSITIONS } from "./options";
+import { SchoolPicker } from "./SchoolPicker";
 
 export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: CareerSummary[] }) {
   const [sheet, setSheet] = useState<"confirm" | "name" | null>(null);
@@ -80,17 +81,11 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
               onChange={(e) => gameActions.editDraft({ num: e.target.value })}
             />
           </label>
-          <label className="f" htmlFor="f-school">
-            고등학교
-            <select id="f-school" value={draft.school} onChange={(e) => gameActions.editDraft({ school: e.target.value })}>
-              <option value="">무작위 배정</option>
-              {TEAMS.hs.map(([name]) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </label>
+          {/* label로 감싸면 목록 항목을 누를 때 버튼이 다시 눌려 목록이 또 열려서 div로 묶어요. */}
+          <div className="f">
+            <span id="f-school-label">고등학교</span>
+            <SchoolPicker labelledBy="f-school-label" value={draft.school} onChange={(school) => gameActions.editDraft({ school })} />
+          </div>
         </div>
 
         <div className="field">
