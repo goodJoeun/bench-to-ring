@@ -8,6 +8,7 @@ import { CheerPopup } from "@/components/progress/CheerPopup";
 import { DraftLoading } from "@/components/progress/DraftLoading";
 import { FarewellLoading } from "@/components/progress/FarewellLoading";
 import { GameScreen, type TabKey } from "@/components/career/GameScreen";
+import { FeedbackDialog } from "@/components/feedback/FeedbackDialog";
 import { GuideDialog } from "@/components/guide/GuideDialog";
 import { RetiredScreen } from "@/components/retired/RetiredScreen";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
@@ -29,6 +30,7 @@ export function Game() {
   // 축하 팝업은 다른 진행 화면(시즌 진행·결승 중계·대회·드래프트·회고)이 다 끝난 뒤에 한 장씩 띄워요.
   const cheer = inGame && !playing && !final && !tournament && !drafting && !farewell ? career.cheers[0] : undefined;
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   /** 탭이 바뀌면 화면이 통째로 바뀌니 맨 위에서 시작해요. */
   const openTab = (k: TabKey) => {
@@ -96,6 +98,19 @@ export function Game() {
           </button>
           <button
             type="button"
+            className="guide-btn"
+            aria-label="의견 보내기"
+            aria-haspopup="dialog"
+            aria-expanded={feedbackOpen}
+            onClick={() => setFeedbackOpen(true)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 3h16a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H9l-5 4v-4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm3 5v2h10V8zm0 4v2h7v-2z" />
+            </svg>
+            <span>의견</span>
+          </button>
+          <button
+            type="button"
             id="open-settings"
             className="icon-btn"
             aria-label="설정"
@@ -120,6 +135,12 @@ export function Game() {
       {farewell && retiredShown && <FarewellLoading career={retiredShown} />}
       {cheer && career && <CheerPopup career={career} cheer={cheer} />}
       {guideOpen && <GuideDialog onClose={() => setGuideOpen(false)} />}
+      {feedbackOpen && (
+        <FeedbackDialog
+          onClose={() => setFeedbackOpen(false)}
+          career={career ? `${career.p.name} · ${career.year}년 ${career.age}세 · ${career.stage === "retired" ? "은퇴" : (career.team?.name ?? "무소속")}` : undefined}
+        />
+      )}
       {settingsOpen && (
         <SettingsDialog
           onClose={() => setSettingsOpen(false)}
