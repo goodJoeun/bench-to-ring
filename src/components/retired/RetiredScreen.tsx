@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { awardGroups, fmtNum, money, titleHistory, type AwardCount, type Career, type CareerSummary } from "@/game";
 import { gameActions } from "@/lib/game-store";
 import { NO_TEAM_COLOR, militaryShort, nameFit } from "@/components/common/format";
 import { RecordBoards } from "./RecordBoards";
 import { SimilarPlayers } from "./SimilarPlayers";
+import { ShareSheet } from "./ShareSheet";
 import { HallOfFame } from "@/components/common/HallOfFame";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { AwardName, CourtStage, Panel, StatTiles } from "@/components/common/ui";
@@ -40,6 +42,7 @@ function AwardRows({ career: c }: { career: Career }) {
 
 /** past: 나의 기록에서 다시 연 지난 엔딩이에요. 새 커리어 대신 돌아가기 단추를 보여줘요. */
 export function RetiredScreen({ career: c, hall, past = false }: { career: Career; hall: CareerSummary[]; past?: boolean }) {
+  const [sharing, setSharing] = useState(false);
   const s = c.summary;
   if (!s) return null;
   const p = c.p;
@@ -82,6 +85,12 @@ export function RetiredScreen({ career: c, hall, past = false }: { career: Caree
           const parts = [...legacy, s.donated ? `유소년 농구 기부 ${money(s.donated)}` : ""].filter(Boolean);
           return parts.length > 0 && <p className="hint">코트 밖에서 · {parts.join(" · ")}</p>;
         })()}
+        <div className="row share-row">
+          <button type="button" className="btn" onClick={() => setSharing(true)}>
+            기록 카드 공유
+          </button>
+          <span className="hint">이미지로 저장하거나 카카오톡 등으로 보내요</span>
+        </div>
       </Panel>
 
       <SimilarPlayers career={c} />
@@ -129,6 +138,7 @@ export function RetiredScreen({ career: c, hall, past = false }: { career: Caree
       </div>
 
       <HallOfFame hall={hall} />
+      {sharing && <ShareSheet career={c} onClose={() => setSharing(false)} />}
     </main>
   );
 }

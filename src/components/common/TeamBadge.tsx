@@ -1,10 +1,10 @@
 import { useId } from "react";
-import { emblemOf, type EmblemKind } from "./emblem";
+import { emblemOf, type Emblem, type EmblemKind } from "./emblem";
 import { FLAGS } from "./flags.generated";
 import { LOGOS } from "./logos.generated";
 
 /** 리그마다 다른 엠블럼 바탕 모양 (viewBox 0 0 40 44) */
-const SHAPES: Record<EmblemKind, string> = {
+export const SHAPES: Record<EmblemKind, string> = {
   // NBA·국가대표: 원형 배지
   nba: "M20 3a19 19 0 1 1 0 38a19 19 0 1 1 0-38Z",
   nat: "M20 3a19 19 0 1 1 0 38a19 19 0 1 1 0-38Z",
@@ -23,7 +23,7 @@ const SHAPES: Record<EmblemKind, string> = {
 };
 
 /** 무늬: 없음, 사선 띠, 가로 띠, 갈매기, 반쪽, 윗머리 */
-const PATTERNS: (string | null)[] = [
+export const PATTERNS: (string | null)[] = [
   null,
   "M-6 34L34-6L44 4L4 44Z",
   "M0 25H40V33H0Z",
@@ -31,6 +31,12 @@ const PATTERNS: (string | null)[] = [
   "M20 0H40V44H20Z",
   "M0 0H40V13H0Z",
 ];
+
+/** 모노그램 글자 크기 (viewBox 단위). 글자가 많을수록 작아요. */
+export function monoSize(e: Emblem): number {
+  const len = [...e.mono].length;
+  return e.latin ? (len <= 2 ? 17 : len === 3 ? 13 : 10.5) : len === 1 ? 19 : len === 2 ? 14 : 11;
+}
 
 interface TeamBadgeProps {
   /** 팀·학교·부대·국가 이름 */
@@ -86,8 +92,7 @@ export function TeamBadge({ name, kind, color, size = 28, className, decorative 
   if (!e) return null;
   const shape = SHAPES[e.kind];
   const pattern = PATTERNS[e.pattern];
-  const len = [...e.mono].length;
-  const font = e.latin ? (len <= 2 ? 17 : len === 3 ? 13 : 10.5) : len === 1 ? 19 : len === 2 ? 14 : 11;
+  const font = monoSize(e);
   return (
     <svg
       className={className ? `badge ${className}` : "badge"}

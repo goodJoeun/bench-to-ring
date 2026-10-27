@@ -390,6 +390,10 @@ export const gameActions = {
     const m = snapshot.career?.news[0]?.m;
     if (m) set({ toast: toast(m) });
   },
+  /** 화면 아래에 알림을 띄워요. 공유처럼 게임 밖 동작의 결과를 알릴 때 써요. */
+  notify(msg: string) {
+    set({ toast: toast(msg) });
+  },
   dismissToast(id: number) {
     if (snapshot.toast?.id === id) set({ toast: null });
   },
