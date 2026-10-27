@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AWARDS, LEAGUES, PERSONAL_AWARDS, POS_KEYS, RULESET_VERSION, START_YEAR, legacyOf, playedNba, type AwardKey, type CareerSummary, type LeagueKey, type LeagueShare, type PosKey } from "@/game";
+import { AWARDS, LEAGUES, NAME_MAX, PERSONAL_AWARDS, POS_KEYS, RULESET_VERSION, START_YEAR, legacyOf, playedNba, type AwardKey, type CareerSummary, type LeagueKey, type LeagueShare, type PosKey } from "@/game";
 import { RETIRE_AGE } from "@/game/offseason";
 import { STAT_KEYS, type BoardScope, type StatKey } from "@/lib/leaderboard/types";
 
@@ -13,7 +13,7 @@ const hexColor = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
 
 const summarySchema = z.object({
   id: z.string().min(1).max(64),
-  name: z.string().trim().min(1).max(12),
+  name: z.string().trim().min(1).max(NAME_MAX),
   num: z.int().min(0).max(99),
   pos: z.enum(POS_KEYS as [PosKey, ...PosKey[]]),
   nat: z.string().max(30),

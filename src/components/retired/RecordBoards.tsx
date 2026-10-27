@@ -13,6 +13,7 @@ import {
   type RecordBoard,
   type RecordGroup,
 } from "@/game";
+import { nameFit } from "@/components/common/format";
 import { Panel, Segmented } from "@/components/common/ui";
 
 /** 이만큼 넘는 순위표는 상위권과 내 주변만 보여줘요. */
@@ -46,7 +47,7 @@ function Board({ board, name, mine, all }: { board: RecordBoard; name: string; m
           r ? (
             <li key={`${r.name}-${i}`} data-mine={r.mine || undefined}>
               <span className="lr">{r.rank ?? "–"}</span>
-              <span className="ln">
+              <span className="ln" style={r.mine ? nameFit(r.name) : undefined}>
                 {r.name}
                 {r.mine && <span className="me">나</span>}
                 {r.note && <span className="lt">{r.note}</span>}

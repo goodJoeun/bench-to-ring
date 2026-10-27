@@ -1,5 +1,6 @@
 import { fmtNum } from "@/game";
 import type { BoardEntry } from "@/lib/leaderboard/types";
+import { nameFit } from "@/components/common/format";
 import { Sprite } from "@/components/common/Sprite";
 import { jerseyOf, lookOf, medalOf } from "./look";
 
@@ -29,7 +30,7 @@ function Podium({ e, place, rank, mine }: { e: BoardEntry; place: 1 | 2 | 3; ran
   return (
     <div className="rk-pod" data-place={place} data-mine={mine || undefined}>
       <Sprite {...lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={3} className="rk-sprite" label={`${e.name} 도트 캐릭터`} />
-      <b className="nm">
+      <b className="nm" style={nameFit(e.name)}>
         {e.name}
         {mine && <span className="me">나</span>}
       </b>
@@ -66,7 +67,7 @@ export function RankingList({ rows, byPos, mine }: { rows: BoardEntry[]; byPos: 
               <RankMark rank={rankOf(e)} />
               <Sprite {...lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={2} className="rk-mini" label={`${e.name} 도트 캐릭터`} />
               <span className="rk-who">
-                <b>
+                <b style={nameFit(`${e.name} #${e.num}`)}>
                   {e.name} <span className="num">#{e.num}</span>
                   {mine.has(e.id) && <span className="me">나</span>}
                 </b>

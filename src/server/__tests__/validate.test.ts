@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
   ARCHETYPES,
+  NAME_MAX,
   POS_KEYS,
   RULESET_VERSION,
   chooseOption,
@@ -79,6 +80,11 @@ describe("은퇴 기록 검사", () => {
   it("모르는 칸은 버려요", () => {
     const r = checkSummary({ ...summaries[0], verified: true, admin: 1 });
     expect(r.ok && Object.keys(r.summary)).not.toContain("verified");
+  });
+
+  it("선수 이름은 NAME_MAX(20)자까지 받아요", () => {
+    expect(checkSummary({ ...summaries[0], name: "가".repeat(NAME_MAX) })).toMatchObject({ ok: true });
+    expect(checkSummary({ ...summaries[0], name: "가".repeat(NAME_MAX + 1) })).toMatchObject({ ok: false });
   });
 });
 

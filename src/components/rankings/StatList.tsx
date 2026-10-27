@@ -1,5 +1,6 @@
 import { fmtNum } from "@/game";
 import type { StatEntry, StatKey } from "@/lib/leaderboard/types";
+import { nameFit } from "@/components/common/format";
 import { Sprite } from "@/components/common/Sprite";
 import { RankMark } from "./RankingList";
 import { jerseyOf, lookOf } from "./look";
@@ -24,7 +25,7 @@ export function StatList({ rows, stat, mine }: { rows: StatEntry[]; stat: StatKe
           <RankMark rank={e.rank} />
           <Sprite {...lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={2} className="rk-mini" label={`${e.name} 도트 캐릭터`} />
           <span className="rk-who">
-            <b>
+            <b style={nameFit(`${e.name} #${e.num}`)}>
               {e.name} <span className="num">#{e.num}</span>
               {mine.has(e.id) && <span className="me">나</span>}
             </b>

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
-import { type CareerSummary } from "@/game";
+import { NAME_MAX, type CareerSummary } from "@/game";
 import { gameActions, type CreationDraft } from "@/lib/game-store";
 import { HallOfFame } from "@/components/common/HallOfFame";
 import { Segmented } from "@/components/common/ui";
@@ -62,7 +62,7 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
             <input
               id="f-name"
               ref={nameRef}
-              maxLength={12}
+              maxLength={NAME_MAX}
               required
               aria-required="true"
               placeholder="이름을 지어 주세요"

@@ -2,7 +2,7 @@
 
 import { natColor, type Career, type Cheer } from "@/game";
 import { gameActions } from "@/lib/game-store";
-import { NO_TEAM_COLOR, keepTogether } from "@/components/common/format";
+import { NO_TEAM_COLOR, keepTogether, nameFit } from "@/components/common/format";
 import { useAutoFocus } from "@/components/common/hooks";
 import { Sprite } from "@/components/common/Sprite";
 import { AwardName } from "@/components/common/ui";
@@ -54,7 +54,7 @@ export function CheerPopup({ career: c, cheer }: { career: Career; cheer: Cheer 
         <Sprite skin={c.p.skin} hair={c.p.hair} color={color} label="" className="sprite sim-sprite" />
         <span className="sim-shadow" />
       </div>
-      <span className="sim-team">
+      <span className="sim-team" style={nameFit(`${KICKER[cheer.kind]} · ${c.p.name} #${c.p.num}`)}>
         {KICKER[cheer.kind]} · {c.p.name} #{c.p.num}
       </span>
       <h2 id="cheer-title" className="cheer-title">

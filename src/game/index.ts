@@ -14,6 +14,7 @@ export {
   generateCandidates,
   createCareer,
   HOME_NATION,
+  NAME_MAX,
   START_OVR,
   START_MIN,
   START_CAP,

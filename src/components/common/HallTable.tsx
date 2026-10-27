@@ -1,4 +1,5 @@
 import type { CareerSummary, PosKey } from "@/game";
+import { nameFit } from "./format";
 
 /* 명예의 전당(이 브라우저의 기록) 표와 Best 5 */
 
@@ -16,7 +17,9 @@ export function Best5({ items }: { items: { pos: PosKey; career: HallCareer | nu
       {items.map(({ pos, career, note }) => (
         <div className="b5" key={pos}>
           <span className="p">{pos}</span>
-          <span className="nm">{career ? career.name : "비어 있음"}</span>
+          <span className="nm" style={career ? nameFit(career.name) : undefined}>
+            {career ? career.name : "비어 있음"}
+          </span>
           <span className="hint">{career ? `${note ? `${note} · ` : ""}OVR ${career.peak} · MVP ${career.mvp}` : "기록 없음"}</span>
         </div>
       ))}

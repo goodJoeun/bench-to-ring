@@ -1,5 +1,6 @@
 import type { PosKey } from "@/game";
 import type { BoardEntry } from "@/lib/leaderboard/types";
+import { nameFit } from "@/components/common/format";
 import { Sprite } from "@/components/common/Sprite";
 import { jerseyOf, lookOf } from "./look";
 
@@ -39,7 +40,7 @@ export function BestFiveCourt({ best5, mine }: { best5: { pos: PosKey; career: B
             <>
               <Sprite {...lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={3} className="rk-sprite" label={`${e.name} 도트 캐릭터`} />
               <span className="rk-plate" data-mine={mine.has(e.id) || undefined}>
-                <b>{e.name}</b>
+                <b style={nameFit(e.name)}>{e.name}</b>
                 <span>
                   {pos} · OVR {e.peak}
                 </span>

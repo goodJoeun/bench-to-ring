@@ -2,7 +2,7 @@
 
 import { awardGroups, fmtNum, money, titleHistory, type AwardCount, type Career, type CareerSummary } from "@/game";
 import { gameActions } from "@/lib/game-store";
-import { NO_TEAM_COLOR, militaryShort } from "@/components/common/format";
+import { NO_TEAM_COLOR, militaryShort, nameFit } from "@/components/common/format";
 import { RecordBoards } from "./RecordBoards";
 import { SimilarPlayers } from "./SimilarPlayers";
 import { HallOfFame } from "@/components/common/HallOfFame";
@@ -61,7 +61,7 @@ export function RetiredScreen({ career: c, hall }: { career: Career; hall: Caree
         <span className="label">
           {s.retYear}년 · {s.retAge}세 은퇴
         </span>
-        <div className="name">
+        <div className="name" style={nameFit(`${p.name} #${p.num}`)}>
           {p.name} #{p.num}
         </div>
         <div className="legacy">{s.legacy}</div>

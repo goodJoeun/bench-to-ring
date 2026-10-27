@@ -813,3 +813,21 @@ html:has(.sheet) .toast-zone{bottom:auto;top:calc(12px + env(safe-area-inset-top
 .rk-on{font-size:12px;font-weight:700;color:var(--muted)}
 .rk-on[data-on]{color:var(--accent)}
 a.btn{color:var(--ink);text-decoration:none}
+
+/*
+ * 긴 선수 이름 (20자까지): 이름 폭(--nw 전체, --lw 가장 긴 낱말. 한글 한 글자가 2, nameFit)과 칸 너비(cqi)로 글자 크기를 줄여요.
+ * 글자 하나가 폭 2에 0.5em쯤이라, 184cqi / --nw면 한 줄, 368cqi / --nw면 두 줄에 들어가요. 184cqi / --lw는 가장 긴 낱말이 한 줄에 들어가는 크기예요.
+ * 가장 작은 크기로도 넘치면 그때만 줄을 바꾸거나(선수 카드) 두 줄에서 줄여요(목록).
+ */
+.plate,.b5,.rk-who,.rk-pod,.rk-spot,.lb li{container-type:inline-size}
+.plate .name,.ret .plate .name{font-size:clamp(15px,min(368cqi / var(--nw,1),184cqi / var(--lw,1)),var(--fs,24px))}
+.ret .plate .name{--fs:30px}
+.b5 .nm{font-size:clamp(12px,min(368cqi / var(--nw,1),184cqi / var(--lw,1)),15px)}
+.rk-pod .nm,.rk-pod[data-place="1"] .nm{font-size:clamp(11.5px,min(368cqi / var(--nw,1),184cqi / var(--lw,1)),var(--fs,14.5px))}
+.rk-pod[data-place="1"] .nm{--fs:16px}
+.rk-who b,.rk-plate b{white-space:normal;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.rk-who b{font-size:clamp(11px,184cqi / var(--nw,1),14.5px)}
+.rk-plate b{font-size:clamp(10px,(100cqi - 18px) * 1.84 / var(--nw,1),var(--fs,13px));line-height:1.25;-webkit-line-clamp:3}
+@media (max-width:420px){.rk-plate b{--fs:12px}}
+.lb .ln{font-size:clamp(11px,(100cqi - 140px) * 1.84 / var(--nw,1),13.5px)}
+.sim-team{font-size:clamp(11.5px,176vw / var(--nw,1),13px);text-wrap:balance}

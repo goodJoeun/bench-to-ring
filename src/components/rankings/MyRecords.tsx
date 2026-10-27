@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { fmtNum, rankHall, type CareerSummary } from "@/game";
 import type { MyRanks } from "@/lib/leaderboard/types";
+import { nameFit } from "@/components/common/format";
 import { Sprite } from "@/components/common/Sprite";
 import { StatTiles } from "@/components/common/ui";
 import { jerseyOf, lookOf } from "./look";
@@ -54,7 +55,7 @@ export function MyRecords({ hall, mine, pending }: MyRecordsProps) {
               <RankMark rank={rank} />
               <Sprite {...lookOf(s.id, s.look)} color={jerseyOf(s.teams.at(-1))} scale={2} className="rk-mini" label={`${s.name} 도트 캐릭터`} />
               <span className="rk-who">
-                <b>
+                <b style={nameFit(`${s.name} #${s.num}`)}>
                   {s.name} <span className="num">#{s.num}</span>
                 </b>
                 <span className="sub">

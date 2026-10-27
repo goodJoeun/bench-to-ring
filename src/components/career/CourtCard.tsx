@@ -1,5 +1,5 @@
 import { LEAGUES, POS, militaryUnit, money, stageLabel, type Career } from "@/game";
-import { NO_TEAM_COLOR } from "@/components/common/format";
+import { NO_TEAM_COLOR, nameFit } from "@/components/common/format";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { CourtStage } from "@/components/common/ui";
 
@@ -24,7 +24,9 @@ export function CourtCard({ career: c }: { career: Career }) {
           {p.pos} · {POS[p.pos].name}
         </span>
       </div>
-      <div className="name">{p.name}</div>
+      <div className="name" style={nameFit(p.name)}>
+        {p.name}
+      </div>
       <div className="sub">{unit ? unit.name : t ? `${t.name} · ${LEAGUES[t.lg].name}` : "소속팀 없음"}</div>
       <div className="sub">
         {stageLabel(c)} · {p.nat}
