@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
-import { NAME_MAX, NATIONS, type CareerSummary } from "@/game";
+import { NAME_MAX, type CareerSummary } from "@/game";
 import { gameActions, type CreationDraft } from "@/lib/game-store";
 import { HallOfFame } from "@/components/common/HallOfFame";
 import { Segmented } from "@/components/common/ui";
@@ -13,12 +13,10 @@ import { LookPicker } from "./LookPicker";
 import { NameRequiredSheet } from "./NameRequiredSheet";
 import { POSITIONS } from "./options";
 
-/** 고른 국적의 국가대표 발탁 기준과 병역 안내 */
+/** 국가대표 발탁과 고른 국적의 병역 안내 */
 function natHint(nat: string): string {
-  const n = NATIONS.find((x) => x.name === nat);
-  if (!n) return "";
-  const duty = nat === "대한민국" ? "병역 의무가 있고, 아시안게임 금메달·올림픽 메달로 특례를 받을 수 있어요." : "병역 의무는 없어요.";
-  return `${nat} 국가대표는 오버롤 ${n.threshold}부터 뽑혀요. ${duty}`;
+  const duty = nat === "대한민국" ? "대한민국 선수는 병역 의무가 있고, 아시안게임 금메달·올림픽 메달로 특례를 받을 수 있어요." : "병역 의무는 없어요.";
+  return `대표팀 수준에 따라 국가대표 발탁에 필요한 실력이 달라져요. ${duty}`;
 }
 
 export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: CareerSummary[] }) {
