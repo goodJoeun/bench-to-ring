@@ -83,9 +83,9 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
               </p>
               <CareerPath />
             </section>
-            {/* 내 기록이 없어도 온라인 랭킹을 볼 수 있게 늘 보여줘요. */}
+            {/* 내 기록이 없어도 온라인 랭킹을 볼 수 있게 늘 보여줘요. 첫 화면은 Top 10만, 나머지는 랭킹 페이지에서 봐요. */}
             <div className="resume">
-              <HallOfFame hall={hall} />
+              <HallOfFame hall={hall} rows={10} />
             </div>
           </div>
         </ViewTransition>

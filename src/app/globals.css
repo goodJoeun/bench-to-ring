@@ -301,6 +301,51 @@ h2.sec {
   background: var(--panel2);
 }
 
+/* 커피 후원: 헤더 단추는 따뜻한 색으로 구분하고, 시트에 계좌를 크게 보여줘요. */
+.coffee-btn svg {
+  fill: #b5651d;
+}
+.cf-cup {
+  font-size: 40px;
+  line-height: 1;
+  margin-top: 6px;
+}
+.cf-account {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 14px;
+  padding: 18px 16px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r);
+  background: var(--panel2);
+  text-align: center;
+}
+.cf-bank {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.cf-num {
+  font-family: var(--f-num);
+  font-size: clamp(22px, 6.5vw, 28px);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  user-select: all;
+  word-break: break-all;
+}
+.cf-holder {
+  font-size: 13px;
+  color: var(--muted);
+}
+.cf-note {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 /* 설정 시트: 화면 테마와 구단 목록 */
 .set-sec {
   display: flex;
@@ -4458,8 +4503,14 @@ html:has(.sheet) .toast-zone {
     display: none;
   }
 }
-@media (max-width: 380px) {
-  /* 360px 휴대폰에서도 설정 단추가 화면 밖으로 밀리지 않게 간격을 좁혀요. */
+@media (max-width: 400px) {
+  /* 360px 휴대폰에서도 설정 단추가 화면 밖으로 밀리지 않게, 제목 옆 공 아이콘을 빼고 간격을 좁혀요. */
+  .top .brand .ball {
+    display: none;
+  }
+  .top {
+    gap: 8px;
+  }
   .hright {
     gap: 4px;
   }

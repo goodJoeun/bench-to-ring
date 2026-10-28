@@ -20,3 +20,10 @@ export const SITE_KEYWORDS = [
   "NBA",
   "MVP",
 ];
+
+/** 상단 '커피' 버튼의 후원 계좌. 계좌번호를 비워 두면 버튼을 숨기고, 예금주를 비워 두면 그 줄을 숨겨요. */
+export const SUPPORT_ACCOUNT = {
+  bank: "카카오뱅크",
+  number: "3333-15-9891019",
+  holder: "",
+};

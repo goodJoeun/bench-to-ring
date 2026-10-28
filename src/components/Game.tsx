@@ -12,6 +12,8 @@ import { FeedbackDialog } from "@/components/feedback/FeedbackDialog";
 import { GuideDialog } from "@/components/guide/GuideDialog";
 import { NoticeDialog } from "@/components/notice/NoticeDialog";
 import { NOTICES, useReadNotices } from "@/lib/notices";
+import { SUPPORT_ACCOUNT } from "@/lib/site";
+import { CoffeeDialog } from "@/components/support/CoffeeDialog";
 import { RetiredScreen } from "@/components/retired/RetiredScreen";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { LiveGameView } from "@/components/progress/LiveGameView";
@@ -34,6 +36,7 @@ export function Game() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [noticeOpen, setNoticeOpen] = useState(false);
+  const [coffeeOpen, setCoffeeOpen] = useState(false);
   const readNotices = useReadNotices();
   const unread = NOTICES.some((n) => !readNotices.has(n.id));
 
@@ -76,6 +79,21 @@ export function Game() {
           </span>
         </div>
         <div className="hright">
+          {SUPPORT_ACCOUNT.number && (
+            <button
+              type="button"
+              className="guide-btn coffee-btn"
+              aria-label="개발자에게 커피 후원"
+              aria-haspopup="dialog"
+              aria-expanded={coffeeOpen}
+              onClick={() => setCoffeeOpen(true)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 8h13v5a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6zm13 1h1.5a3 3 0 0 1 0 6H17v-2h1.5a1 1 0 0 0 0-2H17zM8 2c1 1.2 1 2.3 0 3.5S7 7.8 8 9H6.4c-.9-1.2-.9-2.3 0-3.5s.9-2.3 0-3.5zm4 0c1 1.2 1 2.3 0 3.5s-1 2.3 0 3.5h-1.6c-.9-1.2-.9-2.3 0-3.5s.9-2.3 0-3.5zM3 20h16v2H3z" />
+              </svg>
+              <span>커피</span>
+            </button>
+          )}
           <Link className="guide-btn" href="/rankings" aria-label="랭킹">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M7 4h10v2h3v3a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 15.9V18h3v2H8v-2h3v-2.1A5 5 0 0 1 8.4 13H8a4 4 0 0 1-4-4V6h3zm0 4H6v1a2 2 0 0 0 1 1.7zm10 0v2.7A2 2 0 0 0 18 9V8z" />
@@ -149,6 +167,7 @@ export function Game() {
       {cheer && career && <CheerPopup career={career} cheer={cheer} />}
       {guideOpen && <GuideDialog onClose={() => setGuideOpen(false)} />}
       {noticeOpen && <NoticeDialog onClose={() => setNoticeOpen(false)} />}
+      {coffeeOpen && <CoffeeDialog onClose={() => setCoffeeOpen(false)} />}
       {feedbackOpen && (
         <FeedbackDialog
           onClose={() => setFeedbackOpen(false)}
