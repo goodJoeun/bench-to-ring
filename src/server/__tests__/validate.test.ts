@@ -102,16 +102,22 @@ describe("순위표 조건", () => {
   const q = (s: string) => parseBoardQuery(new URLSearchParams(s));
 
   it("기본은 현재 룰셋 전체 순위예요", () => {
-    expect(q("")).toEqual({ ok: true, scope: { ruleset: RULESET_VERSION }, pos: null });
-    expect(q("scope=current&pos=SG")).toEqual({ ok: true, scope: { ruleset: RULESET_VERSION }, pos: "SG" });
-    expect(q(`ruleset=${RULESET_VERSION}`)).toEqual({ ok: true, scope: { ruleset: RULESET_VERSION }, pos: null });
-    expect(q("scope=all&pos=C")).toEqual({ ok: true, scope: "all", pos: "C" });
+    expect(q("")).toEqual({ ok: true, scope: { ruleset: RULESET_VERSION }, pos: null, day: null });
+    expect(q("scope=current&pos=SG")).toEqual({ ok: true, scope: { ruleset: RULESET_VERSION }, pos: "SG", day: null });
+    expect(q(`ruleset=${RULESET_VERSION}`)).toEqual({ ok: true, scope: { ruleset: RULESET_VERSION }, pos: null, day: null });
+    expect(q("scope=all&pos=C")).toEqual({ ok: true, scope: "all", pos: "C", day: null });
+  });
+
+  it("날짜를 고르면 그날 올라온 기록만 세요", () => {
+    expect(q("scope=all&day=2026-10-28")).toEqual({ ok: true, scope: "all", pos: null, day: "2026-10-28" });
+    expect(parseStatQuery(new URLSearchParams("stat=reb&scope=all&day=2024-02-29"))).toEqual({ ok: true, scope: "all", stat: "reb", day: "2024-02-29" });
+    for (const s of ["day=2026-02-30", "day=2026-1-5", "day=today", "day="]) expect(q(s), s).toMatchObject({ ok: false });
   });
 
   it("스탯 랭킹은 스탯을 꼭 고르고, 범위는 순위표와 같아요", () => {
     const sq = (s: string) => parseStatQuery(new URLSearchParams(s));
-    expect(sq("stat=tpm")).toEqual({ ok: true, scope: { ruleset: RULESET_VERSION }, stat: "tpm" });
-    expect(sq("stat=pts&scope=all")).toEqual({ ok: true, scope: "all", stat: "pts" });
+    expect(sq("stat=tpm")).toEqual({ ok: true, scope: { ruleset: RULESET_VERSION }, stat: "tpm", day: null });
+    expect(sq("stat=pts&scope=all")).toEqual({ ok: true, scope: "all", stat: "pts", day: null });
     for (const s of ["", "stat=dunk", "stat=pts&pos=C", "stat=pts&scope=week"]) expect(sq(s), s).toMatchObject({ ok: false });
   });
 

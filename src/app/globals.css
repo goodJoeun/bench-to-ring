@@ -4296,6 +4296,20 @@ html:has(.sheet) .toast-zone {
   border-color: var(--ink);
   color: var(--panel);
 }
+/* 날짜 칩: 포지션·스탯 칩 위에 한 줄로 두고, 좁은 화면에서는 옆으로 밀어요. */
+.rk-days {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.rk-days::-webkit-scrollbar {
+  display: none;
+}
+.rk-days button {
+  flex: none;
+  padding: 5px 12px;
+  font-size: 13px;
+}
 .rk-empty {
   display: flex;
   flex-direction: column;

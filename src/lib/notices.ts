@@ -21,6 +21,24 @@ export interface Notice {
 
 export const NOTICES: Notice[] = [
   {
+    id: "2026-10-28-daily-rankings",
+    kind: "patch",
+    date: "2026.10.28",
+    icon: "📅",
+    title: "날짜별 랭킹 · 올타임 랭킹",
+    intro: "랭킹을 날짜별로 볼 수 있어요.",
+    sections: [
+      {
+        title: "날짜별 랭킹",
+        items: [
+          "베스트 5·랭킹 100·포지션별 랭킹·스탯 랭킹 위에 오늘·어제부터 일주일 날짜 칩이 생겼어요.",
+          "날짜를 고르면 그날(한국 시간) 은퇴해 올라온 기록끼리 순위를 매겨요.",
+          "맨 끝의 '올타임(역대)'를 고르면 지금까지 올라온 모든 기록의 순위를 볼 수 있어요.",
+        ],
+      },
+    ],
+  },
+  {
     id: "2026-10-28-kbl-playoffs",
     kind: "patch",
     date: "2026.10.28",

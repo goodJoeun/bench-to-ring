@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { AWARDS, BEARDS, HAIR_STYLES, LEAGUES, LOOK_KEYS, NAME_MAX, PERSONAL_AWARDS, POS_KEYS, RULESET_VERSION, START_YEAR, legacyOf, playedNba, type AwardKey, type CareerSummary, type LeagueKey, type BeardStyle, type HairStyle, type LeagueShare, type LookKey, type PosKey } from "@/game";
 import { RETIRE_AGE } from "@/game/offseason";
-import { STAT_KEYS, type BoardScope, type StatKey } from "@/lib/leaderboard/types";
+import { isDay } from "@/lib/leaderboard/days";
+import { STAT_KEYS, type BoardDay, type BoardScope, type StatKey } from "@/lib/leaderboard/types";
 
 // 제출한 은퇴 기록이 엔진이 낼 수 있는 모양과 범위인지 봐요 (docs/online-leaderboard.md 4장 1단계). 순위표 조회 조건도 여기서 읽어요.
 // DB를 쓰지 않아서 테스트에서 바로 불러요.
@@ -88,25 +89,27 @@ const boardQuerySchema = z.object({
   scope: z.enum(["current", "all"]).default("current"),
   ruleset: z.coerce.number().pipe(z.int().min(1).max(RULESET_VERSION)).optional(),
   pos: z.enum(POS_KEYS as [PosKey, ...PosKey[]]).optional(),
+  day: z.string().refine(isDay).optional(),
 });
 
-export type BoardQueryResult = { ok: true; scope: BoardScope; pos: PosKey | null } | { ok: false; error: string };
+export type BoardQueryResult = { ok: true; scope: BoardScope; pos: PosKey | null; day: BoardDay } | { ok: false; error: string };
 
 /**
- * GET /api/boards의 `?scope=current|all&ruleset=&pos=`.
+ * GET /api/boards의 `?scope=current|all&ruleset=&pos=&day=`.
  * 기본은 현재 룰셋이고, `ruleset`으로 지난 룰셋을 고를 수 있어요. `scope=all`이면 룰셋을 가리지 않아요.
+ * `day=YYYY-MM-DD`면 그날(한국 시간) 올라온 기록만 세고, 없으면 날짜를 가리지 않아요(올타임).
  */
 export function parseBoardQuery(params: URLSearchParams): BoardQueryResult {
   const parsed = boardQuerySchema.safeParse(Object.fromEntries(params));
   if (!parsed.success) return { ok: false, error: "순위표 조건이 맞지 않아요." };
   const q = parsed.data;
   if (q.scope === "all" && q.ruleset !== undefined) return { ok: false, error: "역대 전체에는 룰셋을 고를 수 없어요." };
-  return { ok: true, scope: q.scope === "all" ? "all" : { ruleset: q.ruleset ?? RULESET_VERSION }, pos: q.pos ?? null };
+  return { ok: true, scope: q.scope === "all" ? "all" : { ruleset: q.ruleset ?? RULESET_VERSION }, pos: q.pos ?? null, day: q.day ?? null };
 }
 
-export type StatQueryResult = { ok: true; scope: BoardScope; stat: StatKey } | { ok: false; error: string };
+export type StatQueryResult = { ok: true; scope: BoardScope; stat: StatKey; day: BoardDay } | { ok: false; error: string };
 
-/** GET /api/stats의 `?stat=&scope=&ruleset=`. 범위는 순위표와 같고, 포지션은 고를 수 없어요. */
+/** GET /api/stats의 `?stat=&scope=&ruleset=&day=`. 범위와 날짜는 순위표와 같고, 포지션은 고를 수 없어요. */
 export function parseStatQuery(params: URLSearchParams): StatQueryResult {
   const stat = params.get("stat");
   if (!STAT_KEYS.includes(stat as StatKey)) return { ok: false, error: "스탯 종류가 맞지 않아요." };
@@ -114,7 +117,7 @@ export function parseStatQuery(params: URLSearchParams): StatQueryResult {
   rest.delete("stat");
   if (rest.has("pos")) return { ok: false, error: "스탯 랭킹은 포지션을 고를 수 없어요." };
   const q = parseBoardQuery(rest);
-  return q.ok ? { ok: true, scope: q.scope, stat: stat as StatKey } : q;
+  return q.ok ? { ok: true, scope: q.scope, stat: stat as StatKey, day: q.day } : q;
 }
 
 /** 욕설이 들어간 선수 이름은 이 이름으로 바꿔서 올려요. 기록은 살려요. */

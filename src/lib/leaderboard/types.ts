@@ -19,6 +19,9 @@ export interface SubmitResult {
 /** GET /api/boards의 범위: 한 룰셋 안 또는 역대 전체 */
 export type BoardScope = { ruleset: number } | "all";
 
+/** 순위표의 날짜: 그날(한국 시간) 올라온 기록만 세는 `YYYY-MM-DD`. null이면 날짜를 가리지 않는 올타임이에요. */
+export type BoardDay = string | null;
+
 /** 순위표의 한 줄. 플레이어 정보는 내보내지 않아요. */
 export interface BoardEntry {
   /** 서버의 기록 id (careers.id) */
@@ -73,6 +76,7 @@ export interface MyRanks {
 /** GET /api/boards */
 export interface Board {
   scope: BoardScope;
+  day: BoardDay;
   /** 포지션을 골랐으면 그 포지션 순위표예요. */
   pos: PosKey | null;
   /** 전체 Top 100, 포지션을 골랐으면 그 포지션 Top 50 */
@@ -112,6 +116,7 @@ export interface StatEntry {
 /** GET /api/stats */
 export interface StatBoard {
   scope: BoardScope;
+  day: BoardDay;
   stat: StatKey;
   /** 상위 50명. 스틸·블록·3점슛은 그 기록이 남은 커리어만 세요. */
   top: StatEntry[];

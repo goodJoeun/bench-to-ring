@@ -5,7 +5,8 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { POS, POS_KEYS, type PosKey } from "@/game";
 import { useGame } from "@/lib/game-store";
 import { fetchBoard, fetchMine, fetchStatBoard, pendingIds } from "@/lib/leaderboard/client";
-import { STAT_KEYS, type Board, type MyRanks, type StatBoard, type StatKey } from "@/lib/leaderboard/types";
+import { daysBack, kstDay } from "@/lib/leaderboard/days";
+import { STAT_KEYS, type Board, type BoardDay, type MyRanks, type StatBoard, type StatKey } from "@/lib/leaderboard/types";
 import { Loading } from "@/components/common/ui";
 import { BestFiveCourt } from "./BestFiveCourt";
 import { MyRecords } from "./MyRecords";
@@ -21,6 +22,8 @@ const TABS = [
 ] as const;
 type Tab = (typeof TABS)[number][0];
 type PosFilter = PosKey | "all";
+/** 고른 날짜: 오늘부터 며칠 전인지(0이 오늘), 또는 올타임 */
+type DayPick = number | "all";
 
 // 탭은 주소의 #best5 · #ranking · #position · #stats · #mine을 따라가요. 링크로 바로 열 수 있고 뒤로 가기도 돼요.
 const subscribeHash = (cb: () => void) => {
@@ -34,55 +37,83 @@ const readTab = (): Tab => {
   return TABS.some(([k]) => k === h) ? (h as Tab) : "best5";
 };
 
+/** 오늘의 한국 날짜. 서버에서는 빈 문자열이에요. */
+const readToday = () => kstDay(Date.now());
+
+/** 날짜 칩 이름: 오늘·어제, 그 앞은 월.일 */
+const dayLabel = (day: string, ago: number) => (ago === 0 ? "오늘" : ago === 1 ? "어제" : `${day.slice(5, 7)}.${day.slice(8)}`);
+
+/** 일주일 날짜 칩과 맨 끝 올타임 칩 */
+function DayChips({ days, pick, onPick }: { days: string[]; pick: DayPick; onPick: (p: DayPick) => void }) {
+  return (
+    <div className="rk-chips rk-days" role="group" aria-label="날짜 고르기">
+      {days.map((d, i) => (
+        <button key={d} type="button" aria-pressed={pick === i} onClick={() => onPick(i)}>
+          {dayLabel(d, i)}
+        </button>
+      ))}
+      <button type="button" aria-pressed={pick === "all"} onClick={() => onPick("all")}>
+        올타임<span>(역대)</span>
+      </button>
+    </div>
+  );
+}
+
+/** 빈 순위표 문구에 쓰는 날짜 이름 */
+const dayName = (day: BoardDay, today: string) =>
+  day === null ? "" : day === today ? "오늘 " : `${Number(day.slice(5, 7))}월 ${Number(day.slice(8))}일에 `;
+
 /**
  * 순위표는 그 순위표를 쓰는 탭을 열 때(`needed`) 처음 불러와요.
- * 한 번 불러온 순위표는 이 화면에 있는 동안 다시 부르지 않아요. null은 불러오지 못한 것이에요.
+ * 한 번 불러온 순위표(날짜·포지션마다)는 이 화면에 있는 동안 다시 부르지 않아요. null은 불러오지 못한 것이에요.
  */
-function useBoard(pos: PosFilter, needed: boolean) {
-  const [boards, setBoards] = useState<Partial<Record<PosFilter, Board | null>>>({});
-  const loaded = pos in boards;
+function useBoard(pos: PosFilter, day: BoardDay, needed: boolean) {
+  const [boards, setBoards] = useState<Record<string, Board | null>>({});
+  const key = `${day ?? "all"}:${pos}`;
+  const loaded = key in boards;
   useEffect(() => {
     if (loaded || !needed) return;
     let live = true;
-    void fetchBoard(undefined, pos === "all" ? null : pos).then((b) => {
-      if (live) setBoards((m) => ({ ...m, [pos]: b }));
+    void fetchBoard(undefined, pos === "all" ? null : pos, day).then((b) => {
+      if (live) setBoards((m) => ({ ...m, [key]: b }));
     });
     return () => {
       live = false;
     };
-  }, [pos, loaded, needed]);
+  }, [key, pos, day, loaded, needed]);
   const retry = () =>
     setBoards((m) => {
       const next = { ...m };
-      delete next[pos];
+      delete next[key];
       return next;
     });
-  return { board: boards[pos], loaded, retry };
+  return { board: boards[key], loaded, retry };
 }
 
 /**
- * 스탯 랭킹 탭: 스탯을 고르면 그 스탯의 프로 통산 상위 50명을 불러와요.
- * 한 번 불러온 스탯은 이 화면에 있는 동안 다시 부르지 않아요. null은 불러오지 못한 것이에요.
+ * 스탯 랭킹 탭: 스탯을 고르면 그 스탯의 프로 통산 상위 50명을 불러와요. 날짜를 고르면 그날 올라온 기록끼리예요.
+ * 한 번 불러온 스탯(날짜마다)은 이 화면에 있는 동안 다시 부르지 않아요. null은 불러오지 못한 것이에요.
  */
-function StatsPanel({ mine }: { mine: Set<string> }) {
+function StatsPanel({ mine, day, today }: { mine: Set<string>; day: BoardDay; today: string }) {
   const [stat, setStat] = useState<StatKey>("pts");
-  const [boards, setBoards] = useState<Partial<Record<StatKey, StatBoard | null>>>({});
-  const loaded = stat in boards;
+  const [boards, setBoards] = useState<Record<string, StatBoard | null>>({});
+  const key = `${day ?? "all"}:${stat}`;
+  const loaded = key in boards;
   useEffect(() => {
     if (loaded) return;
     let live = true;
-    void fetchStatBoard(stat).then((b) => {
-      if (live) setBoards((m) => ({ ...m, [stat]: b }));
+    void fetchStatBoard(stat, undefined, day).then((b) => {
+      if (live) setBoards((m) => ({ ...m, [key]: b }));
     });
     return () => {
       live = false;
     };
-  }, [stat, loaded]);
-  const board = boards[stat];
+  }, [key, stat, day, loaded]);
+  const board = boards[key];
   const retry = () =>
     setBoards((m) => {
       const next = { ...m };
-      delete next[stat];
+      delete next[key];
       return next;
     });
 
@@ -108,7 +139,9 @@ function StatsPanel({ mine }: { mine: Set<string> }) {
         </div>
       ) : !board.top.length ? (
         <div className="rk-empty">
-          <b>아직 {STAT_LABELS[stat].name} 기록이 없어요</b>
+          <b>
+            {day === null ? "아직" : dayName(day, today)} 올라온 {STAT_LABELS[stat].name} 기록이 없어요
+          </b>
           <span>프로 무대를 밟은 선수가 은퇴하면 첫 기록이 돼요.</span>
         </div>
       ) : (
@@ -136,6 +169,10 @@ function useMine() {
 export function RankingsScreen() {
   const tab = useSyncExternalStore(subscribeHash, readTab, () => "best5" as Tab);
   const [pos, setPos] = useState<PosKey>("PG");
+  const [pick, setPick] = useState<DayPick>(0);
+  const today = useSyncExternalStore(subscribeNever, readToday, () => "");
+  const days = today ? daysBack(today) : [];
+  const day: BoardDay = pick === "all" ? null : (days[pick] ?? null);
   const { hall, endings } = useGame();
   const mine = useMine();
   const pending = useSyncExternalStore(
@@ -149,8 +186,8 @@ export function RankingsScreen() {
     () => true,
     () => false,
   );
-  const all = useBoard("all", hydrated && (tab === "best5" || tab === "ranking"));
-  const byPos = useBoard(pos, hydrated && tab === "position");
+  const all = useBoard("all", day, hydrated && (tab === "best5" || tab === "ranking"));
+  const byPos = useBoard(pos, day, hydrated && tab === "position");
   const myIds = new Set((mine?.careers ?? []).map((c) => c.id));
 
   // 베스트 5와 랭킹 100은 전체 순위표에, 포지션별 랭킹은 고른 포지션 순위표에 들어 있어요.
@@ -174,7 +211,7 @@ export function RankingsScreen() {
           <h1>랭킹</h1>
           <p className="hint">
             NBA MVP·파이널 MVP·리그 MVP·우승 반지·수상과 통산 기록, 최고 오버롤을 종합해 순위를 매겨요. NBA에서 쌓은 기록을 더 크게
-            쳐요.
+            쳐요. 날짜를 고르면 그날 올라온 기록끼리, 올타임은 모든 기록으로 겨뤄요.
           </p>
         </div>
         <div className="rk-tabs" role="tablist">
@@ -185,10 +222,11 @@ export function RankingsScreen() {
           ))}
         </div>
         <section className="rk-panel" role="tabpanel" id="rk-panel" aria-labelledby={`rk-tab-${tab}`}>
+          {tab !== "mine" && hydrated && <DayChips days={days} pick={pick} onPick={setPick} />}
           {tab === "mine" ? (
             <MyRecords hall={hall} mine={mine} pending={new Set(pending ? pending.split("\n") : [])} endings={new Set(endings)} />
           ) : tab === "stats" ? (
-            hydrated && <StatsPanel mine={myIds} />
+            hydrated && <StatsPanel mine={myIds} day={day} today={today} />
           ) : (
             <>
               {tab === "position" && (
@@ -213,7 +251,13 @@ export function RankingsScreen() {
                 </div>
               ) : !shown.board!.top.length ? (
                 <div className="rk-empty">
-                  <b>{tab === "position" ? `${POS[pos].name}(${pos})로 올라온 기록이 아직 없어요` : "아직 올라온 기록이 없어요"}</b>
+                  <b>
+                    {tab === "position"
+                      ? `${dayName(day, today)}${POS[pos].name}(${pos})로 올라온 기록이 ${day === null ? "아직 " : ""}없어요`
+                      : day === null
+                        ? "아직 올라온 기록이 없어요"
+                        : `${dayName(day, today)}올라온 기록이 없어요`}
+                  </b>
                   <span>프로 무대를 밟은 선수가 은퇴하면 첫 기록이 돼요.</span>
                 </div>
               ) : tab === "best5" ? (

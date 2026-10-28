@@ -2,7 +2,7 @@ import "server-only";
 import { and, sql, type SQL } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import type { LookRecord } from "@/game";
-import type { BoardScope, StatBoard, StatEntry, StatKey } from "@/lib/leaderboard/types";
+import type { BoardDay, BoardScope, StatBoard, StatEntry, StatKey } from "@/lib/leaderboard/types";
 import { BOARDS_TAG, inScope } from "./boards";
 import { db } from "./db";
 import { careers } from "./schema";
@@ -20,8 +20,8 @@ function statValue(stat: StatKey): SQL<number | null> {
   return sql`(${careers.summary}->>${stat})::int`;
 }
 
-/** 스탯 랭킹. 같은 조건은 캐시해 두고, 기록이 제출될 때만 다시 계산해요. */
-export async function getStatBoard(scope: BoardScope, stat: StatKey): Promise<StatBoard> {
+/** 스탯 랭킹. 날짜를 고르면 그날 올라온 기록끼리 줄을 세워요. 같은 조건은 캐시해 두고, 기록이 제출될 때만 다시 계산해요. */
+export async function getStatBoard(scope: BoardScope, stat: StatKey, day: BoardDay): Promise<StatBoard> {
   "use cache";
   cacheTag(BOARDS_TAG);
   cacheLife("hours");
@@ -40,10 +40,10 @@ export async function getStatBoard(scope: BoardScope, stat: StatKey): Promise<St
       rank: sql<number>`(rank() over (order by ${value} desc))::int`,
     })
     .from(careers)
-    .where(and(inScope(scope), sql`${value} is not null`))
+    .where(and(inScope(scope, day), sql`${value} is not null`))
     // 공동 순위 안에서는 먼저 올린 기록이 위에 와요.
     .orderBy(sql`${value} desc`, careers.createdAt)
     .limit(STAT_TOP);
 
-  return { scope, stat, top: rows.map((r) => ({ ...r, pos: r.pos as StatEntry["pos"] })) };
+  return { scope, day, stat, top: rows.map((r) => ({ ...r, pos: r.pos as StatEntry["pos"] })) };
 }

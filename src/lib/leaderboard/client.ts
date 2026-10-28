@@ -1,5 +1,5 @@
 import type { CareerSummary, PosKey } from "@/game";
-import type { Board, BoardScope, MyRanks, PlayerCreated, StatBoard, StatKey, SubmitResult } from "./types";
+import type { Board, BoardDay, BoardScope, MyRanks, PlayerCreated, StatBoard, StatKey, SubmitResult } from "./types";
 
 // 온라인 랭킹에 은퇴 기록을 올려요. 서버가 안 되면 조용히 실패하고, 보내지 못한 기록은 다음에 다시 보내요.
 
@@ -93,10 +93,14 @@ export function flushPending(): Promise<Map<string, SubmitResult>> {
 /** 순위표 응답을 기다리는 시간. 이 안에 오지 않으면 서버가 안 되는 것으로 쳐요. */
 const BOARD_TIMEOUT_MS = 10000;
 
-/** 순위표를 가져와요. 기본은 룰셋을 가리지 않는 역대 전체예요. 서버가 안 되거나 BOARD_TIMEOUT_MS 안에 응답이 없으면 null이에요. */
-export async function fetchBoard(scope: BoardScope = "all", pos: PosKey | null = null): Promise<Board | null> {
+/**
+ * 순위표를 가져와요. 기본은 룰셋과 날짜를 가리지 않는 역대 전체예요. 날짜를 주면 그날 올라온 기록끼리의 순위예요.
+ * 서버가 안 되거나 BOARD_TIMEOUT_MS 안에 응답이 없으면 null이에요.
+ */
+export async function fetchBoard(scope: BoardScope = "all", pos: PosKey | null = null, day: BoardDay = null): Promise<Board | null> {
   const q = new URLSearchParams(scope === "all" ? { scope: "all" } : { ruleset: String(scope.ruleset) });
   if (pos) q.set("pos", pos);
+  if (day) q.set("day", day);
   try {
     const res = await fetch(`/api/boards?${q}`, { signal: AbortSignal.timeout(BOARD_TIMEOUT_MS) });
     return res.ok ? ((await res.json()) as Board) : null;
@@ -105,9 +109,10 @@ export async function fetchBoard(scope: BoardScope = "all", pos: PosKey | null =
   }
 }
 
-/** 스탯 랭킹(프로 통산 상위 50명)을 가져와요. 서버가 안 되거나 BOARD_TIMEOUT_MS 안에 응답이 없으면 null이에요. */
-export async function fetchStatBoard(stat: StatKey, scope: BoardScope = "all"): Promise<StatBoard | null> {
+/** 스탯 랭킹(프로 통산 상위 50명)을 가져와요. 날짜는 순위표와 같아요. 서버가 안 되거나 BOARD_TIMEOUT_MS 안에 응답이 없으면 null이에요. */
+export async function fetchStatBoard(stat: StatKey, scope: BoardScope = "all", day: BoardDay = null): Promise<StatBoard | null> {
   const q = new URLSearchParams(scope === "all" ? { scope: "all", stat } : { ruleset: String(scope.ruleset), stat });
+  if (day) q.set("day", day);
   try {
     const res = await fetch(`/api/stats?${q}`, { signal: AbortSignal.timeout(BOARD_TIMEOUT_MS) });
     return res.ok ? ((await res.json()) as StatBoard) : null;
