@@ -10,6 +10,8 @@ import { FarewellLoading } from "@/components/progress/FarewellLoading";
 import { GameScreen, type TabKey } from "@/components/career/GameScreen";
 import { FeedbackDialog } from "@/components/feedback/FeedbackDialog";
 import { GuideDialog } from "@/components/guide/GuideDialog";
+import { NoticeDialog } from "@/components/notice/NoticeDialog";
+import { NOTICES, useReadNotices } from "@/lib/notices";
 import { RetiredScreen } from "@/components/retired/RetiredScreen";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { LiveGameView } from "@/components/progress/LiveGameView";
@@ -31,6 +33,9 @@ export function Game() {
   const cheer = inGame && !playing && !final && !tournament && !drafting && !farewell ? career.cheers[0] : undefined;
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const readNotices = useReadNotices();
+  const unread = NOTICES.some((n) => !readNotices.has(n.id));
 
   /** 탭이 바뀌면 화면이 통째로 바뀌니 맨 위에서 시작해요. */
   const openTab = (k: TabKey) => {
@@ -65,24 +70,32 @@ export function Game() {
       <header className="top">
         <div className="brand">
           <span className="ball" aria-hidden="true" />
-          <span>농구 선수 키우기</span>
-          <span className="brand-sub">벤치 뎁혀 반지 굽기</span>
+          <span className="brand-text">
+            <span>농구 선수 키우기</span>
+            <span className="brand-sub">벤치 뎁혀 반지 굽기</span>
+          </span>
         </div>
         <div className="hright">
-          {inGame && (
-            <div className="hmeta">
-              <span className="who">
-                {career.p.name} · {career.year} 시즌 {career.run ? "진행 중" : "준비"}
-              </span>
-              <span className="saved">자동 저장</span>
-            </div>
-          )}
           <Link className="guide-btn" href="/rankings" aria-label="랭킹">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M7 4h10v2h3v3a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 15.9V18h3v2H8v-2h3v-2.1A5 5 0 0 1 8.4 13H8a4 4 0 0 1-4-4V6h3zm0 4H6v1a2 2 0 0 0 1 1.7zm10 0v2.7A2 2 0 0 0 18 9V8z" />
             </svg>
             <span>랭킹</span>
           </Link>
+          <button
+            type="button"
+            className="guide-btn"
+            aria-label={unread ? "공지 (새 글 있음)" : "공지"}
+            aria-haspopup="dialog"
+            aria-expanded={noticeOpen}
+            onClick={() => setNoticeOpen(true)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 3v18l-6-4H7l1 4H5.5l-1.3-4.3A3 3 0 0 1 2 13.8V10a3 3 0 0 1 3-3h7zm2 6.5a3 3 0 0 1 0 5z" />
+            </svg>
+            <span>공지</span>
+            {unread && <i className="nt-dot" aria-hidden="true" />}
+          </button>
           <button
             type="button"
             className="guide-btn"
@@ -135,6 +148,7 @@ export function Game() {
       {farewell && retiredShown && <FarewellLoading career={retiredShown} />}
       {cheer && career && <CheerPopup career={career} cheer={cheer} />}
       {guideOpen && <GuideDialog onClose={() => setGuideOpen(false)} />}
+      {noticeOpen && <NoticeDialog onClose={() => setNoticeOpen(false)} />}
       {feedbackOpen && (
         <FeedbackDialog
           onClose={() => setFeedbackOpen(false)}
