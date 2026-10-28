@@ -4960,6 +4960,10 @@ html:has(.sheet) .toast-zone {
 .rk-list li[data-ending] {
   grid-template-columns: 30px 24px minmax(0, 1fr) auto;
 }
+/* 첫 화면 '내 은퇴 선수': 순위 칸 없이 캐릭터 · 이름 · 엔딩 보기 */
+.my-end li {
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+}
 .rk-end {
   padding: 7px 10px;
   font-size: 13px;

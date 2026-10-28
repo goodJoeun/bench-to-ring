@@ -50,7 +50,8 @@ export function CareerPath() {
     let frame = -1;
     let raf = 0;
     const tick = (now: number) => {
-      const sec = (now - start.current) / 1000;
+      // 첫 프레임 시각이 시작 시각보다 살짝 앞설 수 있어 0 아래로 내려가지 않게 해요.
+      const sec = Math.max(0, (now - start.current) / 1000);
       const i = Math.floor(sec / STAGE_SEC) % STAGES.length;
       const t = sec % STAGE_SEC;
       if (i !== shown) {

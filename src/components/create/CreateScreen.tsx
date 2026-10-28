@@ -10,6 +10,7 @@ import { CareerPath } from "./CareerPath";
 import { ConfirmStartSheet } from "./ConfirmStartSheet";
 import { NationPicker, SchoolPicker } from "./LogoPicker";
 import { LookPicker } from "./LookPicker";
+import { MyEndings } from "./MyEndings";
 import { NameRequiredSheet } from "./NameRequiredSheet";
 import { POSITIONS } from "./options";
 
@@ -42,7 +43,7 @@ function posHint(pos: CreationDraft["pos"]): string {
   return `${POS[pos].name} · 키 ${h[0]}~${h[1]}cm`;
 }
 
-export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: CareerSummary[] }) {
+export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; hall: CareerSummary[]; endings: string[] }) {
   const [step, setStep] = useState(-1);
   const [sheet, setSheet] = useState<"confirm" | "name" | null>(null);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -84,6 +85,12 @@ export function CreateScreen({ draft, hall }: { draft: CreationDraft; hall: Care
               <CareerPath />
             </section>
             {/* 내 기록이 없어도 온라인 랭킹을 볼 수 있게 늘 보여줘요. 첫 화면은 Top 10만, 나머지는 랭킹 페이지에서 봐요. */}
+            {/* 은퇴한 선수가 있으면 랭킹 위에서 바로 엔딩을 다시 열어요. */}
+            {endings.length > 0 && (
+              <div className="resume">
+                <MyEndings hall={hall} endings={endings} />
+              </div>
+            )}
             <div className="resume">
               <HallOfFame hall={hall} rows={10} />
             </div>
