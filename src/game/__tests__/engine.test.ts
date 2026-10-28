@@ -1007,6 +1007,38 @@ describe("시즌 진행", () => {
     expect(exits.size).toBeGreaterThanOrEqual(3);
   });
 
+  it("KBL은 6강 → 4강 → 챔피언결정전이고, 정규리그 1·2위 승률이면 4강으로 직행해요", () => {
+    setRandom(seeded(64));
+    const order = ["6강 플레이오프", "4강 플레이오프", "KBL 챔피언결정전"];
+    let byes = 0;
+    let six = 0;
+    for (let i = 0; i < 120; i++) {
+      const c = proCareer(`kpo${i}`);
+      c.team = { name: "서울 SK 나이츠", color: "#E4002B", q: 0.5 + (i % 4) * 0.1, lg: "kbl" };
+      startSeason(c);
+      while (c.run && c.run.phase !== "post" && c.run.phase !== "end") {
+        if (c.queue.length) chooseOption(c, 0);
+        else stepSeason(c);
+      }
+      if (!c.run || c.run.phase !== "post") continue;
+      const run = c.run;
+      const names = run.post.map((r) => r.name);
+      const wp = run.w / run.games;
+      if (names[0] === "4강 플레이오프") {
+        byes++;
+        expect(wp).toBeGreaterThanOrEqual(0.59);
+        expect(names).toEqual(order.slice(1, 1 + names.length));
+      } else {
+        six++;
+        if (wp >= 0.65) throw new Error(`승률 ${wp}인데 6강부터 치렀어요`);
+        expect(names).toEqual(order.slice(0, names.length));
+      }
+      if (run.champ) expect(names.at(-1)).toBe("KBL 챔피언결정전");
+    }
+    expect(byes).toBeGreaterThan(0);
+    expect(six).toBeGreaterThan(0);
+  });
+
   it("미리 정한 승수를 경기마다 나눠 주어 정규시즌 승수가 정확히 맞아요", () => {
     setRandom(seeded(62));
     const c = proCareer("wins");

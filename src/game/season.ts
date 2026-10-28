@@ -141,14 +141,17 @@ function playoffRounds(lg: LeagueKey): { names: string[]; lose: string[] } {
     };
   if (!LEAGUES[lg].pro)
     return { names: ["전국대회 8강", "전국대회 4강", FINAL_NAME[lg]], lose: ["전국대회 8강", "전국대회 4강", "전국대회 준우승"] };
+  if (lg === "kbl")
+    return { names: ["6강 플레이오프", "4강 플레이오프", FINAL_NAME.kbl], lose: ["6강 플레이오프", "4강 플레이오프", "챔피언결정전 준우승"] };
   return { names: ["플레이오프 1라운드", "플레이오프 4강", FINAL_NAME[lg]], lose: ["플레이오프 1라운드", "플레이오프 4강", "챔피언결정전 준우승"] };
 }
 
 /**
  * 우승하지 못한 팀이 몇 라운드에서 떨어지는지 정하는 누적 확률. 결승에서 질 확률(18%)은 리그마다 같고,
  * NBA는 3라운드제의 '4강'(32%)을 컨퍼런스 세미파이널(20%)과 컨퍼런스 파이널(12%)로 나눴어요.
+ * 2라운드는 KBL 4강 직행 팀이에요. 6강을 통과한 팀과 같은 비율로 4강(64%)과 결승에서 떨어져요.
  */
-const EXIT_AT: Record<number, number[]> = { 3: [0.5, 0.82], 4: [0.5, 0.7, 0.82] };
+const EXIT_AT: Record<number, number[]> = { 2: [0.64], 3: [0.5, 0.82], 4: [0.5, 0.7, 0.82] };
 
 const seasonTag = (run: SeasonRun) => `${run.year} 시즌`;
 /** 평균을 지키며 정수로 반올림해요. 0.3이면 30% 확률로 1이에요. */
@@ -415,8 +418,12 @@ function endRegularSeason(c: Career, run: SeasonRun, tag: string): void {
   const wp = run.w / run.games;
   const playoffs = wp >= 0.55 || (wp >= 0.47 && chance(0.4));
   const champ = playoffs && chance(sigmoid((wp - 0.63) / 0.05) * 0.6 + (c.p.trait === "승부사" ? 0.06 : 0));
+  // KBL은 정규리그 1·2위가 6강을 건너뛰고 4강으로 직행해요. 54경기에서 1·2위는 대개 승률 6할 5푼 안팎이에요.
+  const bye = playoffs && lg === "kbl" && (wp >= 0.65 || (wp >= 0.59 && chance(0.4)));
   // 몇 라운드를 치르는지: 우승이면 결승까지 모두, 아니면 진 라운드까지
-  const { names, lose } = playoffRounds(lg);
+  const all = playoffRounds(lg);
+  const names = bye ? all.names.slice(1) : all.names;
+  const lose = bye ? all.lose.slice(1) : all.lose;
   const total = names.length;
   let rounds = 0;
   if (champ) {
@@ -436,7 +443,7 @@ function endRegularSeason(c: Career, run: SeasonRun, tag: string): void {
     addNews(c, tag, "info", `정규시즌 ${run.w}승 ${run.l}패 · ${stage}에 오르지 못했어요.`);
     return;
   }
-  addNews(c, tag, "good", `정규시즌 ${run.w}승 ${run.l}패 · ${stage} 진출!`);
+  addNews(c, tag, "good", `정규시즌 ${run.w}승 ${run.l}패 · ${bye ? "정규리그 2위 안에 들어 4강 플레이오프 직행!" : `${stage} 진출!`}`);
   // NBA·KBL은 7전 4선승제 시리즈, 나머지는 단판이에요.
   const best7 = lg === "nba" || lg === "kbl";
   const used = new Set([team.name]);
