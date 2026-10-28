@@ -21,6 +21,29 @@ export interface Notice {
 
 export const NOTICES: Notice[] = [
   {
+    id: "2026-10-28-cover-wizard",
+    kind: "patch",
+    date: "2026.10.28",
+    icon: "🏆",
+    title: "새 첫 화면 · 단계별 선수 만들기",
+    intro: "첫 화면과 선수 생성 과정을 개편했어요.",
+    sections: [
+      {
+        title: "첫 화면",
+        items: [
+        "첫 화면으로 게임 표지를 추가했어요."
+        ],
+      },
+      {
+        title: "단계별 선수 만들기",
+        items: [
+          "'커리어 시작하기'를 누르면 캐릭터 → 포지션 → 후보 선수 → 선수 정보 순서로 한 단계씩 정해요.",
+          "다음·이전으로 넘길 때 화면이 옆으로 부드럽게 넘어가요. 위의 단계 번호를 눌러 바로 옮길 수도 있어요.",
+        ],
+      },
+    ],
+  },
+  {
     id: "2026-10-28-daily-rankings",
     kind: "patch",
     date: "2026.10.28",

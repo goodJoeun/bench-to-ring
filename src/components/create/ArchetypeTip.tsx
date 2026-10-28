@@ -29,7 +29,7 @@ function Players({ names }: { names: string[] }) {
   );
 }
 
-/** 유형 이름 옆 ⓘ 버튼. 마우스를 올리거나 누르면 강점과 대표 선수를 보여줘요. */
+/** 유형 이름 옆 '설명 보기' 버튼. 마우스를 올리거나 누르면 강점과 대표 선수를 보여줘요. */
 export function ArchetypeTip({ arch }: { arch: Archetype }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
@@ -54,7 +54,7 @@ export function ArchetypeTip({ arch }: { arch: Archetype }) {
         aria-controls={id}
         onClick={() => setOpen((o) => !o)}
       >
-        i
+        추가 정보
       </button>
       <span id={id} className="tip" role="tooltip">
         <span className="tip-row">

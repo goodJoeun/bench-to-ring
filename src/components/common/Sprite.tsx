@@ -18,7 +18,7 @@ function rgb(hex: string): [number, number, number] {
   return [n >> 16, (n >> 8) & 255, n & 255];
 }
 
-function shade(hex: string, amount: number): string {
+export function shade(hex: string, amount: number): string {
   const f = (v: number) => Math.max(0, Math.min(255, Math.round(amount < 0 ? v * (1 + amount) : v + (255 - v) * amount)));
   const [r, g, b] = rgb(hex).map(f);
   return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
@@ -314,26 +314,73 @@ function drawBeard(ctx: Ctx, look: Look): void {
   if (beard === "full") ellipse(ctx, 80, 75, 7.5, 3.4, shade(look.skin, -0.1));
 }
 
-function drawFace(ctx: Ctx, look: Look): void {
+/**
+ * 표정. 기본은 웃는 얼굴(smile)이고, 표지 그림이 단계마다 바꿔 써요.
+ * 시무룩(glum) · 긴장(nervous) · 집중(focus) · 감격(moved, 눈물) · 활짝(beam) · 입맞춤(kiss, 눈 감고 입술 모으기)
+ */
+export type Mood = "smile" | "glum" | "nervous" | "focus" | "moved" | "beam" | "kiss";
+
+function drawFace(ctx: Ctx, look: Look, mood: Mood): void {
   const { kind, skin, hair } = look;
   const f = FACE[kind];
   const line = shade(skin, -0.45);
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
-  // 눈썹 (밝은 머리색이면 조금 진하게)
+  // 눈썹 (밝은 머리색이면 조금 진하게). 걱정하면 안쪽 끝이 올라가고, 집중하면 내려가요.
   const brow = isLight(hair) ? shade(hair, -0.45) : shade(hair, 0.05);
   stroke(ctx, brow, 3.6, (c) => {
     const by = kind === "asian" ? 50 : 48;
-    c.moveTo(63, by + 1);
-    c.quadraticCurveTo(69, by - 3, 75, by);
-    c.moveTo(85, by);
-    c.quadraticCurveTo(91, by - 3, 97, by + 1);
+    if (mood === "glum" || mood === "nervous" || mood === "moved") {
+      c.moveTo(63, by + 1);
+      c.quadraticCurveTo(70, by, 75, by - 4);
+      c.moveTo(85, by - 4);
+      c.quadraticCurveTo(90, by, 97, by + 1);
+    } else if (mood === "focus") {
+      c.moveTo(63, by - 3);
+      c.quadraticCurveTo(70, by - 2, 75, by + 2);
+      c.moveTo(85, by + 2);
+      c.quadraticCurveTo(90, by - 2, 97, by - 3);
+    } else {
+      c.moveTo(63, by + 1);
+      c.quadraticCurveTo(69, by - 3, 75, by);
+      c.moveTo(85, by);
+      c.quadraticCurveTo(91, by - 3, 97, by + 1);
+    }
   });
 
   // 눈
   for (const [ex, side] of [[69, -1], [91, 1]] as const) {
-    if (f.eye === "almond") {
+    if (mood === "kiss") {
+      // 지그시 감은 눈과 속눈썹
+      stroke(ctx, "#1A1210", 2.4, (c) => {
+        c.moveTo(ex - 5.5, 56.5);
+        c.quadraticCurveTo(ex, 60.5, ex + 5.5, 56.5);
+        c.moveTo(ex + side * 5.5, 56.5);
+        c.lineTo(ex + side * 7.5, 55);
+      });
+    } else if (mood === "moved") {
+      // 웃느라 감은 눈 (^ ^)
+      stroke(ctx, "#1A1210", 2.4, (c) => {
+        c.moveTo(ex - 5.5, 58.5);
+        c.quadraticCurveTo(ex, 52.5, ex + 5.5, 58.5);
+      });
+    } else if (mood === "glum") {
+      // 반쯤 내린 눈꺼풀
+      ellipse(ctx, ex, 58.4, 4.6, 1.6, "#FFFFFF");
+      ellipse(ctx, ex, 58.6, 2.2, 1.4, look.eyes);
+      stroke(ctx, "#1A1210", 2.2, (c) => {
+        c.moveTo(ex - 5.6, 57.2);
+        c.lineTo(ex + 5.6, 57.2);
+      });
+    } else if (mood === "nervous") {
+      // 동그랗게 뜬 눈에 작은 눈동자
+      ellipse(ctx, ex, 57, 5.4, 3.6, "#FFFFFF");
+      ellipse(ctx, ex, 57.3, 1.6, 1.6, "#0E0A08");
+      stroke(ctx, "#1A1210", 1.6, (c) => {
+        c.ellipse(ex, 57, 5.6, 3.8, 0, Math.PI * 1.05, Math.PI * 1.95);
+      });
+    } else if (f.eye === "almond") {
       const rot = side * -0.14;
       ellipse(ctx, ex, 57, 5.4, 2.4, "#FFFFFF", rot);
       ellipse(ctx, ex, 57, 2.5, 2.3, look.eyes);
@@ -381,6 +428,10 @@ function drawFace(ctx: Ctx, look: Look): void {
   drawBeard(ctx, look);
 
   // 입
+  if (mood !== "smile") {
+    drawMood(ctx, mood);
+    return;
+  }
   if (f.lips) {
     ellipse(ctx, 80, 75.5, 7.5, 3.4, shade(skin, -0.32));
     stroke(ctx, shade(skin, -0.55), 1.6, (c) => {
@@ -391,6 +442,66 @@ function drawFace(ctx: Ctx, look: Look): void {
     stroke(ctx, "#8A3B30", 2, (c) => {
       c.moveTo(73, 73.5);
       c.quadraticCurveTo(80, 78.5, 87, 73.5);
+    });
+  }
+}
+
+/** 웃는 얼굴이 아닐 때의 입과 볼(눈물·땀·홍조) */
+function drawMood(ctx: Ctx, mood: Mood): void {
+  const lip = "#8A3B30";
+  if (mood === "kiss") {
+    // 쪽 모은 입술 (트로피가 있는 오른쪽으로 살짝 내밀어요)
+    ellipse(ctx, 83, 75.5, 3.6, 4, "#C2524E");
+    ellipse(ctx, 83.4, 75.5, 1.4, 1.8, "#7A2A26");
+    for (const bx of [63, 97]) fill(ctx, "#F08A8A", (c) => c.ellipse(bx, 68, 5, 2.6, 0, 0, Math.PI * 2), 0.6);
+  } else if (mood === "beam" || mood === "moved") {
+    // 활짝 벌린 입: 윗니와 혀가 보여요.
+    fill(ctx, "#7A2A26", (c) => {
+      c.moveTo(70, 71);
+      c.lineTo(90, 71);
+      c.quadraticCurveTo(89, 85, 80, 85);
+      c.quadraticCurveTo(71, 85, 70, 71);
+      c.closePath();
+    });
+    roundRect(ctx, 72.5, 71, 15, 3.2, 1, "#FFFFFF");
+    ellipse(ctx, 80, 81.5, 5, 2.4, "#E36F6F");
+    for (const bx of [63, 97]) fill(ctx, "#F08A8A", (c) => c.ellipse(bx, 68, 5, 2.6, 0, 0, Math.PI * 2), 0.55);
+  } else if (mood === "glum") {
+    stroke(ctx, lip, 2, (c) => {
+      c.moveTo(74, 77);
+      c.quadraticCurveTo(80, 72.5, 86, 77);
+    });
+  } else if (mood === "nervous") {
+    stroke(ctx, lip, 1.8, (c) => {
+      c.moveTo(72.5, 75.5);
+      c.lineTo(76, 73.5);
+      c.lineTo(80, 75.5);
+      c.lineTo(84, 73.5);
+      c.lineTo(87.5, 75.5);
+    });
+  } else if (mood === "focus") {
+    stroke(ctx, lip, 2.4, (c) => {
+      c.moveTo(74.5, 75.5);
+      c.lineTo(85.5, 75.5);
+    });
+  }
+  if (mood === "moved") {
+    // 눈가에서 흘러내리는 눈물
+    for (const [x0, x1] of [[65, 62], [95, 98]]) {
+      stroke(ctx, "#7CC8F2", 3, (c) => {
+        c.moveTo(x0, 60);
+        c.quadraticCurveTo(x1, 66, x1, 74);
+      });
+      ellipse(ctx, x1, 76, 2.6, 3.2, "#7CC8F2");
+    }
+  }
+  if (mood === "nervous") {
+    // 관자놀이의 식은땀
+    fill(ctx, "#8FD3F5", (c) => {
+      c.moveTo(103, 36);
+      c.quadraticCurveTo(108, 44, 103, 46);
+      c.quadraticCurveTo(98, 44, 103, 36);
+      c.closePath();
     });
   }
 }
@@ -491,6 +602,14 @@ export function drawSprite(ctx: Ctx, look: Look, color: string, scale: number, x
   ctx.scale(scale / U, scale / U);
 
   drawBody(ctx, skin, color);
+  drawHead(ctx, look);
+
+  ctx.restore();
+}
+
+/** 머리(목·귀·얼굴·머리카락·헤어밴드)를 160x240 단위 판의 제자리에 그려요. 표지 그림이 몸을 따로 그릴 때도 써요. */
+export function drawHead(ctx: Ctx, look: Look, mood: Mood = "smile"): void {
+  const { skin } = look;
   drawHairBack(ctx, look);
   // 목과 귀, 얼굴
   roundRect(ctx, 71, 74, 18, 22, 6, shade(skin, -0.12));
@@ -506,9 +625,7 @@ export function drawSprite(ctx: Ctx, look: Look, color: string, scale: number, x
       c.quadraticCurveTo(80, 35, 53, 47);
       c.closePath();
     });
-  drawFace(ctx, look);
-
-  ctx.restore();
+  drawFace(ctx, look, mood);
 }
 
 interface SpriteProps {
