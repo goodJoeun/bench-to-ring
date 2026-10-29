@@ -231,9 +231,23 @@ export function simulateTournament(ev: NatEventKey, n: Nation, power: number, qu
     return done(ok ? "본선 진출 확정" : "본선 진출 실패", null, `예선 ${w}승 ${6 - w}패로 월드컵 본선 진출을 ${ok ? "확정했어요." : "놓쳤어요."}`);
   }
 
+  // 한 대회에서 같은 나라를 두 번 만나지 않아요(8강에서 이긴 나라가 준결승에 다시 나오는 일 등).
+  const met = new Set<string>();
   const field = fieldFor(ev, n);
-  const top = (k: number) => pick(field.slice(0, k));
-  const any = () => pick(field);
+  const fresh = (pool: Field) => pool.filter(([name]) => !met.has(name));
+  /** 아직 안 만난 나라 중에서 골라요. 후보를 다 만났으면 출전국 전체에서 안 만난 나라를, 그것도 없으면 후보에서 골라요. */
+  const meet = (pool: Field): [string, number] => {
+    const left = fresh(pool).length ? fresh(pool) : fresh(field).length ? fresh(field) : pool;
+    const o = pick(left);
+    met.add(o[0]);
+    return o;
+  };
+  /** 상위 k개국 중 안 만난 나라. 모두 만났으면 그다음 강팀까지 넓혀요. */
+  const top = (k: number): [string, number] => {
+    for (let m = k; m < field.length; m += 2) if (fresh(field.slice(0, m)).length) return meet(field.slice(0, m));
+    return meet(field);
+  };
+  const any = () => meet(field);
 
   // 본선 진출
   if (ev === "worldcup" && !(qualified ?? chance(sigmoid((form - WC_QUAL[n.region]) / 2.5))))
@@ -241,13 +255,15 @@ export function simulateTournament(ev: NatEventKey, n: Nation, power: number, qu
   if (ev === "olympics" && !chance(sigmoid((form - 83) / 1.5))) {
     // 최종예선: 6개국 중 1위만 본선행. 조별 2경기 뒤 준결승·결승을 모두 이겨야 해요.
     // 실제처럼 조별리그는 약체, 토너먼트로 갈수록 강호를 만나요.
-    const oqt = (tier: Field) => pick(tier.filter(([name]) => name !== n.name));
+    const oqt = (tier: Field) => meet(tier.filter(([name]) => name !== n.name));
     const gw = [g(oqt(OQT.group), "최종예선 조별리그 1차전"), g(oqt(OQT.group), "최종예선 조별리그 2차전")].filter((x) => x.win).length;
     if (gw === 0) return done("올림픽 최종예선 탈락", null, "올림픽 최종예선 조별리그에서 2패로 탈락했어요.");
     const sf = g(oqt(OQT.semi), "최종예선 준결승");
     if (!sf.win) return done("올림픽 최종예선 탈락", null, `올림픽 최종예선 준결승에서 ${sf.opp}에 져(${score(sf)}) 본선행이 무산됐어요.`);
     const f = g(oqt(OQT.final), "최종예선 결승");
     if (!f.win) return done("올림픽 최종예선 탈락", null, `올림픽 최종예선 결승에서 ${f.opp}에 져(${score(f)}) 아쉽게 본선행을 놓쳤어요.`);
+    // 최종예선은 따로 치르는 대회라, 본선에서는 최종예선 상대를 다시 만날 수 있어요.
+    met.clear();
   }
 
   // 조별리그 (월드컵은 2라운드까지)
@@ -265,7 +281,8 @@ export function simulateTournament(ev: NatEventKey, n: Nation, power: number, qu
   if (!qf.win) return done("8강", null, `8강에서 ${qf.opp}에 졌어요(${score(qf)}).`);
   const sf = g(top(4), "준결승");
   if (!sf.win) {
-    const br = g(pick(field.slice(2, 6)), "3·4위전");
+    // 3·4위전 상대는 다른 준결승에서 진 나라라, 이미 만난 나라(8강·준결승 상대)는 아니에요.
+    const br = g(meet(field.slice(2, 8)), "3·4위전");
     return br.win
       ? done("동메달", "동", `준결승에서 ${sf.opp}에 졌지만 3·4위전에서 ${josa(br.opp, "을", "를")} 꺾고(${score(br)}) 동메달을 땄어요.`)
       : done("4위", null, `준결승에서 ${sf.opp}에, 3·4위전에서 ${br.opp}에 져 4위로 마쳤어요.`);

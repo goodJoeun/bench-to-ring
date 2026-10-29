@@ -84,7 +84,7 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
               </p>
               <CareerPath />
             </section>
-            {/* 내 기록이 없어도 온라인 랭킹을 볼 수 있게 늘 보여줘요. 첫 화면은 Top 10만, 나머지는 랭킹 페이지에서 봐요. */}
+            {/* 내 기록이 없어도 온라인 랭킹을 볼 수 있게 늘 보여줘요. 첫 화면은 오늘 랭킹 Top 5와 오늘의 베스트 5만, 나머지는 랭킹 페이지에서 봐요. */}
             {/* 은퇴한 선수가 있으면 랭킹 위에서 바로 엔딩을 다시 열어요. */}
             {endings.length > 0 && (
               <div className="resume">
@@ -92,7 +92,7 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
               </div>
             )}
             <div className="resume">
-              <HallOfFame hall={hall} rows={10} />
+              <HallOfFame hall={hall} rows={5} today />
             </div>
           </div>
         </ViewTransition>

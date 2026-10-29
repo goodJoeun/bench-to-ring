@@ -423,6 +423,25 @@ describe("국가대표", () => {
     return { gold: gold / n, medal: medal / n };
   }
 
+  it("한 대회에서 같은 나라를 두 번 만나지 않아요 (최종예선은 따로 세고, 지역 예선은 홈·원정이라 예외)", () => {
+    setRandom(seeded(41));
+    for (const ev of ["olympics", "worldcup", "asiangames", "asiacup", "eurobasket", "americup"] as const) {
+      for (const name of ["대한민국", "미국", "프랑스", "호주", "일본"]) {
+        const n = nation(name);
+        for (let i = 0; i < 150; i++) {
+          const r = simulateTournament(ev, n, teamPower(n, ev, 70 + (i % 25)), true);
+          const main = r.games.filter((g) => !g.stage.startsWith("최종예선"));
+          const oqt = r.games.filter((g) => g.stage.startsWith("최종예선"));
+          for (const list of [main, oqt]) {
+            const opps = list.map((g) => g.opp);
+            expect(new Set(opps).size, `${ev} ${name}: ${list.map((g) => `${g.stage} ${g.opp}`).join(", ")}`).toBe(opps.length);
+            expect(opps).not.toContain(name);
+          }
+        }
+      }
+    }
+  });
+
   it("약체국은 스타가 있어도 올림픽·월드컵 메달이 거의 없고, 강호와 지역 대회는 현실적인 확률이에요", () => {
     setRandom(seeded(31));
     expect(odds("대한민국", "olympics", 85).medal).toBeLessThan(0.01);
