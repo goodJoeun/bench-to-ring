@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
 import "@fontsource/black-han-sans/400.css";
 import "@fontsource/ibm-plex-sans-kr/400.css";
 import "@fontsource/ibm-plex-sans-kr/500.css";
@@ -49,6 +50,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         {children}
         {/* 저장된 화면 테마를 하이드레이션 전에 적용해요. html의 data-theme 차이는 suppressHydrationWarning이 넘겨요. */}
         <Script id="theme-boot" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
+        {/* Vercel 웹 분석: 페이지 방문 수를 세요. Vercel에 배포된 사이트에서만 데이터를 보내요. */}
+        <Analytics />
       </body>
     </html>
   );
