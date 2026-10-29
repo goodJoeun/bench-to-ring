@@ -142,7 +142,7 @@ export const SHOP_SIZE = 6;
 export const DONATIONS = [0.1, 1, 10, 100] as const;
 
 /** 기부할 때마다 이 확률로 금액에 맞는 보답(좋은 일)이 와요. */
-export const DONATION_LUCK = 0.20;
+export const DONATION_LUCK = 0.333;
 
 /** 기부 보답: 금액이 클수록 커요. form은 이번 시즌을 시작할 때 경기력이에요. */
 interface DonationReward {
