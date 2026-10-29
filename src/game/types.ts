@@ -299,10 +299,12 @@ export interface SeasonRun {
   bigs: number[];
   /** 결승 전에 출전 여부를 이미 물었는지 */
   clutch: boolean;
-  /** 클러치 상황을 확인할 경기 번호 (주전 이상일 때만) */
+  /** 클러치가 남은 경기 번호 (주전 이상일 때만, 시즌마다 한두 번). 걸리면 앞에서부터 지워요. */
   shots: number[];
   /** 클러치 결과로 정해진 다음 경기 결과 */
   forced: "win" | "loss" | null;
+  /** 클러치가 걸린 다음 경기의 상대와 동점 점수. 그 경기는 이 상대를 만나 마지막 플레이로 2점 차가 나요. */
+  next?: ClutchBoard | null;
   /** 전역 후 합류하는 시즌 */
   back: boolean;
   tot: SeasonTotals;
@@ -481,8 +483,21 @@ export interface Decision {
   title: string;
   body: string;
   opts: DecisionOption[];
-  /** 결정 시트 위에 띄우는 삽화 (라이벌 도발) */
-  art?: "rival";
+  /** 결정 시트 위에 띄우는 삽화 (라이벌 도발, 클러치) */
+  art?: "rival" | "clutch";
+  /** 클러치 전광판: 우리 팀과 상대, 지금 동점 점수 */
+  board?: ClutchBoard;
+}
+
+/** 클러치 상황의 전광판. 그 경기는 이 상대와 이 점수에서 마지막 플레이로 끝나요. */
+export interface ClutchBoard {
+  lg: LeagueKey;
+  team: string;
+  teamColor: string;
+  opp: string;
+  oppColor: string;
+  /** 두 팀이 똑같이 가진 점수 */
+  tie: number;
 }
 
 /** 차례가 왔을 때 그 시점의 능력치로 만들어지는 결정 */

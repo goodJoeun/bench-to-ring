@@ -55,8 +55,8 @@ const EVENT_CHANCE = 0.5;
 const ASK_RETURN_AT = 6;
 /** 빅매치에서 출전 여부를 물을 확률 (확인 시점마다) */
 const BIG_GAME_CHANCE = 0.6;
-/** 클러치 상황이 올 확률 (확인 시점마다). 주전(예상 26분) 이상일 때만 와요. */
-const CLUTCH_CHANCE = 0.6;
+/** 에이스가 시즌에 클러치를 두 번 맞을 확률. 나머지는 한 번이고, 주전은 늘 한 번이에요. 주전(예상 26분) 이상일 때만 와요. */
+const CLUTCH_TWICE = 0.5;
 const STARTER_MIN = 26;
 /** 결장하는 경기마다 돌아오는 건강 */
 const REST_HEAL = 0.8;
@@ -268,8 +268,10 @@ function planTeamSeason(c: Career, run: SeasonRun): void {
   run.checks = [Math.round(L.games * rnd(0.25, 0.4)), Math.round(L.games * rnd(0.6, 0.8))];
   // 빅매치는 시즌 중반과 막판 순위 싸움에 한 번씩 올 수 있어요.
   run.bigs = [Math.round(L.games * rnd(0.42, 0.55)), Math.round(L.games * rnd(0.85, 0.95))];
-  // 클러치 상황은 시즌 초중반과 중후반에 한 번씩 올 수 있어요.
-  run.shots = [Math.round(L.games * rnd(0.3, 0.5)), Math.round(L.games * rnd(0.65, 0.8))];
+  // 클러치 상황은 주전이면 시즌마다 한 번, 에이스면 한 번이나 두 번 와요. 두 번이면 초중반과 중후반에 한 번씩이에요.
+  run.shots = roleOf(min) === "에이스" && chance(CLUTCH_TWICE)
+    ? [Math.round(L.games * rnd(0.3, 0.5)), Math.round(L.games * rnd(0.65, 0.8))]
+    : [Math.round(L.games * rnd(0.3, 0.8))];
 }
 
 /** 한 칸 진행한 결과. final이면 결승 중계를, done이면 시즌 결산을 보여줄 차례예요. */
@@ -341,8 +343,11 @@ function playGame(c: Career, run: SeasonRun, tag: string): void {
   const n = ++run.g;
   if (win) run.w++;
   else run.l++;
-  const [us, them] = gameScore(FINAL_SCORE[lg], win);
-  const line: GameLine = { n, opp: pickTeam(lg, new Set([team.name])).name, us, them, win };
+  // 클러치가 걸린 경기는 전광판에 띄운 상대·동점에서 마지막 플레이로 2점 차가 나요.
+  const next = run.next;
+  run.next = null;
+  const [us, them] = next && forced ? (win ? [next.tie + 2, next.tie] : [next.tie, next.tie + 2]) : gameScore(FINAL_SCORE[lg], win);
+  const line: GameLine = { n, opp: next?.opp ?? pickTeam(lg, new Set([team.name])).name, us, them, win };
   if (forced) line.clutch = forced;
   if (run.out > 0) {
     line.out = run.outWhy;
@@ -360,9 +365,15 @@ function playGame(c: Career, run: SeasonRun, tag: string): void {
   // 빅매치: 다음 경기에 몸을 던질지 고르게 해요. 로테이션 이상이고 뛸 수 있을 때만이에요.
   else if (run.bigs.includes(n) && run.out === 0 && run.min >= 10 && n < run.games && chance(BIG_GAME_CHANCE))
     c.queue.push(bigGameDecision(c, pick(BIG_GAMES), false));
-  // 클러치: 주전 이상이 다음 경기의 마지막 플레이를 맡아요.
-  else if (run.shots.includes(n) && run.out === 0 && run.min >= STARTER_MIN && n < run.games && chance(CLUTCH_CHANCE))
-    c.queue.push(clutchDecision(c, pick(BIG_GAMES), LEAGUES[lg].avg));
+  // 클러치: 주전 이상이 다음 경기의 마지막 플레이를 맡아요. 정해 둔 경기에 다른 결정이 겹치거나 결장 중이면 다음 경기로 미뤄요.
+  else if (run.shots.length > 0 && n >= run.shots[0] && run.out === 0 && run.min >= STARTER_MIN && n < run.games) {
+    run.shots.shift();
+    // 다음 경기 상대와 4쿼터 막판 동점 점수를 미리 정해 전광판에 띄워요.
+    const opp = pickTeam(lg, new Set([team.name]));
+    const board = { lg, team: team.name, teamColor: team.color, opp: opp.name, oppColor: opp.color, tie: gameScore(FINAL_SCORE[lg], true)[1] };
+    run.next = board;
+    c.queue.push(clutchDecision(c, pick(BIG_GAMES), LEAGUES[lg].avg, board));
+  }
 }
 
 /**

@@ -107,6 +107,8 @@ export interface Outcome {
   /** 그 결과로 생긴 소식 */
   msg: string;
   tone: OutcomeTone;
+  /** 클러치 결과: 성공·실패 이펙트와 최종 점수. 전광판 정보가 없던 예전 결정은 점수 없이 와요. */
+  clutch?: { win: boolean; us?: number; them?: number; opp?: string };
 }
 
 const REROLLS = 5;
@@ -390,8 +392,16 @@ export const gameActions = {
     const after = snapshot.career;
     const news = after ? latestNewsItemSince(before, after) : null;
     // 시즌 중 결정은 결과를 진행 막대 자리에 띄워 두고 시즌을 잠깐 멈춰요. 이어서 고를 결정이 있으면 알림으로만 알려요.
-    if (opt && after?.run && !currentDecision(after))
-      return set({ outcome: { id: ++toastId, label: opt.label, msg: news?.m ?? "선택이 반영됐어요.", tone: toneOf(opt.act, news) } });
+    if (opt && after?.run && !currentDecision(after)) {
+      const outcome: Outcome = { id: ++toastId, label: opt.label, msg: news?.m ?? "선택이 반영됐어요.", tone: toneOf(opt.act, news) };
+      // 클러치는 다음 경기 결과가 정해져 있어요. 전광판 동점에서 2점 차로 끝나요.
+      if (opt.act.k === "clutch" && after.run.forced) {
+        const win = after.run.forced === "win";
+        const b = currentDecision(c0)?.board;
+        outcome.clutch = b ? { win, us: win ? b.tie + 2 : b.tie, them: win ? b.tie : b.tie + 2, opp: b.opp } : { win };
+      }
+      return set({ outcome });
+    }
     const msg = news?.m ?? (opt?.label ? `'${opt.label}'을(를) 골랐어요` : null);
     if (msg) set({ toast: toast(msg) });
   },

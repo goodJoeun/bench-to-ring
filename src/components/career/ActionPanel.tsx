@@ -24,6 +24,7 @@ import {
 import { gameActions, type Outcome, type Speed } from "@/lib/game-store";
 import { focusName } from "@/components/common/format";
 import { InvestPicker } from "./InvestPicker";
+import { ClutchArt, ClutchFlash, ClutchResult } from "./ClutchArt";
 import { RivalArt } from "./RivalArt";
 import { Sheet } from "@/components/common/Sheet";
 import { TeamBadge } from "@/components/common/TeamBadge";
@@ -85,6 +86,7 @@ function DecisionSheet({ career: c, decision, kind, remaining, onHide }: { caree
   return (
     <Sheet labelledBy="decision-title">
       {decision.art === "rival" && <RivalArt career={c} />}
+      {decision.art === "clutch" && <ClutchArt board={decision.board} />}
       <span className="sheet-kicker">
         {kind}
         {remaining > 1 && ` · 남은 결정 ${remaining}개`}
@@ -152,6 +154,11 @@ export function ActionPanel({ career: c, playing, speed, busy, outcome, onAdvanc
   const decisionKey = `${c.year}:${run ? `${run.g}:${run.step}:${run.shown}` : "off"}:${c.queue.length}:${decision?.title ?? ""}`;
   const [hiddenKey, setHiddenKey] = useState<string | null>(null);
   const decisionOpen = !!decision && !busy && hiddenKey !== decisionKey;
+  // 클러치는 결정 시트 전에 번개·불꽃 이펙트를 한 번 보여줘요. 잠시 닫았다 다시 열 때는 건너뛰어요.
+  const [flashedKey, setFlashedKey] = useState<string | null>(null);
+  const flashing = decisionOpen && decision.art === "clutch" && flashedKey !== decisionKey;
+  // 클러치 결과는 성공·실패 이펙트를 먼저 보여주고, 끝나면 결과 카드를 띄워요.
+  const [resultShown, setResultShown] = useState<number | null>(null);
 
   // 시즌 시계: 재생 중이고 결정·결과·팝업이 없으면 한 칸씩 진행해요. 칸이 바뀔 때마다 다음 칸을 예약해요.
   const ticking = !!run && playing && !decision && !busy && !outcome;
@@ -179,7 +186,8 @@ export function ActionPanel({ career: c, playing, speed, busy, outcome, onAdvanc
             ▶
           </span>
         </button>
-        {decisionOpen && (
+        {flashing && <ClutchFlash key={decisionKey} onDone={() => setFlashedKey(decisionKey)} />}
+        {decisionOpen && !flashing && (
           <DecisionSheet
             key={decisionKey}
             career={c}
@@ -193,6 +201,13 @@ export function ActionPanel({ career: c, playing, speed, busy, outcome, onAdvanc
     );
   }
 
+  if (run && outcome?.clutch && resultShown !== outcome.id)
+    return (
+      <>
+        <RunBar run={run} playing={playing} speed={speed} />
+        <ClutchResult key={outcome.id} result={outcome.clutch} onDone={() => setResultShown(outcome.id)} />
+      </>
+    );
   if (run && outcome) return <OutcomeCard key={outcome.id} outcome={outcome} />;
   if (run) return <RunBar run={run} playing={playing} speed={speed} />;
 

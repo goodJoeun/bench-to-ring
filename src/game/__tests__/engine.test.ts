@@ -1748,13 +1748,34 @@ describe("클러치", () => {
     expect(c.run!.log[0].clutch).toBe("loss");
   });
 
-  it("클러치 상황은 주전 이상에게만 와요", () => {
-    const count = (rel: number, seed: number) => {
-      setRandom(seeded(seed));
-      let n = 0;
-      for (let i = 0; i < 25; i++) {
-        const c = kblPlayer(`s${seed}-${i}`, rel);
+  it("클러치가 걸린 경기는 전광판의 상대와 동점에서 2점 차로 끝나요", () => {
+    setRandom(seeded(121));
+    const c = kblPlayer("board", 8);
+    startSeason(c);
+    stepSeason(c);
+    const board = { lg: "kbl" as const, team: c.team!.name, teamColor: c.team!.color, opp: "부산 KCC 이지스", oppColor: "#003A70", tie: 77 };
+    for (const [forced, us, them] of [["win", 79, 77], ["loss", 77, 79]] as const) {
+      c.run!.next = board;
+      c.run!.forced = forced;
+      stepSeason(c);
+      const g = c.run!.log[0];
+      expect(g.opp).toBe(board.opp);
+      expect([g.us, g.them]).toEqual([us, them]);
+      expect(c.run!.next).toBeNull();
+    }
+    expect(clutchDecision(c, "라이벌전", LEAGUES.kbl.avg, board).board).toEqual(board);
+  });
+
+  it("클러치 상황은 주전이면 시즌마다 한 번, 에이스면 한두 번, 그 아래면 오지 않아요", () => {
+    setRandom(seeded(120));
+    /** 시즌마다 [예상 출전 시간, 클러치 횟수] */
+    const seasons: [number, number][] = [];
+    for (const rel of [-12, 4, 8, 12]) {
+      for (let i = 0; i < 20; i++) {
+        const c = kblPlayer(`s${rel}-${i}`, rel);
         startSeason(c);
+        const min = c.run!.min;
+        let n = 0;
         while (c.run) {
           const d = currentDecision(c);
           if (d) {
@@ -1762,11 +1783,21 @@ describe("클러치", () => {
             chooseOption(c, 0);
           } else stepSeason(c);
         }
+        seasons.push([min, n]);
       }
-      return n;
-    };
-    expect(count(8, 120)).toBeGreaterThan(5);
-    expect(count(-12, 121)).toBe(0);
+    }
+    const ace = seasons.filter(([m]) => m >= 33).map(([, n]) => n);
+    const starter = seasons.filter(([m]) => m >= 26 && m < 33).map(([, n]) => n);
+    const bench = seasons.filter(([m]) => m < 26).map(([, n]) => n);
+    for (const list of [ace, starter, bench]) expect(list.length).toBeGreaterThan(10);
+    // 에이스: 한 번이나 두 번. 시즌 끝까지 다쳐 있지 않으면 적어도 한 번은 와요.
+    expect(Math.max(...ace)).toBe(2);
+    expect(ace).toContain(1);
+    expect(ace.filter((n) => n >= 1).length / ace.length).toBeGreaterThan(0.85);
+    // 주전: 많아야 한 번이고, 거의 늘 한 번
+    expect(Math.max(...starter)).toBe(1);
+    expect(starter.filter((n) => n === 1).length / starter.length).toBeGreaterThan(0.85);
+    expect(bench.every((n) => n === 0)).toBe(true);
   });
 });
 

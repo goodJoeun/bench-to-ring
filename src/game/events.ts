@@ -1,7 +1,7 @@
 import { SHORT } from "./data";
 import { pick, ri, rnd, shuffle } from "./random";
 import { ovr } from "./ratings";
-import type { AttrKey, Boost, Career, Decision, DecisionOption } from "./types";
+import type { AttrKey, Boost, Career, ClutchBoard, Decision, DecisionOption } from "./types";
 import { clamp, josa, money, roundSalary } from "./util";
 
 /* ---------- 선택지 만들기 ---------- */
@@ -1123,12 +1123,14 @@ export const clutchOdds = (c: Career, attr: AttrKey, leagueAvg: number): number 
  * 고른 플레이의 능력치가 리그 평균보다 높을수록 성공하기 쉬워요. 어떤 능력치를 쓰는지와 확률은 보여주지 않아요.
  * 성공하면 그 경기를 이기고 그 능력치가 오르고(결과 소식에 나와요), 실패하면 져요.
  */
-export function clutchDecision(c: Career, label: string, leagueAvg: number): Decision {
+export function clutchDecision(c: Career, label: string, leagueAvg: number, board?: ClutchBoard): Decision {
   // 공격을 먼저, 수비를 뒤에 놓아요.
   const shown = shuffle(CLUTCH_PLAYS)
     .slice(0, CLUTCH_SHOWN)
     .sort((x, y) => (x.side === y.side ? 0 : x.side === "공격" ? -1 : 1));
   return {
+    art: "clutch",
+    ...(board && { board }),
     title: `클러치 · ${label}`,
     body: "동점으로 맞선 4쿼터 마지막 24초. 감독이 작전 타임에서 당신에게 마지막 플레이를 맡겼어요. 어디에 모든 걸 걸까요?",
     opts: shown.map((x) => ({
