@@ -38,6 +38,8 @@ test("balance report", () => {
   /** 나이별 시즌 성장량 (오프시즌 보너스를 뺀 ovr1 - ovr0) */
   const gains: Record<number, number[]> = {};
   const GAIN_AGES = [19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
+  /** 30대 하락을 볼 나이 */
+  const DECLINE_AGES = [31, 32, 33, 34, 35, 36, 37, 38, 39];
   let topLeague = 0;
   let mvps = 0;
   let mvpPlayers = 0;
@@ -68,7 +70,7 @@ test("balance report", () => {
     }
     peaks.push(c.peakOvr);
     peakAges.push(c.hist.find((h) => h.ovr1 === c.peakOvr)?.age ?? 0);
-    for (const h of c.hist) if (GAIN_AGES.includes(h.age)) (gains[h.age] ??= []).push(h.ovr1 - h.ovr0);
+    for (const h of c.hist) if (GAIN_AGES.includes(h.age) || DECLINE_AGES.includes(h.age)) (gains[h.age] ??= []).push(h.ovr1 - h.ovr0);
     const top = Object.keys(c.awards).find((k) => k.startsWith("mvp_"));
     if (c.hist.some((h) => h.lg && ["gbl", "nba"].includes(h.lg))) topLeague++;
     const m = top ? c.awards[top as keyof typeof c.awards] ?? 0 : 0;
@@ -79,7 +81,8 @@ test("balance report", () => {
   const avg = (a: number[]) => a.reduce((t, x) => t + x, 0) / a.length;
   const share = (n: number, total: number, digits = 1) => `${((n / total) * 100).toFixed(digits)}%`;
   const dist = (name: string, a: number[]) => [name, avg(a).toFixed(1), pct(a, 0.1), pct(a, 0.5), pct(a, 0.9), a[a.length - 1]];
-  const gainRow = (label: string, f: (a: number[]) => string) => [label, ...GAIN_AGES.map((age) => f(gains[age] ?? [0]))];
+  const gainRow = (label: string, f: (a: number[]) => string, ages = GAIN_AGES) => [label, ...ages.map((age) => f(gains[age] ?? [0]))];
+  const signed = (a: number[]) => `${avg(a) >= 0 ? "+" : ""}${avg(a).toFixed(2)}`;
   const health = (f: (min: number) => boolean) => avg(proHealth.filter(([, m]) => f(m)).map(([h]) => h)).toFixed(0);
   console.log(
     [
@@ -94,6 +97,14 @@ test("balance report", () => {
           ["나이", ...GAIN_AGES.map((age) => `${age}세`)],
           gainRow("평균 성장", (a) => `${avg(a) >= 0 ? "+" : ""}${avg(a).toFixed(2)}`),
           gainRow("1 이하 비율", (a) => share(a.filter((x) => x <= 1).length, a.length, 0)),
+        ]),
+      ),
+      section(
+        "30대 시즌 변화 (오프시즌 보너스 제외, 그 나이까지 뛴 선수만)",
+        table([
+          ["나이", ...DECLINE_AGES.map((age) => `${age}세`)],
+          gainRow("평균 변화", signed, DECLINE_AGES),
+          gainRow("시즌 수", (a) => String(a.length), DECLINE_AGES),
         ]),
       ),
       section(
