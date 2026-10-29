@@ -24,6 +24,7 @@ import {
 import { gameActions, type Outcome, type Speed } from "@/lib/game-store";
 import { focusName } from "@/components/common/format";
 import { InvestPicker } from "./InvestPicker";
+import { RivalArt } from "./RivalArt";
 import { Sheet } from "@/components/common/Sheet";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { Choice } from "@/components/common/ui";
@@ -83,6 +84,7 @@ function DecisionSheet({ career: c, decision, kind, remaining, onHide }: { caree
     );
   return (
     <Sheet labelledBy="decision-title">
+      {decision.art === "rival" && <RivalArt career={c} />}
       <span className="sheet-kicker">
         {kind}
         {remaining > 1 && ` · 남은 결정 ${remaining}개`}

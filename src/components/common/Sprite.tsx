@@ -316,9 +316,9 @@ function drawBeard(ctx: Ctx, look: Look): void {
 
 /**
  * 표정. 기본은 웃는 얼굴(smile)이고, 표지 그림이 단계마다 바꿔 써요.
- * 시무룩(glum) · 긴장(nervous) · 집중(focus) · 감격(moved, 눈물) · 활짝(beam) · 입맞춤(kiss, 눈 감고 입술 모으기)
+ * 시무룩(glum) · 긴장(nervous) · 집중(focus) · 감격(moved, 눈물) · 활짝(beam) · 입맞춤(kiss, 눈 감고 입술 모으기) · 비웃음(smirk)
  */
-export type Mood = "smile" | "glum" | "nervous" | "focus" | "moved" | "beam" | "kiss";
+export type Mood = "smile" | "glum" | "nervous" | "focus" | "moved" | "beam" | "kiss" | "smirk";
 
 function drawFace(ctx: Ctx, look: Look, mood: Mood): void {
   const { kind, skin, hair } = look;
@@ -336,7 +336,7 @@ function drawFace(ctx: Ctx, look: Look, mood: Mood): void {
       c.quadraticCurveTo(70, by, 75, by - 4);
       c.moveTo(85, by - 4);
       c.quadraticCurveTo(90, by, 97, by + 1);
-    } else if (mood === "focus") {
+    } else if (mood === "focus" || mood === "smirk") {
       c.moveTo(63, by - 3);
       c.quadraticCurveTo(70, by - 2, 75, by + 2);
       c.moveTo(85, by + 2);
@@ -365,8 +365,8 @@ function drawFace(ctx: Ctx, look: Look, mood: Mood): void {
         c.moveTo(ex - 5.5, 58.5);
         c.quadraticCurveTo(ex, 52.5, ex + 5.5, 58.5);
       });
-    } else if (mood === "glum") {
-      // 반쯤 내린 눈꺼풀
+    } else if (mood === "glum" || mood === "smirk") {
+      // 반쯤 내린 눈꺼풀 (시무룩하거나 깔보는 눈)
       ellipse(ctx, ex, 58.4, 4.6, 1.6, "#FFFFFF");
       ellipse(ctx, ex, 58.6, 2.2, 1.4, look.eyes);
       stroke(ctx, "#1A1210", 2.2, (c) => {
@@ -483,6 +483,12 @@ function drawMood(ctx: Ctx, mood: Mood): void {
     stroke(ctx, lip, 2.4, (c) => {
       c.moveTo(74.5, 75.5);
       c.lineTo(85.5, 75.5);
+    });
+  } else if (mood === "smirk") {
+    // 한쪽 입꼬리만 올린 비웃음
+    stroke(ctx, lip, 2.2, (c) => {
+      c.moveTo(73, 76);
+      c.quadraticCurveTo(81, 77.5, 88, 71.5);
     });
   }
   if (mood === "moved") {

@@ -40,13 +40,16 @@ export {
 export { buyoutCost, canRequestTransfer, currentDecision, leverage, negotiable, requestTransfer, resolveQueue } from "./decisions";
 export {
   DONATIONS,
+  DONATION_LUCK,
   SHOP,
   SHOP_SIZE,
   boughtThisSeason,
   buy,
   canBuy,
   canDonate,
+  describeDonationReward,
   donate,
+  donatedThisSeason,
   ownedItems,
   owns,
   shopItem,

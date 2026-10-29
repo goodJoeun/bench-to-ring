@@ -1,7 +1,7 @@
 import { ATTR_KEYS, SHORT } from "./data";
 import { addAttr, addHealth } from "./condition";
 import { addNews } from "./log";
-import { seededPick, shuffle } from "./random";
+import { chance, seededPick, shuffle } from "./random";
 import type { AttrKey, Career, ShopKey } from "./types";
 import { money, round2 } from "./util";
 
@@ -16,6 +16,8 @@ export type ShopCategory = "장비" | "회복·생활" | "사치품" | "일회�
 export interface ShopItem {
   key: ShopKey;
   name: string;
+  /** 상점과 보유 목록에 붙는 아이콘 (이모지) */
+  icon: string;
   cat: ShopCategory;
   /** 값 (억) */
   price: number;
@@ -47,9 +49,44 @@ export interface ShopItem {
   legacy?: boolean;
 }
 
-const item = (key: ShopKey, name: string, cat: ShopCategory, price: number, effect: string, extra: Omit<ShopItem, "key" | "name" | "cat" | "price" | "effect"> = {}): ShopItem => ({
+/** 상품 아이콘 */
+const ICONS: Record<ShopKey, string> = {
+  shoes: "👟",
+  dribblegear: "🧤",
+  passtrainer: "🔄",
+  slideboard: "🛡️",
+  shootingmachine: "🎯",
+  weightset: "🏋️",
+  videosystem: "🎥",
+  court: "🏟️",
+  massage: "💆",
+  sleeppod: "🛏️",
+  mental: "🧠",
+  home: "🏠",
+  hypoxic: "⛺",
+  chef: "👨‍🍳",
+  physio: "🩺",
+  recovery: "🏥",
+  penthouse: "🌆",
+  jet: "✈️",
+  sneakers: "🛍️",
+  watch: "⌚",
+  trophyroom: "🏆",
+  car: "🏎️",
+  yacht: "🛥️",
+  retreat: "🧘",
+  bootcamp: "⛰️",
+  familytrip: "🧳",
+  parents: "🎁",
+  gymremodel: "🏫",
+  foundation: "💝",
+  academy: "🏀",
+};
+
+const item = (key: ShopKey, name: string, cat: ShopCategory, price: number, effect: string, extra: Omit<ShopItem, "key" | "name" | "icon" | "cat" | "price" | "effect"> = {}): ShopItem => ({
   key,
   name,
+  icon: ICONS[key],
   cat,
   price,
   effect,
@@ -101,8 +138,37 @@ export const SHOP: ReadonlyArray<ShopItem> = [
 /** 시즌마다 진열하는 상품 수: 싼 것·중간·비싼 것에서 두 개씩 */
 export const SHOP_SIZE = 6;
 
-/** 기부 금액 (억). 가진 돈 안에서 고를 수 있어요. */
+/** 기부 금액 (억). 가진 돈 안에서, 금액마다 한 시즌에 한 번씩 할 수 있어요. */
 export const DONATIONS = [0.1, 1, 10, 100] as const;
+
+/** 기부할 때마다 이 확률로 금액에 맞는 보답(좋은 일)이 와요. */
+export const DONATION_LUCK = 0.20;
+
+/** 기부 보답: 금액이 클수록 커요. form은 이번 시즌을 시작할 때 경기력이에요. */
+interface DonationReward {
+  health?: number;
+  form?: number;
+  /** 무작위 능력치 rand개 +1 */
+  rand?: number;
+}
+
+export const DONATION_REWARDS: Record<(typeof DONATIONS)[number], DonationReward> = {
+  0.1: { health: 5, form: 0.3 },
+  1: { rand: 1 },
+  10: { rand: 2, form: 0.5 },
+  100: { rand: 3, health: 10 },
+};
+
+/** 기부 보답을 한 줄로: "건강 +5 · 시즌 시작 경기력 상승" */
+export function describeDonationReward(amount: number): string {
+  const r = DONATION_REWARDS[amount as (typeof DONATIONS)[number]];
+  if (!r) return "";
+  const parts: string[] = [];
+  if (r.rand) parts.push(`무작위 능력치 ${r.rand}개 +1`);
+  if (r.health) parts.push(`건강 +${r.health}`);
+  if (r.form) parts.push("시즌 시작 경기력 상승");
+  return parts.join(" · ");
+}
 
 export const shopItem = (key: ShopKey): ShopItem | undefined => SHOP.find((i) => i.key === key);
 export const owns = (c: Career, key: ShopKey): boolean => c.owned.includes(key);
@@ -187,15 +253,41 @@ export function shopPerks(c: Career): ShopPerks {
   return p;
 }
 
+/** 이번 시즌에 이 금액을 이미 기부했는지 */
+export const donatedThisSeason = (c: Career, amount: number): boolean => c.shop?.year === c.year && !!c.shop.gave?.includes(amount);
+
+/** 지금 기부할 수 있는지: 은퇴 전, 시즌 사이, 이번 시즌에 이 금액을 아직 안 했고, 돈이 있으면 */
 export function canDonate(c: Career, amount: number): boolean {
-  return c.stage !== "retired" && !c.run && c.earnings + 1e-9 >= amount;
+  return c.stage !== "retired" && !c.run && c.shop?.year === c.year && !donatedThisSeason(c, amount) && c.earnings + 1e-9 >= amount;
 }
 
+/** 기부해요. DONATION_LUCK 확률로 금액에 맞는 보답이 와서, 같은 소식에 함께 적어요. */
 export function donate(c: Career, amount: number): boolean {
   if (!canDonate(c, amount)) return false;
+  const shop = c.shop!;
   c.earnings = round2(c.earnings - amount);
   c.spent = round2(c.spent + amount);
   c.donated = round2(c.donated + amount);
-  addNews(c, `${c.year - 1} 오프시즌`, "good", `유소년 농구 발전 기금 ${money(amount)}을 기부했어요. 누적 기부 ${money(c.donated)}`);
+  shop.gave = [...(shop.gave ?? []), amount];
+  let luck = "";
+  const r = DONATION_REWARDS[amount as (typeof DONATIONS)[number]];
+  if (r && chance(DONATION_LUCK)) {
+    const parts: string[] = [];
+    if (r.rand) {
+      const keys = shuffle(ATTR_KEYS).slice(0, r.rand);
+      for (const k of keys) addAttr(c.p.attrs, k, 1);
+      parts.push(`${keys.map((k) => SHORT[k]).join("·")} +1`);
+    }
+    if (r.health) {
+      addHealth(c, r.health);
+      parts.push(`건강 +${r.health}`);
+    }
+    if (r.form) {
+      shop.form = (shop.form ?? 0) + r.form;
+      parts.push("시즌 시작 경기력 상승");
+    }
+    luck = ` · 아이들의 응원에 힘이 났어요! ${parts.join(" · ")}`;
+  }
+  addNews(c, `${c.year - 1} 오프시즌`, luck ? "big" : "good", `유소년 농구 발전 기금 ${money(amount)}을 기부했어요. 누적 기부 ${money(c.donated)}${luck}`);
   return true;
 }

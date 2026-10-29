@@ -205,7 +205,9 @@ export function startSeason(c: Career): void {
   else if (c.stage === "free" || !c.team) run.plan = [...SOLO_PLAN];
   else {
     planTeamSeason(c, run);
-    run.form = shopPerks(c).form + investPerks(inv).form;
+    // 기부 보답으로 받은 경기력은 그 시즌 상점에 남아 있어요.
+    const gift = c.shop?.year === c.year ? (c.shop.form ?? 0) : 0;
+    run.form = clamp(shopPerks(c).form + investPerks(inv).form + gift, -2, 2);
   }
   if (run.plan.length) {
     // 팀이 없는 시즌은 프리시즌 없이 일정을 시작하고, 중반에 한 번 이벤트를 확인해요.

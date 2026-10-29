@@ -6,6 +6,7 @@ import {
   boughtThisSeason,
   canBuy,
   canDonate,
+  donatedThisSeason,
   money,
   ownedItems,
   owns,
@@ -56,7 +57,12 @@ function OwnedItems({ owned }: { owned: ShopItem[] }) {
           <ul className="owned-list" role="tabpanel" id="owned-panel" aria-labelledby={`owned-tab-${current}`}>
             {shown.map((i) => (
               <li key={i.key}>
-                <b>{i.name}</b>
+                <b>
+                  <span className="shop-ico" aria-hidden="true">
+                    {i.icon}
+                  </span>
+                  {i.name}
+                </b>
                 <span className="owned-cat">{i.cat}</span>
                 <span className="owned-fx">{i.effect}</span>
               </li>
@@ -99,6 +105,11 @@ export function ShopPanel({ career: c }: { career: Career }) {
               return (
                 <Choice
                   key={i.key}
+                  icon={
+                    <span className="shop-ico" aria-hidden="true">
+                      {i.icon}
+                    </span>
+                  }
                   label={i.name}
                   tag={done ? "구입 완료" : money(i.price)}
                   sub={`${i.cat} · ${i.effect}`}
@@ -112,12 +123,25 @@ export function ShopPanel({ career: c }: { career: Career }) {
           <div className="donate">
             <span className="label">유소년 농구 기부</span>
             <div className="row-btns">
-              {DONATIONS.map((d) => (
-                <button key={d} type="button" className="btn" disabled={!canDonate(c, d)} onClick={() => setPending({ k: "donate", amount: d })}>
-                  {money(d)}
-                </button>
-              ))}
+              {DONATIONS.map((d) => {
+                const done = donatedThisSeason(c, d);
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    className="btn"
+                    data-done={done || undefined}
+                    disabled={!canDonate(c, d)}
+                    aria-label={done ? `${money(d)} 이번 시즌 기부 완료` : `${money(d)} 기부`}
+                    onClick={() => setPending({ k: "donate", amount: d })}
+                  >
+                    {done && <span aria-hidden="true">✓ </span>}
+                    {money(d)}
+                  </button>
+                );
+              })}
             </div>
+            <p className="hint">금액마다 한 시즌에 한 번 기부할 수 있어요. 가끔 아이들의 응원에 힘이 나는 좋은 일이 생겨요.</p>
           </div>
         </>
       )}
@@ -130,7 +154,11 @@ export function ShopPanel({ career: c }: { career: Career }) {
             보유 자금 {money(c.earnings)} → {money(c.earnings - price)}
           </span>
           <h2 id="shop-title">{item ? `${item.name}, ${money(price)}에 살까요?` : `${money(price)}을 기부할까요?`}</h2>
-          <p className="sheet-desc">{item ? `${item.cat} · ${item.effect}` : "기부한 돈은 은퇴 기록에 남아요."}</p>
+          <p className="sheet-desc">
+            {item
+              ? `${item.cat} · ${item.effect}`
+              : `기부한 돈은 은퇴 기록에 남아요. 일정 확률로 좋은 일이 생겨요`}
+          </p>
           <button
             type="button"
             className="sheet-go"

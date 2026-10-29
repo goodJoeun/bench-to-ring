@@ -82,14 +82,15 @@ import {
   type Decision,
   type CareerSummary,
 } from "@/game";
+import { SHORT } from "@/game/data";
 import { awardName, conferenceFinalsMvpName, nbaConference } from "@/game/awards";
-import { bigGameDecision, clutchDecision, injuryDecision, lifeEvent, seasonEvent } from "@/game/events";
+import { CLUTCH_PLAYS, CLUTCH_SHOWN, bigGameDecision, clutchDecision, clutchOdds, injuryDecision, lifeEvent, seasonEvent } from "@/game/events";
 import { makeLiveGame } from "@/game/live";
 import { giveAward, setTeam } from "@/game/log";
 import { militaryDecision } from "@/game/military";
 import { nationalCallUp, runNationalTeam } from "@/game/national";
 import { parseCareer } from "@/game/storage";
-import { refreshShop, shopPerks } from "@/game/shop";
+import { canDonate, donatedThisSeason, refreshShop, shopPerks } from "@/game/shop";
 
 afterEach(() => resetRandom());
 
@@ -1364,6 +1365,37 @@ describe("자금 쓰기", () => {
     startSeason(c);
     expect(buy(c, "shoes")).toBe(false);
   });
+
+  it("기부는 금액마다 한 시즌에 한 번이고, 가끔 금액에 맞는 보답이 와요", () => {
+    const c = rich("give");
+    // 보답이 오지 않게(난수 0.99)
+    setRandom(() => 0.99);
+    const attrs = { ...c.p.attrs };
+    expect(donate(c, 1)).toBe(true);
+    expect(c.p.attrs).toEqual(attrs);
+    expect(donatedThisSeason(c, 1)).toBe(true);
+    expect(canDonate(c, 1)).toBe(false);
+    expect(donate(c, 1)).toBe(false);
+    // 다른 금액은 따로 셀 수 있어요.
+    expect(canDonate(c, 0.1)).toBe(true);
+
+    // 보답이 오면(난수 0) 1억은 무작위 능력치 하나 +1, 1000만은 건강과 시즌 시작 경기력
+    setRandom(() => 0);
+    const sum = (a: typeof c.p.attrs) => Object.values(a).reduce((t, x) => t + x, 0);
+    const before = sum(c.p.attrs);
+    expect(donate(c, 10)).toBe(true);
+    expect(sum(c.p.attrs)).toBeCloseTo(before + 2, 5);
+    c.health = 50;
+    expect(donate(c, 0.1)).toBe(true);
+    expect(c.health).toBe(55);
+    expect(c.shop!.form).toBeCloseTo(0.3 + 0.5, 5);
+    expect(c.news[0].m).toContain("힘이 났어요");
+
+    // 다음 시즌 상점이 열리면 다시 기부할 수 있어요.
+    c.year += 1;
+    refreshShop(c);
+    expect(canDonate(c, 1)).toBe(true);
+  });
 });
 
 describe("랭킹 점수", () => {
@@ -1663,16 +1695,31 @@ describe("클러치", () => {
     return c;
   }
 
-  it("공격 셋·수비 둘 중에서 고르고, 그 능력치가 높을수록 성공하기 쉬워요", () => {
+  it("플레이 여덟 가지 중 셋만 무작위로 나오고, 어떤 능력치를 쓰는지는 보여주지 않아요", () => {
+    setRandom(seeded(31));
     const c = kblPlayer("opts", 0);
+    expect(CLUTCH_PLAYS).toHaveLength(8);
+    const seen = new Set<string>();
+    for (let i = 0; i < 40; i++) {
+      const d = clutchDecision(c, "라이벌전", LEAGUES.kbl.avg);
+      expect(d.opts).toHaveLength(CLUTCH_SHOWN);
+      expect(new Set(d.opts.map((o) => o.label)).size).toBe(CLUTCH_SHOWN);
+      // 공격이 앞, 수비가 뒤
+      const tags = d.opts.map((o) => o.tag);
+      expect(tags).toEqual([...tags].sort((a, b) => (a === b ? 0 : a === "공격" ? -1 : 1)));
+      for (const o of d.opts) {
+        for (const name of Object.values(SHORT)) expect(o.sub ?? "", o.label).not.toContain(name);
+        seen.add(o.label);
+      }
+    }
+    expect(seen.size).toBe(8);
+  });
+
+  it("고른 플레이의 능력치가 높을수록 성공하기 쉬워요", () => {
+    const c = kblPlayer("odds", 0);
     c.p.attrs.sht = LEAGUES.kbl.avg + 15;
-    const d = clutchDecision(c, "라이벌전", LEAGUES.kbl.avg);
-    expect(d.opts.map((o) => o.tag)).toEqual(["공격", "공격", "공격", "수비", "수비"]);
-    const p = (attr: string) => d.opts.map((o) => o.act).find((a) => a.k === "clutch" && a.attr === attr)!;
-    const sht = p("sht");
-    const hdl = p("hdl");
-    if (sht.k !== "clutch" || hdl.k !== "clutch") throw new Error("클러치 선택지가 아니에요");
-    expect(sht.p).toBeGreaterThan(hdl.p);
+    c.p.attrs.hdl = LEAGUES.kbl.avg - 5;
+    expect(clutchOdds(c, "sht", LEAGUES.kbl.avg)).toBeGreaterThan(clutchOdds(c, "hdl", LEAGUES.kbl.avg));
   });
 
   it("성공하면 다음 경기를 이기고 고른 능력치가 오르고, 실패하면 다음 경기를 져요", () => {
@@ -1681,10 +1728,11 @@ describe("클러치", () => {
     startSeason(c);
     stepSeason(c);
     const act = clutchDecision(c, "라이벌전", LEAGUES.kbl.avg).opts[0].act;
-    const before = c.p.attrs.sht;
+    if (act.k !== "clutch") throw new Error("클러치 선택지가 아니에요");
+    const before = c.p.attrs[act.attr];
     setRandom(() => 0);
     applyAction(c, act);
-    expect(c.p.attrs.sht).toBe(before + 1);
+    expect(c.p.attrs[act.attr]).toBe(before + 1);
     setRandom(seeded(112));
     const w = c.run!.w;
     stepSeason(c);

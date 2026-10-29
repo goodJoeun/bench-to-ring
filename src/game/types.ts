@@ -481,6 +481,8 @@ export interface Decision {
   title: string;
   body: string;
   opts: DecisionOption[];
+  /** 결정 시트 위에 띄우는 삽화 (라이벌 도발) */
+  art?: "rival";
 }
 
 /** 차례가 왔을 때 그 시점의 능력치로 만들어지는 결정 */
@@ -668,7 +670,8 @@ export interface Career {
   /** 산 것들 (산 순서). 일회성 상품은 남지 않아요. */
   owned: ShopKey[];
   /** 이번 시즌 상점 진열과 이번 시즌에 산 진열 상품. 시즌이 바뀌면 새로 골라요. */
-  shop: { year: number; keys: ShopKey[]; bought: ShopKey[] } | null;
+  /** 이번 시즌 상점. 기부한 금액(gave)과 기부 보답으로 받은 시즌 시작 경기력(form)도 이 시즌에만 남아요. */
+  shop: { year: number; keys: ShopKey[]; bought: ShopKey[]; gave?: number[]; form?: number } | null;
   /** 기부한 돈 합계 (억) */
   donated: number;
   /** 마지막으로 이적을 요청한 오프시즌 (다음 시즌 연도) */

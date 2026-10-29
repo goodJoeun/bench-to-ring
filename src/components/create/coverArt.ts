@@ -443,9 +443,23 @@ function drawTop(ctx: Ctx, o: Outfit, tug: number): void {
 }
 
 function drawPlayer(ctx: Ctx, look: Look, stage: StageKey, p: Pose, mood: Mood): void {
-  const o = OUTFIT[stage];
+  drawFigure(ctx, look, OUTFIT[stage], stage === "bench", p, mood);
+}
+
+/**
+ * 유니폼 입고 선 선수 한 명을 손 위치와 표정만 정해 그려요(라이벌 도발 삽화 등). 160x240 판 기준이고, 손은 판 밖으로 나갈 수 있어요.
+ * 팔꿈치는 팔 길이에 맞춰 구해요.
+ */
+export function drawPosed(ctx: Ctx, look: Look, color: string, lh: Pt, rh: Pt, mood: Mood): void {
+  const p: Pose = { ...BASE };
+  [p.le, p.lh] = arm(SHOULDER.l, lh);
+  [p.re, p.rh] = arm(SHOULDER.r, rh);
+  drawFigure(ctx, look, { kind: "jersey", color }, false, p, mood);
+}
+
+function drawFigure(ctx: Ctx, look: Look, o: Outfit, sitting: boolean, p: Pose, mood: Mood): void {
   const { skin } = look;
-  if (stage === "bench") drawSittingLegs(ctx, skin, o);
+  if (sitting) drawSittingLegs(ctx, skin, o);
   else drawStandingLegs(ctx, skin, o, p);
 
   ctx.save();
