@@ -3276,6 +3276,67 @@ select {
   margin: 10px 0 0;
   padding: 0;
 }
+/* 공지가 여섯 개를 넘으면 목록 안에서 내려서 봐요. 아래에 글이 남아 있으면 끝을 흐리게 해요. */
+.nt-list[data-scroll] {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-bottom: 1px solid var(--line);
+}
+.nt-list[data-scroll]:not([data-end]) {
+  mask-image: linear-gradient(180deg, #000 calc(100% - 48px), transparent);
+}
+.nt-list[data-scroll]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* 접속 때 새 공지 안내 */
+.na-icon {
+  font-size: 40px;
+  line-height: 1;
+  margin-top: 6px;
+}
+.na-latest {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--panel2);
+}
+.na-latest b {
+  min-width: 0;
+  font-size: 15px;
+}
+.na-actions {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+}
+
+/* 고정 글: 목록 맨 위에 옅은 강조 바탕 */
+.nt-list li[data-pinned] {
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.nt-list li[data-pinned] .nt-tag {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.nt-list li[data-pinned] .nt-row {
+  padding-inline: 8px;
+}
+.nt-body {
+  margin: 10px 0 0;
+  font-size: 15px;
+  line-height: 1.7;
+}
+.nt-more {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--muted);
+}
 .nt-list li + li {
   border-top: 1px solid var(--line);
 }

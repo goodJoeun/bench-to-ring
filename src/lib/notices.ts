@@ -1,4 +1,4 @@
-/* 상단 '공지'에 띄우는 패치노트와 공지사항. 새 글은 맨 위에 넣어요. 읽은 글은 이 브라우저에 저장해요. */
+/* 상단 '공지'에 띄우는 패치노트와 공지사항. 새 글은 맨 위에 넣어요(고정 글은 늘 그 위에 보여요). 읽은 글은 이 브라우저에 저장해요. */
 
 import { useMemo, useSyncExternalStore } from "react";
 
@@ -16,10 +16,30 @@ export interface Notice {
   title: string;
   /** 상세 보기 맨 위의 한두 문장 */
   intro?: string;
+  /** 편지처럼 이어지는 문단 (인사말 등) */
+  body?: string[];
   sections: { title: string; items: string[] }[];
+  /** 목록 맨 위에 고정해요. */
+  pinned?: boolean;
 }
 
-export const NOTICES: Notice[] = [
+const LIST: Notice[] = [
+  {
+    id: "2026-10-29-hello",
+    kind: "notice",
+    date: "2026.10.29",
+    icon: "💌",
+    title: "개발자 인사말",
+    pinned: true,
+    body: [
+      "안녕하세요, 농구 선수 키우기를 만들고 있는 개발자입니다.",
+      "먼저 이 작은 게임에 관심을 가져 주셔서 감사드립니다. 여러분이 키워 주신 선수들 덕분에 매일 즐겁게 만들고 있습니다.",
+      "보내 주신 버그 제보와 개선 제안은 하나도 빠짐없이 모두 읽고 있습니다.",
+      "덕분에 고친 버그도, 새로 생긴 기능도 정말 많습니다. 게임이 나아지는 데 큰 힘이 됐습니다.",
+      "앞으로도 더 재밌는 커리어를 만들 수 있게 노력하겠습니다. 감사합니다!",
+    ],
+    sections: [],
+  },
   {
     id: "2026-10-29-clutch-shop",
     kind: "patch",
@@ -178,6 +198,9 @@ export const NOTICES: Notice[] = [
     ],
   },
 ];
+
+/** 고정 글을 맨 위에, 나머지는 새 글부터 */
+export const NOTICES: Notice[] = [...LIST.filter((n) => n.pinned), ...LIST.filter((n) => !n.pinned)];
 
 const READ_KEY = "b2r-notices-read";
 const listeners = new Set<() => void>();

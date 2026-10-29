@@ -303,6 +303,8 @@ export interface SeasonRun {
   shots: number[];
   /** 클러치 결과로 정해진 다음 경기 결과 */
   forced: "win" | "loss" | null;
+  /** 이번 바퀴에 아직 만나지 않은 정규시즌 상대 (순서대로). 비면 새 바퀴를 무작위로 짜요. */
+  opps?: string[];
   /** 클러치가 걸린 다음 경기의 상대와 동점 점수. 그 경기는 이 상대를 만나 마지막 플레이로 2점 차가 나요. */
   next?: ClutchBoard | null;
   /** 전역 후 합류하는 시즌 */

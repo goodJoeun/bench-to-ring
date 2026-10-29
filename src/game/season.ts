@@ -3,7 +3,7 @@ import { HEALTH_RANGE, addAttr, addHealth, clampTrust } from "./condition";
 import { ATTRS, POS, ROLE_RANK } from "./data";
 import { currentDecision } from "./decisions";
 import { bigGameDecision, clutchDecision, injuryDecision, seasonEvent } from "./events";
-import { LEAGUES, SCORING_TITLE } from "./leagues";
+import { LEAGUES, SCORING_TITLE, TEAMS } from "./leagues";
 import { FINAL_SCORE, finalScore, gameScore, makeLiveGame } from "./live";
 import { ALL_DEF_TIERS, ALL_LEAGUE_TIERS, awardName, conferenceFinalsMvpName } from "./awards";
 import { addNews, giveAward, pickTeam } from "./log";
@@ -11,7 +11,7 @@ import { STUDENT_ALLOWANCE, investPerks, payInvestments, type InvestPerks } from
 import { serviceSeason } from "./military";
 import { nationalCallUp } from "./national";
 import { runOffseason } from "./offseason";
-import { chance, pick, random, ri, rnd } from "./random";
+import { chance, pick, random, ri, rnd, shuffle } from "./random";
 import { shopPerks } from "./shop";
 import { BONUS_CAP, SPECIALTIES, combinedEffect, specialtiesOf } from "./specialty";
 import { ageBase, ovr, ovrOf, roleOf } from "./ratings";
@@ -326,6 +326,19 @@ export function stepSeason(c: Career): SeasonStep | null {
   return "step";
 }
 
+/**
+ * 정규시즌 다음 상대. 실제 일정처럼 한 바퀴에 다른 팀을 모두 한 번씩 무작위 순서로 만나요.
+ * 바퀴가 바뀔 때 같은 팀과 백투백으로 붙을 수는 있지만, 한 바퀴 안에서는 모두 달라서 세 번 연속은 없어요.
+ */
+function nextOpponent(run: SeasonRun, lg: LeagueKey, me: string): readonly [string, string] {
+  const pool = TEAMS[lg].filter(([name]) => name !== me);
+  let queue = (run.opps ?? []).filter((name) => pool.some(([p]) => p === name));
+  if (!queue.length) queue = shuffle(pool.map(([name]) => name));
+  const name = queue.shift()!;
+  run.opps = queue;
+  return pool.find(([p]) => p === name) ?? pick(pool);
+}
+
 /** 정규시즌 한 경기 */
 function playGame(c: Career, run: SeasonRun, tag: string): void {
   const team = c.team!;
@@ -347,7 +360,7 @@ function playGame(c: Career, run: SeasonRun, tag: string): void {
   const next = run.next;
   run.next = null;
   const [us, them] = next && forced ? (win ? [next.tie + 2, next.tie] : [next.tie, next.tie + 2]) : gameScore(FINAL_SCORE[lg], win);
-  const line: GameLine = { n, opp: next?.opp ?? pickTeam(lg, new Set([team.name])).name, us, them, win };
+  const line: GameLine = { n, opp: next?.opp ?? nextOpponent(run, lg, team.name)[0], us, them, win };
   if (forced) line.clutch = forced;
   if (run.out > 0) {
     line.out = run.outWhy;
@@ -369,8 +382,8 @@ function playGame(c: Career, run: SeasonRun, tag: string): void {
   else if (run.shots.length > 0 && n >= run.shots[0] && run.out === 0 && run.min >= STARTER_MIN && n < run.games) {
     run.shots.shift();
     // 다음 경기 상대와 4쿼터 막판 동점 점수를 미리 정해 전광판에 띄워요.
-    const opp = pickTeam(lg, new Set([team.name]));
-    const board = { lg, team: team.name, teamColor: team.color, opp: opp.name, oppColor: opp.color, tie: gameScore(FINAL_SCORE[lg], true)[1] };
+    const [oppName, oppColor] = nextOpponent(run, lg, team.name);
+    const board = { lg, team: team.name, teamColor: team.color, opp: oppName, oppColor, tie: gameScore(FINAL_SCORE[lg], true)[1] };
     run.next = board;
     c.queue.push(clutchDecision(c, pick(BIG_GAMES), LEAGUES[lg].avg, board));
   }

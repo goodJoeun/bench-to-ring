@@ -15,6 +15,7 @@ import {
   RECORD_BOARDS,
   applyAction,
   careerTotals,
+  recordBoardsFor,
   chooseOption,
   createCareer,
   currentDecision,
@@ -800,10 +801,22 @@ describe("기록 리더보드", () => {
       tour("asiangames", true, [game(30)]),
     );
     expect(careerTotals(c)).toEqual({
-      kbl: { gp: 104, pts: 999 + 1000, reb: Math.round(54 * 6.2 + 350), ast: Math.round(54 * 3.1 + 200) },
-      nba: { gp: 82, pts: 820, reb: 246, ast: 82 },
-      olympics: { gp: 3, pts: 40, reb: 0, ast: 0 },
+      kbl: { gp: 104, pts: 999 + 1000, reb: Math.round(54 * 6.2 + 350), ast: Math.round(54 * 3.1 + 200), stl: 0, blk: 0 },
+      nba: { gp: 82, pts: 820, reb: 246, ast: 82, stl: 0, blk: 0 },
+      olympics: { gp: 3, pts: 40, reb: 0, ast: 0, stl: 0, blk: 0 },
     });
+    // 스틸·블록이 남은 시즌은 경기 수를 곱해 더해요.
+    c.hist.push({ ...rec("nba", 50, 10, 3, 1), stl: 1.5, blk: 0.8 } as Career["hist"][number]);
+    expect(careerTotals(c).nba).toMatchObject({ stl: 75, blk: 40 });
+  });
+
+  it("가드는 통산 스틸, 포워드·센터는 통산 블록 순위표를 더 봐요", () => {
+    for (const g of ["nba", "kbl"] as const) {
+      const stats = (pos: "PG" | "SG" | "SF" | "PF" | "C") => recordBoardsFor(g, pos).map((b) => b.stat);
+      for (const pos of ["PG", "SG"] as const) expect(stats(pos)).toEqual(["pts", "reb", "ast", "stl"]);
+      for (const pos of ["SF", "PF", "C"] as const) expect(stats(pos)).toEqual(["pts", "reb", "ast", "blk"]);
+    }
+    expect(recordBoardsFor("olympics", "C").map((b) => b.stat)).toEqual(["pts"]);
   });
 });
 
@@ -1765,6 +1778,33 @@ describe("클러치", () => {
     stepSeason(c);
     expect(c.run!.l).toBe(l + 1);
     expect(c.run!.log[0].clutch).toBe("loss");
+  });
+
+  it("정규시즌은 한 바퀴에 모든 팀을 한 번씩 만나고, 백투백은 있어도 같은 팀과 세 번 연속 붙지 않아요", () => {
+    setRandom(seeded(131));
+    let backToBack = 0;
+    for (let i = 0; i < 30; i++) {
+      const c = kblPlayer(`sched${i}`, 4);
+      startSeason(c);
+      const opps: string[] = [];
+      while (c.run && c.run.phase !== "post" && c.run.phase !== "end") {
+        if (currentDecision(c)) chooseOption(c, 0);
+        else {
+          const g = c.run.g;
+          stepSeason(c);
+          if (c.run && c.run.g > g) opps.push(c.run.log[0].opp);
+        }
+      }
+      expect(opps.length).toBe(LEAGUES.kbl.games);
+      for (let k = 2; k < opps.length; k++) expect(opps[k] === opps[k - 1] && opps[k] === opps[k - 2], `${k}번째 경기 ${opps[k]}`).toBe(false);
+      for (let k = 1; k < opps.length; k++) if (opps[k] === opps[k - 1]) backToBack++;
+      expect(opps).not.toContain(c.team!.name);
+      const counts = [...opps.reduce((m, o) => m.set(o, (m.get(o) ?? 0) + 1), new Map<string, number>()).values()];
+      expect(counts.length).toBe(TEAMS.kbl.length - 1);
+      expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(1);
+    }
+    // 바퀴가 바뀔 때 가끔 백투백이 나와요.
+    expect(backToBack).toBeGreaterThan(0);
   });
 
   it("클러치가 걸린 경기는 전광판의 상대와 동점에서 2점 차로 끝나요", () => {

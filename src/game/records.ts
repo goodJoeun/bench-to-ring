@@ -1,9 +1,12 @@
 import { sumSeasons, type CareerTotals } from "./career";
-import type { Career } from "./types";
+import type { Career, PosKey } from "./types";
 
 /** 실제 통산 기록과 내 선수를 나란히 세우는 기록 리더보드 */
 export type RecordGroup = "nba" | "kbl" | "olympics";
-export type RecordStat = "pts" | "reb" | "ast";
+export type RecordStat = "pts" | "reb" | "ast" | "stl" | "blk";
+
+/** 기록 순위표에 쓰는 통산: 득점·리바운드·어시스트에 스틸·블록까지 */
+export type RecordTotals = CareerTotals & { stl: number; blk: number };
 
 export interface RealRecord {
   name: string;
@@ -20,7 +23,13 @@ export interface RecordBoard {
   title: string;
   unit: string;
   entries: RealRecord[];
+  /** 이 포지션 선수의 엔딩에만 보여줘요 (스틸은 가드, 블록은 포워드·센터). 없으면 모두 */
+  pos?: PosKey[];
 }
+
+/** 가드는 통산 스틸, 포워드·센터는 통산 블록 순위표를 더 봐요. */
+const GUARDS: PosKey[] = ["PG", "SG"];
+const BIGS: PosKey[] = ["SF", "PF", "C"];
 
 export const RECORD_GROUPS: ReadonlyArray<{ key: RecordGroup; name: string; asOf: string }> = [
   { key: "nba", name: "NBA", asOf: "NBA 정규리그 · 2025-26 시즌 종료 기준" },
@@ -114,6 +123,54 @@ export const RECORD_BOARDS: RecordBoard[] = [
     ],
   },
   {
+    group: "nba",
+    stat: "stl",
+    title: "통산 스틸",
+    unit: "개",
+    pos: GUARDS,
+    entries: [
+      { name: "존 스탁턴", v: 3265 },
+      { name: "크리스 폴", v: 2728 },
+      { name: "제이슨 키드", v: 2684 },
+      { name: "마이클 조던", v: 2514 },
+      { name: "게리 페이튼", v: 2445 },
+      { name: "르브론 제임스", v: 2417, active: true },
+      { name: "모리스 칙스", v: 2310 },
+      { name: "스코티 피펜", v: 2307 },
+      { name: "클라이드 드렉슬러", v: 2207 },
+      { name: "하킴 올라주원", v: 2162 },
+      { name: "앨빈 로버트슨", v: 2112 },
+      { name: "칼 말론", v: 2085 },
+      { name: "무키 블레이록", v: 2075 },
+      { name: "러셀 웨스트브룩", v: 2038 },
+      { name: "앨런 아이버슨", v: 1983 },
+    ],
+  },
+  {
+    group: "nba",
+    stat: "blk",
+    title: "통산 블록",
+    unit: "개",
+    pos: BIGS,
+    entries: [
+      { name: "하킴 올라주원", v: 3830 },
+      { name: "디켐베 무톰보", v: 3289 },
+      { name: "카림 압둘자바", v: 3189 },
+      { name: "마크 이튼", v: 3064 },
+      { name: "팀 덩컨", v: 3020 },
+      { name: "데이비드 로빈슨", v: 2954 },
+      { name: "패트릭 유잉", v: 2894 },
+      { name: "샤킬 오닐", v: 2732 },
+      { name: "트리 롤린스", v: 2542 },
+      { name: "로버트 패리시", v: 2361 },
+      { name: "알론조 모닝", v: 2356 },
+      { name: "마커스 캠비", v: 2331 },
+      { name: "드와이트 하워드", v: 2228 },
+      { name: "브룩 로페즈", v: 2147, active: true },
+      { name: "벤 월러스", v: 2137 },
+    ],
+  },
+  {
     group: "kbl",
     stat: "pts",
     title: "통산 득점",
@@ -152,6 +209,36 @@ export const RECORD_BOARDS: RecordBoard[] = [
     ],
   },
   {
+    group: "kbl",
+    stat: "stl",
+    title: "통산 스틸",
+    unit: "개",
+    pos: GUARDS,
+    entries: [
+      { name: "주희정", v: 1505 },
+      { name: "양동근", v: 981 },
+      { name: "김승현", v: 917 },
+      { name: "이상민", v: 881 },
+      { name: "신기성", v: 856 },
+      { name: "김선형", v: 843, active: true },
+      { name: "임재현", v: 839 },
+      { name: "박지현", v: 745 },
+      { name: "강혁", v: 730 },
+      { name: "함지훈", v: 721 },
+    ],
+  },
+  {
+    group: "kbl",
+    stat: "blk",
+    title: "통산 블록",
+    unit: "개",
+    pos: BIGS,
+    entries: [
+      { name: "김주성", v: 1037 },
+      { name: "라건아", v: 703, active: true },
+    ],
+  },
+  {
     group: "olympics",
     stat: "pts",
     title: "올림픽 통산 득점",
@@ -169,11 +256,15 @@ export const RECORD_BOARDS: RecordBoard[] = [
   },
 ];
 
-/** 리그별(NBA·KBL) 정규리그 통산과 올림픽 통산 */
-export function careerTotals(c: Career): Record<RecordGroup, CareerTotals> {
-  const league = (lg: "nba" | "kbl"): CareerTotals => {
-    const { gp, pts, reb, ast } = sumSeasons(c.hist.filter((h) => h.lg === lg));
-    return { gp, pts, reb, ast };
+/** 이 포지션 선수의 엔딩에 보여줄 순위표 */
+export const recordBoardsFor = (group: RecordGroup, pos: PosKey): RecordBoard[] =>
+  RECORD_BOARDS.filter((b) => b.group === group && (!b.pos || b.pos.includes(pos)));
+
+/** 리그별(NBA·KBL) 정규리그 통산과 올림픽 통산. 스틸·블록이 없는 예전 시즌은 0으로 쳐요. */
+export function careerTotals(c: Career): Record<RecordGroup, RecordTotals> {
+  const league = (lg: "nba" | "kbl"): RecordTotals => {
+    const { gp, pts, reb, ast, stl, blk } = sumSeasons(c.hist.filter((h) => h.lg === lg));
+    return { gp, pts, reb, ast, stl, blk };
   };
   // 올림픽은 경기마다 내 득점만 남아요. 실제 기록처럼 본선만 세고, 최종예선과 불참한 대회는 빼요.
   const games = c.natLog.filter((t) => t.ev === "olympics" && t.joined).flatMap((t) => t.games);
@@ -181,7 +272,7 @@ export function careerTotals(c: Career): Record<RecordGroup, CareerTotals> {
   return {
     nba: league("nba"),
     kbl: league("kbl"),
-    olympics: { gp: played.length, pts: played.reduce((t, g) => t + g.pts!, 0), reb: 0, ast: 0 },
+    olympics: { gp: played.length, pts: played.reduce((t, g) => t + g.pts!, 0), reb: 0, ast: 0, stl: 0, blk: 0 },
   };
 }
 

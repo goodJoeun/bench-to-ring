@@ -10,6 +10,7 @@ import { FarewellLoading } from "@/components/progress/FarewellLoading";
 import { GameScreen, type TabKey } from "@/components/career/GameScreen";
 import { FeedbackDialog } from "@/components/feedback/FeedbackDialog";
 import { GuideDialog } from "@/components/guide/GuideDialog";
+import { NoticeAlert, markNoticesAlerted, noticeAlertHiddenToday, noticesAlerted } from "@/components/notice/NoticeAlert";
 import { NoticeDialog } from "@/components/notice/NoticeDialog";
 import { NOTICES, useReadNotices } from "@/lib/notices";
 import { SUPPORT_ACCOUNT } from "@/lib/site";
@@ -38,7 +39,19 @@ export function Game() {
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [coffeeOpen, setCoffeeOpen] = useState(false);
   const readNotices = useReadNotices();
-  const unread = NOTICES.some((n) => !readNotices.has(n.id));
+  const unreadList = NOTICES.filter((n) => !readNotices.has(n.id));
+  const unread = unreadList.length > 0;
+  // 접속했을 때 안 읽은 새 공지가 있으면 한 번 안내해요. 닫거나 공지를 열면 이번 접속에서는 다시 띄우지 않아요.
+  // 공지 목록을 연 뒤로는 그때까지의 글로 다시 안내하지 않고, 새 글이 생기면 다시 안내해요.
+  const [alertDone, setAlertDone] = useState(false);
+  const alertList = ready && !alertDone && !noticeOpen && !noticeAlertHiddenToday() ? unreadList.filter((n) => !noticesAlerted().has(n.id)) : [];
+  const showAlert = alertList.length > 0;
+  /** 공지 목록 열기. 지금 안 읽은 글은 안내한 것으로 쳐요. */
+  const openNotices = () => {
+    markNoticesAlerted(unreadList.map((n) => n.id));
+    setAlertDone(true);
+    setNoticeOpen(true);
+  };
 
   /** 탭이 바뀌면 화면이 통째로 바뀌니 맨 위에서 시작해요. */
   const openTab = (k: TabKey) => {
@@ -106,7 +119,7 @@ export function Game() {
             aria-label={unread ? "공지 (새 글 있음)" : "공지"}
             aria-haspopup="dialog"
             aria-expanded={noticeOpen}
-            onClick={() => setNoticeOpen(true)}
+            onClick={openNotices}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M18 3v18l-6-4H7l1 4H5.5l-1.3-4.3A3 3 0 0 1 2 13.8V10a3 3 0 0 1 3-3h7zm2 6.5a3 3 0 0 1 0 5z" />
@@ -167,6 +180,15 @@ export function Game() {
       {cheer && career && <CheerPopup career={career} cheer={cheer} />}
       {guideOpen && <GuideDialog onClose={() => setGuideOpen(false)} />}
       {noticeOpen && <NoticeDialog onClose={() => setNoticeOpen(false)} />}
+      {showAlert && (
+        <NoticeAlert
+          // 고정 글(인사말)보다 가장 최근 패치노트를 먼저 알려요.
+          latest={alertList.find((n) => !n.pinned) ?? alertList[0]}
+          count={alertList.length}
+          onOpen={openNotices}
+          onClose={() => setAlertDone(true)}
+        />
+      )}
       {coffeeOpen && <CoffeeDialog onClose={() => setCoffeeOpen(false)} />}
       {feedbackOpen && (
         <FeedbackDialog

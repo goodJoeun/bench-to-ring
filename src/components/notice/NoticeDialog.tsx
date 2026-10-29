@@ -1,13 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Sheet } from "@/components/common/Sheet";
 import { NOTICE_KIND_NAME, NOTICES, markNoticeRead, useReadNotices, type Notice } from "@/lib/notices";
+
+/** 목록에 한 번에 보이는 글 수. 더 있으면 목록 안에서 내려서 봐요. */
+const SHOWN = 5;
 
 /** 상단 '공지' 버튼으로 여는 패치노트·공지사항. 목록에서 글을 누르면 상세 보기로 넘어가요. */
 export function NoticeDialog({ onClose }: { onClose: () => void }) {
   const read = useReadNotices();
   const [open, setOpen] = useState<Notice | null>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  // 목록 끝까지 내렸는지. 아래에 글이 남았으면 끝을 흐리게 해서 더 있다는 걸 알려요.
+  const [atEnd, setAtEnd] = useState(NOTICES.length <= SHOWN);
+
+  // 제목이 두 줄인 글도 있어서, SHOWN번째 글의 아래 끝까지를 재서 목록 높이로 써요.
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (open || !list || list.children.length <= SHOWN) return;
+    const last = list.children[SHOWN - 1] as HTMLElement;
+    list.style.maxHeight = `${last.getBoundingClientRect().bottom - list.getBoundingClientRect().top}px`;
+  }, [open]);
 
   const show = (n: Notice) => {
     markNoticeRead(n.id);
@@ -36,6 +50,11 @@ export function NoticeDialog({ onClose }: { onClose: () => void }) {
           </h2>
           <span className="nt-date">{open.date}</span>
           {open.intro && <p className="nt-intro">{open.intro}</p>}
+          {open.body?.map((para) => (
+            <p key={para} className="nt-body">
+              {para}
+            </p>
+          ))}
           {open.sections.map((s) => (
             <section key={s.title} className="nt-sec">
               <h3>{s.title}</h3>
@@ -50,11 +69,22 @@ export function NoticeDialog({ onClose }: { onClose: () => void }) {
       ) : (
         <>
           <h2 id="nt-title">공지</h2>
-          <ul className="nt-list">
+          <ul
+            ref={listRef}
+            className="nt-list"
+            data-scroll={NOTICES.length > SHOWN || undefined}
+            data-end={atEnd || undefined}
+            tabIndex={NOTICES.length > SHOWN ? 0 : undefined}
+            aria-label={`공지 ${NOTICES.length}개`}
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              setAtEnd(el.scrollTop + el.clientHeight >= el.scrollHeight - 4);
+            }}
+          >
             {NOTICES.map((n) => (
-              <li key={n.id}>
+              <li key={n.id} data-pinned={n.pinned || undefined}>
                 <button type="button" className="nt-row" onClick={() => show(n)}>
-                  <span className="nt-tag">{NOTICE_KIND_NAME[n.kind]}</span>
+                  <span className="nt-tag">{n.pinned ? "📌 고정" : NOTICE_KIND_NAME[n.kind]}</span>
                   <span className="nt-main">
                     <b>
                       <span aria-hidden="true">{n.icon}</span> {n.title}
@@ -66,6 +96,11 @@ export function NoticeDialog({ onClose }: { onClose: () => void }) {
               </li>
             ))}
           </ul>
+          {NOTICES.length > SHOWN && (
+            <p className="nt-more" aria-hidden="true">
+              {atEnd ? `공지 ${NOTICES.length}개를 모두 봤어요` : `내려서 더 보기 · 공지 ${NOTICES.length}개`}
+            </p>
+          )}
         </>
       )}
     </Sheet>

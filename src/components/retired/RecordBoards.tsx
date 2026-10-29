@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import {
-  RECORD_BOARDS,
   RECORD_GROUPS,
   careerTotals,
+  recordBoardsFor,
   fmtNum as num,
   placeOnBoard,
   type BoardPlacement,
@@ -66,7 +66,7 @@ function Board({ board, name, mine, all }: { board: RecordBoard; name: string; m
   );
 }
 
-/** 은퇴한 선수의 리그별 통산 기록을 실제 역대 순위표에 끼워 보여줘요. */
+/** 은퇴한 선수의 리그별 통산 기록을 실제 역대 순위표에 끼워 보여줘요. 가드는 통산 스틸, 포워드·센터는 통산 블록 순위표가 더 붙어요. */
 export function RecordBoards({ career: c }: { career: Career }) {
   const totals = careerTotals(c);
   const [group, setGroup] = useState<RecordGroup>(() => {
@@ -75,7 +75,7 @@ export function RecordBoards({ career: c }: { career: Career }) {
   });
   const [all, setAll] = useState(false);
   const info = RECORD_GROUPS.find((g) => g.key === group)!;
-  const boards = RECORD_BOARDS.filter((b) => b.group === group);
+  const boards = recordBoardsFor(group, c.p.pos);
   const mine = totals[group];
   const foldable = boards.some((b) => b.entries.length > FOLD);
 

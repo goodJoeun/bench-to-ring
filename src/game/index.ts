@@ -81,12 +81,14 @@ export {
   RECORD_BOARDS,
   RECORD_GROUPS,
   careerTotals,
+  recordBoardsFor,
   placeOnBoard,
   type BoardPlacement,
   type BoardRow,
   type RecordBoard,
   type RecordGroup,
   type RecordStat,
+  type RecordTotals,
 } from "./records";
 export {
   ovr,
