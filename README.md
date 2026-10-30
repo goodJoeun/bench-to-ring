@@ -15,7 +15,7 @@ npm install
 npm run dev
 ```
 
-브라우저에서 http://localhost:3000 을 열면 돼요.
+브라우저에서 http://localhost:3001 을 열면 돼요.
 
 게임은 DB 없이도 할 수 있어요. 은퇴 기록 등록과 랭킹 페이지(`/rankings`)를 쓰려면 Postgres 연결이 필요해요(아래 "온라인 랭킹").
 

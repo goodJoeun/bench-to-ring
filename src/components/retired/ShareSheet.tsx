@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { Career } from "@/game";
 import { gameActions } from "@/lib/game-store";
 import { Sheet } from "@/components/common/Sheet";
-import { SITE_NAME } from "@/lib/site";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { CARD_H, CARD_W, drawCard } from "./careerCard";
 
 type CardState = { url: string; file: File } | "loading" | "error";
@@ -15,9 +15,13 @@ const fileName = (name: string): string => `bench2ring-${name.replace(/[\\/:*?"<
 /** 이미지를 클립보드에 넣을 수 있는 브라우저인지 */
 const canCopyImage = (): boolean => typeof ClipboardItem !== "undefined" && typeof navigator.clipboard?.write === "function";
 
+/** 카드와 함께 보내는 한 줄과 게임 링크 */
+const shareText = (name: string): string => `${name}의 농구 커리어 기록 카드 🏀\n나도 선수 키워 보기 👉 ${SITE_URL}`;
+
 /**
  * 기록 카드 시트: 열면 카드를 그려 미리 보여주고, 카드 이미지를 공유하거나 저장해요.
- * 공유는 휴대폰이면 공유 창을 띄우고, PC면 이미지를 복사해 카카오톡 대화창에 붙여 넣게 해요. 둘 다 안 되면 저장해요.
+ * 공유는 휴대폰이면 공유 창으로 카드와 게임 링크를 함께 보내고, PC면 이미지를 복사해 카카오톡 대화창에 붙여 넣게 해요.
+ * PC 클립보드에는 이미지와 글을 함께 넣을 수 없어서, 게임 링크는 '게임 링크 복사'로 따로 복사해요. 둘 다 안 되면 저장해요.
  */
 export function ShareSheet({ career: c, onClose }: { career: Career; onClose: () => void }) {
   const [card, setCard] = useState<CardState>("loading");
@@ -54,7 +58,8 @@ export function ShareSheet({ career: c, onClose }: { career: Career; onClose: ()
     const touch = matchMedia("(pointer: coarse)").matches;
     if (touch && navigator.canShare?.({ files: [ready.file] })) {
       try {
-        await navigator.share({ files: [ready.file], title: `${c.p.name}의 커리어 · ${SITE_NAME}` });
+        // 링크는 url 대신 글에 넣어요. 사진과 함께 보낼 때 url 칸을 버리는 앱(안드로이드 카카오톡 등)이 있어서요.
+        await navigator.share({ files: [ready.file], title: `${c.p.name}의 커리어 · ${SITE_NAME}`, text: shareText(c.p.name) });
       } catch (e) {
         if (!(e instanceof DOMException && e.name === "AbortError")) gameActions.notify("카드를 공유하지 못했어요. 이미지 저장 뒤 보내 주세요");
       }
@@ -63,14 +68,23 @@ export function ShareSheet({ career: c, onClose }: { career: Career; onClose: ()
     if (canCopyImage()) {
       try {
         await navigator.clipboard.write([new ClipboardItem({ "image/png": ready.file })]);
-        gameActions.notify("카드 이미지를 복사했어요. 카카오톡 대화창에 붙여 넣어 보내세요");
+        gameActions.notify("카드 이미지를 복사했어요. 대화창에 붙여 넣은 뒤 '게임 링크 복사'로 링크도 함께 보내세요");
         return;
       } catch {
         // 복사도 안 되면 저장으로 이어가요.
       }
     }
     save();
-    gameActions.notify("카드 이미지를 저장했어요. 카카오톡 등에서 사진으로 보내세요");
+    gameActions.notify("카드 이미지를 저장했어요. 사진으로 보낼 때 '게임 링크 복사'로 링크도 함께 보내세요");
+  };
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareText(c.p.name));
+      gameActions.notify("게임 링크를 복사했어요. 카드와 함께 붙여 넣어 보내세요");
+    } catch {
+      gameActions.notify(`링크를 복사하지 못했어요. ${SITE_URL.replace(/^https?:\/\//, "")}을 직접 보내 주세요`);
+    }
   };
 
   return (
@@ -93,8 +107,10 @@ export function ShareSheet({ career: c, onClose }: { career: Career; onClose: ()
         <button type="button" className="btn" disabled={!ready} onClick={save}>
           이미지 저장
         </button>
+        <button type="button" className="btn" onClick={() => void copyLink()}>
+          게임 링크 복사
+        </button>
       </div>
-      <p className="sheet-desc share-tip">카카오톡 등으로 카드 이미지를 보내요. 휴대폰에서는 카드를 길게 눌러 저장할 수도 있어요.</p>
     </Sheet>
   );
 }

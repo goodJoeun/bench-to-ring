@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "predev": "node scripts/logos.mjs --quiet && node scripts/flags.mjs --quiet",
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "prebuild": "node scripts/logos.mjs --quiet && node scripts/flags.mjs --quiet",
     "build": "next build",
     "start": "next start",

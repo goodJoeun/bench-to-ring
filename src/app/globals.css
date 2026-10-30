@@ -3081,9 +3081,41 @@ select {
 }
 .share-row {
   margin-top: 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
 }
 .share-row .hint {
   margin: 0;
+  text-align: center;
+}
+/* 엔딩의 '기록 카드 공유': 눈에 잘 띄게 강조색으로 꽉 채워요. */
+.share-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 52px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--f-display);
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.share-cta svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+.share-cta:hover {
+  filter: brightness(1.06);
+}
+.share-cta:active {
+  transform: scale(0.98);
 }
 /* 기록 카드 시트: 카드 미리보기와 저장·공유 단추 */
 .card-preview {

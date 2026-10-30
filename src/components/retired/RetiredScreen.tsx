@@ -86,10 +86,12 @@ export function RetiredScreen({ career: c, hall, past = false }: { career: Caree
           return parts.length > 0 && <p className="hint">코트 밖에서 · {parts.join(" · ")}</p>;
         })()}
         <div className="row share-row">
-          <button type="button" className="btn" onClick={() => setSharing(true)}>
+          <button type="button" className="share-cta" onClick={() => setSharing(true)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 16a3 3 0 0 0-2.4 1.2l-6.7-3.4a3 3 0 0 0 0-1.6l6.7-3.4A3 3 0 1 0 15 7c0 .3 0 .5.1.8L8.4 11.2a3 3 0 1 0 0 3.6l6.7 3.4A3 3 0 1 0 18 16z" />
+            </svg>
             기록 카드 공유
           </button>
-          <span className="hint">이미지로 저장하거나 카카오톡 등으로 보내요</span>
         </div>
       </Panel>
 
