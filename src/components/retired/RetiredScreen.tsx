@@ -7,6 +7,7 @@ import { NO_TEAM_COLOR, militaryShort, nameFit } from "@/components/common/forma
 import { RecordBoards } from "./RecordBoards";
 import { SimilarPlayers } from "./SimilarPlayers";
 import { ShareSheet } from "./ShareSheet";
+import { SeasonTable } from "@/components/career/tabs/RecordTab";
 import { HallOfFame } from "@/components/common/HallOfFame";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { AwardName, CourtStage, Panel, StatTiles } from "@/components/common/ui";
@@ -121,6 +122,8 @@ export function RetiredScreen({ career: c, hall, past = false }: { career: Caree
         )}
         {!s.seasons && <p className="hint">프로 무대 기록이 없어 명예의 전당에는 오르지 않아요.</p>}
       </Panel>
+
+      {c.hist.length > 0 && <SeasonTable career={c} />}
 
       <RecordBoards career={c} />
 

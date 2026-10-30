@@ -4137,6 +4137,32 @@ select {
 .fw .live-ctl {
   margin-top: 4px;
 }
+/* 커리어 회고 닫기: 카드 오른쪽 위 X */
+.sim-card.fw {
+  position: relative;
+}
+.sim-card.fw > .fw-x {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+}
+.fw-x svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+.fw-x:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
 /* 결승 문자 중계 */
 .live {
   display: flex;

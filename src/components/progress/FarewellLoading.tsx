@@ -104,9 +104,16 @@ export function FarewellLoading({ career: c }: { career: Career }) {
   const trail = steps.slice(Math.max(0, at - TRAIL), at).reverse();
 
   const next = () => (done ? gameActions.finishFarewell() : setShown(shown + 1));
+  // 닫기(X·Esc)는 남은 칸을 건너뛰고 바로 엔딩으로 가요.
+  useEscapeKey(gameActions.finishFarewell);
 
   return (
     <Popup labelledBy="fw-title" className="fw">
+      <button type="button" className="fw-x" aria-label="커리어 회고 닫기" onClick={gameActions.finishFarewell}>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4z" />
+        </svg>
+      </button>
       <div className="fw-road" aria-hidden="true" style={{ "--tc": color } as React.CSSProperties}>
         <div className="fw-track">
           <div className="fw-line">

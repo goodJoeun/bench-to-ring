@@ -64,6 +64,63 @@ function NationalLog({ career: c }: { career: Career }) {
   );
 }
 
+/** 시즌별 기록 표. 최근 시즌부터 보여줘요. 진행 중 기록 탭과 은퇴 화면이 함께 써요. */
+export function SeasonTable({ career: c }: { career: Career }) {
+  return (
+    <Panel title="시즌별 기록">
+      <div className="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th className="l">시즌</th>
+              <th>나이</th>
+              <th className="l">팀</th>
+              <th className="l">리그</th>
+              <th className="l">역할</th>
+              <th>경기</th>
+              <th>분</th>
+              <th>득점</th>
+              <th>리바</th>
+              <th>어시</th>
+              <th>FG%</th>
+              <th>평점</th>
+              <th>OVR</th>
+              <th className="l">수상</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...c.hist].reverse().map((h) => (
+              <tr key={h.year}>
+                <td className="l">{h.year}</td>
+                <td>{h.age}</td>
+                <td className="l t">
+                  <span className="team-cell">
+                    <TeamBadge name={h.team} size={16} />
+                    {h.team}
+                  </span>
+                </td>
+                <td className="l t">{h.lg ? LEAGUES[h.lg].short : "–"}</td>
+                <td className="l t">{h.role}</td>
+                <td>{h.gp}</td>
+                <td>{h.min}</td>
+                <td>{h.pts}</td>
+                <td>{h.reb}</td>
+                <td>{h.ast}</td>
+                <td>{h.fg || "–"}</td>
+                <td>{h.rating || "–"}</td>
+                <td>
+                  {h.ovr0}→{h.ovr1}
+                </td>
+                <td className="l t">{h.awards.join(", ")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Panel>
+  );
+}
+
 export function RecordTab({ career: c }: { career: Career }) {
   if (!c.hist.length)
     return (
@@ -89,57 +146,7 @@ export function RecordTab({ career: c }: { career: Career }) {
           </p>
         )}
       </Panel>
-      <Panel title="시즌별 기록">
-        <div className="tbl-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th className="l">시즌</th>
-                <th>나이</th>
-                <th className="l">팀</th>
-                <th className="l">리그</th>
-                <th className="l">역할</th>
-                <th>경기</th>
-                <th>분</th>
-                <th>득점</th>
-                <th>리바</th>
-                <th>어시</th>
-                <th>FG%</th>
-                <th>평점</th>
-                <th>OVR</th>
-                <th className="l">수상</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...c.hist].reverse().map((h) => (
-                <tr key={h.year}>
-                  <td className="l">{h.year}</td>
-                  <td>{h.age}</td>
-                  <td className="l t">
-                    <span className="team-cell">
-                      <TeamBadge name={h.team} size={16} />
-                      {h.team}
-                    </span>
-                  </td>
-                  <td className="l t">{h.lg ? LEAGUES[h.lg].short : "–"}</td>
-                  <td className="l t">{h.role}</td>
-                  <td>{h.gp}</td>
-                  <td>{h.min}</td>
-                  <td>{h.pts}</td>
-                  <td>{h.reb}</td>
-                  <td>{h.ast}</td>
-                  <td>{h.fg || "–"}</td>
-                  <td>{h.rating || "–"}</td>
-                  <td>
-                    {h.ovr0}→{h.ovr1}
-                  </td>
-                  <td className="l t">{h.awards.join(", ")}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Panel>
+      <SeasonTable career={c} />
       <NationalLog career={c} />
     </>
   );
