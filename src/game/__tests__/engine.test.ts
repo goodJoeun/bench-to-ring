@@ -1145,7 +1145,7 @@ describe("시즌 진행", () => {
 });
 
 describe("기자회견", () => {
-  /** 기자회견이 나올 때까지 시즌 중 이벤트를 뽑아요. */
+  /** 팀 성적 기자회견(열애설·불화설 기자회견 말고)이 나올 때까지 시즌 중 이벤트를 뽑아요. */
   function press(w: number, l: number): Decision {
     const c = createCareer({ name: "회견", num: 3, nat: "미국", pos: "SG", path: "abroad" }, generateCandidates("SG")[0], `press${w}-${l}`);
     c.stage = "pro";
@@ -1156,7 +1156,7 @@ describe("기자회견", () => {
     for (let i = 0; i < 500; i++) {
       c.events = {};
       const d = seasonEvent(c);
-      if (d?.title.startsWith("기자회견")) return d;
+      if (d && /^기자회견: (우승 후보\?|부진의 이유|짓궂은 질문)$/.test(d.title)) return d;
     }
     throw new Error("기자회견이 나오지 않았어요");
   }
