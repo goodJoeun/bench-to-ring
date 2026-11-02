@@ -206,6 +206,7 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
                     <div className="f">
                       <span id="f-school-label">고등학교</span>
                       <SchoolPicker
+                        nat={draft.nat}
                         labelledBy="f-school-label"
                         value={draft.school}
                         onChange={(school) => gameActions.editDraft({ school })}

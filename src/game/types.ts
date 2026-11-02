@@ -704,6 +704,6 @@ export interface NewCareerInput {
   look?: Look;
   pos: PosKey;
   path: CareerPath;
-  /** 입학할 고등학교 (TEAMS.hs의 이름). 없으면 무작위로 정해요. */
+  /** 입학할 고등학교 (국적의 hsSchools 이름). 없거나 그 나라 학교가 아니면 무작위로 정해요. */
   school?: string;
 }

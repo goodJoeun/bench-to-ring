@@ -44,9 +44,10 @@ export function giveAward(c: Career, k: AwardKey, name: string, rec?: SeasonReco
   cheer(c, { kind, title: name, sub, year, color: kind === "gold" ? null : (c.team?.color ?? null) });
 }
 
-export function pickTeam(lg: LeagueKey, used?: Set<string>): Team {
-  const pool = TEAMS[lg].filter(([name]) => !used?.has(name));
-  return makeTeam(pick(pool.length ? pool : TEAMS[lg]));
+/** 리그 목록(teams를 주면 그 목록)에서 used에 없는 팀을 하나 골라요. */
+export function pickTeam(lg: LeagueKey, used?: Set<string>, teams: ReadonlyArray<readonly [string, string]> = TEAMS[lg]): Team {
+  const pool = teams.filter(([name]) => !used?.has(name));
+  return makeTeam(pick(pool.length ? pool : teams));
 }
 
 /** 팀 목록의 한 줄로 팀을 만들어요. 전력은 무작위예요. */

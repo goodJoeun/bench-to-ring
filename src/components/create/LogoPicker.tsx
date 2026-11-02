@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { NATIONS, TEAMS } from "@/game";
+import { NATIONS, hsSchools } from "@/game";
 import { TeamBadge } from "@/components/common/TeamBadge";
 
 /** 고를 항목: 값, 보여줄 이름, 로고 대신 쓸 대표색. 값이 ""인 항목은 무작위예요. */
@@ -148,11 +148,11 @@ function LogoPicker({
   );
 }
 
-/** 맨 앞은 무작위 배정이에요. */
-const SCHOOLS: readonly PickOption[] = [["", "무작위 배정"], ...TEAMS.hs.map(([name, color]) => [name, name, color] as const)];
+/** 국적에 맞는 고교 목록. 맨 앞은 무작위 배정이에요. */
+const schoolOptions = (nat: string): readonly PickOption[] => [["", "무작위 배정"], ...hsSchools(nat).map(([name, color]) => [name, name, color] as const)];
 
-export function SchoolPicker({ value, onChange, labelledBy }: { value: string; onChange: (school: string) => void; labelledBy: string }) {
-  return <LogoPicker id="f-school" options={SCHOOLS} kind="hs" value={value} onChange={onChange} labelledBy={labelledBy} />;
+export function SchoolPicker({ nat, value, onChange, labelledBy }: { nat: string; value: string; onChange: (school: string) => void; labelledBy: string }) {
+  return <LogoPicker id="f-school" options={schoolOptions(nat)} kind="hs" value={value} onChange={onChange} labelledBy={labelledBy} />;
 }
 
 const NATION_OPTIONS: readonly PickOption[] = NATIONS.map((n) => [n.name, n.name] as const);

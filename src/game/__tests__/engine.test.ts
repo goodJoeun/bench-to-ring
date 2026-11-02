@@ -37,6 +37,8 @@ import {
   START_MIN,
   SPIKE_CAP,
   TEAMS,
+  hsSchools,
+  findTeam,
   STUDENT_ALLOWANCE,
   bodyOf,
   careerSummary,
@@ -545,6 +547,36 @@ describe("커리어 시작", () => {
       const c = createCareer({ ...input, school }, generateCandidates("PG")[0], "s2");
       expect(TEAMS.hs.map(([n]) => n)).toContain(c.team!.name);
     }
+  });
+
+  it("국적마다 그 나라 고교(유소년)에 입학하고, 고교 시즌 상대도 그 나라 학교예요", () => {
+    setRandom(seeded(5));
+    for (const n of NATIONS) {
+      const names = hsSchools(n.name).map(([s]) => s);
+      const input = { name: "유학", num: 7, nat: n.name, pos: "SF" as const, path: "domestic" as const };
+      const c = createCareer(input, generateCandidates("SF")[0], `nat-${n.name}`);
+      expect(names, n.name).toContain(c.team!.name);
+      expect(findTeam(c.team!.name)?.lg).toBe("hs");
+      // 다른 나라 학교를 고르면 무작위 배정이에요.
+      const other = createCareer({ ...input, school: n.name === "대한민국" ? "라쿠난고" : "휘문고" }, generateCandidates("SF")[0], "x");
+      expect(names).toContain(other.team!.name);
+      // 첫 고교 시즌의 정규시즌·전국대회 상대를 모아요.
+      const opps = new Set<string>();
+      startSeason(c);
+      while (c.run && c.run.phase !== "end") {
+        if (c.queue.length) chooseOption(c, 0);
+        else stepSeason(c);
+        for (const o of c.run?.opps ?? []) opps.add(o);
+        for (const r of c.run?.post ?? []) opps.add(r.opp);
+      }
+      expect(opps.size, n.name).toBeGreaterThan(0);
+      for (const o of opps) expect(names, `${n.name} · ${o}`).toContain(o);
+    }
+    const jp = createCareer({ name: "라쿠", num: 4, nat: "일본", pos: "PG", path: "domestic", school: "라쿠난고" }, generateCandidates("PG")[0], "jp");
+    expect(jp.team?.name).toBe("라쿠난고");
+    expect(jp.news[0].m).toContain("라쿠난고 농구부에 입단");
+    const es = createCareer({ name: "마드리드", num: 4, nat: "스페인", pos: "PG", path: "domestic", school: "레알 마드리드 유소년" }, generateCandidates("PG")[0], "es");
+    expect(es.news[0].m).toContain("레알 마드리드 유소년에 입단");
   });
 
   it("고른 캐릭터와 국적으로 시작하고, 대한민국 선수가 아니면 병역 의무가 없어요", () => {

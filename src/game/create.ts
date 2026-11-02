@@ -1,6 +1,6 @@
 import { ATTR_KEYS, POS, START_YEAR } from "./data";
 import { ARCHETYPES, TRAIT_KEYS, randomLook } from "./players";
-import { TEAMS } from "./leagues";
+import { hsSchools } from "./leagues";
 import { addNews, makeTeam, pickTeam, setTeam } from "./log";
 import { chance, pick, ri, rnd, shuffle, triangular } from "./random";
 import { ovrOf } from "./ratings";
@@ -159,9 +159,12 @@ export function createCareer(input: NewCareerInput, cand: Candidate, id = String
     milestones: [],
   };
   refreshShop(c);
-  const chosen = TEAMS.hs.find(([name]) => name === input.school);
-  const t = chosen ? makeTeam(chosen) : pickTeam("hs");
+  // 고교는 국적에 맞는 학교(유럽은 유소년 아카데미) 중에서 정해요.
+  const schools = hsSchools(c.p.nat);
+  const chosen = schools.find(([name]) => name === input.school);
+  const t = chosen ? makeTeam(chosen) : pickTeam("hs", undefined, schools);
   setTeam(c, "hs", t);
-  addNews(c, `${START_YEAR} 프리시즌`, "move", `${t.name} 농구부에 입단했어요. 벤치에서 시작해요.`);
+  const club = /유소년|센터 페데랄|아카데미$/.test(t.name);
+  addNews(c, `${START_YEAR} 프리시즌`, "move", `${t.name}${club ? "" : " 농구부"}에 입단했어요. 벤치에서 시작해요.`);
   return c;
 }

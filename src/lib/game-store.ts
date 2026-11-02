@@ -11,6 +11,7 @@ import {
   currentDecision,
   donate,
   generateCandidates,
+  hsSchools,
   randomLooks,
   shuffle,
   toLook,
@@ -280,7 +281,10 @@ export function useGame(): GameSnapshot {
 
 export const gameActions = {
   editDraft(patch: Partial<Pick<CreationDraft, "name" | "num" | "nat" | "school" | "selected">>) {
-    set({ draft: { ...snapshot.draft, ...patch } });
+    const draft = { ...snapshot.draft, ...patch };
+    // 국적을 바꾸면 그 나라 학교 목록에 없는 학교는 무작위 배정으로 되돌려요.
+    if (draft.school && !hsSchools(draft.nat).some(([name]) => name === draft.school)) draft.school = "";
+    set({ draft });
   },
   /** 늘어놓은 캐릭터 가운데 i번째를 골라요. */
   chooseLook(i: number) {
