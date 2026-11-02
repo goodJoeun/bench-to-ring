@@ -93,8 +93,8 @@ export interface Board {
   };
 }
 
-/** 스탯 랭킹 종류: 프로 통산 득점·리바운드·어시스트·스틸·블록·3점슛 */
-export const STAT_KEYS = ["pts", "reb", "ast", "stl", "blk", "tpm"] as const;
+/** 스탯 랭킹 종류: 프로 통산 득점·리바운드·어시스트·스틸·블록·3점슛, 커리어 누적 기부금(억) */
+export const STAT_KEYS = ["pts", "reb", "ast", "stl", "blk", "tpm", "don"] as const;
 export type StatKey = (typeof STAT_KEYS)[number];
 
 /** 스탯 랭킹의 한 줄 */
@@ -105,7 +105,7 @@ export interface StatEntry {
   name: string;
   num: number;
   pos: PosKey;
-  /** 프로 통산 값 */
+  /** 프로 통산 값. 기부금이면 커리어 누적 기부금(억)이에요. */
   value: number;
   /** 프로 통산 경기 수 */
   gp: number;
@@ -118,7 +118,7 @@ export interface StatBoard {
   scope: BoardScope;
   day: BoardDay;
   stat: StatKey;
-  /** 상위 50명. 스틸·블록·3점슛은 그 기록이 남은 커리어만 세요. */
+  /** 상위 50명. 스틸·블록·3점슛은 그 기록이 남은 커리어만, 기부금은 기부한 커리어만 세요. */
   top: StatEntry[];
 }
 

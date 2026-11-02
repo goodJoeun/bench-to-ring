@@ -118,6 +118,7 @@ describe("순위표 조건", () => {
     const sq = (s: string) => parseStatQuery(new URLSearchParams(s));
     expect(sq("stat=tpm")).toEqual({ ok: true, scope: { ruleset: RULESET_VERSION }, stat: "tpm", day: null });
     expect(sq("stat=pts&scope=all")).toEqual({ ok: true, scope: "all", stat: "pts", day: null });
+    expect(sq("stat=don")).toEqual({ ok: true, scope: { ruleset: RULESET_VERSION }, stat: "don", day: null });
     for (const s of ["", "stat=dunk", "stat=pts&pos=C", "stat=pts&scope=week"]) expect(sq(s), s).toMatchObject({ ok: false });
   });
 

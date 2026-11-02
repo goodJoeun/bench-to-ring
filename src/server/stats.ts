@@ -14,9 +14,11 @@ const STAT_TOP = 50;
 /**
  * 스탯 값. 득점·리바운드·어시스트는 칸에, 스틸·블록·3점슛은 은퇴 요약(summary)에 있어요.
  * 스틸·블록·3점슛이 없는 예전 기록은 null이라 순위에서 빠져요.
+ * 기부금(억)은 소수라 실수로 읽고, 기부하지 않은 커리어(0이나 없음)는 null로 빼요.
  */
 function statValue(stat: StatKey): SQL<number | null> {
   if (stat === "pts" || stat === "reb" || stat === "ast") return sql`${careers[stat]}`;
+  if (stat === "don") return sql`nullif((${careers.summary}->>'donated')::float8, 0)`;
   return sql`(${careers.summary}->>${stat})::int`;
 }
 

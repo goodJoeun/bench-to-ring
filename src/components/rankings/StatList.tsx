@@ -1,4 +1,4 @@
-import { fmtNum } from "@/game";
+import { fmtNum, money } from "@/game";
 import type { StatEntry, StatKey } from "@/lib/leaderboard/types";
 import { nameFit } from "@/components/common/format";
 import { Sprite } from "@/components/common/Sprite";
@@ -13,11 +13,13 @@ export const STAT_LABELS: Record<StatKey, { name: string; unit: string }> = {
   stl: { name: "스틸", unit: "개" },
   blk: { name: "블록", unit: "개" },
   tpm: { name: "3점슛", unit: "개" },
+  don: { name: "기부", unit: "" },
 };
 
-/** 스탯 랭킹 목록: 순위, 선수, 경기당 기록, 오른쪽에 프로 통산 값 */
+/** 스탯 랭킹 목록: 순위, 선수, 경기당 기록, 오른쪽에 프로 통산 값. 기부금은 경기당 대신 금액(억·만)으로 보여줘요. */
 export function StatList({ rows, stat, mine }: { rows: StatEntry[]; stat: StatKey; mine: Set<string> }) {
   const { unit } = STAT_LABELS[stat];
+  const don = stat === "don";
   return (
     <ol className="rk-list rk-stat">
       {rows.map((e) => (
@@ -30,12 +32,12 @@ export function StatList({ rows, stat, mine }: { rows: StatEntry[]; stat: StatKe
               {mine.has(e.id) && <span className="me">나</span>}
             </b>
             <span className="sub">
-              {e.pos} · {fmtNum(e.gp)}경기{e.gp > 0 && ` · 경기당 ${(e.value / e.gp).toFixed(1)}`}
+              {e.pos} · {fmtNum(e.gp)}경기{!don && e.gp > 0 && ` · 경기당 ${(e.value / e.gp).toFixed(1)}`}
             </span>
           </span>
           <span className="rk-val">
-            {fmtNum(e.value)}
-            <small>{unit}</small>
+            {don ? money(e.value) : fmtNum(e.value)}
+            {unit && <small>{unit}</small>}
           </span>
         </li>
       ))}

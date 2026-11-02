@@ -142,12 +142,12 @@ function StatsPanel({ mine, day, today }: { mine: Set<string>; day: BoardDay; to
           <b>
             {day === null ? "아직" : dayName(day, today)} 올라온 {STAT_LABELS[stat].name} 기록이 없어요
           </b>
-          <span>프로 무대를 밟은 선수가 은퇴하면 첫 기록이 돼요.</span>
+          <span>{stat === "don" ? "유소년 농구에 기부한 선수가 은퇴하면 첫 기록이 돼요." : "프로 무대를 밟은 선수가 은퇴하면 첫 기록이 돼요."}</span>
         </div>
       ) : (
         <StatList rows={board.top} stat={stat} mine={mine} />
       )}
-      <p className="hint">프로 통산 기록으로 줄을 세워요. 스틸·블록·3점슛은 이 랭킹이 생긴 뒤 은퇴한 기록부터 세요.</p>
+      <p className="hint">프로 통산 기록으로 줄을 세워요. 스틸·블록·3점슛은 이 랭킹이 생긴 뒤 은퇴한 기록부터 세요. 기부는 커리어 동안 유소년 농구에 기부한 금액이에요.</p>
     </>
   );
 }
