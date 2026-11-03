@@ -198,6 +198,8 @@ export interface SeasonRecord {
   blk: number;
   /** 경기당 3점슛 성공. 예전 기록에는 없어요. */
   tpm?: number;
+  /** 3점슛 성공률(%). 3점을 거의 쏘지 않은 시즌(경기당 0.2개 미만)과 예전 기록에는 없어요. */
+  tpp?: number;
   fg: number;
   rating: number;
   w: number;

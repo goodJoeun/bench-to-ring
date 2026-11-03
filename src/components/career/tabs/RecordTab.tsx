@@ -83,6 +83,7 @@ export function SeasonTable({ career: c }: { career: Career }) {
               <th>리바</th>
               <th>어시</th>
               <th>FG%</th>
+              <th>3P%</th>
               <th>평점</th>
               <th>OVR</th>
               <th className="l">수상</th>
@@ -107,6 +108,7 @@ export function SeasonTable({ career: c }: { career: Career }) {
                 <td>{h.reb}</td>
                 <td>{h.ast}</td>
                 <td>{h.fg || "–"}</td>
+                <td>{h.tpp ?? "–"}</td>
                 <td>{h.rating || "–"}</td>
                 <td>
                   {h.ovr0}→{h.ovr1}

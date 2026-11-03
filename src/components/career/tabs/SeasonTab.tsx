@@ -19,13 +19,15 @@ function NoGamesCard({ r, kicker, title }: { r: SeasonRecord; kicker: string; ti
 function ResultCard({ r }: { r: SeasonRecord }) {
   if (r.mil === "army") return <NoGamesCard r={r} kicker={`${r.year} 시즌 · 군 복무`} title={r.team} />;
   if (!r.lg && !r.mil) return <NoGamesCard r={r} kicker={`${r.year} 시즌`} title="무소속 · 개인 훈련" />;
-  const stats: [string, number][] = [
+  const stats: [string, number | string][] = [
     ["PTS", r.pts],
     ["REB", r.reb],
     ["AST", r.ast],
     ["STL", r.stl],
     ["BLK", r.blk],
     ["FG%", r.fg],
+    ["3PM", r.tpm ?? "–"],
+    ["3P%", r.tpp ?? "–"],
   ];
   return (
     <section className="panel">
@@ -46,7 +48,7 @@ function ResultCard({ r }: { r: SeasonRecord }) {
           <b>{r.rating}</b>
         </div>
       </div>
-      <div className="statline">
+      <div className="statline" data-wide>
         {stats.map(([k, v]) => (
           <div className="stat" key={k}>
             <span className="n">{v}</span>

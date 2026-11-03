@@ -993,9 +993,18 @@ main.grid {
   color: var(--muted);
   font-weight: 700;
 }
+/* 시즌 결과 카드: 3점슛까지 8칸, 좁은 화면에서는 4칸씩 두 줄 */
+.statline[data-wide] {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+}
 @media (max-width: 480px) {
   .statline {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .statline[data-wide] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 .meta-row {

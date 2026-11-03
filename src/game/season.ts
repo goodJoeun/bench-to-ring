@@ -11,7 +11,7 @@ import { STUDENT_ALLOWANCE, investPerks, payInvestments, type InvestPerks } from
 import { serviceSeason } from "./military";
 import { nationalCallUp } from "./national";
 import { runOffseason } from "./offseason";
-import { chance, pick, random, ri, rnd, shuffle } from "./random";
+import { chance, pick, random, ri, rnd, seededPick, shuffle } from "./random";
 import { shopPerks } from "./shop";
 import { BONUS_CAP, SPECIALTIES, combinedEffect, specialtiesOf } from "./specialty";
 import { ageBase, ovr, ovrOf, roleOf } from "./ratings";
@@ -585,6 +585,15 @@ function threesPerGame(pts: number, p: Career["p"]): number {
   return r1((pts * share) / 3);
 }
 
+/**
+ * 3점슛 성공률(%). 슛 능력으로 정하고 시즌마다 ±2.5%p 흔들려요. 슛 50이면 약 28%, 75면 36%, 95면 42%예요.
+ * 흔들림은 커리어 id와 연도로 정해서 시즌 진행의 난수 흐름은 그대로예요.
+ */
+function threePct(c: Career, year: number): number {
+  const swing = (seededPick(`${c.id}:${year}:3p`)() - 0.5) * 5;
+  return r1(clamp(31 + (c.p.attrs.sht - 60) * 0.32 + swing, 22, 47));
+}
+
 function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord {
   const p = c.p;
   const team = c.team!;
@@ -608,7 +617,10 @@ function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord 
     rating: gp ? r1(clamp(t.rating / gp, 3.5, 9.9)) : 5.5, w: W, l: run.l, result: run.result, ovr0: ov0, ovr1: ov0, awards: [],
   };
   if (gp > 0 && run.final) rec.final = run.final;
-  if (gp > 0) rec.tpm = threesPerGame(rec.pts, p);
+  if (gp > 0) {
+    rec.tpm = threesPerGame(rec.pts, p);
+    if (rec.tpm >= 0.2) rec.tpp = threePct(c, run.year);
+  }
 
   // 시상: 리그마다 실제 이름으로 줘요(awards.ts). 베스트 팀·올-디펜시브는 활약에 따라 퍼스트·세컨드·서드로 나눠요.
   const sh = L.short;
