@@ -74,6 +74,13 @@ const fatigueOf = (games: number) => (18 + 0.3 * games) / games;
  * 강도 높은 팀 훈련과 연습 경기로 프로에서 경기당 11분쯤 뛴 만큼은 커요.
  */
 const NCAA_PRACTICE = 0.75;
+/**
+ * NCAA의 코칭·훈련 시설로 더 크는 몫(출전 시간 계수에 곱해요).
+ * U-리그에서는 주전, NCAA에서는 벤치인 같은 선수가 23세 무렵 비슷한 오버롤이 되게 맞췄어요.
+ */
+const NCAA_COACHING = 1.2;
+/** 출전 시간이 부족하면 성장 한계가 깎이기 시작하는 나이 */
+const POT_CUT_AGE = 21;
 
 /** 빅매치 이름 */
 const BIG_GAMES = ["라이벌전", "순위 싸움 빅매치", "전국 중계 경기", "연고지 더비"];
@@ -720,10 +727,14 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: InvestPe
   const gap = p.pot - ov;
   const headroom = base <= 0 ? 1 : gap <= 0 ? (age <= 27 ? 0.45 : 0.05) : clamp(0.3 + gap / 8, 0.3, 1.7);
   // 출전 시간: 10대는 영향이 작고, 성인은 크게 받아요. 주전급(28분)이어야 제대로 커요.
+  // 19~20세는 두 공식 사이에서 해마다 1/3씩 성인 쪽으로 옮겨 가서, 19세에 갑자기 성장이 꺾이지 않아요.
   // NCAA 선수는 벤치에 있어도 팀 훈련으로 크고(NCAA_PRACTICE), 성장 한계도 깎이지 않아요(아래).
   const ncaa = c.stage === "college" && c.team?.lg === "ncaa";
-  const played = age < 19 ? 0.75 + 0.25 * Math.min(1, min / 20) : Math.min(1.05, 0.35 + 0.7 * Math.min(1, min / 28));
-  const minutesFactor = ncaa ? Math.max(played, NCAA_PRACTICE) : played;
+  const youth = 0.75 + 0.25 * Math.min(1, min / 20);
+  const adult = Math.min(1.05, 0.35 + 0.7 * Math.min(1, min / 28));
+  const toAdult = clamp((age - 18) / 3, 0, 1);
+  const played = youth + (adult - youth) * toAdult;
+  const minutesFactor = ncaa ? Math.max(played, NCAA_PRACTICE) * NCAA_COACHING : played;
   const perf = rating >= 7.5 ? 1.1 : 1;
   const decline: Record<AttrKey, number> = { ath: 1.6, sht: 0.7, iq: 0.25, hdl: 0.9, pas: 0.5, def: 1.1 };
   const gear = shopPerks(c);
@@ -745,7 +756,8 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: InvestPe
     delta[k] = addAttr(p.attrs, k, g);
   }
   c.lastDelta = delta;
-  if (age >= 19 && min < 15 && base > 0 && c.stage !== "hs" && !ncaa) {
+  // 출전이 적으면 성장 한계가 깎여요. 20세까지는 벤치가 당연한 나이라 깎지 않아요.
+  if (age >= POT_CUT_AGE && min < 15 && base > 0 && c.stage !== "hs" && !ncaa) {
     const before = p.pot;
     p.pot = Math.max(Math.round(ovrOf(p.attrs, p.pos)) + 1, p.pot - ri(1, min < 8 ? 3 : 2));
     if (p.pot < before) addNews(c, tag, "bad", "출전 시간이 부족해 성장 한계가 조금 낮아졌어요.");

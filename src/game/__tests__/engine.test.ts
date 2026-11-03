@@ -1685,7 +1685,7 @@ describe("NCAA 벤치 성장", () => {
     return c;
   }
 
-  it("NCAA 선수는 학년과 상관없이 벤치에 있어도 성장 한계가 깎이지 않고, 프로 벤치는 깎여요", () => {
+  it("NCAA 선수는 학년과 상관없이 벤치에 있어도 성장 한계가 깎이지 않고, 프로 벤치는 21세부터 깎여요", () => {
     setRandom(seeded(101));
     const fresh = benchPlayer("ncaa1", "ncaa", 0);
     simulateSeason(fresh);
@@ -1698,7 +1698,15 @@ describe("NCAA 벤치 성장", () => {
     expect(junior.p.pot).toBe(90);
 
     setRandom(seeded(101));
+    const rookie = benchPlayer("kbl20", "kbl");
+    rookie.age = 20;
+    simulateSeason(rookie);
+    expect(rookie.last!.min).toBeLessThan(15);
+    expect(rookie.p.pot).toBe(90);
+
+    setRandom(seeded(101));
     const pro = benchPlayer("kbl", "kbl");
+    pro.age = 21;
     simulateSeason(pro);
     expect(pro.last!.min).toBeLessThan(15);
     expect(pro.p.pot).toBeLessThan(90);

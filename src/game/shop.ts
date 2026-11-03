@@ -1,5 +1,5 @@
 import { ATTR_KEYS, SHORT } from "./data";
-import { addAttr, addHealth } from "./condition";
+import { ATTR_RANGE, addAttr, addHealth } from "./condition";
 import { addNews } from "./log";
 import { chance, seededPick, shuffle } from "./random";
 import type { AttrKey, Career, ShopKey } from "./types";
@@ -274,9 +274,10 @@ export function donate(c: Career, amount: number): boolean {
   if (r && chance(DONATION_LUCK)) {
     const parts: string[] = [];
     if (r.rand) {
-      const keys = shuffle(ATTR_KEYS).slice(0, r.rand);
+      // 이미 최대(99)를 채운 능력치는 빼고 골라요.
+      const keys = shuffle(ATTR_KEYS.filter((k) => Math.round(c.p.attrs[k]) < ATTR_RANGE[1])).slice(0, r.rand);
       for (const k of keys) addAttr(c.p.attrs, k, 1);
-      parts.push(`${keys.map((k) => SHORT[k]).join("·")} +1`);
+      if (keys.length) parts.push(`${keys.map((k) => SHORT[k]).join("·")} +1`);
     }
     if (r.health) {
       addHealth(c, r.health);
@@ -286,7 +287,7 @@ export function donate(c: Career, amount: number): boolean {
       shop.form = (shop.form ?? 0) + r.form;
       parts.push("시즌 시작 경기력 상승");
     }
-    luck = ` · 아이들의 응원에 힘이 났어요! ${parts.join(" · ")}`;
+    if (parts.length) luck = ` · 아이들의 응원에 힘이 났어요! ${parts.join(" · ")}`;
   }
   addNews(c, `${c.year - 1} 오프시즌`, luck ? "big" : "good", `유소년 농구 발전 기금 ${money(amount)}을 기부했어요. 누적 기부 ${money(c.donated)}${luck}`);
   return true;

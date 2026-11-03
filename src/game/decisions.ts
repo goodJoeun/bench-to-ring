@@ -15,9 +15,16 @@ const avg = (lg: LeagueKey) => LEAGUES[lg].avg;
 
 /* ---------- 드래프트 평가 ---------- */
 
+/**
+ * NCAA 선수는 NBA 스카우트가 매 경기 지켜봐서 드래프트 평가가 이만큼 올라가요(1점 ≈ 3.6순위).
+ * 같은 선수라면 U-리그보다 NCAA를 거쳐야 NBA에 지명되기 쉬워요.
+ */
+const NCAA_EXPOSURE = 4;
+
 export function nbaDraftScore(c: Career, noise: number): number {
   const o = evalOvrOf(c.p.attrs, c.p.pos);
-  return o + (c.p.pot - o) * 0.35 + (22 - c.age) * 1.2 + c.p.wsd * 0.2 + noise;
+  const exposure = c.team?.lg === "ncaa" ? NCAA_EXPOSURE : 0;
+  return o + (c.p.pot - o) * 0.35 + (22 - c.age) * 1.2 + c.p.wsd * 0.2 + exposure + noise;
 }
 
 export function kblDraftScore(c: Career, noise: number): number {
@@ -58,7 +65,7 @@ export function highSchoolGraduation(c: Career): Decision {
   const kc = pickTeam("kuniv");
   const abroad = (walk: boolean): DecisionOption => ({
     label: `${uc.name} ${walk ? "워크온 입단" : "장학생 입학"}`,
-    sub: `NCAA 디비전 I · 예상 역할 ${roleOf(expectedMinutes(c, "ncaa", walk ? -3 : 0))}${
+    sub: `NCAA 디비전 I · 예상 역할 ${roleOf(expectedMinutes(c, "ncaa", walk ? -3 : 0))} · 벤치여도 팀 훈련으로 성장 · NBA 스카우트 주목${
       walk ? " · 장학금 없이 들어가 처음엔 기회가 적어요" : ""
     }`,
     tag: "NCAA",

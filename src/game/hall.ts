@@ -30,9 +30,10 @@ export const SCORE_AWARDS: Partial<Record<AwardKey, number>> = {
 
 /**
  * 리그마다 상과 기록을 치는 비중. NBA를 1로 두고 리그 수준(평균 오버롤)에 맞춰 줄여요. 국가대표 메달은 리그와 상관없이 그대로예요.
+ * 고교·대학 상은 프로 커리어보다 작게 쳐요. 대학에서 에이스로 상을 쓸어 담은 것이 프로 성적을 앞지르지 않게요.
  * 리그별 몫(leagues)이 없는 예전 기록은 NBA 밖을 모두 SCORE_OTHER로 쳐요.
  */
-export const LEAGUE_WEIGHT: Record<LeagueKey, number> = { nba: 1, euro: 0.45, gleague: 0.4, kbl: 0.35, ncaa: 0.25, kuniv: 0.12, hs: 0.08 };
+export const LEAGUE_WEIGHT: Record<LeagueKey, number> = { nba: 1, euro: 0.5, gleague: 0.4, kbl: 0.35, ncaa: 0.2, kuniv: 0.1, hs: 0.05 };
 
 /** NBA 밖(다른 프로 리그·아마추어)에서 받은 상과 쌓은 기록을 리그를 모를 때 치는 비중이에요. */
 export const SCORE_OTHER = 0.3;
