@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
-import { SITE_NAME, SITE_SUB } from "@/lib/site";
+import { SITE_NAME, SITE_SUB } from "@/shared/lib/site";
 
 /* 카카오톡·디스코드·X 같은 곳에 링크를 붙일 때 보이는 미리보기 이미지. 빌드할 때 한 번 만들어요. */
 

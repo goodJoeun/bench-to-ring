@@ -1,5 +1,5 @@
-import { Game } from "@/components/Game";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_SUB, SITE_URL } from "@/lib/site";
+import { Game } from "@/features/shell/Game";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_SUB, SITE_URL } from "@/shared/lib/site";
 
 /** 검색 엔진이 게임을 이해하도록 붙이는 구조화 데이터(schema.org) */
 const jsonLd = {

@@ -85,15 +85,15 @@ import {
   type Decision,
   type CareerSummary,
 } from "@/game";
-import { SHORT } from "@/game/data";
-import { awardName, conferenceFinalsMvpName, nbaConference } from "@/game/awards";
-import { CLUTCH_PLAYS, CLUTCH_SHOWN, bigGameDecision, clutchDecision, clutchOdds, injuryDecision, lifeEvent, seasonEvent } from "@/game/events";
-import { makeLiveGame } from "@/game/live";
-import { giveAward, setTeam } from "@/game/log";
-import { militaryDecision } from "@/game/military";
-import { nationalCallUp, runNationalTeam } from "@/game/national";
-import { parseCareer } from "@/game/storage";
-import { canDonate, donatedThisSeason, refreshShop, shopPerks } from "@/game/shop";
+import { SHORT } from "@/game/core/data";
+import { awardName, conferenceFinalsMvpName, nbaConference } from "@/game/world/awards";
+import { CLUTCH_PLAYS, CLUTCH_SHOWN, bigGameDecision, clutchDecision, clutchOdds, injuryDecision, lifeEvent, seasonEvent } from "@/game/season/events";
+import { makeLiveGame } from "@/game/season/live";
+import { giveAward, setTeam } from "@/game/career/log";
+import { militaryDecision } from "@/game/world/military";
+import { nationalCallUp, runNationalTeam } from "@/game/world/national";
+import { parseCareer } from "@/game/career/storage";
+import { canDonate, donatedThisSeason, refreshShop, shopPerks } from "@/game/economy/shop";
 
 afterEach(() => resetRandom());
 

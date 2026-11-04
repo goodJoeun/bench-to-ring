@@ -3,7 +3,7 @@
  * 1. logos-src/에 넣은 원본(PNG·JPG·WebP·SVG·GIF, 크기 상관없음)을 128×128 투명 PNG로 바꿔 public/logos/에 저장해요.
  *    가장자리에 붙은 흰 배경을 지우고, 둘레 여백을 잘라내고, 비율을 지킨 채 가운데에 맞추고, 가장자리에 조금 여백을 둬요.
  *    원본과 이 스크립트가 바뀌지 않았으면 건너뛰어요.
- * 2. public/logos/의 파일을 팀 이름과 연결해 src/components/common/logos.generated.ts를 만들어요.
+ * 2. public/logos/의 파일을 팀 이름과 연결해 src/shared/ui/badge/logos.generated.ts를 만들어요.
  *
  * 원본 파일 이름은 게임 속 이름과 똑같이 짓거나("보스턴 셀틱스.svg"), 영문 팀 이름이 들어 있으면 돼요
  * ("boston_celtics_logo_primary.png" → "public/logos/보스턴 셀틱스.png"). 영문 이름은 아래 ALIASES 표로 찾아요.
@@ -19,7 +19,7 @@ import sharp from "sharp";
 
 const SRC = "logos-src";
 const DIR = "public/logos";
-const OUT = "src/components/common/logos.generated.ts";
+const OUT = "src/shared/ui/badge/logos.generated.ts";
 /** 결과 크기와 둘레 여백 (px) */
 const SIZE = 128;
 const PAD = 6;
@@ -85,7 +85,7 @@ const LEAGUE_NAMES = { hs: "고교", kuniv: "U-리그", ncaa: "NCAA", kbl: "KBL"
 
 /** [묶음 이름, 이름 목록] */
 const groups = [];
-const leagues = readFileSync("src/game/leagues.ts", "utf8");
+const leagues = readFileSync("src/game/world/leagues.ts", "utf8");
 const teamsBlock = leagues.slice(leagues.indexOf("export const TEAMS"));
 let current = null;
 // Windows에서 CRLF로 체크아웃해도 읽히게 줄바꿈을 둘 다 받아요.
@@ -100,8 +100,8 @@ for (const line of teamsBlock.split(/\r?\n/)) {
   if (team && current) current[1].push(team[1]);
   if (line.startsWith("};")) break;
 }
-const nations = [...readFileSync("src/game/national.ts", "utf8").matchAll(/^ {2}\{ name: "([^"]+)", power:/gm)].map((m) => m[1]);
-const units = [...readFileSync("src/game/military.ts", "utf8").matchAll(/^export const (?:SANGMU|ARMY) = \{ name: "([^"]+)"/gm)].map((m) => m[1]);
+const nations = [...readFileSync("src/game/world/national.ts", "utf8").matchAll(/^ {2}\{ name: "([^"]+)", power:/gm)].map((m) => m[1]);
+const units = [...readFileSync("src/game/world/military.ts", "utf8").matchAll(/^export const (?:SANGMU|ARMY) = \{ name: "([^"]+)"/gm)].map((m) => m[1]);
 groups.push(["국가대표", nations], ["군 부대", units]);
 const known = new Set(groups.flatMap(([, names]) => names));
 

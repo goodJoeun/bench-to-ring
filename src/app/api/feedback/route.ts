@@ -1,5 +1,5 @@
 import { markSent, parseFeedback, sendFeedback, tooSoon } from "@/server/feedback";
-import type { ApiError } from "@/lib/leaderboard/types";
+import type { ApiError } from "@/shared/leaderboard/types";
 
 /** 의견 한 건은 1KB 남짓이에요. */
 const MAX_BODY = 4_000;

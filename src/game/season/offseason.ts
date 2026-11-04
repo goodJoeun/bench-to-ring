@@ -1,0 +1,99 @@
+import { POS, POS_GROWTH } from "../core/data";
+import { TRAITS } from "../player/players";
+import { forcedRetirement, nbaOffer, resolveQueue, retirementPrompt } from "./decisions";
+import { lifeEvent } from "./events";
+import { addNews, joinTeam, pickTeam } from "../career/log";
+import { endService, militaryDecision } from "../world/military";
+import { chance, ri } from "../core/random";
+import { refreshShop } from "../economy/shop";
+import { ovr, ovrOf } from "../player/ratings";
+import type { Career, Decision, QueueItem } from "../core/types";
+
+export const RETIRE_AGE = 40;
+
+/**
+ * 시즌이 끝난 뒤(나이·연도는 이미 1 늘어난 상태) 몸의 변화와 결정 대기열을 만들어요.
+ * natCall은 이번 여름 국가대표 발탁 결정으로, 있으면 맨 앞에 와요.
+ */
+export function runOffseason(c: Career, finishedYear: number, natCall: Decision | null = null): void {
+  const p = c.p;
+  const tag = `${finishedYear} 오프시즌`;
+  const q: QueueItem[] = natCall ? [natCall] : [];
+  // 복무 시즌이 끝났으면 전역해요. 전역한 해에는 계약 기간을 줄이지 않고 바로 진로 결정으로 넘어가요.
+  const discharged = c.stage === "military" ? endService(c, tag) : null;
+
+  // 키 성장
+  if (c.age <= 20 && p.h < p.hFinal) p.h += Math.min(p.hFinal - p.h, ri(1, 4));
+  if (c.age <= 19 && chance(0.13)) {
+    const extra = ri(3, 6);
+    p.h += extra;
+    p.hFinal = Math.max(p.hFinal, p.h);
+    p.wsd += ri(0, 1);
+    addNews(c, tag, "good", `키가 훌쩍 컸어요! +${extra}cm, 지금 ${p.h}cm예요.`);
+  }
+  if (c.age === 19 && !p.traitKnown) {
+    p.traitKnown = true;
+    addNews(c, tag, "info", `코치진 분석 결과 숨겨진 특성 '${p.trait}'이 드러났어요. ${TRAITS[p.trait]}`);
+  }
+
+  // 포지션 전환 제안
+  const next = POS_GROWTH[p.pos];
+  if (next && p.h >= next[1] && !c.posAsked[p.pos]) {
+    c.posAsked[p.pos] = 1;
+    const [np] = next;
+    const before = ovr(p);
+    const after = Math.round(ovrOf(p.attrs, np));
+    q.push({
+      title: "포지션 전환 제안",
+      body: `키가 ${p.h}cm까지 자랐어요. 코치가 ${POS[np].name}로 뛰어보자고 해요.`,
+      opts: [
+        { label: `${POS[np].name}로 전환`, sub: `오버롤 ${before} → ${after} · 새 포지션 기준으로 능력치를 평가해요`, tag: np, act: { k: "pos", pos: np } },
+        { label: `${POS[p.pos].name} 유지`, sub: "지금 포지션에서 계속 뛰어요", act: { k: "none" } },
+      ],
+    });
+  }
+
+  if (c.age >= RETIRE_AGE) {
+    c.queue = [forcedRetirement()];
+    return;
+  }
+
+  // 병역: 진로 결정보다 먼저 물어요. 입대하면 뒤에 쌓인 결정은 지워져요.
+  const mil = discharged ? null : militaryDecision(c);
+  if (mil) q.push(mil);
+
+  // 단계별 진로
+  if (discharged) q.push(...discharged);
+  else if (c.stage === "hs") {
+    c.schoolYear++;
+    if (c.schoolYear > 3) q.push({ lazy: "hsgrad" });
+  } else if (c.stage === "college") {
+    c.collegeYears++;
+    q.push({ lazy: "college" });
+  } else if (c.stage === "pro" && c.contract && c.team) {
+    c.contract.years--;
+    if (c.contract.years <= 0) q.push({ lazy: "fa" });
+    else {
+      const offer = chance(0.6) ? nbaOffer(c) : null;
+      if (offer) q.push(offer);
+      else if (chance(0.08)) {
+        const lg = c.team.lg;
+        const from = c.team.name;
+        const t = pickTeam(lg, new Set([from]));
+        joinTeam(c, lg, t);
+        addNews(c, tag, "move", `트레이드 · ${from}에서 ${t.name}로 이적했어요.`);
+      }
+      if (c.age >= 35) q.push(retirementPrompt(c));
+    }
+  } else if (c.stage === "free") q.push({ lazy: "faFree" });
+
+  // 농구 밖의 생활 이벤트 (학교 축제, 시험, 에이전시, 트레이너…)
+  if (chance(0.45)) {
+    const ev = lifeEvent(c);
+    if (ev) q.push(ev);
+  }
+  c.queue = q;
+  resolveQueue(c);
+  // 새 시즌 상점 진열
+  refreshShop(c);
+}

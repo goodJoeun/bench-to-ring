@@ -9,8 +9,8 @@ import "@fontsource/saira-condensed/500.css";
 import "@fontsource/saira-condensed/600.css";
 import "@fontsource/saira-condensed/700.css";
 import "./globals.css";
-import { THEME_BOOT } from "@/lib/theme";
-import { SITE_DESCRIPTION, SITE_KEYWORDS, SITE_NAME, SITE_TITLE, SITE_URL } from "@/lib/site";
+import { THEME_BOOT } from "@/shared/lib/theme";
+import { SITE_DESCRIPTION, SITE_KEYWORDS, SITE_NAME, SITE_TITLE, SITE_URL } from "@/shared/lib/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

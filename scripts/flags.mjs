@@ -1,7 +1,7 @@
 /**
  * 국가대표 대회에 나오는 나라의 국기만 flag-icons 패키지(MIT)에서 public/flags/로 복사하고,
- * 나라 이름 → 국기 경로 목록 src/components/common/flags.generated.ts를 만들어요.
- * 나라 이름은 src/game/national.ts(대표팀 NATIONS, 대회 상대국)에서 읽어서, 상대국을 늘리면 국기도 따라 들어와요.
+ * 나라 이름 → 국기 경로 목록 src/shared/ui/badge/flags.generated.ts를 만들어요.
+ * 나라 이름은 src/game/world/national.ts(대표팀 NATIONS, 대회 상대국)에서 읽어서, 상대국을 늘리면 국기도 따라 들어와요.
  *
  * npm run flags            결과와 국가 코드가 없는 나라를 알려줘요.
  * npm run flags -- --quiet 요약만. npm run dev / build 전에 저절로 이렇게 돌아요.
@@ -10,7 +10,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from
 
 const SRC = "node_modules/flag-icons/flags/1x1";
 const DIR = "public/flags";
-const OUT = "src/components/common/flags.generated.ts";
+const OUT = "src/shared/ui/badge/flags.generated.ts";
 const quiet = process.argv.includes("--quiet");
 
 /**
@@ -32,7 +32,7 @@ const CODES = {
 const NO_FLAG = new Set(["대만"]);
 
 // 게임에 나오는 나라: 대표팀 목록과 대회 상대국 표 ["이름", 전력]
-const src = readFileSync("src/game/national.ts", "utf8");
+const src = readFileSync("src/game/world/national.ts", "utf8");
 const names = new Set([
   ...[...src.matchAll(/^ {2}\{ name: "([^"]+)", power:/gm)].map((m) => m[1]),
   ...[...src.matchAll(/\["([^"]+)", \d+\]/g)].map((m) => m[1]),
@@ -65,7 +65,7 @@ copyFileSync("node_modules/flag-icons/LICENSE", `${DIR}/LICENSE`);
 writeFileSync(
   OUT,
   [
-    "/* scripts/flags.mjs가 src/game/national.ts의 나라 목록과 flag-icons(MIT)로 만든 파일이에요. 직접 고치지 마세요. */",
+    "/* scripts/flags.mjs가 src/game/world/national.ts의 나라 목록과 flag-icons(MIT)로 만든 파일이에요. 직접 고치지 마세요. */",
     "",
     "/** 나라 이름 → 국기 파일 경로. 여기 있는 나라는 국가대표 엠블럼 대신 국기를 보여줘요. */",
     "export const FLAGS: Record<string, string> = {",

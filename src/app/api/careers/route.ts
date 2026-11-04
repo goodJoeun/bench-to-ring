@@ -1,9 +1,9 @@
 import { revalidateTag } from "next/cache";
 import { playerFrom } from "@/server/auth";
-import { BOARDS_TAG } from "@/server/boards";
-import { SUBMIT_INTERVAL_MS, insertCareer, lastSubmittedAt, ranksOf } from "@/server/careers";
-import { checkSummary } from "@/server/validate";
-import type { ApiError, SubmitResult } from "@/lib/leaderboard/types";
+import { BOARDS_TAG } from "@/server/leaderboard/boards";
+import { SUBMIT_INTERVAL_MS, insertCareer, lastSubmittedAt, ranksOf } from "@/server/leaderboard/careers";
+import { checkSummary } from "@/server/leaderboard/validate";
+import type { ApiError, SubmitResult } from "@/shared/leaderboard/types";
 
 /** 은퇴 요약 한 건이 수 KB를 넘지 않아요. */
 const MAX_BODY = 16_000;

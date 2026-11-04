@@ -1,7 +1,7 @@
 # 온라인 기록과 리더보드 계획
 
 플레이한 사람들의 은퇴 기록을 서버에 모아 전체 순위, 포지션별 순위, 역대 Best 5를 보여주는 계획이에요.
-지금 명예의 전당은 브라우저 localStorage에만 있어서(`src/game/storage.ts`의 `saveHall`, 최근 60명) 내 기록끼리만 비교할 수 있어요.
+지금 명예의 전당은 브라우저 localStorage에만 있어서(`src/game/career/storage.ts`의 `saveHall`, 최근 60명) 내 기록끼리만 비교할 수 있어요.
 
 ## 1. 결정: Next.js + Postgres, 별도 Java 서버는 두지 않아요
 
@@ -78,7 +78,7 @@ create table replays (
 
 ### 순위 계산
 
-- 정렬은 명예의 전당과 같아요(`src/game/hall.ts`의 `compareCareers`): **랭킹 점수** → NBA MVP → 최고 오버롤 → 통산 득점. 네 값이 모두 같으면 공동 순위예요.
+- 정렬은 명예의 전당과 같아요(`src/game/legacy/hall.ts`의 `compareCareers`): **랭킹 점수** → NBA MVP → 최고 오버롤 → 통산 득점. 네 값이 모두 같으면 공동 순위예요.
 - **랭킹 점수**(`rankScore`, `scoreParts`): 아래를 더해요. 가중치는 `SCORE_AWARDS`, `LEAGUE_WEIGHT`, `SCORE_OTHER`, `SCORE_CAP`, `SCORE_NBA`에 있어요.
   - 수상: NBA MVP 30, 파이널 MVP 20, 리그 MVP 20, 우승 반지 12, 베스트 퍼스트팀·올해의 수비수 8, 컨퍼런스 파이널 MVP·국가대표 금 6, 세컨드·서드팀·신인왕·득점왕 5, 올스타·올-디펜시브·식스맨·기량발전·국가대표 은 3, 그 밖 2
   - 프로 통산 기록: 득점 400·리바운드 800·어시스트 560·스틸 200·블록 200·3점슛 250마다 1점
@@ -110,10 +110,10 @@ create table replays (
 
 ### 2단계: 서버 재생 검증
 
-엔진은 이미 재생할 수 있는 구조예요. 모든 난수가 `src/game/random.ts` 한 곳을 지나가고, 시드 고정 난수(`seeded`)가 있어요.
+엔진은 이미 재생할 수 있는 구조예요. 모든 난수가 `src/game/core/random.ts` 한 곳을 지나가고, 시드 고정 난수(`seeded`)가 있어요.
 
 1. 커리어를 만들 때 시드를 정하고, 커리어에 난수 상태를 저장해 새로고침해도 이어지게 해요.
-2. 스토어(`src/lib/game-store.ts`)의 행동을 순서대로 기록해요: 시즌 시작, 한 칸 진행, 선택지 번호, 훈련 초점, 투자, 구입, 기부, 이적 요청, 은퇴.
+2. 스토어(`src/shared/store/game-store.ts`)의 행동을 순서대로 기록해요: 시즌 시작, 한 칸 진행, 선택지 번호, 훈련 초점, 투자, 구입, 기부, 이적 요청, 은퇴.
 3. 은퇴하면 요약과 함께 시드·행동 기록을 보내요. 한 커리어가 약 2천 칸이고 압축하면 몇 KB예요.
 4. 서버는 그 커리어를 만들 때의 엔진으로 처음부터 다시 돌려, 요약이 똑같으면 `verified = true`로 저장해요.
 
@@ -140,7 +140,7 @@ create table replays (
 | `POST /api/careers/:id/report` | 신고 (2단계) |
 
 - 순위표는 서버에서 캐시하고, 기록이 제출될 때만 다시 계산해요. 이 프로젝트는 Cache Components가 켜져 있어서 Next.js 캐시 API를 써요. **이 Next.js 버전은 API가 많이 바뀌었으니, 만들기 전에 `node_modules/next/dist/docs/`의 캐시와 Route Handler 문서를 확인해요(AGENTS.md).**
-  - `src/server/boards.ts`의 `getBoard`가 `'use cache'` + `cacheTag("boards")` + `cacheLife("hours")`예요. 기록 제출 API가 `revalidateTag("boards", { expire: 0 })`로 바로 비워서, 은퇴하고 바로 순위표를 열어도 내 기록이 보여요.
+  - `src/server/leaderboard/boards.ts`의 `getBoard`가 `'use cache'` + `cacheTag("boards")` + `cacheLife("hours")`예요. 기록 제출 API가 `revalidateTag("boards", { expire: 0 })`로 바로 비워서, 은퇴하고 바로 순위표를 열어도 내 기록이 보여요.
   - 기본 캐시는 서버 메모리라서, 서버리스로 배포하면 인스턴스마다 따로 캐시되고 오래 남지 않아요. 사용량이 늘면 `'use cache: remote'`나 순위표 미리 계산 테이블을 써요(10장 3단계).
 - 플레이어 인증은 요청 헤더의 토큰으로 해요. 토큰 원문은 DB에 두지 않고 해시만 둬요.
 
@@ -195,7 +195,7 @@ src/
 ### 1단계: 순위표 열기
 
 - [x] DB 호스트 만들기, `DATABASE_URL` 설정, 마이그레이션(3장 테이블. `replays`는 2단계에) — `npm run db:generate`, `npm run db:migrate`
-- [x] `RULESET_VERSION` 상수 추가 (`src/game/data.ts`, 은퇴 기록의 `ruleset`)
+- [x] `RULESET_VERSION` 상수 추가 (`src/game/core/data.ts`, 은퇴 기록의 `ruleset`)
 - [x] 저장 코드로 이어하기 없애기
 - [x] 익명 플레이어 API와 토큰 저장
 - [x] 기록 제출 API: 형식·범위 검사, 중복·횟수 제한
@@ -206,13 +206,13 @@ src/
 - [x] 랭킹 페이지: 베스트 5 코트, 랭킹 100, 나의 기록 (`GET /api/careers/mine`)
 - [ ] 은퇴 화면의 순위 결과, 설정에서 공개 끄기, 룰셋 선택(룰셋 2부터)
 - [x] 선수 이름 욕설 필터
-- [x] 테스트: 범위 검사, 이름 필터 (`src/server/__tests__/validate.test.ts`)
+- [x] 테스트: 범위 검사, 이름 필터 (`src/server/leaderboard/__tests__/validate.test.ts`)
 - [ ] 테스트: 순위 계산(공동 순위 포함)은 DB가 있어야 해서 지금은 수동 확인만
 - [ ] 플레이어 만들기 횟수 제한 (지금은 새 토큰을 계속 만들면 1분 제한을 피할 수 있어요)
 
 ### 2단계: 믿을 수 있는 기록
 
-- [ ] 커리어 시드와 난수 상태 저장 (`src/game/random.ts`, `Career`)
+- [ ] 커리어 시드와 난수 상태 저장 (`src/game/core/random.ts`, `Career`)
 - [ ] 스토어 행동 기록과 압축
 - [ ] 서버 재생 검증, `verified` 표시, 버전별 엔진 보관
 - [ ] 신고 API와 숨김 처리

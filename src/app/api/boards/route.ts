@@ -1,6 +1,6 @@
-import { getBoard } from "@/server/boards";
-import { parseBoardQuery } from "@/server/validate";
-import type { ApiError, Board } from "@/lib/leaderboard/types";
+import { getBoard } from "@/server/leaderboard/boards";
+import { parseBoardQuery } from "@/server/leaderboard/validate";
+import type { ApiError, Board } from "@/shared/leaderboard/types";
 
 /** 순위표: `?scope=current|all&ruleset=&pos=&day=YYYY-MM-DD`. 전체 Top 100(포지션을 고르면 Top 50), 역대 Best 5, 전체 통계예요. */
 export async function GET(req: Request) {

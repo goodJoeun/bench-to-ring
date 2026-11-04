@@ -9,7 +9,7 @@ if (!url) throw new Error("DATABASE_URL_UNPOOLED가 없어요. .env.local을 확
 
 export default defineConfig({
   dialect: "postgresql",
-  schema: "./src/server/schema.ts",
+  schema: "./src/server/db/schema.ts",
   out: "./drizzle",
   // 마이그레이션은 풀링을 거치지 않는 직접 연결로 해요.
   dbCredentials: { url },

@@ -1,6 +1,6 @@
 /**
  * 저장된 은퇴 기록의 랭킹 점수(careers.score)를 다시 계산해요.
- * 점수 계산(src/game/hall.ts의 rankScore)이나 가중치를 바꾼 뒤, 또는 score 칸이 생기기 전 기록을 채울 때 돌려요.
+ * 점수 계산(src/game/legacy/hall.ts의 rankScore)이나 가중치를 바꾼 뒤, 또는 score 칸이 생기기 전 기록을 채울 때 돌려요.
  * 기록에 저장된 은퇴 요약(summary)으로 계산하고, 값이 달라진 기록만 고쳐요.
  *
  * npm run db:rescore    .env.local의 DATABASE_URL에 연결해요 (로컬은 dev 브랜치).

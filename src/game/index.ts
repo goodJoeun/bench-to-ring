@@ -2,10 +2,10 @@
  * 게임 엔진의 공개 API. 화면(React)과 독립된 순수 TypeScript예요.
  * 엔진 함수는 Career 객체를 직접 바꾸니, 화면에서는 복사본에 적용하세요.
  */
-export * from "./types";
-export * from "./data";
-export * from "./leagues";
-export * from "./players";
+export * from "./core/types";
+export * from "./core/data";
+export * from "./world/leagues";
+export * from "./player/players";
 export {
   archetypeOf,
   bodyOf,
@@ -19,12 +19,12 @@ export {
   START_MIN,
   START_CAP,
   SPIKE_CAP,
-} from "./create";
-export { CRITICAL_HEALTH, injuryKind, simulateSeason, startSeason, stepSeason, seasonProgress, type SeasonStep } from "./season";
-export { draftSlot } from "./draft";
-export { NATIONS, NAT_EVENTS, natColor, natEventFor, simulateTournament, teamPower } from "./national";
-export { ARMY, ENLIST_DEADLINE, SANGMU, militaryDecision, militaryUnit, owesService } from "./military";
-export { chooseOption, applyAction } from "./actions";
+} from "./player/create";
+export { CRITICAL_HEALTH, injuryKind, simulateSeason, startSeason, stepSeason, seasonProgress, type SeasonStep } from "./season/season";
+export { draftSlot } from "./world/draft";
+export { NATIONS, NAT_EVENTS, natColor, natEventFor, simulateTournament, teamPower } from "./world/national";
+export { ARMY, ENLIST_DEADLINE, SANGMU, militaryDecision, militaryUnit, owesService } from "./world/military";
+export { chooseOption, applyAction } from "./season/actions";
 export {
   INVESTMENTS,
   INVEST_SLOTS,
@@ -36,8 +36,8 @@ export {
   investLineup,
   investPerks,
   type Investment,
-} from "./invest";
-export { buyoutCost, canRequestTransfer, currentDecision, leverage, negotiable, requestTransfer, resolveQueue } from "./decisions";
+} from "./economy/invest";
+export { buyoutCost, canRequestTransfer, currentDecision, leverage, negotiable, requestTransfer, resolveQueue } from "./season/decisions";
 export {
   DONATIONS,
   DONATION_LUCK,
@@ -56,7 +56,7 @@ export {
   shopLineup,
   type ShopCategory,
   type ShopItem,
-} from "./shop";
+} from "./economy/shop";
 export {
   awardGroups,
   leagueShares,
@@ -73,10 +73,10 @@ export {
   type SeasonTotals,
   type JourneyStep,
   type TitleEntry,
-} from "./career";
-export { LEAGUE_WEIGHT, SCORE_AWARDS, SCORE_CAP, SCORE_NBA, SCORE_OTHER, bestFive, compareCareers, playedNba, rankHall, rankScore, scoreParts, type ScoreParts } from "./hall";
-export { COMPS, careerProfile, similarPlayers, type CompLeague, type CompMatch, type CompPlayer, type CompProfile } from "./comps";
-export { namuWikiUrl } from "./namu";
+} from "./career/career";
+export { LEAGUE_WEIGHT, SCORE_AWARDS, SCORE_CAP, SCORE_NBA, SCORE_OTHER, bestFive, compareCareers, playedNba, rankHall, rankScore, scoreParts, type ScoreParts } from "./legacy/hall";
+export { COMPS, careerProfile, similarPlayers, type CompLeague, type CompMatch, type CompPlayer, type CompProfile } from "./legacy/comps";
+export { namuWikiUrl } from "./legacy/namu";
 export {
   RECORD_BOARDS,
   RECORD_GROUPS,
@@ -89,7 +89,7 @@ export {
   type RecordGroup,
   type RecordStat,
   type RecordTotals,
-} from "./records";
+} from "./legacy/records";
 export {
   ovr,
   ovrOf,
@@ -100,8 +100,8 @@ export {
   expectedMinutes,
   currentExpectedMinutes,
   stageLabel,
-} from "./ratings";
-export { fmtNum, josa, money, r1, ro, stripYear } from "./util";
+} from "./player/ratings";
+export { fmtNum, josa, money, r1, ro, stripYear } from "./core/util";
 export {
   BONUS_CAP,
   PAIR_FLOOR,
@@ -114,5 +114,5 @@ export {
   type Specialty,
   type SpecialtyHit,
   type SpecialtyKey,
-} from "./specialty";
-export { setRandom, resetRandom, seeded, shuffle } from "./random";
+} from "./player/specialty";
+export { setRandom, resetRandom, seeded, shuffle } from "./core/random";

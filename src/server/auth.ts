@@ -1,8 +1,8 @@
 import "server-only";
 import { createHmac, randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
-import { db } from "./db";
-import { players } from "./schema";
+import { db } from "./db/db";
+import { players } from "./db/schema";
 
 // 익명 플레이어: 브라우저가 토큰 원문을 갖고, DB에는 TOKEN_SECRET으로 만든 해시만 둬요.
 

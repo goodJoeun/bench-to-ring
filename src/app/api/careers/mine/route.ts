@@ -1,6 +1,6 @@
 import { playerFrom } from "@/server/auth";
-import { myRanks } from "@/server/boards";
-import type { ApiError, MyRanks } from "@/lib/leaderboard/types";
+import { myRanks } from "@/server/leaderboard/boards";
+import type { ApiError, MyRanks } from "@/shared/leaderboard/types";
 
 /** 이 플레이어(토큰)가 올린 기록의 지금 순위. 랭킹 페이지의 '나의 기록'에서 써요. */
 export async function GET(req: Request) {
