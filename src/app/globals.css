@@ -5312,6 +5312,19 @@ html:has(.sheet) .toast-zone {
   padding: 5px 12px;
   font-size: 13px;
 }
+/* 날짜 칩의 등록 수 */
+.rk-days button .rk-day-n {
+  margin-left: 5px;
+  font-family: var(--f-num);
+  font-weight: 700;
+}
+.rk-day-count {
+  margin: -4px 0 0;
+}
+.rk-day-count b {
+  color: var(--ink);
+  font-family: var(--f-num);
+}
 .rk-empty {
   display: flex;
   flex-direction: column;

@@ -93,6 +93,18 @@ export interface Board {
   };
 }
 
+/** 랭킹에 오른 수: 올라온 기록(선수) 수와 그 기록을 올린 플레이어 수 */
+export interface BoardCount {
+  careers: number;
+  players: number;
+}
+
+/** GET /api/boards/days: 최근 날짜별(한국 시간)과 올타임 랭킹 등록 수. 기록이 없는 날은 빠져요. */
+export interface BoardDays {
+  days: ({ day: string } & BoardCount)[];
+  all: BoardCount;
+}
+
 /** 스탯 랭킹 종류: 프로 통산 득점·리바운드·어시스트·스틸·블록·3점슛, 커리어 누적 기부금(억) */
 export const STAT_KEYS = ["pts", "reb", "ast", "stl", "blk", "tpm", "don"] as const;
 export type StatKey = (typeof STAT_KEYS)[number];

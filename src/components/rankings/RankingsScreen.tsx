@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { POS, POS_KEYS, type PosKey } from "@/game";
+import { POS, POS_KEYS, fmtNum, type PosKey } from "@/game";
 import { useGame } from "@/lib/game-store";
-import { fetchBoard, fetchMine, fetchStatBoard, pendingIds } from "@/lib/leaderboard/client";
+import { fetchBoard, fetchBoardDays, fetchMine, fetchStatBoard, pendingIds } from "@/lib/leaderboard/client";
 import { daysBack, kstDay } from "@/lib/leaderboard/days";
-import { STAT_KEYS, type Board, type BoardDay, type MyRanks, type StatBoard, type StatKey } from "@/lib/leaderboard/types";
+import { STAT_KEYS, type Board, type BoardCount, type BoardDay, type BoardDays, type MyRanks, type StatBoard, type StatKey } from "@/lib/leaderboard/types";
 import { Loading } from "@/components/common/ui";
 import { BestFiveCourt } from "./BestFiveCourt";
 import { MyRecords } from "./MyRecords";
@@ -43,20 +43,69 @@ const readToday = () => kstDay(Date.now());
 /** 날짜 칩 이름: 오늘·어제, 그 앞은 월.일 */
 const dayLabel = (day: string, ago: number) => (ago === 0 ? "오늘" : ago === 1 ? "어제" : `${day.slice(5, 7)}.${day.slice(8)}`);
 
-/** 일주일 날짜 칩과 맨 끝 올타임 칩 */
-function DayChips({ days, pick, onPick }: { days: string[]; pick: DayPick; onPick: (p: DayPick) => void }) {
+const NONE: BoardCount = { careers: 0, players: 0 };
+
+/** 그날(null이면 올타임) 랭킹에 오른 수. 아직 못 불러왔으면 undefined예요. */
+const countOf = (counts: BoardDays | null | undefined, day: BoardDay): BoardCount | undefined =>
+  !counts ? undefined : day === null ? counts.all : (counts.days.find((d) => d.day === day) ?? NONE);
+
+/** 일주일 날짜 칩과 맨 끝 올타임 칩. 칩마다 그날 올라온 기록 수를 붙여요. */
+function DayChips({
+  days,
+  pick,
+  onPick,
+  counts,
+}: {
+  days: string[];
+  pick: DayPick;
+  onPick: (p: DayPick) => void;
+  counts: BoardDays | null | undefined;
+}) {
+  const badge = (day: BoardDay) => {
+    const n = countOf(counts, day);
+    return n && <span className="rk-day-n">{fmtNum(n.careers)}</span>;
+  };
   return (
     <div className="rk-chips rk-days" role="group" aria-label="날짜 고르기">
       {days.map((d, i) => (
         <button key={d} type="button" aria-pressed={pick === i} onClick={() => onPick(i)}>
           {dayLabel(d, i)}
+          {badge(d)}
         </button>
       ))}
       <button type="button" aria-pressed={pick === "all"} onClick={() => onPick("all")}>
         올타임<span>(역대)</span>
+        {badge(null)}
       </button>
     </div>
   );
+}
+
+/** 고른 날짜에 랭킹에 오른 선수(기록) 수 */
+function DayCount({ counts, day, today }: { counts: BoardDays | null | undefined; day: BoardDay; today: string }) {
+  const n = countOf(counts, day);
+  if (!n) return null;
+  const when = day === null ? "올타임" : day === today ? "오늘" : `${Number(day.slice(5, 7))}월 ${Number(day.slice(8))}일`;
+  return (
+    <p className="hint rk-day-count" role="status">
+      {when} 랭킹 등록 · 선수 <b>{fmtNum(n.careers)}</b>명
+    </p>
+  );
+}
+
+/** 날짜별 랭킹 등록 수. 화면을 열 때 한 번 불러와요. null은 불러오지 못한 것이에요. */
+function useBoardDays() {
+  const [counts, setCounts] = useState<BoardDays | null | undefined>(undefined);
+  useEffect(() => {
+    let live = true;
+    void fetchBoardDays().then((c) => {
+      if (live) setCounts(c);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+  return counts;
 }
 
 /** 빈 순위표 문구에 쓰는 날짜 이름 */
@@ -175,6 +224,7 @@ export function RankingsScreen() {
   const day: BoardDay = pick === "all" ? null : (days[pick] ?? null);
   const { hall, endings } = useGame();
   const mine = useMine();
+  const counts = useBoardDays();
   const pending = useSyncExternalStore(
     subscribeNever,
     () => pendingKey(),
@@ -222,7 +272,12 @@ export function RankingsScreen() {
           ))}
         </div>
         <section className="rk-panel" role="tabpanel" id="rk-panel" aria-labelledby={`rk-tab-${tab}`}>
-          {tab !== "mine" && hydrated && <DayChips days={days} pick={pick} onPick={setPick} />}
+          {tab !== "mine" && hydrated && (
+            <>
+              <DayChips days={days} pick={pick} onPick={setPick} counts={counts} />
+              <DayCount counts={counts} day={day} today={today} />
+            </>
+          )}
           {tab === "mine" ? (
             <MyRecords hall={hall} mine={mine} pending={new Set(pending ? pending.split("\n") : [])} endings={new Set(endings)} />
           ) : tab === "stats" ? (

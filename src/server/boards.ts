@@ -1,8 +1,9 @@
 import "server-only";
-import { and, count, eq, sql, type SQL } from "drizzle-orm";
+import { and, count, countDistinct, eq, sql, type SQL } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { POS_KEYS, TEAMS, type LookRecord, type PosKey } from "@/game";
-import type { Board, BoardDay, BoardEntry, BoardScope, MyRanks } from "@/lib/leaderboard/types";
+import { DAY_COUNT } from "@/lib/leaderboard/days";
+import type { Board, BoardDay, BoardDays, BoardEntry, BoardScope, MyRanks } from "@/lib/leaderboard/types";
 import { db } from "./db";
 import { careers } from "./schema";
 
@@ -135,6 +136,28 @@ export async function getBoard(scope: BoardScope, pos: PosKey | null, day: Board
     best5: POS_KEYS.map((p) => ({ pos: p, career: firsts.get(p) ?? null })),
     stats,
   };
+}
+
+/** 최근 DAY_COUNT일(한국 시간)의 날짜별 등록 수와 올타임 등록 수 (역대 전체). 순위표처럼 캐시하고 제출 때 비워요. */
+export async function getBoardDays(): Promise<BoardDays> {
+  "use cache";
+  cacheTag(BOARDS_TAG);
+  cacheLife("hours");
+
+  const day = sql<string>`to_char(${careers.createdAt} at time zone 'Asia/Seoul', 'YYYY-MM-DD')`;
+  // 한국 시간으로 (DAY_COUNT - 1)일 전 0시부터예요. 캐시가 자정을 넘겨도 화면은 자기 날짜만 골라 써요.
+  const since = sql`(date_trunc('day', now() at time zone 'Asia/Seoul') - ${DAY_COUNT - 1}::int * interval '1 day') at time zone 'Asia/Seoul'`;
+  const tally = { careers: count(), players: countDistinct(careers.playerId) };
+  const [days, [all]] = await Promise.all([
+    db()
+      .select({ day: day.as("day"), ...tally })
+      .from(careers)
+      .where(sql`${careers.createdAt} >= ${since}`)
+      .groupBy(day)
+      .orderBy(sql`day desc`),
+    db().select(tally).from(careers),
+  ]);
+  return { days, all };
 }
 
 /** 한 플레이어가 올린 기록의 지금 순위 (역대 전체). 플레이어마다 달라서 캐시하지 않아요. */
