@@ -149,7 +149,7 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
               {step === 2 && (
                 <div className="field">
                   <div className="flabel-row">
-                    <span className="label">모두 오버롤 45, 시작 능력치 55 이하, 16세 기준 · 플레이 유형은 무작위</span>
+                    <span className="label">모두 오버롤 45, 시작 능력치 57 이하, 16세 기준 · 플레이 유형은 무작위</span>
                     <button type="button" className="btn" disabled={!draft.rerolls} onClick={gameActions.reroll}>
                       후보 다시 뽑기 · {draft.rerolls}회 남음
                     </button>

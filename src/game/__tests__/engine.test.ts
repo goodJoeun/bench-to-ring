@@ -37,6 +37,7 @@ import {
   seeded,
   setRandom,
   START_CAP,
+  CAP_JITTER,
   START_MIN,
   SPIKE_CAP,
   TEAMS,
@@ -121,6 +122,14 @@ function playToRetirement(c: Career, rand: () => number): number {
 }
 
 describe("후보 선수", () => {
+  it("같은 유형을 다시 뽑으면 상한에 닿던 주특기도 값이 달라져요", () => {
+    setRandom(seeded(10));
+    const a = ARCHETYPES.SG.findIndex((x) => x.name === "퓨어 슈터");
+    const shots = new Set(Array.from({ length: 60 }, () => generateCandidate("SG", a).attrs.sht));
+    expect(shots.size).toBeGreaterThanOrEqual(4);
+    for (const v of shots) expect(v).toBeGreaterThanOrEqual(55 - CAP_JITTER);
+  });
+
   it("모든 포지션·플레이 유형에서 오버롤 45로 시작하고, 유형이 키우는 능력치가 상위권이에요", () => {
     setRandom(seeded(7));
     let miss = 0;
@@ -141,7 +150,7 @@ describe("후보 선수", () => {
     expect(miss / total).toBeLessThan(0.05);
   });
 
-  it("능력치 하나가 55를 넘는 후보는 아주 드물고, 넘어도 60까지예요", () => {
+  it("능력치 하나가 57을 넘는 후보는 아주 드물고, 넘어도 62까지예요", () => {
     setRandom(seeded(8));
     let spiked = 0;
     let total = 0;
@@ -159,16 +168,16 @@ describe("후보 선수", () => {
     expect(spiked / total).toBeLessThan(0.03);
   });
 
-  it("유형마다 주특기는 55, 강점은 50까지 시작해 같은 능력치라도 유형별로 차이가 나요", () => {
+  it("유형마다 주특기는 55, 강점은 50 언저리(±2)까지 시작해 같은 능력치라도 유형별로 차이가 나요", () => {
     setRandom(seeded(9));
     for (const pos of POS_KEYS)
       ARCHETYPES[pos].forEach((arch, a) => {
         for (let i = 0; i < 60; i++) {
           const cand = generateCandidate(pos, a);
-          const over = ATTR_KEYS.filter((k) => cand.attrs[k] > startCap(arch, k));
+          const over = ATTR_KEYS.filter((k) => cand.attrs[k] > startCap(arch, k) + CAP_JITTER);
           // 아주 드물게 가장 강한 능력치 하나만 5 더 열려요.
           expect(over.length).toBeLessThanOrEqual(1);
-          for (const k of over) expect(cand.attrs[k]).toBeLessThanOrEqual(startCap(arch, k) + 5);
+          for (const k of over) expect(cand.attrs[k]).toBeLessThanOrEqual(startCap(arch, k) + CAP_JITTER + 5);
         }
       });
     const avgShot = (pos: "SG", name: string) => {

@@ -18,6 +18,7 @@ export {
   START_OVR,
   START_MIN,
   START_CAP,
+  CAP_JITTER,
   SPIKE_CAP,
 } from "./player/create";
 export { CRITICAL_HEALTH, injuryKind, simulateSeason, startSeason, stepSeason, seasonProgress, type SeasonStep } from "./season/season";

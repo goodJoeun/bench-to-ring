@@ -14,17 +14,22 @@ import type { Archetype, AttrKey, Attrs, Candidate, Career, Grade, NewCareerInpu
 import { clamp } from "../core/util";
 
 export const START_OVR = 45;
-/** 시작 능력치 범위. 주특기도 55까지이고, 아주 드물게(SPIKE_CHANCE) 가장 강한 능력치 하나만 5 더 열려요. */
 export const START_MIN = 22;
-export const START_CAP = 55;
-export const SPIKE_CAP = 60;
+/**
+ * 유형마다 정한 시작 상한(startCap)은 후보를 뽑을 때마다 ±CAP_JITTER 흔들려요.
+ * 상한에 닿는 능력치가 늘 같은 값으로 나오지 않게요. 같은 유형이라도 주특기가 53~57로 달라져요.
+ */
+export const CAP_JITTER = 2;
+/** 시작 능력치 최고: 주특기 상한 55에 흔들림까지. 아주 드물게(SPIKE_CHANCE) 가장 강한 능력치 하나만 SPIKE 더 열려요. */
+export const START_CAP = 55 + CAP_JITTER;
+const SPIKE = 5;
+export const SPIKE_CAP = START_CAP + SPIKE;
 const SPIKE_CHANCE = 0.03;
-const SPIKE = SPIKE_CAP - START_CAP;
 
-/** 플레이 유형 배수로 정하는 시작 능력치 상한: 주특기 55, 강점 50, 보조 47, 나머지 45 */
+/** 플레이 유형 배수로 정하는 시작 능력치 기본 상한: 주특기 55, 강점 50, 보조 47, 나머지 45. 뽑을 때 ±CAP_JITTER 흔들어요. */
 export function startCap(arch: Archetype, k: AttrKey): number {
   const e = arch.e[k] ?? 1;
-  return e >= 1.45 ? START_CAP : e >= 1.25 ? 50 : e >= 1.1 ? 47 : 45;
+  return e >= 1.45 ? 55 : e >= 1.25 ? 50 : e >= 1.1 ? 47 : 45;
 }
 
 /** 플레이 유형에 어울리는 성인 키와 윙스팬(키 대비) 범위 */
@@ -34,7 +39,7 @@ export function bodyOf(pos: PosKey, arch: Archetype): { h: [number, number]; wsd
 
 /**
  * 후보 선수 한 명. 포지션과 플레이 유형이 정한 능력치 모양을 그대로 키우거나 줄여 오버롤 45에 맞추고,
- * 유형마다 정해진 상한(주특기 55, 강점 50…)에서 막아요. 막힌 몫은 나머지 능력치가 모양대로 나눠 가져요.
+ * 유형마다 정해진 상한(주특기 55, 강점 50…, 뽑을 때마다 ±2)에서 막아요. 막힌 몫은 나머지 능력치가 모양대로 나눠 가져요.
  */
 export function generateCandidate(pos: PosKey, archIndex: number): Candidate {
   const arch = ARCHETYPES[pos][archIndex];
@@ -43,7 +48,12 @@ export function generateCandidate(pos: PosKey, archIndex: number): Candidate {
   // 플레이 유형 배수는 1.6제곱해서 써요. 포지션 가중치가 낮은 능력치를 키우는 유형(패싱 센터 등)도 강점이 드러나요.
   for (const k of ATTR_KEYS) raw[k] = (0.55 + w[k] * 2.4) * (arch.e[k] ?? 1) ** 1.6 * rnd(0.88, 1.12);
   const cap = {} as Attrs;
-  for (const k of ATTR_KEYS) cap[k] = startCap(arch, k);
+  for (const k of ATTR_KEYS) cap[k] = startCap(arch, k) + ri(-CAP_JITTER, CAP_JITTER);
+  // 상한이 한꺼번에 낮게 나오면 다 채워도 오버롤 45가 안 돼요. 그러면 가중치가 큰 능력치부터 기본 상한으로 되돌려요.
+  for (const k of [...ATTR_KEYS].sort((x, y) => w[y] - w[x])) {
+    if (ovrOf(cap, pos) >= START_OVR) break;
+    cap[k] = Math.max(cap[k], startCap(arch, k));
+  }
   if (chance(SPIKE_CHANCE)) cap[ATTR_KEYS.reduce((m, k) => (raw[k] > raw[m] ? k : m))] += SPIKE;
 
   // 상한·하한에 닿은 능력치는 그 자리에 묶고, 나머지를 같은 배율로 키워 오버롤 45를 맞춰요.
