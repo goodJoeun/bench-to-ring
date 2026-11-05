@@ -8,6 +8,7 @@ import { runDraft } from "../world/draft";
 import { addNews, decisionTag, joinTeam, leaveTeam, setTeam } from "../career/log";
 import { applyMilitary } from "../world/military";
 import { runNationalTeam } from "../world/national";
+import { clutchFinal } from "./events";
 import { chance, shuffle } from "../core/random";
 import type { Action, Boost, Career, ProLeagueKey, Team } from "../core/types";
 import { clamp, josa, money, ro, round2, roundSalary } from "../core/util";
@@ -123,22 +124,28 @@ export function applyAction(c: Career, a: Action): void {
     case "clutch": {
       // 결과는 바로 다음 경기에 반영돼요(season.ts playGame).
       const ok = chance(a.p);
+      // 뒤진 채 2점짜리 플레이는 성공해도 동점이라 연장에서 한 번 더 승부해요.
+      const win = ok && (a.ot === undefined || chance(a.ot));
       if (c.run) {
-        c.run.forced = ok ? "win" : "loss";
-        c.run.form = clamp(c.run.form + (ok ? 0.8 : -0.4), -2, 2);
+        c.run.forced = win ? "win" : "loss";
+        c.run.form = clamp(c.run.form + (win ? 0.8 : ok ? 0.2 : -0.4), -2, 2);
+        if (c.run.next) Object.assign(c.run.next, clutchFinal(c.run.next, a, ok, win));
       }
       // 최고 오버롤은 시즌을 마칠 때 기록해요.
-      if (ok) {
-        addAttr(p.attrs, a.attr, 1);
-        c.clutchWins++;
-      }
+      if (ok) addAttr(p.attrs, a.attr, 1);
+      if (win) c.clutchWins++;
+      const up = `${SHORT[a.attr]} +1`;
       addNews(
         c,
         tag,
-        ok ? "good" : "bad",
-        ok
-          ? `클러치 성공! ${ro(a.play)} 승리를 이끌었어요. ${SHORT[a.attr]} +1`
-          : `클러치 실패. ${josa(a.play, "을", "를")} 노렸지만 아쉽게 졌어요.`,
+        win ? "good" : "bad",
+        !ok
+          ? `클러치 실패. ${josa(a.play, "을", "를")} 노렸지만 아쉽게 졌어요.`
+          : a.ot === undefined
+            ? `클러치 성공! ${ro(a.play)} 승리를 이끌었어요. ${up}`
+            : win
+              ? `클러치 성공! ${ro(a.play)} 동점을 만들고 연장 끝에 이겼어요. ${up}`
+              : `${ro(a.play)} 동점을 만들었지만 연장 끝에 졌어요. ${up}`,
       );
       break;
     }

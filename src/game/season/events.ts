@@ -1,5 +1,5 @@
 import { SHORT } from "../core/data";
-import { pick, ri, rnd, shuffle } from "../core/random";
+import { pick, random, ri, rnd, shuffle } from "../core/random";
 import { ovr } from "../player/ratings";
 import type { AttrKey, Boost, Career, ClutchBoard, Decision, DecisionOption } from "../core/types";
 import { clamp, josa, money, roundSalary } from "../core/util";
@@ -1256,47 +1256,189 @@ export function bigGameDecision(c: Career, label: string, final: boolean): Decis
   };
 }
 
-/** 클러치 플레이: 공격 다섯, 수비 셋. 각자 맡은 능력치가 높을수록 성공하기 쉬워요. 매번 이 중 CLUTCH_SHOWN개만 나와요. */
-export const CLUTCH_PLAYS: { attr: AttrKey; side: "공격" | "수비"; label: string; play: string }[] = [
-  { attr: "sht", side: "공격", label: "풀업 점퍼로 끝낸다", play: "종료 버저와 함께 풀업 점퍼" },
-  { attr: "hdl", side: "공격", label: "아이솔레이션으로 돌파한다", play: "수비 둘을 제치는 돌파 레이업" },
-  { attr: "pas", side: "공격", label: "더블팀을 끌어내 빈 동료에게 준다", play: "더블팀 사이로 찌른 결승 어시스트" },
-  { attr: "def", side: "수비", label: "상대 에이스를 끝까지 막는다", play: "상대 에이스의 마지막 슛을 막아 낸 수비" },
-  { attr: "ath", side: "수비", label: "블록슛을 노린다", play: "마지막 슛을 쳐 낸 블록슛" },
-  { attr: "iq", side: "공격", label: "수비의 빈틈을 읽고 백도어 컷", play: "수비 뒤를 파고든 백도어 컷 레이업" },
-  { attr: "ath", side: "공격", label: "공격 리바운드를 노려 풋백", play: "공중에서 낚아챈 풋백 득점" },
-  { attr: "iq", side: "수비", label: "공격자 파울을 유도한다", play: "마지막 돌파를 멈춰 세운 차징 유도" },
+/** 클러치 플레이. 맡은 능력치가 높을수록 성공하기 쉬워요. */
+export interface ClutchPlay {
+  attr: AttrKey;
+  side: "공격" | "수비" | "주무기";
+  label: string;
+  /** 소식에 쓰는 플레이 이름 */
+  play: string;
+  /** 성공하면 우리가 넣는 점수. 공격은 2(3점슛·앤드원은 3), 수비는 0(트랩은 스틸 뒤 속공 2) */
+  pts: number;
+  /** 성공 확률 보정. 어려운 플레이(3점슛·트랩)는 낮고, 침착한 자유투나 주무기는 높아요. */
+  edge?: number;
+  /** 능력치에 따라 확률이 갈리는 정도(1이 보통). 높으면 잘하는 선수에게 더 유리하고 못하는 선수에게 더 불리해요. */
+  swing?: number;
+}
+
+/** 공격 플레이: 동점이거나 뒤진 채 우리가 마지막 공격을 할 때 */
+export const CLUTCH_OFFENSE: ClutchPlay[] = [
+  { attr: "sht", side: "공격", label: "풀업 점퍼로 끝낸다", play: "종료 버저와 함께 풀업 점퍼", pts: 2 },
+  { attr: "hdl", side: "공격", label: "아이솔레이션으로 돌파한다", play: "수비 둘을 제치는 돌파 레이업", pts: 2 },
+  { attr: "pas", side: "공격", label: "더블팀을 끌어내 빈 동료에게 준다", play: "더블팀 사이로 찌른 결승 어시스트", pts: 2 },
+  { attr: "iq", side: "공격", label: "수비의 빈틈을 읽고 백도어 컷", play: "수비 뒤를 파고든 백도어 컷 레이업", pts: 2 },
+  { attr: "ath", side: "공격", label: "공격 리바운드를 노려 풋백", play: "공중에서 낚아챈 풋백 득점", pts: 2 },
+  { attr: "sht", side: "공격", label: "3점 라인 밖에서 승부를 건다", play: "버저와 함께 꽂은 3점슛", pts: 3, edge: -0.08, swing: 1.3 },
+  { attr: "sht", side: "공격", label: "몸을 부딪쳐 파울을 얻어 낸다", play: "얻어 낸 파울과 침착한 클러치 자유투", pts: 2, edge: 0.04, swing: 0.6 },
+  { attr: "ath", side: "공격", label: "앤드원을 노리고 림으로 파고든다", play: "수비를 달고 넣은 앤드원", pts: 3, edge: -0.06 },
 ];
 
-/** 클러치 때 보여주는 선택지 수 */
-export const CLUTCH_SHOWN = 3;
+/** 수비 플레이: 앞선 채 상대가 마지막 공격을 할 때 */
+export const CLUTCH_DEFENSE: ClutchPlay[] = [
+  { attr: "def", side: "수비", label: "상대 에이스를 끝까지 막는다", play: "상대 에이스의 마지막 슛을 막아 낸 수비", pts: 0 },
+  { attr: "ath", side: "수비", label: "블록슛을 노린다", play: "마지막 슛을 쳐 낸 블록슛", pts: 0 },
+  { attr: "iq", side: "수비", label: "공격자 파울을 유도한다", play: "마지막 돌파를 멈춰 세운 차징 유도", pts: 0 },
+  { attr: "def", side: "수비", label: "기습적인 트랩으로 공을 빼앗는다", play: "기습 트랩으로 빼앗은 스틸과 속공 득점", pts: 2, edge: -0.05, swing: 1.4 },
+  { attr: "iq", side: "수비", label: "패스 길목을 읽고 가로챈다", play: "패스 길목을 끊은 가로채기", pts: 0, swing: 1.2 },
+];
 
-/** 클러치 플레이 성공 확률: 맡은 능력치가 리그 평균보다 높을수록, 승부사면 더 높아요. */
-export const clutchOdds = (c: Career, attr: AttrKey, leagueAvg: number): number =>
-  clamp(0.45 + (c.p.attrs[attr] - leagueAvg) / 40 + (c.p.trait === "승부사" ? 0.1 : 0), 0.12, 0.88);
+/** 모든 클러치 플레이 (주무기 제외) */
+export const CLUTCH_PLAYS: ClutchPlay[] = [...CLUTCH_OFFENSE, ...CLUTCH_DEFENSE];
+
+/** 3점슛으로 단번에 뒤집는 플레이. 뒤진 상황에는 꼭 나와요. */
+const THREE = CLUTCH_OFFENSE.find((x) => x.pts === 3 && x.attr === "sht")!;
 
 /**
- * 주전 이상일 때 중요한 경기에서 마지막 플레이를 맡는 결정. 플레이 여덟 가지 중 무작위로 셋만 나와요.
+ * 주무기: 가장 높은 공격 능력치(수비 제외)로 정해지는 가장 자신 있는 무브. 공격 상황마다 꼭 하나 나와요.
+ * 가드·스몰포워드와 빅맨(파워포워드·센터)의 무브가 달라요. [무브, 소식에 쓰는 플레이, 점수]
+ */
+const SIGNATURE: Record<Exclude<AttrKey, "def">, { wing: [string, string, number]; big: [string, string, number] }> = {
+  sht: { wing: ["스텝백 3점슛", "수비를 밀어내고 던진 스텝백 3점슛", 3], big: ["하이포스트 페이더웨이", "하이포스트에서 던진 페이더웨이 점퍼", 2] },
+  hdl: { wing: ["크로스오버 풀업 점퍼", "수비를 넘어뜨린 크로스오버 풀업 점퍼", 2], big: ["페이스업 돌파", "빅맨답지 않은 페이스업 돌파", 2] },
+  pas: { wing: ["픽앤롤 노룩 패스", "픽앤롤에서 뿌린 노룩 패스", 2], big: ["하이포스트 컷인 패스", "하이포스트에서 컷인하는 동료에게 내준 패스", 2] },
+  iq: { wing: ["턴어라운드 페이더웨이", "포스트업에 이은 턴어라운드 페이더웨이", 2], big: ["포스트업 훅슛", "골밑에서 돌아서며 올린 훅슛", 2] },
+  ath: { wing: ["림까지 날아오르는 덩크", "수비 위로 꽂은 덩크", 2], big: ["로포스트 파워 덩크", "로포스트에서 찍어 누른 파워 덩크", 2] },
+};
+const SIGNATURE_EDGE = 0.06;
+
+export function signatureMove(c: Career): ClutchPlay {
+  const keys = Object.keys(SIGNATURE) as (keyof typeof SIGNATURE)[];
+  const attr = keys.reduce((best, k) => (c.p.attrs[k] > c.p.attrs[best] ? k : best));
+  const [move, play, pts] = SIGNATURE[attr][c.p.pos === "PF" || c.p.pos === "C" ? "big" : "wing"];
+  return { attr, side: "주무기", label: `가장 자신 있는 무브 · ${move}`, play, pts, edge: SIGNATURE_EDGE };
+}
+
+/** 클러치 때 보여주는 선택지 수 */
+export const CLUTCH_SHOWN = 4;
+
+/** 클러치 상황: 전광판의 점수 차(lead)로 정해요. */
+export type ClutchScene = "tie" | "behind" | "ahead";
+export const CLUTCH_SCENES: Record<ClutchScene, { lead: number; clock: string; state: string; flash: string; body: string }> = {
+  tie: {
+    lead: 0,
+    clock: "0:24",
+    state: "동점",
+    flash: "4쿼터 마지막 24초, 동점",
+    body: "동점으로 맞선 4쿼터 마지막 24초. 감독이 작전 타임에서 당신에게 마지막 플레이를 맡겼어요. 어디에 모든 걸 걸까요?",
+  },
+  behind: {
+    lead: -2,
+    clock: "0:12",
+    state: "2점 차 열세",
+    flash: "4쿼터 마지막 12초, 2점 차 열세",
+    body: "2점 뒤진 4쿼터 마지막 12초, 우리의 마지막 공격이에요. 3점으로 단번에 뒤집을까요, 동점을 만들어 연장으로 끌고 갈까요?",
+  },
+  ahead: {
+    lead: 2,
+    clock: "0:08",
+    state: "2점 차 리드",
+    flash: "4쿼터 마지막 8초, 상대의 마지막 공격",
+    body: "2점 앞선 4쿼터 마지막 8초, 상대의 마지막 공격이에요. 이것만 막으면 이겨요. 어떻게 막을까요?",
+  },
+};
+/** 클러치 상황이 나오는 비율: 동점, 뒤진 채 공격, 앞선 채 수비 */
+const SCENE_WEIGHTS: [ClutchScene, number][] = [
+  ["tie", 0.45],
+  ["behind", 0.3],
+  ["ahead", 0.25],
+];
+
+/** 클러치 상황을 무작위로 골라 전광판 점수 차를 돌려줘요. */
+export function drawClutchLead(): number {
+  let r = random();
+  for (const [scene, w] of SCENE_WEIGHTS) if ((r -= w) < 0) return CLUTCH_SCENES[scene].lead;
+  return 0;
+}
+
+export const clutchScene = (b?: ClutchBoard): ClutchScene => {
+  const lead = b?.lead ?? 0;
+  return lead < 0 ? "behind" : lead > 0 ? "ahead" : "tie";
+};
+
+/** 전광판 점수 [우리, 상대] */
+export function boardScore(b: ClutchBoard): [number, number] {
+  const lead = b.lead ?? 0;
+  return [b.tie + Math.max(lead, 0), b.tie + Math.max(-lead, 0)];
+}
+
+/** 클러치 플레이 성공 확률: 맡은 능력치가 리그 평균보다 높을수록, 승부사면 더 높아요. 플레이마다 보정(edge)과 능력치 영향(swing)이 달라요. */
+export const clutchOdds = (c: Career, attr: AttrKey, leagueAvg: number, x?: Pick<ClutchPlay, "edge" | "swing">): number =>
+  clamp(0.45 + (x?.edge ?? 0) + ((x?.swing ?? 1) * (c.p.attrs[attr] - leagueAvg)) / 40 + (c.p.trait === "승부사" ? 0.1 : 0), 0.1, 0.9);
+
+/** 연장전 승리 확률: 오버롤이 리그 평균보다 높을수록, 승부사면 더 높아요. */
+export const overtimeOdds = (c: Career, leagueAvg: number): number => clamp(0.5 + (ovr(c.p) - leagueAvg) / 60 + (c.p.trait === "승부사" ? 0.05 : 0), 0.3, 0.75);
+
+/**
+ * 주전 이상일 때 중요한 경기에서 마지막 플레이를 맡는 결정. 전광판의 점수 차로 상황이 정해져요.
+ * - 동점: 주무기 하나와 공격 플레이 셋
+ * - 2점 뒤짐: 주무기, 3점슛, 공격 플레이 둘. 2점짜리는 성공해도 동점이라 연장에서 한 번 더 승부해요.
+ * - 2점 앞섬: 상대의 마지막 공격을 막는 수비 플레이 넷
  * 고른 플레이의 능력치가 리그 평균보다 높을수록 성공하기 쉬워요. 어떤 능력치를 쓰는지와 확률은 보여주지 않아요.
- * 성공하면 그 경기를 이기고 그 능력치가 오르고(결과 소식에 나와요), 실패하면 져요.
+ * 성공하면 그 능력치가 오르고 경기를 이겨요(연장이면 연장에서 이겨야 해요). 실패하면 져요.
  */
 export function clutchDecision(c: Career, label: string, leagueAvg: number, board?: ClutchBoard): Decision {
-  // 공격을 먼저, 수비를 뒤에 놓아요.
-  const shown = shuffle(CLUTCH_PLAYS)
-    .slice(0, CLUTCH_SHOWN)
-    .sort((x, y) => (x.side === y.side ? 0 : x.side === "공격" ? -1 : 1));
+  const scene = clutchScene(board);
+  let shown: ClutchPlay[];
+  if (scene === "ahead") shown = shuffle(CLUTCH_DEFENSE).slice(0, CLUTCH_SHOWN);
+  else {
+    const sig = signatureMove(c);
+    // 주무기와 같은 플레이(같은 능력치·같은 점수)는 겹쳐 보이니 빼요.
+    const pool = CLUTCH_OFFENSE.filter((x) => !(x.attr === sig.attr && x.pts === sig.pts) && (scene === "tie" || x !== THREE));
+    const fixed = scene === "behind" && !(sig.attr === THREE.attr && sig.pts === 3) ? [THREE] : [];
+    shown = [sig, ...fixed, ...shuffle(pool).slice(0, CLUTCH_SHOWN - 1 - fixed.length)];
+  }
+  const ot = overtimeOdds(c, leagueAvg);
   return {
     art: "clutch",
     ...(board && { board }),
     title: `클러치 · ${label}`,
-    body: "동점으로 맞선 4쿼터 마지막 24초. 감독이 작전 타임에서 당신에게 마지막 플레이를 맡겼어요. 어디에 모든 걸 걸까요?",
-    opts: shown.map((x) => ({
-      label: x.label,
-      sub: "성공하면 경기 승리와 능력치 상승 · 실패하면 패배",
-      tag: x.side,
-      act: { k: "clutch", attr: x.attr, play: x.play, p: clutchOdds(c, x.attr, leagueAvg) },
-    })),
+    body: CLUTCH_SCENES[scene].body,
+    opts: shown.map((x) => {
+      const tying = scene === "behind" && x.pts < 3;
+      const sub =
+        scene === "ahead"
+          ? x.pts > 0
+            ? "성공하면 쐐기 득점까지 · 실패하면 역전패"
+            : "막아 내면 승리 · 뚫리면 역전패"
+          : scene === "behind"
+            ? tying
+              ? "성공하면 동점, 연장 승부 · 실패하면 패배"
+              : "성공하면 역전승 · 실패하면 패배"
+            : "성공하면 경기 승리와 능력치 상승 · 실패하면 패배";
+      return {
+        label: x.label,
+        sub,
+        tag: x.side,
+        act: { k: "clutch", attr: x.attr, play: x.play, p: clutchOdds(c, x.attr, leagueAvg, x), pts: x.pts, ...(tying && { ot }) },
+      };
+    }),
   };
+}
+
+/** 클러치 경기의 최종 점수. ok는 마지막 플레이 성공, win은 경기 승리(연장 포함)예요. */
+export function clutchFinal(b: ClutchBoard, a: { pts?: number; ot?: number }, ok: boolean, win: boolean): Pick<ClutchBoard, "final" | "ot"> {
+  const [us, them] = boardScore(b);
+  const lead = b.lead ?? 0;
+  // 실패: 앞선 채 막지 못하면 3점 역전, 동점이면 상대의 2점, 뒤진 채 놓치면 파울 작전 뒤 자유투 2점을 더 내줘요.
+  if (!ok) return { final: [us, them + (lead > 0 ? 3 : 2)] };
+  if (a.ot !== undefined) {
+    // 동점으로 연장. 이긴 팀은 연장에서 8~14점, 진 팀은 그보다 2~6점 적게 넣어요.
+    const tied = them;
+    const top = ri(8, 14);
+    const low = top - ri(2, 6);
+    return { ot: true, final: win ? [tied + top, tied + low] : [tied + low, tied + top] };
+  }
+  return { final: [us + (a.pts ?? 2), them] };
 }
 
 /** 같은 이벤트는 이 기간 안에 다시 나오지 않아요. */

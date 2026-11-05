@@ -1,25 +1,32 @@
 "use client";
 
 import { useEffect, useEffectEvent } from "react";
-import type { ClutchBoard } from "@/game";
+import { CLUTCH_SCENES, boardScore, clutchScene, type ClutchBoard } from "@/game";
 import { reducedMotion } from "@/shared/lib/hooks";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 
 /**
- * 클러치 결정 위에 띄우는 전광판: 4쿼터 0:24, 우리 팀과 상대의 엠블럼·이름·동점 점수.
+ * 클러치 결정 위에 띄우는 전광판: 4쿼터 남은 시간, 우리 팀과 상대의 엠블럼·이름·점수, 상황(동점 · 2점 차 열세 · 2점 차 리드).
  * 경기 시계가 깜빡여요. 예전 저장처럼 전광판 정보가 없으면 점수 없이 '동점'만 보여줘요.
  */
 export function ClutchArt({ board }: { board?: ClutchBoard }) {
+  const scene = CLUTCH_SCENES[clutchScene(board)];
+  const [us, them] = board ? boardScore(board) : [0, 0];
+  const secs = Number(scene.clock.split(":")[1]);
   return (
-    <div className="cl-art" aria-label={board ? `4쿼터 24초 남기고 ${board.team} ${board.tie} 대 ${board.opp} ${board.tie} 동점` : "4쿼터 24초 남기고 동점"} role="img">
+    <div
+      className="cl-art"
+      aria-label={board ? `4쿼터 ${secs}초 남기고 ${board.team} ${us} 대 ${board.opp} ${them} ${scene.state}` : `4쿼터 ${secs}초 남기고 ${scene.state}`}
+      role="img"
+    >
       <div className="cl-board">
-        {board && <Side name={board.team} color={board.teamColor} lg={board.lg} score={board.tie} tag="우리 팀" />}
+        {board && <Side name={board.team} color={board.teamColor} lg={board.lg} score={us} tag="우리 팀" />}
         <div className="cl-mid">
           <span className="cl-q">4Q</span>
-          <b className="cl-clock">0:24</b>
-          <span className="cl-tie">동점</span>
+          <b className="cl-clock">{scene.clock}</b>
+          <span className="cl-tie">{scene.state}</span>
         </div>
-        {board && <Side name={board.opp} color={board.oppColor} lg={board.lg} score={board.tie} tag="상대" />}
+        {board && <Side name={board.opp} color={board.oppColor} lg={board.lg} score={them} tag="상대" />}
       </div>
     </div>
   );
@@ -39,8 +46,8 @@ function Side({ name, color, lg, score, tag }: { name: string; color: string; lg
 /** 이펙트를 보여주는 시간(ms). 끝나면 클러치 결정 시트가 올라와요. */
 const FLASH_MS = 1500;
 
-/** 시즌 진행 중 클러치가 걸리면 화면 가운데 번개와 불꽃이 번쩍이고 'CLUTCH TIME'이 떠요. 끝나면 onDone을 불러요. */
-export function ClutchFlash({ onDone }: { onDone: () => void }) {
+/** 시즌 진행 중 클러치가 걸리면 화면 가운데 번개와 불꽃이 번쩍이고 'CLUTCH TIME'과 상황이 떠요. 끝나면 onDone을 불러요. */
+export function ClutchFlash({ board, onDone }: { board?: ClutchBoard; onDone: () => void }) {
   // 다시 그려져도 타이머가 처음부터 다시 돌지 않게, 끝낼 때의 onDone만 불러요.
   const done = useEffectEvent(onDone);
   useEffect(() => {
@@ -61,7 +68,7 @@ export function ClutchFlash({ onDone }: { onDone: () => void }) {
           <path d="M24 0 4 44h14L10 80 36 30H21z" />
         </svg>
         <b className="cl-flash-t">CLUTCH TIME</b>
-        <span className="cl-flash-s">4쿼터 마지막 24초, 동점</span>
+        <span className="cl-flash-s">{CLUTCH_SCENES[clutchScene(board)].flash}</span>
       </div>
     </div>
   );
@@ -74,15 +81,21 @@ const CONFETTI = ["#ffd25a", "#ff5a4a", "#4fb3e8", "#7bd389", "#ffffff"];
 
 /**
  * 클러치 결과 이펙트. 성공이면 금빛 빛줄기와 꽃가루 속에 'CLUTCH!'와 승리 점수가,
- * 실패면 화면이 어두워지고 금이 가며 '아쉬운 실패'와 패배 점수가 떠요. 끝나면 onDone을 불러요.
+ * 실패면 화면이 어두워지고 금이 가며 '아쉬운 실패'와 패배 점수가 떠요. 연장까지 갔으면 그렇게 알려요. 끝나면 onDone을 불러요.
  */
-export function ClutchResult({ result, onDone }: { result: { win: boolean; us?: number; them?: number; opp?: string }; onDone: () => void }) {
+export function ClutchResult({
+  result,
+  onDone,
+}: {
+  result: { win: boolean; us?: number; them?: number; opp?: string; ot?: boolean };
+  onDone: () => void;
+}) {
   const done = useEffectEvent(onDone);
   useEffect(() => {
     const timer = setTimeout(() => done(), reducedMotion() ? 700 : RESULT_MS);
     return () => clearTimeout(timer);
   }, []);
-  const { win, us, them, opp } = result;
+  const { win, us, them, opp, ot } = result;
   const score = us !== undefined && them !== undefined ? `${us} : ${them}` : null;
   return (
     <div className="cl-res" data-win={win || undefined} role="status" aria-live="assertive" onClick={onDone}>
@@ -104,9 +117,9 @@ export function ClutchResult({ result, onDone }: { result: { win: boolean; us?: 
         </svg>
       )}
       <div className="cl-res-core">
-        <b className="cl-res-t">{win ? "CLUTCH!" : "아쉬운 실패"}</b>
+        <b className="cl-res-t">{win ? "CLUTCH!" : ot ? "아쉬운 연장" : "아쉬운 실패"}</b>
         <span className="cl-res-s">
-          {win ? "마지막 플레이 성공 · 승리" : "마지막 플레이 실패 · 패배"}
+          {ot ? (win ? "동점 성공 · 연장 승리" : "동점 성공 · 연장 끝 패배") : win ? "마지막 플레이 성공 · 승리" : "마지막 플레이 실패 · 패배"}
           {score && (
             <>
               <br />

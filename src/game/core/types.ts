@@ -232,6 +232,8 @@ export interface GameLine {
   out?: string;
   /** 클러치 상황에서 내가 마지막 플레이를 맡은 경기 */
   clutch?: "win" | "loss";
+  /** 연장전까지 간 경기 */
+  ot?: boolean;
 }
 
 /** 플레이오프(전국대회) 한 라운드 */
@@ -436,8 +438,11 @@ export type Action =
   | ({ k: "boost" } & Boost)
   /** 확률 p로 win, 아니면 lose 효과가 나요. */
   | { k: "gamble"; p: number; win: Boost; lose: Boost }
-  /** 클러치: 확률 p로 성공하면 다음 경기를 이기고 attr이 올라요. 실패하면 져요. play는 소식에 쓰는 플레이 이름 */
-  | { k: "clutch"; attr: AttrKey; p: number; play: string }
+  /**
+   * 클러치: 확률 p로 성공하면 다음 경기를 이기고 attr이 올라요. 실패하면 져요. play는 소식에 쓰는 플레이 이름.
+   * pts는 성공하면 우리가 넣는 점수(없으면 2), ot가 있으면 성공해도 동점까지라 연장에서 확률 ot로 이겨요.
+   */
+  | { k: "clutch"; attr: AttrKey; p: number; play: string; pts?: number; ot?: number }
   | { k: "retire" }
   /** 국가대표 대회 합류(join) 또는 불참 */
   | { k: "national"; ev: NatEventKey; year: number; join: boolean }
@@ -500,8 +505,14 @@ export interface ClutchBoard {
   teamColor: string;
   opp: string;
   oppColor: string;
-  /** 두 팀이 똑같이 가진 점수 */
+  /** 지고 있는 쪽(동점이면 두 팀)의 점수 */
   tie: number;
+  /** 우리 점수 - 상대 점수: 0 동점(우리 공격), -2 뒤진 채 우리 공격, 2 앞선 채 상대 공격. 예전 저장은 없어서 동점이에요. */
+  lead?: number;
+  /** 마지막 플레이를 고른 뒤 정해진 최종 점수 [우리, 상대] */
+  final?: [number, number];
+  /** 연장전까지 갔는지 */
+  ot?: boolean;
 }
 
 /** 차례가 왔을 때 그 시점의 능력치로 만들어지는 결정 */

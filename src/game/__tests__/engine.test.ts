@@ -93,7 +93,20 @@ import {
 } from "@/game";
 import { SHORT } from "@/game/core/data";
 import { awardName, conferenceFinalsMvpName, nbaConference } from "@/game/world/awards";
-import { CLUTCH_PLAYS, CLUTCH_SHOWN, bigGameDecision, clutchDecision, clutchOdds, injuryDecision, lifeEvent, seasonEvent } from "@/game/season/events";
+import {
+  CLUTCH_DEFENSE,
+  CLUTCH_OFFENSE,
+  CLUTCH_SHOWN,
+  bigGameDecision,
+  clutchDecision,
+  clutchFinal,
+  clutchOdds,
+  drawClutchLead,
+  injuryDecision,
+  lifeEvent,
+  seasonEvent,
+  signatureMove,
+} from "@/game/season/events";
 import { makeLiveGame } from "@/game/season/live";
 import { giveAward, setTeam } from "@/game/career/log";
 import { militaryDecision } from "@/game/world/military";
@@ -1798,24 +1811,143 @@ describe("클러치", () => {
     return c;
   }
 
-  it("플레이 여덟 가지 중 셋만 무작위로 나오고, 어떤 능력치를 쓰는지는 보여주지 않아요", () => {
+  const clutchBoard = (lead: number, tie = 77) => ({ lg: "kbl" as const, team: "서울 SK 나이츠", teamColor: "#D7141A", opp: "부산 KCC 이지스", oppColor: "#003A70", tie, lead });
+  const clutchActs = (d: ReturnType<typeof clutchDecision>) =>
+    d.opts.map((o) => {
+      if (o.act.k !== "clutch") throw new Error("클러치 선택지가 아니에요");
+      return o.act;
+    });
+
+  it("동점이면 주무기 하나와 공격 플레이 셋이 나오고, 어떤 능력치를 쓰는지는 보여주지 않아요", () => {
     setRandom(seeded(31));
     const c = kblPlayer("opts", 0);
-    expect(CLUTCH_PLAYS).toHaveLength(8);
     const seen = new Set<string>();
-    for (let i = 0; i < 40; i++) {
-      const d = clutchDecision(c, "라이벌전", LEAGUES.kbl.avg);
-      expect(d.opts).toHaveLength(CLUTCH_SHOWN);
-      expect(new Set(d.opts.map((o) => o.label)).size).toBe(CLUTCH_SHOWN);
-      // 공격이 앞, 수비가 뒤
-      const tags = d.opts.map((o) => o.tag);
-      expect(tags).toEqual([...tags].sort((a, b) => (a === b ? 0 : a === "공격" ? -1 : 1)));
-      for (const o of d.opts) {
-        for (const name of Object.values(SHORT)) expect(o.sub ?? "", o.label).not.toContain(name);
-        seen.add(o.label);
+    for (let i = 0; i < 60; i++) {
+      for (const board of [undefined, clutchBoard(0)]) {
+        const d = clutchDecision(c, "라이벌전", LEAGUES.kbl.avg, board);
+        expect(d.opts).toHaveLength(CLUTCH_SHOWN);
+        expect(new Set(d.opts.map((o) => o.label)).size).toBe(CLUTCH_SHOWN);
+        expect(d.opts.map((o) => o.tag)).toEqual(["주무기", "공격", "공격", "공격"]);
+        expect(clutchActs(d).every((a) => a.ot === undefined)).toBe(true);
+        for (const o of d.opts) {
+          for (const name of Object.values(SHORT)) expect(o.sub ?? "", o.label).not.toContain(name);
+          seen.add(o.label);
+        }
       }
     }
-    expect(seen.size).toBe(8);
+    // 주무기와 겹치는 플레이 하나만 빼고 공격 플레이가 모두 나와요.
+    expect(seen.size).toBeGreaterThanOrEqual(CLUTCH_OFFENSE.length);
+  });
+
+  it("2점 뒤지면 3점슛이 꼭 나오고, 2점짜리는 성공해도 동점이라 연장에서 한 번 더 승부해요", () => {
+    setRandom(seeded(32));
+    const c = kblPlayer("behind", 0);
+    for (const k of ATTR_KEYS) c.p.attrs[k] = 60;
+    c.p.attrs.hdl = 75;
+    for (let i = 0; i < 30; i++) {
+      const d = clutchDecision(c, "라이벌전", LEAGUES.kbl.avg, clutchBoard(-2));
+      const acts = clutchActs(d);
+      expect(d.opts).toHaveLength(CLUTCH_SHOWN);
+      expect(d.opts[0].tag).toBe("주무기");
+      expect(d.opts.some((o) => o.label === "3점 라인 밖에서 승부를 건다")).toBe(true);
+      for (const a of acts) expect(a.ot === undefined).toBe((a.pts ?? 2) >= 3);
+    }
+    expect(clutchDecision(c, "라이벌전", LEAGUES.kbl.avg, clutchBoard(-2)).body).toContain("2점 뒤진");
+  });
+
+  it("2점 앞서면 상대의 마지막 공격을 막는 수비 플레이만 나와요", () => {
+    setRandom(seeded(33));
+    const c = kblPlayer("ahead", 0);
+    const seen = new Set<string>();
+    for (let i = 0; i < 30; i++) {
+      const d = clutchDecision(c, "라이벌전", LEAGUES.kbl.avg, clutchBoard(2));
+      expect(d.opts).toHaveLength(CLUTCH_SHOWN);
+      expect(d.opts.every((o) => o.tag === "수비")).toBe(true);
+      d.opts.forEach((o) => seen.add(o.label));
+    }
+    expect([...seen].sort()).toEqual(CLUTCH_DEFENSE.map((x) => x.label).sort());
+    expect(seen).toContain("기습적인 트랩으로 공을 빼앗는다");
+  });
+
+  it("주무기는 가장 높은 공격 능력치로 정해지고, 가드와 빅맨의 무브가 달라요", () => {
+    const c = kblPlayer("sig", 0);
+    for (const k of ATTR_KEYS) c.p.attrs[k] = 60;
+    c.p.attrs.def = 95;
+    c.p.attrs.sht = 80;
+    c.p.pos = "SG";
+    expect(signatureMove(c)).toMatchObject({ attr: "sht", pts: 3, label: "가장 자신 있는 무브 · 스텝백 3점슛" });
+    c.p.pos = "C";
+    expect(signatureMove(c)).toMatchObject({ attr: "sht", pts: 2, label: "가장 자신 있는 무브 · 하이포스트 페이더웨이" });
+    c.p.attrs.iq = 85;
+    c.p.pos = "SF";
+    expect(signatureMove(c).label).toContain("턴어라운드 페이더웨이");
+    // 주무기는 같은 능력치의 보통 플레이보다 성공하기 쉬워요.
+    expect(clutchOdds(c, "iq", LEAGUES.kbl.avg, signatureMove(c))).toBeGreaterThan(clutchOdds(c, "iq", LEAGUES.kbl.avg));
+  });
+
+  it("3점슛과 트랩은 잘하는 선수에게 더 유리하고 못하는 선수에게 더 불리해요. 자유투는 덜 갈려요", () => {
+    const c = kblPlayer("swing", 0);
+    const three = CLUTCH_OFFENSE.find((x) => x.pts === 3 && x.attr === "sht")!;
+    const ft = CLUTCH_OFFENSE.find((x) => x.label.includes("파울"))!;
+    const gap = (x?: { edge?: number; swing?: number }) => {
+      c.p.attrs.sht = LEAGUES.kbl.avg + 15;
+      const hi = clutchOdds(c, "sht", LEAGUES.kbl.avg, x);
+      c.p.attrs.sht = LEAGUES.kbl.avg - 10;
+      return hi - clutchOdds(c, "sht", LEAGUES.kbl.avg, x);
+    };
+    expect(gap(three)).toBeGreaterThan(gap());
+    expect(gap(ft)).toBeLessThan(gap());
+  });
+
+  it("상황마다 최종 점수가 달라요: 역전 3점은 1점 차, 트랩 성공은 4점 차, 막지 못하면 3점 역전패, 연장은 연장 점수", () => {
+    setRandom(seeded(34));
+    expect(clutchFinal(clutchBoard(0), { pts: 2 }, true, true)).toEqual({ final: [79, 77] });
+    expect(clutchFinal(clutchBoard(0), { pts: 3 }, true, true)).toEqual({ final: [80, 77] });
+    expect(clutchFinal(clutchBoard(0), { pts: 2 }, false, false)).toEqual({ final: [77, 79] });
+    expect(clutchFinal(clutchBoard(-2), { pts: 3 }, true, true)).toEqual({ final: [80, 79] });
+    expect(clutchFinal(clutchBoard(-2), { pts: 3 }, false, false)).toEqual({ final: [77, 81] });
+    expect(clutchFinal(clutchBoard(2), { pts: 0 }, true, true)).toEqual({ final: [79, 77] });
+    expect(clutchFinal(clutchBoard(2), { pts: 2 }, true, true)).toEqual({ final: [81, 77] });
+    expect(clutchFinal(clutchBoard(2), { pts: 0 }, false, false)).toEqual({ final: [79, 80] });
+    for (const win of [true, false]) {
+      const r = clutchFinal(clutchBoard(-2), { pts: 2, ot: 0.5 }, true, win);
+      expect(r.ot).toBe(true);
+      const [us, them] = r.final!;
+      expect(us > them).toBe(win);
+      expect(Math.min(us, them)).toBeGreaterThan(79);
+    }
+  });
+
+  it("클러치 상황은 동점, 2점 뒤짐, 2점 앞섬이 모두 나와요", () => {
+    setRandom(seeded(35));
+    const leads = Array.from({ length: 400 }, () => drawClutchLead());
+    for (const lead of [0, -2, 2]) expect(leads.filter((x) => x === lead).length).toBeGreaterThan(60);
+  });
+
+  it("뒤진 채 동점을 만들어도 연장에서 지면 경기를 져요. 능력치는 오르고, 경기 기록에 연장이 남아요", () => {
+    setRandom(seeded(36));
+    const c = kblPlayer("ot", 8);
+    startSeason(c);
+    stepSeason(c);
+    const board = clutchBoard(-2);
+    c.run!.next = board;
+    const before = c.p.attrs.hdl;
+    const wins = c.clutchWins;
+    // 첫 난수로 동점 성공, 두 번째 난수로 연장 패배
+    const rolls = [0, 0.999];
+    setRandom(() => rolls.shift() ?? 0.5);
+    applyAction(c, { k: "clutch", attr: "hdl", play: "돌파 레이업", p: 0.6, pts: 2, ot: 0.5 });
+    expect(c.p.attrs.hdl).toBe(before + 1);
+    expect(c.clutchWins).toBe(wins);
+    expect(c.run!.forced).toBe("loss");
+    expect(c.news[0].m).toContain("연장 끝에 졌어요");
+    setRandom(seeded(37));
+    const l = c.run!.l;
+    stepSeason(c);
+    const g = c.run!.log[0];
+    expect(c.run!.l).toBe(l + 1);
+    expect(g).toMatchObject({ clutch: "loss", ot: true, opp: board.opp });
+    expect(g.us).toBeLessThan(g.them);
   });
 
   it("고른 플레이의 능력치가 높을수록 성공하기 쉬워요", () => {
@@ -1878,7 +2010,7 @@ describe("클러치", () => {
     expect(backToBack).toBeGreaterThan(0);
   });
 
-  it("클러치가 걸린 경기는 전광판의 상대와 동점에서 2점 차로 끝나요", () => {
+  it("예전 저장처럼 최종 점수가 없는 클러치 경기는 전광판의 상대와 동점에서 2점 차로 끝나요", () => {
     setRandom(seeded(121));
     const c = kblPlayer("board", 8);
     startSeason(c);

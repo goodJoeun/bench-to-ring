@@ -4,7 +4,7 @@ import { careerTotals, newlyRanked } from "../legacy/records";
 import { HEALTH_RANGE, addAttr, addHealth, clampTrust } from "../player/condition";
 import { ATTRS, POS, ROLE_RANK } from "../core/data";
 import { currentDecision } from "./decisions";
-import { bigGameDecision, clutchDecision, injuryDecision, seasonEvent } from "./events";
+import { bigGameDecision, clutchDecision, drawClutchLead, injuryDecision, seasonEvent } from "./events";
 import { LEAGUES, SCORING_TITLE, leagueTeams } from "../world/leagues";
 import { FINAL_SCORE, finalScore, gameScore, makeLiveGame } from "./live";
 import { ALL_DEF_TIERS, ALL_LEAGUE_TIERS, awardName, conferenceFinalsMvpName } from "../world/awards";
@@ -365,12 +365,14 @@ function playGame(c: Career, run: SeasonRun, tag: string): void {
   const n = ++run.g;
   if (win) run.w++;
   else run.l++;
-  // 클러치가 걸린 경기는 전광판에 띄운 상대·동점에서 마지막 플레이로 2점 차가 나요.
+  // 클러치가 걸린 경기는 전광판에 띄운 상대와 마지막 플레이로 정해진 점수로 끝나요. 예전 저장은 동점에서 2점 차예요.
   const next = run.next;
   run.next = null;
-  const [us, them] = next && forced ? (win ? [next.tie + 2, next.tie] : [next.tie, next.tie + 2]) : gameScore(FINAL_SCORE[lg], win);
+  const [us, them] =
+    next && forced ? (next.final ?? (win ? [next.tie + 2, next.tie] : [next.tie, next.tie + 2])) : gameScore(FINAL_SCORE[lg], win);
   const line: GameLine = { n, opp: next?.opp ?? nextOpponent(run, lg, team.name, c.p.nat)[0], us, them, win };
   if (forced) line.clutch = forced;
+  if (forced && next?.ot) line.ot = true;
   if (run.out > 0) {
     line.out = run.outWhy;
     addHealth(c, REST_HEAL);
@@ -390,9 +392,9 @@ function playGame(c: Career, run: SeasonRun, tag: string): void {
   // 클러치: 주전 이상이 다음 경기의 마지막 플레이를 맡아요. 정해 둔 경기에 다른 결정이 겹치거나 결장 중이면 다음 경기로 미뤄요.
   else if (run.shots.length > 0 && n >= run.shots[0] && run.out === 0 && run.min >= STARTER_MIN && n < run.games) {
     run.shots.shift();
-    // 다음 경기 상대와 4쿼터 막판 동점 점수를 미리 정해 전광판에 띄워요.
+    // 다음 경기 상대와 4쿼터 막판 점수·상황(동점, 2점 뒤짐, 2점 앞섬)을 미리 정해 전광판에 띄워요.
     const [oppName, oppColor] = nextOpponent(run, lg, team.name, c.p.nat);
-    const board = { lg, team: team.name, teamColor: team.color, opp: oppName, oppColor, tie: gameScore(FINAL_SCORE[lg], true)[1] };
+    const board = { lg, team: team.name, teamColor: team.color, opp: oppName, oppColor, tie: gameScore(FINAL_SCORE[lg], true)[1], lead: drawClutchLead() };
     run.next = board;
     c.queue.push(clutchDecision(c, pick(BIG_GAMES), LEAGUES[lg].avg, board));
   }

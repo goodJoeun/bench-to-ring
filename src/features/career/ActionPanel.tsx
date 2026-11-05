@@ -186,7 +186,7 @@ export function ActionPanel({ career: c, playing, speed, busy, outcome, onAdvanc
             ▶
           </span>
         </button>
-        {flashing && <ClutchFlash key={decisionKey} onDone={() => setFlashedKey(decisionKey)} />}
+        {flashing && <ClutchFlash key={decisionKey} board={decision.board} onDone={() => setFlashedKey(decisionKey)} />}
         {decisionOpen && !flashing && (
           <DecisionSheet
             key={decisionKey}
