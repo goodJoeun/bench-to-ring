@@ -671,7 +671,8 @@ function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord 
     if (min >= 26 && impact >= 5 && statsOk("third") && chance(p.trait === "승부사" ? 0.85 : 0.6)) give("fmvp");
   }
   const prev = c.hist.length ? c.hist[c.hist.length - 1] : null;
-  if (L.pro && prev && ov0 - prev.ovr0 >= 6 && chance(0.5)) give("mip");
+  // 기량발전상은 프로 2년차부터예요. 데뷔 시즌의 지난 기록은 고교·대학 시절이라 비교하지 않아요.
+  if (L.pro && !rookie && prev && ov0 - prev.ovr0 >= 6 && chance(0.5)) give("mip");
 
   // 소식
   if (L.pro && c.proSeasons === 0) addNews(c, tag, "big", `프로 데뷔 시즌! ${team.name}에서 ${gp}경기를 뛰었어요.`);

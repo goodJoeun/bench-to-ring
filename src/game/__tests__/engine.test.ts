@@ -1944,6 +1944,31 @@ describe("리그별 시상", () => {
     expect(mvps).toBeGreaterThan(0);
   });
 
+  it("기량발전상은 프로 2년차부터 받아요. 데뷔 시즌은 고교·대학 시절보다 많이 늘었어도 못 받아요", () => {
+    setRandom(seeded(73));
+    const start = () => {
+      const c = createCareer({ name: "별", num: 1, nat: "대한민국", pos: "SG", path: "domestic" }, generateCandidates("SG")[0], "mip");
+      for (const k of ATTR_KEYS) c.p.attrs[k] = LEAGUES.kbl.avg + 2;
+      c.age = 22;
+      c.stage = "pro";
+      c.team = { name: "서울 SK 나이츠", color: "#E60012", q: 0.5, lg: "kbl" };
+      c.contract = { years: 3, salary: 3 };
+      return c;
+    };
+    // 지난 시즌 기록: 오버롤이 크게 낮았던 시즌
+    const last = { ...simulateSeason(start()), ovr0: 40 };
+    const mips = { rookie: 0, second: 0 };
+    for (let i = 0; i < 200; i++) {
+      const c = start();
+      const rookie = i % 2 === 0;
+      c.proSeasons = rookie ? 0 : 1;
+      c.hist = [last];
+      if (simulateSeason(c).awards.some((a) => a.includes("기량발전상"))) mips[rookie ? "rookie" : "second"]++;
+    }
+    expect(mips.rookie).toBe(0);
+    expect(mips.second).toBeGreaterThan(0);
+  });
+
   it("NBA MVP·올-NBA·올스타·파이널 MVP는 기록이 그 상에 걸맞은 시즌에만 받아요", () => {
     setRandom(seeded(72));
     const given = new Set<string>();
