@@ -85,6 +85,7 @@ export {
   careerTotals,
   recordBoardsFor,
   placeOnBoard,
+  newlyRanked,
   type BoardPlacement,
   type BoardRow,
   type RecordBoard,

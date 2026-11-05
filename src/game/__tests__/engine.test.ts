@@ -26,6 +26,7 @@ import {
   generateCandidates,
   ovrOf,
   placeOnBoard,
+  newlyRanked,
   rankHall,
   rankScore,
   sumSeasons,
@@ -861,6 +862,23 @@ describe("기록 리더보드", () => {
       for (const pos of ["SF", "PF", "C"] as const) expect(stats(pos)).toEqual(["pts", "reb", "ast", "blk"]);
     }
     expect(recordBoardsFor("olympics", "C").map((b) => b.stat)).toEqual(["pts"]);
+  });
+
+  it("리그 통산이 실제 역대 순위표에 처음 든 시즌에만 진입으로 쳐요", () => {
+    const c = createCareer({ name: "기록", num: 7, nat: "대한민국", pos: "SG", path: "domestic" }, generateCandidates("SG")[0], "rec2");
+    const rec = (lg: "kbl" | "nba", pts: number) => ({ lg, gp: 82, pts, reb: 0, ast: 0, stl: 0, blk: 0 }) as unknown as Career["hist"][number];
+    // NBA 통산 득점 20위는 26,496점이에요. 30점씩 82경기면 10시즌 24,600점, 11시즌 27,060점(15위)이에요.
+    for (let i = 0; i < 10; i++) c.hist.push(rec("nba", 30));
+    let before = careerTotals(c);
+    c.hist.push(rec("nba", 30));
+    expect(newlyRanked(c, before).map(({ board, rank, v }) => [board.group, board.stat, rank, v])).toEqual([["nba", "pts", 15, 27060]]);
+    // 이미 순위표에 든 기록은 더 올라가도 다시 알리지 않아요. KBL은 따로 세요.
+    before = careerTotals(c);
+    c.hist.push(rec("nba", 30), rec("kbl", 0));
+    expect(newlyRanked(c, before)).toEqual([]);
+    before = careerTotals(c);
+    for (let i = 0; i < 2; i++) c.hist.push(rec("kbl", 70));
+    expect(newlyRanked(c, before).map(({ board }) => `${board.group}-${board.stat}`)).toEqual(["kbl-pts"]);
   });
 });
 

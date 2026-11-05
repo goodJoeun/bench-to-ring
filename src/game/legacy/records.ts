@@ -309,3 +309,13 @@ export function placeOnBoard(board: RecordBoard, mine: { name: string; v: number
   const target = above ? board.entries[above - 1] : null;
   return { rows, rank, next: target && { name: target.name, gap: target.v - mine.v } };
 }
+
+/** 이번에 처음 실제 역대 순위표(NBA·KBL)에 든 기록. 시즌을 마칠 때 지난 통산(before)과 비교해 소식으로 알려요. */
+export function newlyRanked(c: Career, before: Record<RecordGroup, RecordTotals>): { board: RecordBoard; rank: number; v: number }[] {
+  const after = careerTotals(c);
+  return (["nba", "kbl"] as const).flatMap((g) => recordBoardsFor(g, c.p.pos)).flatMap((b) => {
+    const now = placeOnBoard(b, { name: c.p.name, v: after[b.group][b.stat] });
+    const was = placeOnBoard(b, { name: c.p.name, v: before[b.group][b.stat] });
+    return now.rank !== null && was.rank === null ? [{ board: b, rank: now.rank, v: after[b.group][b.stat] }] : [];
+  });
+}

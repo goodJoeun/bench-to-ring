@@ -1,5 +1,6 @@
 import { chooseOption } from "./actions";
 import { checkAchievements } from "../legacy/achievements";
+import { careerTotals, newlyRanked } from "../legacy/records";
 import { HEALTH_RANGE, addAttr, addHealth, clampTrust } from "../player/condition";
 import { ATTRS, POS, ROLE_RANK } from "../core/data";
 import { currentDecision } from "./decisions";
@@ -17,7 +18,7 @@ import { shopPerks } from "../economy/shop";
 import { BONUS_CAP, SPECIALTIES, combinedEffect, specialtiesOf } from "../player/specialty";
 import { ageBase, ovr, ovrOf, roleOf } from "../player/ratings";
 import type { AttrKey, AwardKey, Career, GameLine, InvestKey, LeagueKey, SeasonRecord, SeasonRun } from "../core/types";
-import { clamp, josa, r1, sigmoid } from "../core/util";
+import { clamp, fmtNum, josa, r1, sigmoid } from "../core/util";
 
 /*
  * 시즌은 세 단계로 흘러가요.
@@ -568,7 +569,11 @@ function finishSeason(c: Career): SeasonRecord {
   c.trust = c.team ? clampTrust((rating - 6.3) * 1.4 + inv.trust) : 0;
   if (c.contract) c.earnings += c.contract.salary;
   if (c.stage === "hs" || c.stage === "college") c.earnings += STUDENT_ALLOWANCE;
+  const totalsBefore = careerTotals(c);
   c.hist.push(rec);
+  // 리그 통산이 실제 NBA·KBL 역대 순위표에 처음 들면 소식으로 알려요. 은퇴 화면의 역대 기록 순위와 같은 표예요.
+  for (const { board: b, rank, v } of newlyRanked(c, totalsBefore))
+    addNews(c, tag, "big", `역대 기록 · ${b.group.toUpperCase()} ${b.title} TOP ${b.entries.length} 진입! ${fmtNum(v)}${josa(b.unit, "으로", "로")} 실제 역대 ${rank}위에 올랐어요.`);
   c.last = rec;
   c.age++;
   c.year++;
