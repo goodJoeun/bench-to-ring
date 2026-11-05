@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ACHIEVEMENTS, ACHIEVEMENT_GROUPS, type AchievementGroup } from "@/game";
-import { loadAchievements } from "@/game/career/storage";
+import { ACHIEVEMENTS, ACHIEVEMENT_GROUPS, fmtNum, type AchievementGroup, type LifeView } from "@/game";
+import { loadAchievements, loadLifetime } from "@/game/career/storage";
 import { Sheet } from "@/shared/ui/Sheet";
 
 const GROUPS = Object.keys(ACHIEVEMENT_GROUPS) as AchievementGroup[];
@@ -13,9 +13,13 @@ function dayOf(ms: number): string {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
-/** 상단 '업적'으로 여는 창: 이 브라우저에서 딴 업적과 아직 못 딴 업적. 따기 전에는 이름과 힌트만, 따면 조건까지 보여요. */
+/**
+ * 상단 '업적'으로 여는 창: 이 브라우저에서 딴 업적과 아직 못 딴 업적. 따기 전에는 이름과 힌트만, 따면 조건까지 보여요.
+ * 누적 기록 업적은 따기 전에도 모든 커리어를 더한 진행도를 보여줘요.
+ */
 export function AchievementsDialog({ onClose }: { onClose: () => void }) {
   const [got] = useState(loadAchievements);
+  const [life] = useState((): LifeView => ({ t: loadLifetime(), achv: Object.keys(got).length }));
   const done = ACHIEVEMENTS.filter((a) => got[a.id]).length;
   return (
     <Sheet labelledBy="achv-title" onClose={onClose}>
@@ -26,7 +30,10 @@ export function AchievementsDialog({ onClose }: { onClose: () => void }) {
       <div className="achv-bar" role="progressbar" aria-label="업적 달성" aria-valuemin={0} aria-valuemax={ACHIEVEMENTS.length} aria-valuenow={done}>
         <i style={{ width: `${(done / ACHIEVEMENTS.length) * 100}%` }} />
       </div>
-      <p className="hint">이 브라우저에서 딴 업적이에요. 새 커리어를 시작해도 남아요. 조건은 달성하면 공개되고, 그 전에는 힌트를 보여줘요.</p>
+      <p className="hint">
+        이 브라우저에서 딴 업적이에요. 새 커리어를 시작해도 남고, 한 번 딴 업적은 다시 따지 않아요. 조건은 달성하면 공개되고, 그 전에는 힌트를 보여줘요.
+        누적 기록은 이 브라우저에서 플레이한 모든 커리어를 더해요.
+      </p>
       {GROUPS.map((g) => (
         <section key={g} className="set-sec" aria-labelledby={`achv-${g}`}>
           <h3 id={`achv-${g}`}>{ACHIEVEMENT_GROUPS[g]}</h3>
@@ -44,7 +51,15 @@ export function AchievementsDialog({ onClose }: { onClose: () => void }) {
                       </span>
                     </>
                   ) : (
-                    <span className="achv-hint">{a.hint}</span>
+                    <>
+                      <span className="achv-hint">{a.hint}</span>
+                      {a.goal && (
+                        <span className="achv-by">
+                          지금 {fmtNum(Math.min(a.goal.of(life), a.goal.n))} / {fmtNum(a.goal.n)}
+                          {a.goal.unit}
+                        </span>
+                      )}
+                    </>
                   )}
                 </li>
               );

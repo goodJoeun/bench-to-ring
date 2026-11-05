@@ -6,6 +6,7 @@ import {
   buy,
   canRetire,
   checkAchievements,
+  setBrowserRecord,
   chooseOption,
   chosenInvest,
   createCareer,
@@ -34,7 +35,7 @@ import {
   type SeasonStep,
   type ShopKey,
 } from "@/game";
-import { loadCareer, loadEnding, loadEndingIds, loadHall, saveCareer, saveEnding, saveHall } from "@/game/career/storage";
+import { browserRecord, loadCareer, loadEnding, loadEndingIds, loadHall, saveCareer, saveEnding, saveHall } from "@/game/career/storage";
 import { flushPending, submitCareer } from "@/shared/leaderboard/client";
 
 /** 선수 생성 화면의 입력값 */
@@ -177,6 +178,8 @@ function freshDraft(prev?: CreationDraft): CreationDraft {
 
 function ensureLoaded(): void {
   if (snapshot.ready || typeof window === "undefined") return;
+  // 업적은 브라우저마다 한 번만 따고, 누적 기록 업적은 이 브라우저의 모든 커리어로 판정해요.
+  setBrowserRecord(browserRecord);
   const career = loadCareer();
   if (career) resolveQueue(career);
   // 엔딩 보관함이 생기기 전에 은퇴해 엔딩에 머물러 있던 커리어도 넣어 둬요.

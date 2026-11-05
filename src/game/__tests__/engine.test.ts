@@ -1,6 +1,10 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ACHIEVEMENTS,
+  EMPTY_LIFETIME,
+  addLifetime,
+  fromCareer,
+  setBrowserRecord,
   ARCHETYPES,
   checkAchievements,
   retire,
@@ -88,6 +92,7 @@ import {
   type LeagueKey,
   type SeasonRecord,
   type Career,
+  type PosKey,
   type Decision,
   type CareerSummary,
 } from "@/game";
@@ -111,7 +116,7 @@ import { makeLiveGame } from "@/game/season/live";
 import { giveAward, setTeam } from "@/game/career/log";
 import { militaryDecision } from "@/game/world/military";
 import { nationalCallUp, runNationalTeam } from "@/game/world/national";
-import { parseCareer } from "@/game/career/storage";
+import { browserRecord, loadAchievements, loadLifetime, parseCareer, saveCareer, saveHall } from "@/game/career/storage";
 import { canDonate, donatedThisSeason, refreshShop, shopPerks } from "@/game/economy/shop";
 
 afterEach(() => resetRandom());
@@ -1881,8 +1886,10 @@ describe("클러치", () => {
     c.p.attrs.iq = 85;
     c.p.pos = "SF";
     expect(signatureMove(c).label).toContain("턴어라운드 페이더웨이");
-    // 주무기는 같은 능력치의 보통 플레이보다 성공하기 쉬워요.
-    expect(clutchOdds(c, "iq", LEAGUES.kbl.avg, signatureMove(c))).toBeGreaterThan(clutchOdds(c, "iq", LEAGUES.kbl.avg));
+    // 주무기는 같은 능력치의 보통 플레이보다 성공하기 쉬워요. 상한(0.9)에 닿지 않게 능력치를 리그 평균으로 맞춰 비교해요.
+    const move = signatureMove(c);
+    c.p.attrs.iq = LEAGUES.kbl.avg;
+    expect(clutchOdds(c, "iq", LEAGUES.kbl.avg, move)).toBeGreaterThan(clutchOdds(c, "iq", LEAGUES.kbl.avg));
   });
 
   it("3점슛과 트랩은 잘하는 선수에게 더 유리하고 못하는 선수에게 더 불리해요. 자유투는 덜 갈려요", () => {
@@ -2476,5 +2483,118 @@ describe("업적", () => {
     const old = JSON.parse(JSON.stringify(fresh("ach8")));
     delete old.achv;
     expect(parseCareer(JSON.stringify(old))!.achv).toEqual([]);
+  });
+});
+
+describe("브라우저 업적과 누적 기록", () => {
+  afterEach(() => {
+    setBrowserRecord();
+    vi.unstubAllGlobals();
+  });
+
+  const fresh = (id: string, pos: PosKey = "SG", nat = "대한민국") =>
+    createCareer({ name: `누적${id}`, num: 7, nat, pos, path: "domestic" }, generateCandidates(pos)[0], id);
+  const proSeason = (year: number, extra: Partial<SeasonRecord> = {}): SeasonRecord => ({
+    year, age: year - 2011, team: "서울 SK 나이츠", lg: "kbl", pro: true, role: "주전", gp: 50, min: 30, pts: 20, reb: 5, ast: 4, stl: 1, blk: 0,
+    fg: 45, rating: 7, w: 30, l: 20, result: "플레이오프 1라운드", ovr0: 70, ovr1: 70, awards: [], ...extra,
+  });
+  /** 프로 시즌을 n개 쌓은 커리어: 시즌마다 50경기 20득점(1000점) */
+  const played = (c: Career, n: number) => {
+    for (let i = 0; i < n; i++) c.hist.push(proSeason(2031 + i));
+    c.proSeasons = n;
+    return c;
+  };
+  /** 노드에는 localStorage가 없어서 메모리로 흉내 내요. */
+  const fakeStorage = () => {
+    const m = new Map<string, string>();
+    vi.stubGlobal("window", {
+      localStorage: { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => m.set(k, v), removeItem: (k: string) => m.delete(k) },
+    });
+    return m;
+  };
+
+  it("이 브라우저에서 이미 딴 업적은 새 커리어에서 조건을 채워도 다시 뜨지 않아요", () => {
+    setBrowserRecord(() => ({ unlocked: new Set(["franchise"]), others: EMPTY_LIFETIME }));
+    const c = fresh("dup");
+    for (let y = 2031; y < 2042; y++) c.hist.push(proSeason(y));
+    expect(checkAchievements(c)).not.toContain("franchise");
+    expect(c.achv).not.toContain("franchise");
+    expect(c.cheers.some((x) => x.title === "프랜차이즈 스타")).toBe(false);
+    expect(c.news.some((n) => n.m.includes("프랜차이즈 스타"))).toBe(false);
+    // 브라우저 기록이 없으면 그대로 따요.
+    setBrowserRecord();
+    expect(checkAchievements(c)).toContain("franchise");
+  });
+
+  it("누적 기록 업적은 다른 커리어들의 기록에 이번 커리어를 더해 판정해요", () => {
+    const others = { ...EMPTY_LIFETIME, careers: 2, pts: 49500, pos: ["PG", "SF", "PF", "C"] as PosKey[], nats: ["일본", "미국"] };
+    setBrowserRecord(() => ({ unlocked: new Set(), others }));
+    const c = played(fresh("life"), 1);
+    const got = checkAchievements(c);
+    // 2점 차로 모자란 은퇴는 아직, 득점(49,500 + 1,000)·포지션(SG 추가)·국적(대한민국 추가)은 달성
+    expect(got).toEqual(expect.arrayContaining(["life_points", "life_positions", "life_nations"]));
+    expect(got).not.toContain("life_retire3");
+    c.stage = "pro";
+    c.team = null;
+    retire(c);
+    expect(c.achv).toContain("life_retire3");
+    // 프로 무대를 밟지 않은 커리어는 포지션·국적에 들지 않아요.
+    expect(fromCareer(fresh("none", "C", "호주"))).toMatchObject({ pos: [], nats: [], seasons: 0 });
+    expect(addLifetime(others, fromCareer(c)).pos).toHaveLength(5);
+  });
+
+  it("업적 사냥꾼은 이번에 함께 딴 업적까지 세요", () => {
+    const ids = ACHIEVEMENTS.filter((a) => a.group !== "lifetime" && a.id !== "franchise").slice(0, 29).map((a) => a.id);
+    setBrowserRecord(() => ({ unlocked: new Set(ids), others: EMPTY_LIFETIME }));
+    const c = fresh("hunter");
+    for (let y = 2031; y < 2042; y++) c.hist.push(proSeason(y));
+    expect(checkAchievements(c)).toEqual(expect.arrayContaining(["franchise", "life_hunter"]));
+  });
+
+  it("저장소는 커리어마다 몫을 쌓고, 은퇴하지 않고 새로 시작한 커리어도 남겨요", () => {
+    const m = fakeStorage();
+    const a = played(fresh("sa"), 3);
+    saveCareer(a);
+    expect(loadLifetime()).toMatchObject({ seasons: 3, pts: 3000, careers: 0 });
+    // 같은 커리어를 다시 저장하면 몫을 바꿔 쓸 뿐 두 번 더하지 않아요.
+    a.hist.push(proSeason(2034));
+    a.proSeasons = 4;
+    saveCareer(a);
+    expect(loadLifetime()).toMatchObject({ seasons: 4, pts: 4000 });
+    // 은퇴하지 않고 새로 시작해도 쌓은 몫은 남아요.
+    saveCareer(null);
+    const b = played(fresh("sb", "C"), 2);
+    saveCareer(b);
+    expect(loadLifetime()).toMatchObject({ seasons: 6, pts: 6000, pos: ["SG", "C"] });
+    // 업적 판정에는 지금 커리어를 뺀 기록을 줘요. 지금 커리어는 판정할 때 새로 더해요.
+    expect(browserRecord(b).others).toMatchObject({ seasons: 4, pts: 4000 });
+    expect(browserRecord(fresh("sc")).others).toMatchObject({ seasons: 6 });
+    expect(m.has("b2r-lifetime-v1")).toBe(true);
+  });
+
+  it("저장한 커리어가 딴 업적은 브라우저 기록이 되고, 다음 커리어는 다시 따지 않아요", () => {
+    fakeStorage();
+    setBrowserRecord(browserRecord);
+    const a = fresh("ra");
+    for (let y = 2031; y < 2042; y++) a.hist.push(proSeason(y));
+    expect(checkAchievements(a)).toContain("franchise");
+    saveCareer(a);
+    expect(loadAchievements().franchise).toMatchObject({ name: a.p.name, career: "ra" });
+    const b = fresh("rb");
+    for (let y = 2031; y < 2042; y++) b.hist.push(proSeason(y));
+    expect(checkAchievements(b)).not.toContain("franchise");
+    // 같은 커리어를 다시 불러와도 이미 딴 업적은 그대로 남아요.
+    expect(a.achv).toContain("franchise");
+  });
+
+  it("누적 기록이 생기기 전의 명예의 전당은 처음 저장할 때 누적 기록으로 옮겨요", () => {
+    fakeStorage();
+    const old = played(fresh("hall", "PF", "프랑스"), 5);
+    old.awards.ring = 2;
+    const s = retire(old);
+    saveHall([s]);
+    const now = played(fresh("now"), 1);
+    saveCareer(now);
+    expect(loadLifetime()).toMatchObject({ careers: 1, seasons: 6, rings: 2, pos: ["PF", "SG"], nats: ["프랑스", "대한민국"] });
   });
 });

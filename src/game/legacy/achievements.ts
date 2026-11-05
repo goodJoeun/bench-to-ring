@@ -4,16 +4,19 @@ import { evalOvr } from "../player/ratings";
 import { LEAGUES } from "../world/leagues";
 import { addNews, cheer } from "../career/log";
 import { shopItem } from "../economy/shop";
+import { EMPTY_LIFETIME, addLifetime, fromCareer, type Lifetime } from "./lifetime";
 import type { AttrKey, AwardEntry, AwardKey, Career, LeagueKey, SeasonRecord } from "../core/types";
 
 /**
  * 업적. 대부분 커리어 기록(시즌 기록, 수상, 드래프트, 국가대표, 기부, 산 것)으로 판정해요.
  * 기록에 남지 않는 것만 따로 세요: 연봉 인상 성공(c.raises), 클러치 성공(c.clutchWins), 워크온 입학(c.milestones).
- * 커리어마다 딴 업적은 c.achv에 남고, 브라우저마다 처음 딴 업적은 storage.ts가 따로 모아 둬요.
+ * 업적은 브라우저마다 한 번만 따요. 브라우저에서 이미 딴 업적은 새 커리어에서 조건을 채워도 다시 뜨지 않아요.
+ * 커리어마다 처음 딴 업적은 c.achv에 남고, 브라우저에서 딴 업적과 누적 기록은 storage.ts가 모아 둬요(setBrowserRecord).
+ * '누적 기록' 업적은 이 브라우저에서 플레이한 모든 커리어를 더한 기록으로 판정해요.
  * 업적 창은 따기 전에는 이름과 힌트(hint)만, 딴 뒤에는 조건(desc)까지 보여줘요.
  */
 
-export type AchievementGroup = "school" | "team" | "award" | "ability" | "path" | "life";
+export type AchievementGroup = "school" | "team" | "award" | "ability" | "path" | "life" | "lifetime";
 
 export const ACHIEVEMENT_GROUPS: Record<AchievementGroup, string> = {
   school: "고교·대학",
@@ -22,7 +25,28 @@ export const ACHIEVEMENT_GROUPS: Record<AchievementGroup, string> = {
   ability: "능력치",
   path: "드래프트·진로",
   life: "국가대표·커리어",
+  lifetime: "누적 기록",
 };
+
+/** 이 브라우저의 기록: 이미 딴 업적과, 지금 커리어를 뺀 다른 커리어들의 누적 기록 */
+export interface BrowserRecord {
+  unlocked: ReadonlySet<string>;
+  others: Lifetime;
+}
+
+const NO_RECORD: BrowserRecord = { unlocked: new Set(), others: EMPTY_LIFETIME };
+let browserRecord: (c: Career) => BrowserRecord = () => NO_RECORD;
+
+/** 브라우저 기록을 읽는 함수를 정해요. 앱이 처음 불러올 때 storage.ts와 이어 주고, 테스트에서는 바꿔 끼워요. 인자를 빼면 기록 없음으로 돌아가요. */
+export function setBrowserRecord(fn?: (c: Career) => BrowserRecord): void {
+  browserRecord = fn ?? (() => NO_RECORD);
+}
+
+/** 누적 기록 업적이 보는 값: 모든 커리어를 더한 기록과 브라우저에서 딴 업적 수 */
+export interface LifeView {
+  t: Lifetime;
+  achv: number;
+}
 
 /** 판정에 쓰는 커리어 기록 */
 interface View {
@@ -39,6 +63,8 @@ interface View {
   proAwards: AwardEntry[];
   /** 은퇴했는지. 은퇴해야 정해지는 업적이 있어요. */
   retired: boolean;
+  /** 이 브라우저의 모든 커리어(지금 커리어 포함)를 더한 기록 */
+  life: LifeView;
 }
 
 export interface Achievement {
@@ -50,6 +76,8 @@ export interface Achievement {
   hint: string;
   group: AchievementGroup;
   test: (v: View) => boolean;
+  /** 누적 기록 업적의 진행도: 지금 값과 목표. 업적 창이 따기 전에 보여줘요. */
+  goal?: { of: (l: LifeView) => number; n: number; unit: string };
 }
 
 const PRO_LEAGUES: LeagueKey[] = ["nba", "euro", "gleague", "kbl"];
@@ -96,6 +124,11 @@ const MAXED: Record<AttrKey, [string, string, string]> = {
 };
 /** 히든 스탯 보너스까지 더한 오버롤로 넘어야 하는 값 */
 const BEYOND = 100;
+
+/** 누적 기록 업적: 모든 커리어를 더한 값이 목표 이상이면 따요. */
+function lifetime(id: string, name: string, hint: string, desc: string, of: (l: LifeView) => number, n: number, unit: string): Achievement {
+  return { id, name, hint, desc, group: "lifetime", test: (v) => of(v.life) >= n, goal: { of, n, unit } };
+}
 
 export const ACHIEVEMENTS: Achievement[] = [
   // 고교·대학
@@ -364,6 +397,21 @@ export const ACHIEVEMENTS: Achievement[] = [
     test: (v) => v.c.owned.filter((k) => shopItem(k)?.cat === "사치품").length >= LUXURY_COUNT,
   },
   { id: "donor", name: "기부천사", desc: "유소년 농구에 누적 1000억 이상 기부", hint: "유소년 농구에 아낌없이", group: "life", test: (v) => v.c.donated >= 1000 },
+
+  // 누적 기록: 이 브라우저에서 플레이한 모든 커리어를 더해요.
+  lifetime("life_retire3", "다시 쓰는 농구 인생", "한 번의 농구 인생으로는 모자라요", "모든 커리어 합계 은퇴 3번", (l) => l.t.careers, 3, "번"),
+  lifetime("life_retire10", "농구 인생 10회차", "코트를 떠나고 또 돌아오기를 여러 번", "모든 커리어 합계 은퇴 10번", (l) => l.t.careers, 10, "번"),
+  lifetime("life_seasons", "100시즌의 추억", "시즌을 쌓고 또 쌓아 보세요", "모든 커리어 합계 프로 100시즌", (l) => l.t.seasons, 100, "시즌"),
+  lifetime("life_games", "3000경기의 땀방울", "여러 커리어에 걸쳐 코트를 누비세요", "모든 커리어 합계 프로 3000경기 출전", (l) => l.t.gp, 3000, "경기"),
+  lifetime("life_points", "5만 득점의 손끝", "여러 커리어의 득점을 모아 보세요", "모든 커리어 합계 프로 50,000득점", (l) => l.t.pts, 50000, "점"),
+  lifetime("life_rings", "반지 보관함", "커리어마다 반지를 모아 보세요", "모든 커리어 합계 프로 우승 20회", (l) => l.t.rings, 20, "회"),
+  lifetime("life_mvp", "MVP 제조기", "누구로 뛰든 리그 최고의 선수로", "모든 커리어 합계 정규시즌 MVP 15회", (l) => l.t.mvp, 15, "회"),
+  lifetime("life_earn", "누적 연봉 3000억", "여러 커리어에 걸쳐 차곡차곡", "모든 커리어 합계 3000억 벌기", (l) => l.t.earn, 3000, "억"),
+  lifetime("life_nba", "NBA 단골손님", "꿈의 무대에 여러 번 서 보세요", "NBA를 밟은 커리어 5번", (l) => l.t.nba, 5, "번"),
+  lifetime("life_clutch", "강심장 유전자", "누구로 뛰든 마지막 공은 내 손에", "모든 커리어 합계 클러치 성공 50번", (l) => l.t.clutch, 50, "번"),
+  lifetime("life_positions", "포지션 마스터", "한 포지션만 고집하지 마세요", "다섯 포지션 모두 프로 무대 밟기", (l) => l.t.pos.length, 5, "포지션"),
+  lifetime("life_nations", "국경 없는 농구", "다른 나라 선수로도 뛰어 보세요", "서로 다른 국적 3가지로 프로 무대 밟기", (l) => l.t.nats.length, 3, "국적"),
+  lifetime("life_hunter", "업적 사냥꾼", "업적 창을 차근차근 채워 보세요", "업적 30개 달성", (l) => l.achv, 30, "개"),
 ];
 
 const BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
@@ -371,7 +419,7 @@ const BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
 /** id로 업적을 찾아요. 없어진 업적이면 undefined예요. */
 export const achievementById = (id: string): Achievement | undefined => BY_ID.get(id);
 
-function viewOf(c: Career): View {
+function viewOf(c: Career, b: BrowserRecord): View {
   const years = (keys: string[]) => new Set(c.awardLog.filter((a) => keys.includes(a.k)).map((a) => a.y));
   const seasons = c.hist.filter((h) => !h.mil);
   const pro = seasons.filter((h) => h.pro && h.lg);
@@ -384,20 +432,28 @@ function viewOf(c: Career): View {
     fmvp: years(["fmvp"]),
     proAwards: c.awardLog.filter((a) => proSeasonYears.has(a.y) && a.k !== "nat_gold"),
     retired: c.stage === "retired",
+    life: { t: addLifetime(b.others, fromCareer(c)), achv: new Set([...b.unlocked, ...c.achv]).size },
   };
 }
 
 /**
  * 새로 딴 업적을 c.achv에 남기고 그 id를 돌려줘요. 소식을 남기고, 은퇴 전이면 축하 팝업도 띄워요.
+ * 이 브라우저에서 이미 딴 업적은 건너뛰어요. 업적 수를 세는 업적이 있어서, 새로 딴 게 없을 때까지 다시 봐요.
  * 시즌을 마칠 때, 결정을 고른 뒤(국가대표 대회 등), 은퇴할 때 불러요.
  */
 export function checkAchievements(c: Career): string[] {
-  const v = viewOf(c);
-  const got = ACHIEVEMENTS.filter((a) => !c.achv.includes(a.id) && a.test(v));
-  for (const a of got) {
-    c.achv.push(a.id);
-    addNews(c, `${c.year - 1} 시즌`, "big", `업적 달성 · ${a.name}! ${a.desc}`);
-    if (!v.retired) cheer(c, { kind: "achv", title: a.name, sub: a.desc, year: c.year - 1, color: c.team?.color ?? null });
+  const b = browserRecord(c);
+  const all: Achievement[] = [];
+  for (;;) {
+    const v = viewOf(c, b);
+    const got = ACHIEVEMENTS.filter((a) => !c.achv.includes(a.id) && !b.unlocked.has(a.id) && a.test(v));
+    if (!got.length) break;
+    for (const a of got) {
+      c.achv.push(a.id);
+      addNews(c, `${c.year - 1} 시즌`, "big", `업적 달성 · ${a.name}! ${a.desc}`);
+      if (!v.retired) cheer(c, { kind: "achv", title: a.name, sub: a.desc, year: c.year - 1, color: c.team?.color ?? null });
+    }
+    all.push(...got);
   }
-  return got.map((a) => a.id);
+  return all.map((a) => a.id);
 }
