@@ -420,8 +420,11 @@ h2.sec {
   min-width: 0;
   line-height: 1.3;
 }
-.set-link {
-  align-self: flex-start;
+/* 설정의 바로가기: 플레이 가이드와 커리어 관리를 한 줄로 */
+.set-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 14px;
 }
 @media (max-width: 640px) {

@@ -50,12 +50,16 @@ export function SettingsDialog({ onClose, onGuide, onCareerSettings }: SettingsD
         </div>
       </section>
 
-      <section className="set-sec" aria-labelledby="set-guide">
-        <h3 id="set-guide">플레이 가이드</h3>
-        <button type="button" className="btn set-link" onClick={onGuide}>
-          가이드 보기
+      <div className="set-links">
+        <button type="button" className="btn" onClick={onGuide}>
+          플레이 가이드
         </button>
-      </section>
+        {onCareerSettings && (
+          <button type="button" className="btn" onClick={onCareerSettings}>
+            커리어 관리
+          </button>
+        )}
+      </div>
 
       <section className="set-sec" aria-labelledby="set-teams">
         <h3 id="set-teams">구단 목록</h3>
@@ -90,11 +94,6 @@ export function SettingsDialog({ onClose, onGuide, onCareerSettings }: SettingsD
         </ul>
       </section>
 
-      {onCareerSettings && (
-        <button type="button" className="btn set-link" onClick={onCareerSettings}>
-          커리어 관리
-        </button>
-      )}
       <button type="button" className="sheet-go" onClick={onClose}>
         닫기
       </button>
