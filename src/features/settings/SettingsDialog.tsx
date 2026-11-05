@@ -56,7 +56,7 @@ export function SettingsDialog({ onClose, onGuide, onCareerSettings }: SettingsD
         </button>
         {onCareerSettings && (
           <button type="button" className="btn" onClick={onCareerSettings}>
-            커리어 관리
+            새로운 커리어 시작
           </button>
         )}
       </div>

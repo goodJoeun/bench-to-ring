@@ -9,7 +9,7 @@ export function SettingsTab({ career }: { career: Career }) {
   const [confirm, setConfirm] = useState<"retire" | "new" | null>(null);
 
   return (
-    <Panel title="커리어 관리">
+    <Panel title="새로운 커리어 시작">
       <div className="row">
         {canRetire(career) ? (
           <button
