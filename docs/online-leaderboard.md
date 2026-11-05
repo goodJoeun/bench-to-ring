@@ -35,6 +35,7 @@ Firebase로 시작해 나중에 백엔드로 옮기는 방법도 검토했지만
 create table players (
   id          uuid primary key default gen_random_uuid(),
   token_hash  text not null unique,          -- 브라우저에 저장한 익명 토큰의 해시
+  careers     int  not null default 0,       -- 올린 기록 수 (트리거가 맞춰요)
   created_at  timestamptz not null default now()
 );
 
@@ -54,6 +55,11 @@ create table careers (
   pts          int  not null,                -- 프로 통산 득점
   reb          int  not null,
   ast          int  not null,
+  stl          int,                          -- 프로 통산 스틸·블록·3점슛 (예전 기록에는 없어요)
+  blk          int,
+  tpm          int,
+  donated      double precision,             -- 기부금 합계 (억). 기부하지 않았으면 null
+  nba          boolean not null default false, -- NBA 팀에서 뛰어 봤는지 (playedNba)
   rings        int  not null,
   seasons      int  not null,                -- 프로 시즌
   ret_age      int  not null,
@@ -64,8 +70,19 @@ create table careers (
 );
 
 -- 순위 정렬: compareCareers와 같은 순서 (랭킹 점수 → NBA MVP → 최고 오버롤 → 통산 득점)
-create index careers_score     on careers (ruleset, score desc, mvp desc, peak desc, pts desc);
-create index careers_pos_score on careers (ruleset, pos, score desc, mvp desc, peak desc, pts desc);
+-- 화면은 역대 전체라 ruleset으로 시작하지 않아요. 공동 순위 안에서는 먼저 올린 기록이 위예요.
+create index careers_rank     on careers (score desc, mvp desc, peak desc, pts desc, created_at);
+create index careers_pos_rank on careers (pos, score desc, mvp desc, peak desc, pts desc, created_at);
+create index careers_created  on careers (created_at);              -- 날짜별 순위표와 등록 수
+create index careers_pts      on careers (pts desc, created_at);    -- 스탯 랭킹. reb·ast도 같고,
+create index careers_stl      on careers (stl desc, created_at) where stl is not null; -- blk·tpm·donated도 같아요
+
+-- 집계 (0004_scale). careers 트리거가 기록을 넣고 뺄 때 맞춰 둬서, 전체 수와 통계를 셀 때 careers를 훑지 않아요.
+create table career_counts (                -- 룰셋·포지션마다 커리어 수, NBA 진출 수, NBA MVP 수
+  ruleset int, pos text, careers int, nba int, nba_mvp int,
+  primary key (ruleset, pos)
+);
+create table career_totals (id int primary key check (id = 1), players int); -- 기록을 올린 플레이어 수 (한 줄)
 
 -- (2단계) 재생 검증용 행동 기록
 create table replays (
@@ -88,12 +105,13 @@ create table replays (
   - **상과 기록은 리그 수준에 따라 다르게** 쳐요(`LEAGUE_WEIGHT`): NBA 1, 유로리그 0.5, G리그 0.4, KBL 0.35, NCAA 0.2, U-리그 0.1, 고교 0.05. 국가대표 메달은 그대로예요. 은퇴 요약의 `leagues`(리그마다 쌓은 시즌·기록과 그 시즌에 받은 상)로 나눠요. 리그를 모르는 상(군 복무 시즌 등)은 30%(`SCORE_OTHER`)로 쳐요.
   - `leagues`가 없는 예전 기록은 `nba`(NBA 시즌의 몫)만 나눠 알아서, NBA 밖은 모두 30%로 쳐요. `nba`도 없으면 NBA에서만 주는 상(NBA MVP, 컨퍼런스 파이널 MVP, 올-루키)만 NBA 몫으로 쳐요.
   - 무작위 플레이 1,500명으로 맞춰 봤어요: NBA MVP 여러 번이 맨 위, KBL MVP를 9번 받은 레전드는 상위 1% 언저리예요.
-- 점수는 서버가 제출받을 때 다시 계산해 `score` 칸에 둬요. 가중치를 바꾸면 `npm run db:rescore`로 저장된 기록을 모두 다시 계산해요(바뀐 기록만 고쳐요).
+- 점수는 서버가 제출받을 때 다시 계산해 `score` 칸에 둬요(`src/server/leaderboard/columns.ts`의 `derivedColumns`. NBA 진출·스틸·블록·3점슛·기부금 칸도 같이). 가중치나 NBA 팀 목록을 바꾸면 `npm run db:rescore`로 저장된 기록을 모두 다시 계산해요(500개씩 읽고, 바뀐 기록만 고쳐요).
+- **기록이 많아져도 전체를 훑지 않아요.** 순위표는 위 인덱스 순서로 상위 N개만 읽고, 각 줄의 순위는 `1 + (네 값이 더 높은 기록 수)`를 행 비교 `(score, mvp, peak, pts) > (...)`로 같은 인덱스에서 세요. `rank()`와 같은 공동 순위가 나오고, 비용은 순위만큼만 들어요. 날짜는 `created_at`을 그날 한국 시간 0시~다음 날 0시 범위로 견줘요(칸에 계산을 씌우면 인덱스를 못 써요). 올타임 전체 수와 통계는 `career_counts`·`career_totals`에서 읽어요.
 - **포지션별 순위**: `where pos = $1` + 위 인덱스
-- **스탯 랭킹**(`GET /api/stats?stat=pts|reb|ast|stl|blk|tpm`): 프로 통산 기록 상위 50명. 득점·리바운드·어시스트는 칸에서, 스틸·블록·3점슛은 `summary`에서 읽어요. 스틸·블록·3점슛이 없는 예전 기록은 빠져요. 순위표와 같은 캐시 태그를 써요.
-- **역대 Best 5**: 포지션마다 1위 한 명 (`bestFive`와 같은 규칙). `distinct on (pos)`로 한 번에 구해요.
-- **내 순위**: `rank() over (order by score desc, mvp desc, peak desc, pts desc)`에서 내 플레이어 기록만 골라요(`GET /api/careers/mine`).
-- **전체 통계**: 제출된 커리어 수, NBA 진출 비율(`summary->'teams'` 또는 별도 칸), NBA MVP 비율. "전체 유저 중 상위 2%" 같은 문구에 써요.
+- **스탯 랭킹**(`GET /api/stats?stat=pts|reb|ast|stl|blk|tpm`): 프로 통산 기록 상위 50명. 스탯마다 인덱스가 있는 칸에서 읽어요. 스틸·블록·3점슛이 없는 예전 기록은 빠져요. 순위표와 같은 캐시 태그를 써요.
+- **역대 Best 5**: 포지션마다 1위 한 명 (`bestFive`와 같은 규칙). 포지션 순위 인덱스에서 포지션마다 한 줄씩 읽어요.
+- **내 순위**: 내 플레이어 기록(`careers_player` 인덱스)마다 위처럼 더 높은 기록 수를 세요(`GET /api/careers/mine`). 제출 응답의 순위(`ranksOf`)도 같아요.
+- **전체 통계**: 제출된 커리어 수, NBA 진출 비율, NBA MVP 비율 (`career_counts`, 날짜를 고르면 그날 기록을 직접 세요). "전체 유저 중 상위 2%" 같은 문구에 써요.
 
 ## 4. 기록 조작 막기
 
@@ -141,7 +159,7 @@ create table replays (
 
 - 순위표는 서버에서 캐시하고, 기록이 제출될 때만 다시 계산해요. 이 프로젝트는 Cache Components가 켜져 있어서 Next.js 캐시 API를 써요. **이 Next.js 버전은 API가 많이 바뀌었으니, 만들기 전에 `node_modules/next/dist/docs/`의 캐시와 Route Handler 문서를 확인해요(AGENTS.md).**
   - `src/server/leaderboard/boards.ts`의 `getBoard`가 `'use cache'` + `cacheTag("boards")` + `cacheLife("hours")`예요. 기록 제출 API가 `revalidateTag("boards", { expire: 0 })`로 바로 비워서, 은퇴하고 바로 순위표를 열어도 내 기록이 보여요.
-  - 기본 캐시는 서버 메모리라서, 서버리스로 배포하면 인스턴스마다 따로 캐시되고 오래 남지 않아요. 사용량이 늘면 `'use cache: remote'`나 순위표 미리 계산 테이블을 써요(10장 3단계).
+  - 기본 캐시는 서버 메모리라서, 서버리스로 배포하면 인스턴스마다 따로 캐시되고 오래 남지 않아요. 순위표 계산은 인덱스로 상위 N개만 읽어 가볍지만, 사용량이 늘면 `'use cache: remote'`로 인스턴스끼리 캐시를 나눠요(10장 3단계).
 - 플레이어 인증은 요청 헤더의 토큰으로 해요. 토큰 원문은 DB에 두지 않고 해시만 둬요.
 
 ## 7. 화면
@@ -207,7 +225,7 @@ src/
 - [ ] 은퇴 화면의 순위 결과, 설정에서 공개 끄기, 룰셋 선택(룰셋 2부터)
 - [x] 선수 이름 욕설 필터
 - [x] 테스트: 범위 검사, 이름 필터 (`src/server/leaderboard/__tests__/validate.test.ts`)
-- [ ] 테스트: 순위 계산(공동 순위 포함)은 DB가 있어야 해서 지금은 수동 확인만
+- [x] 테스트: 순위 계산(공동 순위 포함), 날짜·룰셋 범위, 스탯 랭킹, 집계 트리거, 기록이 많을 때 실행 계획 (`src/server/leaderboard/__tests__/queries.test.ts`, PGlite에 마이그레이션을 넣고 돌려요)
 - [ ] 플레이어 만들기 횟수 제한 (지금은 새 토큰을 계속 만들면 1분 제한을 피할 수 있어요)
 
 ### 2단계: 믿을 수 있는 기록
@@ -222,4 +240,5 @@ src/
 - [ ] 룰셋별 시즌 랭킹 초기화와 지난 시즌 기록 보관
 - [ ] 전체 유저 통계 화면
 - [ ] Google 로그인 연결
-- [ ] 사용량이 늘면: 읽기 전용 복제본, 순위표 미리 계산 테이블
+- [x] 기록이 많아져도 전체를 훑지 않는 쿼리: 순위 인덱스, 스탯·NBA 진출 칸과 인덱스, 날짜 범위 조건, 집계 테이블과 트리거, `db:rescore` 나눠 읽기 (`0004_scale`)
+- [ ] 사용량이 늘면: `'use cache: remote'`, 읽기 전용 복제본

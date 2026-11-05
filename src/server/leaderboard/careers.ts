@@ -1,7 +1,9 @@
 import "server-only";
-import { and, count, desc, eq, sql } from "drizzle-orm";
-import { rankScore } from "@/game";
+import { desc, eq } from "drizzle-orm";
+import type { PosKey } from "@/game";
 import type { SubmitResult } from "@/shared/leaderboard/types";
+import { allTimeCounts, rankOf } from "./boards";
+import { derivedColumns } from "./columns";
 import { db } from "../db/db";
 import { careers } from "../db/schema";
 import type { SubmittedSummary } from "./validate";
@@ -20,15 +22,15 @@ export async function lastSubmittedAt(playerId: string): Promise<Date | null> {
   return row?.at ?? null;
 }
 
-/** 저장해요. 이미 제출한 커리어면 false예요. */
-export async function insertCareer(playerId: string, s: SubmittedSummary): Promise<boolean> {
+/** 저장하고 기록 id를 돌려줘요. 이미 제출한 커리어면 null이에요. */
+export async function insertCareer(playerId: string, s: SubmittedSummary): Promise<string | null> {
   const rows = await db()
     .insert(careers)
     .values({
       playerId,
       careerId: s.id,
       ruleset: s.ruleset,
-      score: rankScore(s),
+      ...derivedColumns(s),
       name: s.name,
       num: s.num,
       pos: s.pos,
@@ -46,23 +48,21 @@ export async function insertCareer(playerId: string, s: SubmittedSummary): Promi
     })
     .onConflictDoNothing({ target: [careers.playerId, careers.careerId] })
     .returning({ id: careers.id });
-  return rows.length > 0;
+  return rows[0]?.id ?? null;
 }
 
 /**
- * 역대 전체(룰셋을 가리지 않는) 순위와 포지션 순위. 순위표 화면과 같은 범위예요. compareCareers와 같은 순서
+ * 저장한 기록의 역대 전체(룰셋을 가리지 않는) 순위와 포지션 순위. 순위표 화면과 같은 범위예요. compareCareers와 같은 순서
  * (랭킹 점수 → NBA MVP → 최고 오버롤 → 통산 득점)로, 네 값이 모두 같으면 공동 순위예요.
  */
-export async function ranksOf(s: SubmittedSummary): Promise<SubmitResult> {
-  const better = sql`(${careers.score}, ${careers.mvp}, ${careers.peak}, ${careers.pts}) > (${rankScore(s)}::float8, ${s.mvp}, ${s.peak}, ${s.pts})`;
-  const samePos = eq(careers.pos, s.pos);
-  const [row] = await db()
-    .select({
-      total: count(),
-      above: count(sql`case when ${better} then 1 end`),
-      posTotal: count(sql`case when ${samePos} then 1 end`),
-      posAbove: count(sql`case when ${and(samePos, better)} then 1 end`),
-    })
-    .from(careers);
-  return { pos: s.pos, rank: row.above + 1, total: row.total, posRank: row.posAbove + 1, posTotal: row.posTotal };
+export async function ranksOf(id: string): Promise<SubmitResult> {
+  const scope = "all";
+  const [[row], counts] = await Promise.all([
+    db()
+      .select({ pos: careers.pos, rank: rankOf(scope, null, false), posRank: rankOf(scope, null, true) })
+      .from(careers)
+      .where(eq(careers.id, id)),
+    allTimeCounts(scope),
+  ]);
+  return { pos: row.pos as PosKey, rank: row.rank, total: counts.stats.careers, posRank: row.posRank, posTotal: counts.byPos(row.pos) };
 }

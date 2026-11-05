@@ -29,6 +29,13 @@
       "when": 1792856380894,
       "tag": "0003_career_score",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793900338630,
+      "tag": "0004_scale",
+      "breakpoints": true
     }
   ]
 }
