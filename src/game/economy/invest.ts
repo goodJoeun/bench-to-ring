@@ -125,11 +125,21 @@ export function chosenInvest(c: Career): InvestKey[] {
   return c.invest.filter((k) => offered.has(k)).slice(0, INVEST_SLOTS);
 }
 
-/** 지금 연봉 기준 비용 (억) */
+/**
+ * 투자 비용 (억). 지난 시즌에 받은 연봉과 지금 계약 연봉 중 낮은 쪽 기준이에요.
+ * 연봉이 오르면 오른 연봉을 한 번 받은 다음 시즌부터 비용이 오르고, 깎이면 바로 내려요.
+ */
 export function investCost(c: Career, key: InvestKey): number {
   const inv = investment(key);
-  return round2(Math.max(inv.min, (c.contract?.salary ?? 0) * inv.pct));
+  return round2(Math.max(inv.min, Math.min(c.paidSalary, c.contract?.salary ?? 0) * inv.pct));
 }
+
+/** 이 투자들의 비용 합계 (억) */
+export const investTotal = (c: Career, keys: Iterable<InvestKey>): number => round2([...keys].reduce((t, k) => t + investCost(c, k), 0));
+
+/** 이미 고른 투자에 이 투자를 더해도 보유 자금 안인지. 소수 오차는 넘어가요. */
+export const canAffordInvest = (c: Career, chosen: InvestKey[], key: InvestKey): boolean =>
+  investTotal(c, [...chosen, key]) <= c.earnings + 1e-9;
 
 /** 이번 시즌에 낸 투자의 효과를 합쳐요. 시즌 진행과 성장 계산에서 써요. */
 export interface InvestPerks {

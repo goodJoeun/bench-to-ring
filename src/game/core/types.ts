@@ -668,6 +668,8 @@ export interface Career {
     wcq?: { y: number; ok: boolean };
   };
   earnings: number;
+  /** 지난 시즌이 끝날 때 받은 연봉 (억). 받은 적이 없으면 0이에요. 투자 비용은 이 연봉과 지금 계약 연봉 중 낮은 쪽으로 정해요. */
+  paidSalary: number;
   peakOvr: number;
   queue: QueueItem[];
   news: NewsItem[];

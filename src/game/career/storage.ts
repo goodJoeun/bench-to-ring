@@ -152,6 +152,8 @@ function normalize(c: Career): Career {
   c.draftShow ??= null;
   c.invest ??= [];
   c.spent ??= 0;
+  // 이 기능 전의 저장이면 지금 계약 연봉을 이미 받아 온 것으로 쳐요 (전과 같은 투자 비용).
+  c.paidSalary ??= c.contract?.salary ?? 0;
   c.run ??= null;
   if (c.run) {
     c.run.bigs ??= [];

@@ -51,6 +51,7 @@ import {
   STUDENT_ALLOWANCE,
   bodyOf,
   careerSummary,
+  canAffordInvest,
   investCost,
   investLineup,
   investPerks,
@@ -650,6 +651,7 @@ describe("시즌 투자", () => {
     c.stage = "pro";
     c.team = { lg: "kbl", name: "서울 SK 나이츠", color: "#E4002B", q: 0.5 };
     c.contract = { years: 3, salary: 2 };
+    c.paidSalary = 2;
     c.age = 22;
     return c;
   };
@@ -658,6 +660,34 @@ describe("시즌 투자", () => {
     while (!keys.every((k) => investLineup(c).some((i) => i.key === k))) c.year++;
     return c.year;
   };
+
+  it("연봉이 올라도 오른 연봉을 받기 전까지는 투자 비용이 그대로예요", () => {
+    const c = pro("inv-raise");
+    c.contract = { years: 3, salary: 5 };
+    expect(investCost(c, "coach")).toBe(0.6);
+    // 연봉이 깎이면 바로 싸져요.
+    c.contract = { years: 3, salary: 1 };
+    expect(investCost(c, "coach")).toBe(0.3);
+
+    setRandom(seeded(32));
+    c.contract = { years: 3, salary: 5 };
+    c.invest = [];
+    simulateSeason(c);
+    expect(c.paidSalary).toBe(5);
+    expect(investCost(c, "coach")).toBe(1.5);
+  });
+
+  it("보유 자금과 비용 합계가 딱 맞으면 고를 수 있어요 (소수 오차)", () => {
+    const c = pro("inv-exact");
+    c.contract = null;
+    c.paidSalary = 0;
+    // 최저 비용 0.05억(500만) + 0.02억(200만). 용돈 0.06억 + 상금 0.01억은 부동소수로 0.07보다 조금 작지만 화면에는 700만이에요.
+    c.earnings = 0.06 + 0.01;
+    expect(c.earnings).toBeLessThan(0.07);
+    expect(canAffordInvest(c, ["coach"], "diet")).toBe(true);
+    c.earnings = 0.06;
+    expect(canAffordInvest(c, ["coach"], "diet")).toBe(false);
+  });
 
   it("시즌을 시작할 때 연봉 비례 비용을 내고, 두 가지까지만, 가진 돈 안에서만 해요", () => {
     setRandom(seeded(31));

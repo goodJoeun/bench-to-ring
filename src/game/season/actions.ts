@@ -24,7 +24,7 @@ function applyBoost(c: Career, b: Boost, tag: string): void {
     msg += ` ${keys.map((k) => SHORT[k]).join("·")} +${b.amt}`;
   }
   if (b.health) addHealth(c, b.health);
-  if (b.money) c.earnings = Math.max(0, c.earnings + b.money);
+  if (b.money) c.earnings = round2(Math.max(0, c.earnings + b.money));
   if (b.trust) c.trust = clampTrust(c.trust + b.trust);
   if (b.agency) c.perks.agency = true;
   if (b.trainer) c.perks.trainer = b.trainer;

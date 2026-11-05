@@ -144,6 +144,7 @@ export function createCareer(input: NewCareerInput, cand: Candidate, id = String
     awardLog: [],
     nat: { caps: 0 },
     earnings: 0,
+    paidSalary: 0,
     peakOvr: START_OVR,
     queue: [],
     news: [],

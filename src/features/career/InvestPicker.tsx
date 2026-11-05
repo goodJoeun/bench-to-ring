@@ -1,6 +1,6 @@
 "use client";
 
-import { INVEST_OFFER, INVEST_SLOTS, STUDENT_ALLOWANCE, canInvest, chosenInvest, investCost, investLineup, money, type Career } from "@/game";
+import { INVEST_OFFER, INVEST_SLOTS, STUDENT_ALLOWANCE, canAffordInvest, canInvest, chosenInvest, investCost, investLineup, investTotal, money, type Career } from "@/game";
 import { gameActions } from "@/shared/store/game-store";
 import { Choice, Funds } from "@/shared/ui/ui";
 
@@ -8,8 +8,10 @@ import { Choice, Funds } from "@/shared/ui/ui";
 export function InvestPicker({ career: c }: { career: Career }) {
   if (!canInvest(c)) return null;
   const chosen = chosenInvest(c);
-  const total = chosen.reduce((t, k) => t + investCost(c, k), 0);
-  const left = c.earnings - total;
+  const total = investTotal(c, chosen);
+  // 소수 오차로 '모자라요'가 뜨지 않게 0.01억 아래는 남는 돈으로 쳐요.
+  const short = c.earnings - total < -1e-9;
+  const left = Math.max(0, c.earnings - total);
   const student = c.stage === "hs" || c.stage === "college";
 
   return (
@@ -20,14 +22,14 @@ export function InvestPicker({ career: c }: { career: Career }) {
       </div>
       <p className="hint">
         시즌마다 투자 {INVEST_OFFER}가지가 새로 나오고, 그중 {INVEST_SLOTS}가지까지 고를 수 있어요. 비용은 시즌을 시작할 때 내고, 연봉이
-        오르면 비용도 올라요.
+        오르면 오른 연봉을 한 번 받은 다음 시즌부터 비용도 올라요.
         {student && ` 학생 선수는 시즌마다 용돈·후원금 ${money(STUDENT_ALLOWANCE)}이 들어와요.`}
       </p>
       <div className="choices invest-grid">
         {investLineup(c).map((i) => {
           const cost = investCost(c, i.key);
           const on = chosen.includes(i.key);
-          const blocked = !on && (chosen.length >= INVEST_SLOTS || total + cost > c.earnings);
+          const blocked = !on && (chosen.length >= INVEST_SLOTS || !canAffordInvest(c, chosen, i.key));
           return (
             <Choice
               key={i.key}
@@ -41,10 +43,10 @@ export function InvestPicker({ career: c }: { career: Career }) {
           );
         })}
       </div>
-      <p className="hint" data-warn={left < 0 || undefined}>
+      <p className="hint" data-warn={short || undefined}>
         {!chosen.length
           ? "투자 없이 시즌을 보내요."
-          : left < 0
+          : short
             ? `합계 ${money(total)} · 자금이 모자라 고른 순서대로 낼 수 있는 것만 해요.`
             : `합계 ${money(total)} · 시작하면 ${money(left)} 남아요.`}
       </p>

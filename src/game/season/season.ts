@@ -18,7 +18,7 @@ import { shopPerks } from "../economy/shop";
 import { BONUS_CAP, SPECIALTIES, combinedEffect, specialtiesOf } from "../player/specialty";
 import { ageBase, ovr, ovrOf, roleOf } from "../player/ratings";
 import type { AttrKey, AwardKey, Career, GameLine, InvestKey, LeagueKey, SeasonRecord, SeasonRun } from "../core/types";
-import { clamp, fmtNum, josa, r1, sigmoid } from "../core/util";
+import { clamp, fmtNum, josa, r1, round2, sigmoid } from "../core/util";
 
 /*
  * 시즌은 세 단계로 흘러가요.
@@ -569,8 +569,10 @@ function finishSeason(c: Career): SeasonRecord {
   const call = nationalCallUp(c, rec.ovr1, played, yr);
   c.peakOvr = Math.max(c.peakOvr, rec.ovr1);
   c.trust = c.team ? clampTrust((rating - 6.3) * 1.4 + inv.trust) : 0;
-  if (c.contract) c.earnings += c.contract.salary;
-  if (c.stage === "hs" || c.stage === "college") c.earnings += STUDENT_ALLOWANCE;
+  // 돈은 0.01억 단위로 맞춰 둬요. 소수 오차로 '700만으로 500만 + 200만'을 못 고르는 일이 없게요.
+  c.paidSalary = c.contract?.salary ?? 0;
+  c.earnings = round2(c.earnings + c.paidSalary);
+  if (c.stage === "hs" || c.stage === "college") c.earnings = round2(c.earnings + STUDENT_ALLOWANCE);
   const totalsBefore = careerTotals(c);
   c.hist.push(rec);
   // 리그 통산이 실제 NBA·KBL 역대 순위표에 처음 들면 소식으로 알려요. 은퇴 화면의 역대 기록 순위와 같은 표예요.
