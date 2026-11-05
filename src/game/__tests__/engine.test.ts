@@ -71,6 +71,7 @@ import {
   shopLineup,
   CRITICAL_HEALTH,
   injuryKind,
+  evalOvr,
   evalOvrOf,
   specialtiesOf,
   specialtyBonus,
@@ -2082,6 +2083,26 @@ describe("축하 팝업", () => {
 });
 
 describe("업적", () => {
+  it("능력치마다 99를 찍으면 따로 따고, 히든 스탯까지 더한 오버롤 100은 한계 돌파예요", () => {
+    const c = createCareer({ name: "업적", num: 7, nat: "대한민국", pos: "SG", path: "domestic" }, generateCandidates("SG")[0], "ach99");
+    for (const k of ATTR_KEYS) c.p.attrs[k] = 98;
+    expect(checkAchievements(c)).not.toContain("max_sht");
+    c.p.attrs.sht = 99;
+    expect(checkAchievements(c)).toEqual(["max_sht"]);
+    for (const k of ATTR_KEYS) c.p.attrs[k] = 99;
+    const got = checkAchievements(c);
+    expect(got).toEqual(expect.arrayContaining(["max_hdl", "max_pas", "max_def", "max_iq", "max_ath"]));
+    expect(got).not.toContain("max_sht");
+    // 능력치가 모두 99면 히든 스탯이 걸리지 않아 오버롤 99에서 멈춰요.
+    expect(evalOvr(c.p)).toBe(99);
+    expect(got).not.toContain("beyond");
+    // 센터가 볼 핸들링만 낮으면 두 능력치 조합 히든 스탯(+3)이 붙어 100을 넘어요.
+    c.p.pos = "C";
+    c.p.attrs.hdl = 75;
+    expect(evalOvr(c.p)).toBeGreaterThanOrEqual(100);
+    expect(checkAchievements(c)).toEqual(["beyond"]);
+  });
+
   const fresh = (id: string) => createCareer({ name: "업적", num: 7, nat: "대한민국", pos: "SG", path: "domestic" }, generateCandidates("SG")[0], id);
   /** 프로 시즌 한 줄. 나이는 2027년에 16세로 시작한 선수 기준이에요. */
   const season = (year: number, team: string, lg: LeagueKey, extra: Partial<SeasonRecord> = {}): SeasonRecord => ({
@@ -2297,6 +2318,7 @@ describe("업적", () => {
     c.owned.push("sneakers", "watch", "trophyroom", "car");
     checkAchievements(c);
     expect(c.achv).toEqual(expect.arrayContaining(["versatile", "ageless"]));
+    expect(c.achv.some((id) => id.startsWith("max_") || id === "beyond")).toBe(false);
     expect(has(c, "luxury")).toBe(false);
     c.owned.push("yacht");
     checkAchievements(c);

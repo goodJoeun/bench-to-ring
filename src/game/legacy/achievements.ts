@@ -1,8 +1,10 @@
 import { ATTR_KEYS } from "../core/data";
+import { ATTR_RANGE } from "../player/condition";
+import { evalOvr } from "../player/ratings";
 import { LEAGUES } from "../world/leagues";
 import { addNews, cheer } from "../career/log";
 import { shopItem } from "../economy/shop";
-import type { AwardEntry, AwardKey, Career, LeagueKey, SeasonRecord } from "../core/types";
+import type { AttrKey, AwardEntry, AwardKey, Career, LeagueKey, SeasonRecord } from "../core/types";
 
 /**
  * 업적. 대부분 커리어 기록(시즌 기록, 수상, 드래프트, 국가대표, 기부, 산 것)으로 판정해요.
@@ -11,12 +13,13 @@ import type { AwardEntry, AwardKey, Career, LeagueKey, SeasonRecord } from "../c
  * 업적 창은 따기 전에는 이름과 힌트(hint)만, 딴 뒤에는 조건(desc)까지 보여줘요.
  */
 
-export type AchievementGroup = "school" | "team" | "award" | "path" | "life";
+export type AchievementGroup = "school" | "team" | "award" | "ability" | "path" | "life";
 
 export const ACHIEVEMENT_GROUPS: Record<AchievementGroup, string> = {
   school: "고교·대학",
   team: "팀·우승",
   award: "개인상·기록",
+  ability: "능력치",
   path: "드래프트·진로",
   life: "국가대표·커리어",
 };
@@ -80,6 +83,19 @@ const distinct = (rows: SeasonRecord[]) => new Set(rows.map((h) => h.team)).size
 const golds = (c: Career) => c.natLog.filter((t) => t.medal === "금");
 /** 상점의 사치품 수. 사치품은 한 번씩만 살 수 있어요. */
 const LUXURY_COUNT = 5;
+/** 능력치 최고값 */
+const ATTR_MAX = ATTR_RANGE[1];
+/** 능력치마다 최고값(99)을 찍으면 따는 업적: 이름과 힌트 */
+const MAXED: Record<AttrKey, [string, string, string]> = {
+  sht: ["슛했다 하면 골인", "슛", "던지면 들어가는 경지까지"],
+  hdl: ["'볼'아일체", "볼 핸들링", "공이 나고 내가 공인 경지"],
+  pas: ["코트 위의 마에스트로", "패스", "보인다 보여. 어디로 줘야할지."],
+  def: ["모든 것을 막는 방패", "수비", "아무도 뚫지 못하는 수비"],
+  iq: ["농구 도사", "BQ", "농구가 제일 쉬웠어요!"],
+  ath: ["휴먼 하이라이트 필름", "운동능력", "코트 위 모든 순간이 Kodak Moment"],
+};
+/** 히든 스탯 보너스까지 더한 오버롤로 넘어야 하는 값 */
+const BEYOND = 100;
 
 export const ACHIEVEMENTS: Achievement[] = [
   // 고교·대학
@@ -256,13 +272,6 @@ export const ACHIEVEMENTS: Achievement[] = [
     group: "award",
     test: (v) => proCount(v, "scoring") >= 7,
   },
-  {
-    id: "versatile",
-    name: "다재다능 플레이어",
-    desc: "능력치 네 가지 이상을 90 이상으로", hint: "한두 가지만 잘해서는 모자라요",
-    group: "award",
-    test: (v) => ATTR_KEYS.filter((k) => v.c.p.attrs[k] >= 90).length >= 4,
-  },
   { id: "clutch_master", name: "클러치 귀재", desc: "클러치 상황에서 10번 이상 성공", hint: "경기 막판, 마지막 공은 내 손에", group: "award", test: (v) => v.c.clutchWins >= 10 },
   {
     id: "ageless",
@@ -270,6 +279,26 @@ export const ACHIEVEMENTS: Achievement[] = [
     desc: "35세 이상 프로 시즌을 오버롤 92 이상으로 마치기", hint: "30대 중반에도 리그 최정상급 기량을",
     group: "award",
     test: (v) => v.pro.some((h) => h.age >= 35 && h.ovr1 >= 92),
+  },
+
+  // 능력치
+  ...ATTR_KEYS.map((k): Achievement => {
+    const [name, label, hint] = MAXED[k];
+    return { id: `max_${k}`, name, desc: `${label} ${ATTR_MAX} 달성`, hint, group: "ability", test: (v) => v.c.p.attrs[k] >= ATTR_MAX };
+  }),
+  {
+    id: "versatile",
+    name: "다재다능 플레이어",
+    desc: "능력치 네 가지 이상을 90 이상으로", hint: "한두 가지만 잘해서는 모자라요",
+    group: "ability",
+    test: (v) => ATTR_KEYS.filter((k) => v.c.p.attrs[k] >= 90).length >= 4,
+  },
+  {
+    id: "beyond",
+    name: "한계 돌파",
+    desc: `히든 스탯 보너스까지 더한 오버롤 ${BEYOND} 이상`, hint: "숨은 재능까지 더해 한계를 돌파하세요",
+    group: "ability",
+    test: (v) => evalOvr(v.c.p) >= BEYOND,
   },
 
   // 드래프트·진로
