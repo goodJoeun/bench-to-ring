@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { awardGroups, fmtNum, money, titleHistory, type AwardCount, type Career, type CareerSummary } from "@/game";
+import { achievementById, awardGroups, fmtNum, money, titleHistory, type AwardCount, type Career, type CareerSummary } from "@/game";
 import { gameActions } from "@/shared/store/game-store";
 import { NO_TEAM_COLOR, militaryShort, nameFit } from "@/shared/lib/format";
 import { RecordBoards } from "./RecordBoards";
@@ -38,6 +38,28 @@ function AwardRows({ career: c }: { career: Career }) {
           </div>
         ))}
     </dl>
+  );
+}
+
+/** 이번 커리어에서 딴 업적. 업적이 생기기 전의 지난 엔딩은 기록이 없어서 숨겨요. */
+function CareerAchievements({ career: c, past }: { career: Career; past: boolean }) {
+  const list = c.achv.map(achievementById).filter((a) => a !== undefined);
+  if (past && !list.length) return null;
+  return (
+    <Panel title={`이번 커리어 업적 · ${list.length}개`}>
+      {list.length ? (
+        <ul className="achv-list">
+          {list.map((a) => (
+            <li key={a.id} data-done>
+              <b>{a.name}</b>
+              <span>{a.desc}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="hint">이번 커리어에서 딴 업적이 없어요. 상단 &apos;업적&apos;에서 남은 업적을 볼 수 있어요.</p>
+      )}
+    </Panel>
   );
 }
 
@@ -95,6 +117,8 @@ export function RetiredScreen({ career: c, hall, past = false }: { career: Caree
           </button>
         </div>
       </Panel>
+
+      <CareerAchievements career={c} past={past} />
 
       <SimilarPlayers career={c} />
 

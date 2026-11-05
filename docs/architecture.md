@@ -86,7 +86,8 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 | `rankings/` | 랭킹 페이지 (베스트 5, 랭킹 100, 포지션별, 스탯 랭킹, 나의 기록) |
 | `hall-of-fame/` | 명예의 전당 (내 기기 기록과 온라인 순위) |
 | `notice/` | 공지 창과 알림, 공지 글 목록 `notices.ts` (새 글은 맨 위에) |
-| `feedback/` · `guide/` · `settings/` · `support/` | 의견 보내기, 게임 안내, 설정, 커피 후원 창 |
+| `achievements/` | 업적 창 (이 브라우저에서 딴 업적과 힌트). 업적 목록과 판정은 엔진의 `legacy/achievements.ts` |
+| `feedback/` · `guide/` · `settings/` · `support/` | 의견 보내기, 게임 안내(설정에서 열어요), 설정, 커피 후원 창 |
 
 한 기능만 쓰는 상수나 도우미는 그 기능 폴더에 둬요 (예: `create/options.ts`, `retired/careerCard.ts`).
 
@@ -115,7 +116,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 | `season/` | 시즌 흐름과 결정 | `season` 시즌 진행·성장·시상, `live` 결승 중계, `offseason` 오프시즌과 결정 대기열, `events` 이벤트, `decisions` 진로·계약 결정, `actions` 결정 처리 |
 | `economy/` | 돈 쓰기 | `invest` 시즌 투자, `shop` 상점·기부 |
 | `career/` | 커리어 기록과 저장 | `career` 은퇴·요약·레거시, `log` 소식·수상·입단 기록, `storage` localStorage 저장·마이그레이션 |
-| `legacy/` | 은퇴 뒤 평가 | `hall` 랭킹 점수, `records` 역대 기록 순위표, `comps` 닮은 꼴 선수, `namu` 나무위키 링크 |
+| `legacy/` | 평가와 업적 | `hall` 랭킹 점수, `records` 역대 기록 순위표, `comps` 닮은 꼴 선수, `namu` 나무위키 링크, `achievements` 업적 |
 
 밸런스 수치는 대부분 `world/leagues.ts`, `core/data.ts`, `player/ratings.ts`, `season/season.ts`에 있어요.
 

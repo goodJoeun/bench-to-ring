@@ -9,6 +9,7 @@ import { DraftLoading } from "@/features/progress/DraftLoading";
 import { FarewellLoading } from "@/features/progress/FarewellLoading";
 import { GameScreen, type TabKey } from "@/features/career/GameScreen";
 import { FeedbackDialog } from "@/features/feedback/FeedbackDialog";
+import { AchievementsDialog } from "@/features/achievements/AchievementsDialog";
 import { GuideDialog } from "@/features/guide/GuideDialog";
 import { NoticeAlert, markNoticesAlerted, noticeAlertHiddenToday, noticesAlerted } from "@/features/notice/NoticeAlert";
 import { NoticeDialog } from "@/features/notice/NoticeDialog";
@@ -32,6 +33,7 @@ export function Game() {
   /** 엔딩을 보여주는 커리어: 다시 연 지난 엔딩, 아니면 방금 은퇴한 지금 커리어 */
   const retiredShown = ending ?? (career?.stage === "retired" ? career : null);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [achvOpen, setAchvOpen] = useState(false);
   // 축하 팝업은 다른 진행 화면(시즌 진행·결승 중계·대회·드래프트·회고)이 다 끝난 뒤에 한 장씩 띄워요.
   const cheer = inGame && !playing && !final && !tournament && !drafting && !farewell ? career.cheers[0] : undefined;
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -130,15 +132,15 @@ export function Game() {
           <button
             type="button"
             className="guide-btn"
-            aria-label="플레이 가이드"
+            aria-label="업적"
             aria-haspopup="dialog"
-            aria-expanded={guideOpen}
-            onClick={() => setGuideOpen(true)}
+            aria-expanded={achvOpen}
+            onClick={() => setAchvOpen(true)}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v16H6.5a1 1 0 0 0 0 2H20v2H6.5A2.5 2.5 0 0 1 4 19.5zM8 6v2h8V6zm0 4v2h6v-2z" />
+              <path d="M12 2l2.9 6.3 6.9.7-5.2 4.6 1.5 6.8L12 17l-6.1 3.4 1.5-6.8L2.2 9l6.9-.7z" />
             </svg>
-            <span>가이드</span>
+            <span>업적</span>
           </button>
           <button
             type="button"
@@ -179,6 +181,7 @@ export function Game() {
       {farewell && retiredShown && <FarewellLoading career={retiredShown} />}
       {cheer && career && <CheerPopup career={career} cheer={cheer} />}
       {guideOpen && <GuideDialog onClose={() => setGuideOpen(false)} />}
+      {achvOpen && <AchievementsDialog onClose={() => setAchvOpen(false)} />}
       {noticeOpen && <NoticeDialog onClose={() => setNoticeOpen(false)} />}
       {showAlert && (
         <NoticeAlert
@@ -199,6 +202,10 @@ export function Game() {
       {settingsOpen && (
         <SettingsDialog
           onClose={() => setSettingsOpen(false)}
+          onGuide={() => {
+            setSettingsOpen(false);
+            setGuideOpen(true);
+          }}
           onCareerSettings={
             inGame
               ? () => {

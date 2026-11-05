@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  ACHIEVEMENTS,
   ARCHETYPES,
+  checkAchievements,
+  retire,
   ATTR_KEYS,
   LEAGUES,
   NATIONS,
@@ -2048,5 +2051,249 @@ describe("축하 팝업", () => {
     expect(loaded.milestones).toContain("nba");
     setTeam(loaded, "nba", { name: "보스턴 셀틱스", color: "#007A33", q: 0.5 });
     expect(loaded.cheers).toEqual([]);
+  });
+});
+
+describe("업적", () => {
+  const fresh = (id: string) => createCareer({ name: "업적", num: 7, nat: "대한민국", pos: "SG", path: "domestic" }, generateCandidates("SG")[0], id);
+  /** 프로 시즌 한 줄. 나이는 2027년에 16세로 시작한 선수 기준이에요. */
+  const season = (year: number, team: string, lg: LeagueKey, extra: Partial<SeasonRecord> = {}): SeasonRecord => ({
+    year, age: year - 2011, team, lg, pro: LEAGUES[lg].pro, role: "주전", gp: 50, min: 30, pts: 15, reb: 5, ast: 4, stl: 1, blk: 0,
+    fg: 45, rating: 7, w: 30, l: 20, result: "플레이오프 1라운드", ovr0: 70, ovr1: 70, awards: [], ...extra,
+  });
+  const won = { result: "리그 우승" };
+  const has = (c: Career, id: string) => c.achv.includes(id);
+
+  it("업적 id는 겹치지 않고, 리그마다 왕조 건설과 지배자가 있어요", () => {
+    const names = ACHIEVEMENTS.map((a) => a.name);
+    expect(new Set(ACHIEVEMENTS.map((a) => a.id)).size).toBe(ACHIEVEMENTS.length);
+    expect(names).toEqual(expect.arrayContaining(["NBA 왕조 건설", "KBL 왕조 건설", "유로리그의 지배자", "G리그의 지배자", "무관의 제왕", "애국자"]));
+  });
+
+  it("한 팀 10시즌 연속은 프랜차이즈 스타예요. 군 복무는 연속을 끊지 않고, 따면 소식과 축하 팝업이 한 번만 떠요", () => {
+    const c = fresh("ach1");
+    for (let y = 2031; y < 2040; y++) c.hist.push(season(y, "서울 SK 나이츠", "kbl"));
+    expect(checkAchievements(c)).not.toContain("franchise");
+    c.hist.push({ ...season(2040, "상무", "kbl"), lg: null, pro: false, mil: "sangmu" }, season(2041, "서울 SK 나이츠", "kbl"));
+    expect(checkAchievements(c)).toContain("franchise");
+    expect(c.cheers.filter((x) => x.kind === "achv" && x.title === "프랜차이즈 스타")).toHaveLength(1);
+    expect(c.news[0].m).toContain("업적 달성");
+    expect(checkAchievements(c)).toEqual([]);
+  });
+
+  it("3시즌 연속 우승은 그 리그의 왕조 건설이에요. 사이에 우승을 놓치면 다시 세요", () => {
+    const c = fresh("ach2");
+    c.hist.push(season(2031, "서울 SK 나이츠", "kbl", won), season(2032, "서울 SK 나이츠", "kbl", won), season(2033, "서울 SK 나이츠", "kbl"));
+    c.hist.push(season(2034, "서울 SK 나이츠", "kbl", won), season(2035, "서울 SK 나이츠", "kbl", won));
+    checkAchievements(c);
+    expect(has(c, "dynasty_kbl")).toBe(false);
+    c.hist.push(season(2036, "서울 SK 나이츠", "kbl", won));
+    checkAchievements(c);
+    expect(has(c, "dynasty_kbl")).toBe(true);
+    expect(has(c, "dynasty_nba")).toBe(false);
+  });
+
+  it("3시즌 연속 MVP는 지배자, 우승 없는 MVP 3회는 은퇴해야 무관의 제왕이에요", () => {
+    const c = fresh("ach3");
+    for (const y of [2031, 2032, 2033]) {
+      c.hist.push(season(y, "보스턴 셀틱스", "nba"));
+      c.awardLog.push({ y, k: "mvp_nba", n: "NBA MVP" });
+    }
+    c.awards.mvp_nba = 3;
+    checkAchievements(c);
+    expect(has(c, "ruler_nba")).toBe(true);
+    expect(has(c, "uncrowned")).toBe(false);
+    c.stage = "pro";
+    c.team = null;
+    retire(c);
+    expect(has(c, "uncrowned")).toBe(true);
+    // 은퇴하며 딴 업적은 팝업 대신 은퇴 화면에서 보여줘요.
+    expect(c.cheers.some((x) => x.title === "무관의 제왕")).toBe(false);
+  });
+
+  it("한 시즌 MVP·우승·파이널 MVP는 트리플 크라운, 5할 미만 팀의 우승은 언더독, 31세 이후 첫 MVP는 늦게 핀 꽃이에요", () => {
+    const c = fresh("ach4");
+    c.hist.push(season(2041, "LA 레이커스", "nba", { ...won, w: 38, l: 44 }));
+    c.awardLog.push({ y: 2041, k: "mvp_nba", n: "NBA MVP" }, { y: 2041, k: "fmvp", n: "NBA 파이널 MVP" });
+    checkAchievements(c);
+    expect(has(c, "triple_crown")).toBe(true);
+    expect(has(c, "underdog")).toBe(true);
+    expect(has(c, "late_bloomer")).toBe(c.hist[0].age >= 31);
+  });
+
+  it("드래프트·진로 업적: 1순위, 신데렐라, 역수출, 네 리그 경험", () => {
+    const c = fresh("ach5");
+    c.draft = { lg: "KBL", pick: 3, round: 1, inRound: 3, team: "서울 SK 나이츠", year: 2030 };
+    c.hist.push(season(2031, "서울 SK 나이츠", "kbl"), season(2032, "엑스 팀", "gleague"), season(2033, "레알 마드리드", "euro"), season(2034, "보스턴 셀틱스", "nba"));
+    c.awardLog.push({ y: 2031, k: "mvp", n: "KBL 정규리그 MVP" }, { y: 2034, k: "mvp_nba", n: "NBA MVP" });
+    c.awards.mvp_nba = 1;
+    checkAchievements(c);
+    expect(c.achv).toEqual(expect.arrayContaining(["reverse_export", "world_tour", "cinderella"]));
+    expect(has(c, "first_pick")).toBe(false);
+    const top = fresh("ach6");
+    top.draft = { lg: "NBA", pick: 1, round: 1, inRound: 1, team: "보스턴 셀틱스", year: 2030 };
+    top.awards.mvp_nba = 1;
+    checkAchievements(top);
+    expect(has(top, "first_pick")).toBe(true);
+    expect(has(top, "cinderella")).toBe(false);
+  });
+
+  it("금메달 3회는 애국자, 우승·올림픽·월드컵 금메달은 그랜드슬램, 1000억 기부는 기부천사예요", () => {
+    const c = fresh("ach7");
+    const gold = (ev: "olympics" | "worldcup" | "asiangames") => ({ year: 2032, ev, name: "대회", joined: true, label: "", medal: "금" as const, story: "", games: [] });
+    c.natLog.push(gold("asiangames"), gold("olympics"));
+    c.donated = 999;
+    checkAchievements(c);
+    expect(c.achv).toEqual([]);
+    c.natLog.push(gold("worldcup"));
+    c.awards.ring = 1;
+    c.donated = 1000;
+    checkAchievements(c);
+    expect(c.achv).toEqual(expect.arrayContaining(["patriot", "grand_slam", "donor"]));
+  });
+
+  it("처음 오른 프로 결승에서 우승하면 로열 로더, 데뷔 시즌 벤치에서 NBA 우승까지 가면 벤치에서 반지까지예요", () => {
+    const lost = fresh("ach10");
+    const final = (win: boolean) => ({ final: { opp: "상대", us: 4, them: 2, win, series: win ? "4-2" : "2-4" } });
+    lost.hist.push(season(2031, "서울 SK 나이츠", "kbl", final(false)), season(2032, "서울 SK 나이츠", "kbl", { ...won, ...final(true) }));
+    checkAchievements(lost);
+    expect(has(lost, "royal_road")).toBe(false);
+    const c = fresh("ach11");
+    c.hist.push(season(2031, "보스턴 셀틱스", "nba", { role: "벤치" }), season(2032, "보스턴 셀틱스", "nba", { ...won, ...final(true) }));
+    checkAchievements(c);
+    expect(c.achv).toEqual(expect.arrayContaining(["royal_road", "bench_to_ring"]));
+  });
+
+  it("베스트 팀 7시즌, 데뷔 시즌 신인상·MVP, 개인상 다섯 가지, 득점왕 7회는 프로 시즌에 받은 상만 세요", () => {
+    const c = fresh("ach12");
+    // 고교 시즌의 상은 세지 않아요.
+    c.hist.push(season(2028, "휘문고", "hs"));
+    c.awardLog.push({ y: 2028, k: "scoring", n: "고교 득점왕" }, { y: 2028, k: "mip", n: "고교 기량발전상" });
+    for (let y = 2031; y < 2038; y++) {
+      c.hist.push(season(y, "서울 SK 나이츠", "kbl"));
+      c.awardLog.push({ y, k: y % 2 ? "allleague" : "allleague2", n: "KBL 베스트5" }, { y, k: "scoring", n: "KBL 득점왕" });
+    }
+    c.awardLog.push({ y: 2031, k: "roy", n: "KBL 신인상" }, { y: 2031, k: "mvp", n: "KBL 정규리그 MVP" });
+    c.awardLog.push({ y: 2033, k: "fmvp", n: "KBL 챔피언결정전 MVP" }, { y: 2034, k: "dpoy", n: "KBL 최우수수비상" }, { y: 2035, k: "sixth", n: "KBL 식스맨상" });
+    checkAchievements(c);
+    expect(c.achv).toEqual(expect.arrayContaining(["consistent", "supernova", "scoring_machine"]));
+    expect(has(c, "collector")).toBe(false);
+    c.awardLog.push({ y: 2036, k: "mip", n: "KBL 기량발전상" });
+    checkAchievements(c);
+    expect(has(c, "collector")).toBe(true);
+  });
+
+  it("NBA를 거쳐 KBL에서 우승하면 금의환향, 국가대표 50경기는 터줏대감이에요", () => {
+    const c = fresh("ach13");
+    c.hist.push(season(2031, "서울 SK 나이츠", "kbl", won), season(2032, "보스턴 셀틱스", "nba"));
+    c.nat.caps = 49;
+    checkAchievements(c);
+    expect(has(c, "homecoming")).toBe(false);
+    expect(has(c, "national_pillar")).toBe(false);
+    c.hist.push(season(2033, "서울 SK 나이츠", "kbl", won));
+    c.nat.caps = 50;
+    checkAchievements(c);
+    expect(c.achv).toEqual(expect.arrayContaining(["homecoming", "national_pillar"]));
+  });
+
+  it("연봉 인상 요구가 받아들여질 때만 협상 횟수를 세고, 5번이면 협상의 귀재예요", () => {
+    const c = fresh("ach14");
+    const team = { name: "서울 SK 나이츠", color: "#E60012", q: 0.5 };
+    const nego = (ask: number, p: number) => applyAction(c, { k: "nego", lg: "kbl", team, years: 3, salary: 5, ask, p });
+    nego(1.1, 1);
+    nego(1, 1);
+    nego(1.25, 0);
+    expect(c.raises).toBe(1);
+    for (let i = 0; i < 4; i++) nego(1.1, 1);
+    checkAchievements(c);
+    expect(has(c, "negotiator")).toBe(true);
+  });
+
+  it("고교·대학 업적: 고교 우승과 MVP, NCAA 우승, 대학 MVP 2회, 고졸 프로 MVP, 워크온 NBA 진출", () => {
+    const c = fresh("ach20");
+    c.hist.push(season(2027, "휘문고", "hs", { result: "전국대회 우승" }), season(2028, "휘문고", "hs"));
+    c.awardLog.push({ y: 2028, k: "mvp", n: "고교 MVP" });
+    c.hist.push(season(2031, "서울 SK 나이츠", "kbl"));
+    c.awardLog.push({ y: 2031, k: "mvp", n: "KBL 정규리그 MVP" });
+    checkAchievements(c);
+    expect(c.achv).toEqual(expect.arrayContaining(["hs_king", "straight_to_pro"]));
+
+    const u = fresh("ach21");
+    applyAction(u, { k: "school", lg: "ncaa", team: { name: "듀크대", color: "#003087", q: 0.5 }, walk: true });
+    u.hist.push(season(2030, "듀크대", "ncaa", { result: "전국대회 우승" }), season(2031, "듀크대", "ncaa"), season(2032, "보스턴 셀틱스", "nba"));
+    u.awardLog.push({ y: 2030, k: "mvp", n: "NCAA MVP" }, { y: 2032, k: "mvp_nba", n: "NBA MVP" });
+    checkAchievements(u);
+    expect(u.achv).toEqual(expect.arrayContaining(["march_madness", "walk_on"]));
+    // 대학을 거쳤으니 고졸 신화가 아니고, 대학 MVP는 한 번뿐이에요.
+    expect(has(u, "straight_to_pro")).toBe(false);
+    expect(has(u, "campus_legend")).toBe(false);
+    u.awardLog.push({ y: 2031, k: "mvp", n: "NCAA MVP" });
+    checkAchievements(u);
+    expect(has(u, "campus_legend")).toBe(true);
+  });
+
+  it("업적마다 조건과 다른 힌트가 있어요", () => {
+    for (const a of ACHIEVEMENTS) {
+      expect(a.hint.length, a.id).toBeGreaterThan(0);
+      expect(a.hint, a.id).not.toBe(a.desc);
+    }
+  });
+
+  it("NBA에 간 뒤 한 팀에서만 5시즌, 우승 없이 은퇴하면 마지막 로맨티스트예요", () => {
+    const c = fresh("ach30");
+    c.hist.push(season(2030, "서울 SK 나이츠", "kbl"));
+    for (let y = 2031; y < 2036; y++) c.hist.push(season(y, "보스턴 셀틱스", "nba"));
+    checkAchievements(c);
+    expect(has(c, "romantic")).toBe(false);
+    c.stage = "pro";
+    c.team = null;
+    retire(c);
+    expect(has(c, "romantic")).toBe(true);
+    const ringed = fresh("ach31");
+    for (let y = 2031; y < 2036; y++) ringed.hist.push(season(y, "보스턴 셀틱스", "nba"));
+    ringed.awards.ring = 1;
+    ringed.stage = "pro";
+    retire(ringed);
+    expect(has(ringed, "romantic")).toBe(false);
+  });
+
+  it("능력치 네 가지 90, 클러치 성공 10번, 35세 이후 오버롤 92, 사치품 다섯 가지", () => {
+    const c = fresh("ach32");
+    const keys = ATTR_KEYS.slice(0, 4);
+    for (const k of ATTR_KEYS) c.p.attrs[k] = 80;
+    for (const k of keys.slice(0, 3)) c.p.attrs[k] = 90;
+    checkAchievements(c);
+    expect(has(c, "versatile")).toBe(false);
+    c.p.attrs[keys[3]] = 90;
+    c.hist.push(season(2046, "보스턴 셀틱스", "nba", { ovr1: 92 }));
+    expect(c.hist[0].age).toBeGreaterThanOrEqual(35);
+    c.owned.push("sneakers", "watch", "trophyroom", "car");
+    checkAchievements(c);
+    expect(c.achv).toEqual(expect.arrayContaining(["versatile", "ageless"]));
+    expect(has(c, "luxury")).toBe(false);
+    c.owned.push("yacht");
+    checkAchievements(c);
+    expect(has(c, "luxury")).toBe(true);
+
+    setRandom(() => 0);
+    c.run = { forced: null, form: 0 } as unknown as Career["run"];
+    for (let i = 0; i < 10; i++) applyAction(c, { k: "clutch", attr: "sht", play: "버저비터", p: 1 } as Parameters<typeof applyAction>[1]);
+    expect(c.clutchWins).toBe(10);
+    c.run = null;
+    checkAchievements(c);
+    expect(has(c, "clutch_master")).toBe(true);
+  });
+
+  it("끝까지 플레이한 커리어의 업적은 목록에 있는 것만 한 번씩이고, 예전 저장에는 빈 목록을 채워요", () => {
+    setRandom(seeded(81));
+    for (let i = 0; i < 20; i++) {
+      const c = createCareer({ name: "끝", num: 1, nat: "대한민국", pos: POS_KEYS[i % 5], path: i % 2 ? "abroad" : "domestic" }, generateCandidates(POS_KEYS[i % 5])[0], `achp${i}`);
+      playToRetirement(c, seeded(900 + i));
+      expect(new Set(c.achv).size).toBe(c.achv.length);
+      for (const id of c.achv) expect(ACHIEVEMENTS.some((a) => a.id === id)).toBe(true);
+    }
+    const old = JSON.parse(JSON.stringify(fresh("ach8")));
+    delete old.achv;
+    expect(parseCareer(JSON.stringify(old))!.achv).toEqual([]);
   });
 });

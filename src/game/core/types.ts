@@ -389,9 +389,9 @@ export interface NatTournament {
 
 /* ---------- 병역 ---------- */
 
-/** 축하 팝업 한 장: 우승, 금메달, NBA 첫 입성, NBA MVP, 파이널 MVP */
+/** 축하 팝업 한 장: 우승, 금메달, NBA 첫 입성, NBA MVP, 파이널 MVP, 업적 달성 */
 export interface Cheer {
-  kind: "title" | "gold" | "nba" | "mvp" | "fmvp";
+  kind: "title" | "gold" | "nba" | "mvp" | "fmvp" | "achv";
   /** 큰 글씨: "NBA 우승", "NBA 입성" */
   title: string;
   /** 작은 글씨: 팀, 시즌, 기록 */
@@ -678,6 +678,12 @@ export interface Career {
   cheers: Cheer[];
   /** 한 번만 축하하는 순간을 이미 겪었는지 (예: "nba" 첫 입성) */
   milestones: string[];
+  /** 이 커리어에서 딴 업적 id (딴 순서). 업적 목록은 achievements.ts예요. */
+  achv: string[];
+  /** 연봉 인상 요구가 받아들여진 횟수 (협상의 귀재) */
+  raises: number;
+  /** 클러치 상황에서 성공한 횟수 (클러치 귀재) */
+  clutchWins: number;
   /** 가장 최근 드래프트의 지명 순서 */
   draftShow: DraftShow | null;
   /** 다음 시즌에 할 투자 (고른 순서). 시즌을 시작할 때 비용을 내요. */

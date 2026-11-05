@@ -459,6 +459,65 @@ h2.sec {
   font-size: 13.5px;
   line-height: 1.5;
 }
+/* 업적 */
+.achv-bar {
+  height: 8px;
+  margin: 4px 0 8px;
+  border-radius: 999px;
+  background: var(--panel2);
+  overflow: hidden;
+}
+.achv-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--gold);
+}
+.achv-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (max-width: 480px) {
+  .achv-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.achv-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: var(--panel2);
+  opacity: 0.6;
+}
+.achv-list li[data-done] {
+  border-color: var(--gold);
+  opacity: 1;
+}
+.achv-list b {
+  font-size: 14px;
+}
+.achv-list li[data-done] b {
+  color: var(--gold);
+}
+.achv-list li > span {
+  font-size: 13px;
+  line-height: 1.45;
+}
+.achv-list .achv-hint {
+  color: var(--muted);
+  font-style: italic;
+}
+.achv-list .achv-by {
+  font-size: 12px;
+  color: var(--muted);
+}
 .gd-leagues {
   display: block;
   margin-top: 3px;

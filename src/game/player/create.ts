@@ -157,6 +157,9 @@ export function createCareer(input: NewCareerInput, cand: Candidate, id = String
     moveAsked: null,
     cheers: [],
     milestones: [],
+    achv: [],
+    raises: 0,
+    clutchWins: 0,
   };
   refreshShop(c);
   // 고교는 국적에 맞는 학교(유럽은 유소년 아카데미) 중에서 정해요.

@@ -14,6 +14,7 @@ const KICKER: Record<Cheer["kind"], string> = {
   nba: "꿈의 무대",
   mvp: "시즌 최고의 선수",
   fmvp: "파이널의 주인공",
+  achv: "업적 달성",
 };
 
 /** 꽃가루 조각: 가로 위치(%), 늦게 떨어지는 정도(s), 색 */
@@ -33,7 +34,7 @@ const CONFETTI: [number, number, string][] = [
 ];
 
 /**
- * 축하 팝업: 우승, 국가대표 금메달, NBA 첫 입성, NBA MVP, 파이널 MVP.
+ * 축하 팝업: 우승, 국가대표 금메달, NBA 첫 입성, NBA MVP, 파이널 MVP, 업적 달성.
  * 한 번에 한 장씩, '계속'을 누르면 다음 축하로 넘어가요.
  */
 export function CheerPopup({ career: c, cheer }: { career: Career; cheer: Cheer }) {

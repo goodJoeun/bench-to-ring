@@ -4,6 +4,7 @@ import { militaryUnit } from "../world/military";
 import { natColor } from "../world/national";
 import { playerLook } from "../player/players";
 import { ownedItems } from "../economy/shop";
+import { checkAchievements } from "../legacy/achievements";
 import type { AwardKey, Career, CareerSummary, LeagueKey, LeagueShare, NbaShare, SeasonRecord } from "../core/types";
 import { stripYear } from "../core/util";
 
@@ -311,6 +312,8 @@ export function retire(c: Career): CareerSummary {
   c.stage = "retired";
   c.summary = s;
   c.queue = [];
+  // 원클럽맨·무관의 제왕처럼 은퇴해야 정해지는 업적까지 따요.
+  checkAchievements(c);
   return s;
 }
 

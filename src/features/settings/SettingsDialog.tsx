@@ -17,12 +17,14 @@ const LEAGUE_ORDER: LeagueKey[] = ["hs", "kuniv", "kbl", "ncaa", "gleague", "eur
 
 interface SettingsDialogProps {
   onClose: () => void;
+  /** 플레이 가이드를 열어요. */
+  onGuide: () => void;
   /** 커리어 중이면 은퇴·새 커리어 같은 커리어 설정 탭을 열어요. */
   onCareerSettings?: () => void;
 }
 
-/** 상단 톱니 버튼으로 여는 설정: 화면 테마와 리그별 구단 목록 */
-export function SettingsDialog({ onClose, onCareerSettings }: SettingsDialogProps) {
+/** 상단 톱니 버튼으로 여는 설정: 화면 테마, 플레이 가이드, 리그별 구단 목록 */
+export function SettingsDialog({ onClose, onGuide, onCareerSettings }: SettingsDialogProps) {
   const [theme, setTheme] = useState<Theme>(readTheme);
   const [league, setLeague] = useState<LeagueKey>("kbl");
   const teams = TEAMS[league];
@@ -46,6 +48,13 @@ export function SettingsDialog({ onClose, onCareerSettings }: SettingsDialogProp
             </button>
           ))}
         </div>
+      </section>
+
+      <section className="set-sec" aria-labelledby="set-guide">
+        <h3 id="set-guide">플레이 가이드</h3>
+        <button type="button" className="btn set-link" onClick={onGuide}>
+          가이드 보기
+        </button>
       </section>
 
       <section className="set-sec" aria-labelledby="set-teams">

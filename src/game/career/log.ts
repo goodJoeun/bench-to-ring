@@ -11,6 +11,7 @@ export function addNews(c: Career, when: string, type: NewsType, message: string
 
 /**
  * 축하 팝업을 띄울 상: 각종 우승, 국가대표 금메달, 시즌 MVP(NBA MVP와 다른 리그의 정규리그 MVP), 파이널 MVP.
+ * NBA 첫 입성(setTeam)과 업적 달성(achievements.ts)도 축하 팝업을 띄워요.
  * 시즌을 마치며 시즌 MVP → 우승 → 파이널 MVP 순으로 주니, 팝업도 그 순서로 한 장씩 떠요.
  */
 const CHEER_KIND: Partial<Record<AwardKey, Cheer["kind"]>> = {
@@ -24,7 +25,7 @@ const CHEER_KIND: Partial<Record<AwardKey, Cheer["kind"]>> = {
 /** 보여주지 않은 축하는 이만큼만 남겨요. 화면 없이 커리어를 돌리는 테스트에서 끝없이 쌓이지 않게요. */
 const CHEER_LIMIT = 8;
 
-function cheer(c: Career, x: Cheer): void {
+export function cheer(c: Career, x: Cheer): void {
   c.cheers.push(x);
   if (c.cheers.length > CHEER_LIMIT) c.cheers.splice(0, c.cheers.length - CHEER_LIMIT);
 }

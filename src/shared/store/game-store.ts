@@ -5,6 +5,7 @@ import {
   LOOKS,
   buy,
   canRetire,
+  checkAchievements,
   chooseOption,
   chosenInvest,
   createCareer,
@@ -251,6 +252,8 @@ function mutate(fn: (c: Career) => void): void {
   const c = structuredClone(snapshot.career);
   fn(c);
   resolveQueue(c);
+  // 상점 구입·기부처럼 시즌 밖에서 바뀐 기록으로도 바로 업적을 따요.
+  if (c.stage !== "retired") checkAchievements(c);
   // 이번 변화로 은퇴했으면 엔딩 전에 회고부터 보여줘요.
   const farewell = !wasRetired && c.stage === "retired";
   let { hall, endings } = snapshot;

@@ -78,6 +78,7 @@ src/
 │  ├─ rankings/            랭킹 페이지 (베스트 5, 랭킹 100, 포지션별, 스탯 랭킹, 나의 기록)
 │  ├─ hall-of-fame/        명예의 전당
 │  ├─ notice/              공지 창과 공지 글 목록 notices.ts (새 글은 맨 위에 추가)
+│  ├─ achievements/        업적 창
 │  └─ feedback/ · guide/ · settings/ · support/   의견 보내기, 게임 안내, 설정, 커피 후원
 ├─ shared/                 여러 기능이 같이 쓰는 것
 │  ├─ ui/                  Panel·StatTiles 같은 UI, 시트, 토스트
@@ -93,7 +94,7 @@ src/
 │  ├─ season/              시즌 진행·성장·시상, 결승 중계, 오프시즌, 이벤트, 진로·계약 결정
 │  ├─ economy/             시즌 투자, 상점·기부
 │  ├─ career/              은퇴·커리어 요약, 소식·수상 기록, localStorage 저장
-│  └─ legacy/              랭킹 점수, 역대 기록 순위표, 닮은 꼴 선수
+│  └─ legacy/              랭킹 점수, 역대 기록 순위표, 닮은 꼴 선수, 업적
 └─ server/                 서버 전용 (익명 플레이어 인증, 의견 보내기)
    ├─ db/                  DB 연결, 테이블 정의 (players, careers)
    └─ leaderboard/         순위표·스탯 랭킹 조회, 기록 저장, 제출·조회 검사

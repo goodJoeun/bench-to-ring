@@ -1,4 +1,5 @@
 import { chooseOption } from "./actions";
+import { checkAchievements } from "../legacy/achievements";
 import { HEALTH_RANGE, addAttr, addHealth, clampTrust } from "../player/condition";
 import { ATTRS, POS, ROLE_RANK } from "../core/data";
 import { currentDecision } from "./decisions";
@@ -572,6 +573,7 @@ function finishSeason(c: Career): SeasonRecord {
   c.age++;
   c.year++;
   runOffseason(c, yr, call);
+  checkAchievements(c);
   return rec;
 }
 

@@ -77,6 +77,7 @@ export {
 export { LEAGUE_WEIGHT, SCORE_AWARDS, SCORE_CAP, SCORE_NBA, SCORE_OTHER, bestFive, compareCareers, playedNba, rankHall, rankScore, scoreParts, type ScoreParts } from "./legacy/hall";
 export { COMPS, careerProfile, similarPlayers, type CompLeague, type CompMatch, type CompPlayer, type CompProfile } from "./legacy/comps";
 export { namuWikiUrl } from "./legacy/namu";
+export { ACHIEVEMENTS, ACHIEVEMENT_GROUPS, achievementById, checkAchievements, type Achievement, type AchievementGroup } from "./legacy/achievements";
 export {
   RECORD_BOARDS,
   RECORD_GROUPS,

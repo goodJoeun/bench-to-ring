@@ -10,6 +10,8 @@ const HALL_LIMIT = 60;
 /** 은퇴한 커리어 전체. 엔딩을 다시 볼 때 써요. 한 명에 50KB쯤이라 최근 것만 둬요. */
 const ENDING_KEY = "b2r-endings-v1";
 const ENDING_LIMIT = 20;
+/** 이 브라우저에서 딴 업적. 업적 id → 처음 딴 때와 선수 */
+const ACHV_KEY = "b2r-achv-v1";
 
 function read(key: string): string | null {
   try {
@@ -138,6 +140,9 @@ function normalize(c: Career): Career {
   c.natLog ??= [];
   c.live ??= null;
   c.cheers ??= [];
+  c.achv ??= [];
+  c.raises ??= 0;
+  c.clutchWins ??= 0;
   // 이 기능 전의 저장이면, 이미 NBA를 밟았는지 기록에서 찾아 입성 축하를 건너뛰어요. 트레이드로 팀을 옮길 때 다시 뜨지 않게요.
   if (!c.milestones) c.milestones = c.team?.lg === "nba" || c.hist.some((h) => h.lg === "nba") ? ["nba"] : [];
   c.draftShow ??= null;
@@ -178,6 +183,34 @@ export function loadCareer(): Career | null {
 
 export function saveCareer(c: Career | null): void {
   write(SAVE_KEY, c ? JSON.stringify(c) : null);
+  if (c) recordAchievements(c);
+}
+
+/** 이 브라우저에서 처음 딴 업적 하나: 딴 시각(ms), 딴 선수 이름, 커리어 id */
+export interface AchievementRecord {
+  at: number;
+  name: string;
+  career: string;
+}
+
+/** 이 브라우저에서 딴 업적. 업적 id → 처음 딴 기록 */
+export function loadAchievements(): Record<string, AchievementRecord> {
+  try {
+    const o: unknown = JSON.parse(read(ACHV_KEY) ?? "{}");
+    return o && typeof o === "object" && !Array.isArray(o) ? (o as Record<string, AchievementRecord>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** 커리어가 딴 업적 가운데 이 브라우저에서 처음인 것을 남겨요. 커리어를 저장할 때마다 불러요. */
+function recordAchievements(c: Career): void {
+  if (!c.achv?.length) return;
+  const got = loadAchievements();
+  const fresh = c.achv.filter((id) => !got[id]);
+  if (!fresh.length) return;
+  for (const id of fresh) got[id] = { at: Date.now(), name: c.p.name, career: c.id };
+  write(ACHV_KEY, JSON.stringify(got));
 }
 
 export function loadHall(): CareerSummary[] {

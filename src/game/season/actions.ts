@@ -1,6 +1,7 @@
 import { ATTR_KEYS, POS, SHORT } from "../core/data";
 import { LEAGUES } from "../world/leagues";
 import { retire } from "../career/career";
+import { checkAchievements } from "../legacy/achievements";
 import { addAttr, addHealth, clampTrust } from "../player/condition";
 import { currentDecision, negotiable, negotiation, resolveQueue } from "./decisions";
 import { runDraft } from "../world/draft";
@@ -64,6 +65,8 @@ export function applyAction(c: Career, a: Action): void {
       c.collegeYears = 0;
       setTeam(c, a.lg, a.team);
       c.trust = a.walk ? -3 : 0;
+      // 워크온 입학은 업적(워크온의 기적)이 기억해요.
+      if (a.walk && !c.milestones.includes("walkon")) c.milestones.push("walkon");
       addNews(c, tag, "move", `${a.team.name}에 ${a.walk ? "워크온으로 " : ""}입학했어요 · ${LEAGUES[a.lg].name}`);
       break;
     case "stay":
@@ -76,8 +79,10 @@ export function applyAction(c: Career, a: Action): void {
       sign(c, a.lg, a.team, a.years, a.salary);
       break;
     case "nego":
-      if (chance(a.p)) sign(c, a.lg, a.team, a.years, roundSalary(a.salary * a.ask), " · 협상 성공");
-      else if (!a.walk) {
+      if (chance(a.p)) {
+        sign(c, a.lg, a.team, a.years, roundSalary(a.salary * a.ask), " · 협상 성공");
+        if (a.ask > 1) c.raises++;
+      } else if (!a.walk) {
         // 기간 연장 요구가 거절되면 원래 기간이에요.
         const years = a.ask === 1 ? a.years - 1 : a.years;
         sign(c, a.lg, a.team, years, a.salary, " · 구단이 원래 조건을 고수했어요");
@@ -123,7 +128,10 @@ export function applyAction(c: Career, a: Action): void {
         c.run.form = clamp(c.run.form + (ok ? 0.8 : -0.4), -2, 2);
       }
       // 최고 오버롤은 시즌을 마칠 때 기록해요.
-      if (ok) addAttr(p.attrs, a.attr, 1);
+      if (ok) {
+        addAttr(p.attrs, a.attr, 1);
+        c.clutchWins++;
+      }
       addNews(
         c,
         tag,
@@ -160,5 +168,7 @@ export function chooseOption(c: Career, index: number): boolean {
   if (a.k === "sign" && negotiable(a)) c.queue.unshift(negotiation(c, a, d.opts.filter((_, i) => i !== index)));
   else applyAction(c, a);
   resolveQueue(c);
+  // 국가대표 대회 합류처럼 결정으로 기록이 바뀌면 그때 업적을 따요.
+  checkAchievements(c);
   return true;
 }
