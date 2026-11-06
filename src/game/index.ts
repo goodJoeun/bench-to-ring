@@ -92,7 +92,7 @@ export {
   type BrowserRecord,
   type LifeView,
 } from "./legacy/achievements";
-export { EMPTY_LIFETIME, addLifetime, fromCareer, fromSummary, type Lifetime } from "./legacy/lifetime";
+export { EMPTY_LIFETIME, LIFETIME_PREFIX, addLifetime, fromCareer, subLifetime, type Lifetime } from "./legacy/lifetime";
 export {
   RECORD_BOARDS,
   RECORD_GROUPS,

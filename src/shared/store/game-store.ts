@@ -35,7 +35,7 @@ import {
   type SeasonStep,
   type ShopKey,
 } from "@/game";
-import { browserRecord, loadCareer, loadEnding, loadEndingIds, loadHall, saveCareer, saveEnding, saveHall } from "@/game/career/storage";
+import { browserRecord, startLifetime, loadCareer, loadEnding, loadEndingIds, loadHall, saveCareer, saveEnding, saveHall } from "@/game/career/storage";
 import { flushPending, submitCareer } from "@/shared/leaderboard/client";
 
 /** 선수 생성 화면의 입력값 */
@@ -181,6 +181,8 @@ function ensureLoaded(): void {
   // 업적은 브라우저마다 한 번만 따고, 누적 기록 업적은 이 브라우저의 모든 커리어로 판정해요.
   setBrowserRecord(browserRecord);
   const career = loadCareer();
+  // 누적 기록은 처음 불러온 지금부터 세요. 진행 중인 커리어가 이미 쌓은 기록은 빼요.
+  startLifetime(career);
   if (career) resolveQueue(career);
   // 엔딩 보관함이 생기기 전에 은퇴해 엔딩에 머물러 있던 커리어도 넣어 둬요.
   const ids = loadEndingIds();

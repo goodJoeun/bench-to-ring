@@ -117,7 +117,7 @@ import { makeLiveGame } from "@/game/season/live";
 import { giveAward, setTeam } from "@/game/career/log";
 import { militaryDecision } from "@/game/world/military";
 import { nationalCallUp, runNationalTeam } from "@/game/world/national";
-import { browserRecord, loadAchievements, loadLifetime, parseCareer, saveCareer, saveHall } from "@/game/career/storage";
+import { browserRecord, loadAchievements, loadLifeView, parseCareer, saveCareer, saveHall, startLifetime } from "@/game/career/storage";
 import { canDonate, donatedThisSeason, refreshShop, shopPerks } from "@/game/economy/shop";
 
 afterEach(() => resetRandom());
@@ -2544,7 +2544,7 @@ describe("브라우저 업적과 누적 기록", () => {
   };
 
   it("이 브라우저에서 이미 딴 업적은 새 커리어에서 조건을 채워도 다시 뜨지 않아요", () => {
-    setBrowserRecord(() => ({ unlocked: new Set(["franchise"]), others: EMPTY_LIFETIME }));
+    setBrowserRecord(() => ({ unlocked: new Set(["franchise"]), recent: 0, others: EMPTY_LIFETIME }));
     const c = fresh("dup");
     for (let y = 2031; y < 2042; y++) c.hist.push(proSeason(y));
     expect(checkAchievements(c)).not.toContain("franchise");
@@ -2558,7 +2558,7 @@ describe("브라우저 업적과 누적 기록", () => {
 
   it("누적 기록 업적은 다른 커리어들의 기록에 이번 커리어를 더해 판정해요", () => {
     const others = { ...EMPTY_LIFETIME, careers: 2, pts: 49500, pos: ["PG", "SF", "PF", "C"] as PosKey[], nats: ["일본", "미국"] };
-    setBrowserRecord(() => ({ unlocked: new Set(), others }));
+    setBrowserRecord(() => ({ unlocked: new Set(), recent: 0, others }));
     const c = played(fresh("life"), 1);
     const got = checkAchievements(c);
     // 2점 차로 모자란 은퇴는 아직, 득점(49,500 + 1,000)·포지션(SG 추가)·국적(대한민국 추가)은 달성
@@ -2573,33 +2573,40 @@ describe("브라우저 업적과 누적 기록", () => {
     expect(addLifetime(others, fromCareer(c)).pos).toHaveLength(5);
   });
 
-  it("업적 사냥꾼은 이번에 함께 딴 업적까지 세요", () => {
+  it("업적 사냥꾼은 누적 기록을 세기 시작한 뒤로 딴 업적만, 이번에 함께 딴 업적까지 세요", () => {
     const ids = ACHIEVEMENTS.filter((a) => a.group !== "lifetime" && a.id !== "franchise").slice(0, 29).map((a) => a.id);
-    setBrowserRecord(() => ({ unlocked: new Set(ids), others: EMPTY_LIFETIME }));
-    const c = fresh("hunter");
-    for (let y = 2031; y < 2042; y++) c.hist.push(proSeason(y));
-    expect(checkAchievements(c)).toEqual(expect.arrayContaining(["franchise", "life_hunter"]));
+    const tenYears = () => {
+      const c = fresh("hunter");
+      for (let y = 2031; y < 2042; y++) c.hist.push(proSeason(y));
+      return c;
+    };
+    // 29개를 모두 세기 시작하기 전에 땄으면 아직이에요.
+    setBrowserRecord(() => ({ unlocked: new Set(ids), recent: 0, others: EMPTY_LIFETIME }));
+    expect(checkAchievements(tenYears())).not.toContain("life_hunter");
+    setBrowserRecord(() => ({ unlocked: new Set(ids), recent: 29, others: EMPTY_LIFETIME }));
+    expect(checkAchievements(tenYears())).toEqual(expect.arrayContaining(["franchise", "life_hunter"]));
   });
 
   it("저장소는 커리어마다 몫을 쌓고, 은퇴하지 않고 새로 시작한 커리어도 남겨요", () => {
     const m = fakeStorage();
+    startLifetime(null);
     const a = played(fresh("sa"), 3);
     saveCareer(a);
-    expect(loadLifetime()).toMatchObject({ seasons: 3, pts: 3000, careers: 0 });
+    expect(loadLifeView().t).toMatchObject({ seasons: 3, pts: 3000, careers: 0 });
     // 같은 커리어를 다시 저장하면 몫을 바꿔 쓸 뿐 두 번 더하지 않아요.
     a.hist.push(proSeason(2034));
     a.proSeasons = 4;
     saveCareer(a);
-    expect(loadLifetime()).toMatchObject({ seasons: 4, pts: 4000 });
+    expect(loadLifeView().t).toMatchObject({ seasons: 4, pts: 4000 });
     // 은퇴하지 않고 새로 시작해도 쌓은 몫은 남아요.
     saveCareer(null);
     const b = played(fresh("sb", "C"), 2);
     saveCareer(b);
-    expect(loadLifetime()).toMatchObject({ seasons: 6, pts: 6000, pos: ["SG", "C"] });
+    expect(loadLifeView().t).toMatchObject({ seasons: 6, pts: 6000, pos: ["SG", "C"] });
     // 업적 판정에는 지금 커리어를 뺀 기록을 줘요. 지금 커리어는 판정할 때 새로 더해요.
     expect(browserRecord(b).others).toMatchObject({ seasons: 4, pts: 4000 });
     expect(browserRecord(fresh("sc")).others).toMatchObject({ seasons: 6 });
-    expect(m.has("b2r-lifetime-v1")).toBe(true);
+    expect(m.has("b2r-lifetime-v2")).toBe(true);
   });
 
   it("저장한 커리어가 딴 업적은 브라우저 기록이 되고, 다음 커리어는 다시 따지 않아요", () => {
@@ -2617,14 +2624,37 @@ describe("브라우저 업적과 누적 기록", () => {
     expect(a.achv).toContain("franchise");
   });
 
-  it("누적 기록이 생기기 전의 명예의 전당은 처음 저장할 때 누적 기록으로 옮겨요", () => {
-    fakeStorage();
+  it("누적 기록은 지금부터 새로 세요: 예전 은퇴 기록과 진행 중인 커리어가 이미 쌓은 기록, 예전에 딴 업적은 치지 않아요", () => {
+    const m = fakeStorage();
+    // 누적 기록이 생기기 전에 은퇴한 선수와, 그 전에 딴 업적 30개
     const old = played(fresh("hall", "PF", "프랑스"), 5);
     old.awards.ring = 2;
-    const s = retire(old);
-    saveHall([s]);
-    const now = played(fresh("now"), 1);
+    saveHall([retire(old)]);
+    const ids = ACHIEVEMENTS.filter((a) => a.group !== "lifetime").slice(0, 30).map((a) => a.id);
+    const longAgo = Object.fromEntries(ids.map((id) => [id, { at: 1, name: "옛 선수", career: "hall" }]));
+    // 예전 버전(v1)이 명예의 전당을 옮겨 담아 딴 누적 기록 업적
+    m.set("b2r-achv-v1", JSON.stringify({ ...longAgo, life_hunter: { at: 2, name: "옛 선수", career: "now" } }));
+    m.set("b2r-lifetime-v1", JSON.stringify({ base: { ...EMPTY_LIFETIME, careers: 9, seasons: 90 }, cur: null }));
+    const now = played(fresh("now"), 6);
+    now.achv.push("life_hunter");
+
+    startLifetime(now);
+    setBrowserRecord(browserRecord);
+    expect(loadLifeView()).toEqual({ t: EMPTY_LIFETIME, achv: 0 });
+    expect(loadAchievements().life_hunter).toBeUndefined();
+    expect(Object.keys(loadAchievements())).toHaveLength(30);
+    expect(now.achv).not.toContain("life_hunter");
+    expect(m.has("b2r-lifetime-v1")).toBe(false);
+    expect(checkAchievements(now).filter((id) => id.startsWith("life_"))).toEqual([]);
+
+    // 진행 중이던 커리어는 그 뒤로 쌓은 시즌만 쳐요.
+    now.hist.push(proSeason(2040));
+    now.proSeasons = 7;
     saveCareer(now);
-    expect(loadLifetime()).toMatchObject({ careers: 1, seasons: 6, rings: 2, pos: ["PF", "SG"], nats: ["프랑스", "대한민국"] });
+    expect(loadLifeView().t).toMatchObject({ seasons: 1, pts: 1000, careers: 0, pos: ["SG"] });
+    expect(browserRecord(now).start).toMatchObject({ seasons: 6 });
+    // 한 번 세기 시작하면 다시 불러와도 처음으로 돌아가지 않아요.
+    startLifetime(now);
+    expect(loadLifeView().t.seasons).toBe(1);
   });
 });

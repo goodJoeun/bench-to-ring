@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ACHIEVEMENTS, ACHIEVEMENT_GROUPS, fmtNum, type AchievementGroup, type LifeView } from "@/game";
-import { loadAchievements, loadLifetime } from "@/game/career/storage";
+import { ACHIEVEMENTS, ACHIEVEMENT_GROUPS, fmtNum, type AchievementGroup } from "@/game";
+import { loadAchievements, loadLifeView } from "@/game/career/storage";
 import { Sheet } from "@/shared/ui/Sheet";
 
 const GROUPS = Object.keys(ACHIEVEMENT_GROUPS) as AchievementGroup[];
@@ -19,7 +19,7 @@ function dayOf(ms: number): string {
  */
 export function AchievementsDialog({ onClose }: { onClose: () => void }) {
   const [got] = useState(loadAchievements);
-  const [life] = useState((): LifeView => ({ t: loadLifetime(), achv: Object.keys(got).length }));
+  const [life] = useState(loadLifeView);
   const done = ACHIEVEMENTS.filter((a) => got[a.id]).length;
   return (
     <Sheet labelledBy="achv-title" onClose={onClose}>
@@ -32,7 +32,7 @@ export function AchievementsDialog({ onClose }: { onClose: () => void }) {
       </div>
       <p className="hint">
         이 브라우저에서 딴 업적이에요. 새 커리어를 시작해도 남고, 한 번 딴 업적은 다시 따지 않아요. 조건은 달성하면 공개되고, 그 전에는 힌트를 보여줘요.
-        누적 기록은 이 브라우저에서 플레이한 모든 커리어를 더해요.
+        누적 기록은 누적 업적이 생긴 뒤로 이 브라우저에서 플레이한 모든 커리어를 더해요.
       </p>
       {GROUPS.map((g) => (
         <section key={g} className="set-sec" aria-labelledby={`achv-${g}`}>

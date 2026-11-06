@@ -1,8 +1,9 @@
-import type { Career, CareerSummary, LeagueKey, PosKey } from "../core/types";
+import type { Career, PosKey } from "../core/types";
 
 /**
  * 한 브라우저에서 플레이한 모든 커리어를 더한 누적 기록. '누적 기록' 업적을 판정해요.
  * 커리어마다 몫(fromCareer)을 구해 더하고(addLifetime), 브라우저 저장은 storage.ts가 맡아요.
+ * 누적 기록을 세기 시작한 뒤로 쌓은 것만 쳐요. 예전 은퇴 기록과, 그때 진행 중이던 커리어가 이미 쌓은 기록은 빼요.
  * 은퇴하지 않고 새로 시작한 커리어도 그때까지 쌓은 몫은 남아요.
  */
 export interface Lifetime {
@@ -30,7 +31,9 @@ export interface Lifetime {
 
 export const EMPTY_LIFETIME: Lifetime = { careers: 0, seasons: 0, gp: 0, pts: 0, rings: 0, mvp: 0, earn: 0, nba: 0, clutch: 0, pos: [], nats: [] };
 
-const PRO_LEAGUES: LeagueKey[] = ["nba", "euro", "gleague", "kbl"];
+/** 누적 기록 업적 id의 머리. 누적 기록을 새로 세기 시작할 때 이 업적들을 지워요. */
+export const LIFETIME_PREFIX = "life_";
+
 const union = <T>(a: T[], b: T[]): T[] => [...new Set([...a, ...b])];
 
 /** 두 누적 기록을 더해요. 포지션과 국적은 합쳐요. */
@@ -47,6 +50,25 @@ export function addLifetime(a: Lifetime, b: Lifetime): Lifetime {
     clutch: a.clutch + b.clutch,
     pos: union(a.pos, b.pos),
     nats: union(a.nats, b.nats),
+  };
+}
+
+/** a에서 b만큼 뺀 기록: 누적 기록을 세기 시작한 뒤로 쌓은 몫. 포지션과 국적은 그 뒤로 프로 시즌을 더 뛰었으면 쳐요. */
+export function subLifetime(a: Lifetime, b: Lifetime): Lifetime {
+  const minus = (k: Exclude<keyof Lifetime, "pos" | "nats">) => Math.max(0, a[k] - b[k]);
+  const more = a.seasons > b.seasons;
+  return {
+    careers: minus("careers"),
+    seasons: minus("seasons"),
+    gp: minus("gp"),
+    pts: minus("pts"),
+    rings: minus("rings"),
+    mvp: minus("mvp"),
+    earn: minus("earn"),
+    nba: minus("nba"),
+    clutch: minus("clutch"),
+    pos: more ? a.pos : [],
+    nats: more ? a.nats : [],
   };
 }
 
@@ -67,25 +89,5 @@ export function fromCareer(c: Career): Lifetime {
     clutch: c.clutchWins ?? 0,
     pos: played ? [c.p.pos] : [],
     nats: played ? [c.p.nat ?? "대한민국"] : [],
-  };
-}
-
-/** 은퇴 요약으로 구한 몫. 누적 기록이 생기기 전의 명예의 전당을 옮길 때 써요. 클러치 성공은 요약에 없어 0으로 쳐요. */
-export function fromSummary(s: CareerSummary): Lifetime {
-  const leagues = s.leagues ? PRO_LEAGUES.map((lg) => s.leagues?.[lg]?.awards) : [];
-  const mvp = s.leagues ? leagues.reduce((t, a) => t + (a?.mvp ?? 0) + (a?.mvp_nba ?? 0), 0) : (s.awards.mvp_nba ?? 0);
-  const played = s.seasons > 0;
-  return {
-    careers: 1,
-    seasons: s.seasons,
-    gp: s.gp,
-    pts: s.pts,
-    rings: s.rings,
-    mvp,
-    earn: s.earn,
-    nba: s.leagues?.nba || s.nba?.seasons ? 1 : 0,
-    clutch: 0,
-    pos: played ? [s.pos] : [],
-    nats: played ? [s.nat || "대한민국"] : [],
   };
 }
