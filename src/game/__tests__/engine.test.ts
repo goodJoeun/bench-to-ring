@@ -118,6 +118,7 @@ import { makeLiveGame } from "@/game/season/live";
 import { giveAward, setTeam } from "@/game/career/log";
 import { militaryDecision } from "@/game/world/military";
 import { TRAITS, TRAIT_KEYS } from "@/game/player/players";
+import { runOffseason } from "@/game/season/offseason";
 import { leverage } from "@/game/season/decisions";
 import { nationalCallUp, runNationalTeam } from "@/game/world/national";
 import { browserRecord, loadAchievements, loadLifeView, parseCareer, saveCareer, saveHall, startLifetime } from "@/game/career/storage";
@@ -2048,6 +2049,24 @@ describe("클러치", () => {
     }
     // 바퀴가 바뀔 때 가끔 백투백이 나와요.
     expect(backToBack).toBeGreaterThan(0);
+  });
+
+  it("은퇴를 묻는 오프시즌(35세 이상)에는 트레이드하지 않아서, 옮긴 팀에서 안 뛰고 은퇴하는 일이 없어요", () => {
+    const traded = (age: number) => {
+      let n = 0;
+      for (let i = 0; i < 400; i++) {
+        setRandom(seeded(5000 + i));
+        const c = kblPlayer(`tr${i}`, 8);
+        c.age = age;
+        c.contract = { years: 3, salary: 5 };
+        runOffseason(c, c.year - 1);
+        if (c.team!.name !== "서울 SK 나이츠") n++;
+        if (age >= 35) expect(c.queue.some((q) => "title" in q && q.title.includes("은퇴"))).toBe(true);
+      }
+      return n;
+    };
+    expect(traded(30)).toBeGreaterThan(0);
+    expect(traded(35)).toBe(0);
   });
 
   it("특성마다 설명이 있고, 큰 경기 보정은 승부사 > 보통 > 새가슴, 스타성은 협상에 유리해요", () => {

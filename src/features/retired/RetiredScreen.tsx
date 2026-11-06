@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { achievementById, awardGroups, fmtNum, money, titleHistory, type AwardCount, type Career, type CareerSummary } from "@/game";
 import { gameActions } from "@/shared/store/game-store";
-import { NO_TEAM_COLOR, militaryShort, nameFit } from "@/shared/lib/format";
+import { militaryShort, nameFit } from "@/shared/lib/format";
+import { jerseyOf } from "@/shared/ui/sprite/look";
 import { RecordBoards } from "./RecordBoards";
 import { SimilarPlayers } from "./SimilarPlayers";
 import { ShareSheet } from "./ShareSheet";
@@ -71,6 +72,8 @@ export function RetiredScreen({ career: c, hall, past = false }: { career: Caree
   const p = c.p;
   const titles = titleHistory(c);
   const mil = militaryShort(c);
+  // 실제로 마지막에 뛴 팀. 은퇴 직전에 옮겨 뛰지 않은 팀(c.team)이 아니라, 랭킹·나의 기록과 같은 팀을 보여줘요.
+  const lastTeam = s.teams.at(-1);
   const tiles: [string, string | number][] = [
     ["최고 오버롤", s.peak],
     ["NBA MVP", s.mvp],
@@ -83,8 +86,8 @@ export function RetiredScreen({ career: c, hall, past = false }: { career: Caree
   ];
   return (
     <main className="ret">
-      <CourtStage player={p} color={c.team?.color ?? NO_TEAM_COLOR}>
-        {c.team && <TeamBadge className="plate-badge" name={c.team.name} kind={c.team.lg} color={c.team.color} size={52} />}
+      <CourtStage player={p} color={jerseyOf(lastTeam)}>
+        {lastTeam && <TeamBadge className="plate-badge" name={lastTeam} size={52} />}
         <span className="label">
           {s.retYear}년 · {s.retAge}세 은퇴
         </span>

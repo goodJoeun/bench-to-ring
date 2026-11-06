@@ -1,6 +1,6 @@
 import { fmtNum, playerLook, titleHistory, type AwardKey, type Career, type Look } from "@/game";
 import { emblemOf } from "@/shared/ui/badge/emblem";
-import { NO_TEAM_COLOR } from "@/shared/lib/format";
+import { jerseyOf } from "@/shared/ui/sprite/look";
 import { LOGOS } from "@/shared/ui/badge/logos.generated";
 import { drawSprite } from "@/shared/ui/sprite/Sprite";
 import { PATTERNS, SHAPES, monoSize } from "@/shared/ui/badge/TeamBadge";
@@ -107,7 +107,8 @@ export function cardData(c: Career): CardData {
       .map(([k, label]) => (s.awards[k]! > 1 ? `${label} ${s.awards[k]}` : label)),
     teams,
     look: playerLook(c.p),
-    color: c.team?.color ?? NO_TEAM_COLOR,
+    // 랭킹·엔딩과 같은 팀: 실제로 마지막에 뛴 팀의 색
+    color: jerseyOf(s.teams.at(-1)),
   };
 }
 
