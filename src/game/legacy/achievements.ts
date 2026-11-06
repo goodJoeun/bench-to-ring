@@ -9,7 +9,7 @@ import type { AttrKey, AwardEntry, AwardKey, Career, LeagueKey, MilitaryKind, Se
 
 /**
  * 업적. 대부분 커리어 기록(시즌 기록, 수상, 드래프트, 국가대표, 기부, 산 것)으로 판정해요.
- * 기록에 남지 않는 것만 따로 세요: 연봉 인상 성공(c.raises), 클러치 성공(c.clutchWins), 라이벌전 승리(c.rivalWins), 워크온 입학(c.milestones).
+ * 기록에 남지 않는 것만 따로 세요: 연봉 인상 성공(c.raises), 클러치 성공(c.clutchWins), 라이벌전 승리(c.rivalWins), 워크온 입학·주장 완장(c.milestones).
  * 업적은 브라우저마다 한 번만 따요. 브라우저에서 이미 딴 업적은 새 커리어에서 조건을 채워도 다시 뜨지 않아요.
  * 커리어마다 처음 딴 업적은 c.achv에 남고, 브라우저에서 딴 업적과 누적 기록은 storage.ts가 모아 둬요(setBrowserRecord).
  * '누적 기록' 업적은 이 브라우저에서 누적 기록을 세기 시작한 뒤로 플레이한 모든 커리어를 더해 판정해요.
@@ -115,7 +115,8 @@ function longestRun(rows: SeasonRecord[], ok: (h: SeasonRecord) => boolean, same
 }
 
 const distinct = (rows: SeasonRecord[]) => new Set(rows.map((h) => h.team)).size;
-const golds = (c: Career) => c.natLog.filter((t) => t.medal === "금");
+/** 대표팀에 합류해 딴 금메달. 불참한 대회에서 대표팀이 딴 금메달은 치지 않아요. */
+const golds = (c: Career) => c.natLog.filter((t) => t.joined && t.medal === "금");
 /** 상점의 사치품 수. 사치품은 한 번씩만 살 수 있어요. */
 const LUXURY_COUNT = 5;
 /** 능력치 최고값 */
@@ -213,6 +214,7 @@ export const ACHIEVEMENTS: Achievement[] = [
       test: (v) => longestRun(v.seasons, (h) => h.lg === lg && champ(h)) >= 3,
     }),
   ),
+  { id: "captain", name: "캡틴", desc: "소속팀 주장 완장을 차기", hint: "베테랑이 되면 감독이 먼저 부탁해 올 거예요", group: "team", test: (v) => v.c.milestones.includes("captain") },
   { id: "rings", name: "반지의 제왕", desc: "프로 우승 6회 이상", hint: "손가락이 모자랄 만큼", group: "team", test: (v) => (v.c.awards.ring ?? 0) >= 6 },
   {
     id: "underdog",
@@ -396,6 +398,13 @@ export const ACHIEVEMENTS: Achievement[] = [
 
   // 국가대표·커리어
   { id: "patriot", name: "애국자", desc: "국제대회 금메달 3회 이상", hint: "국가대표로 시상대 맨 위에 여러 번", group: "life", test: (v) => golds(v.c).length >= 3 },
+  {
+    id: "world_cup",
+    name: "세계 최강",
+    desc: "국가대표로 FIBA 농구 월드컵 금메달", hint: "대표팀과 함께 세계 정상에",
+    group: "life",
+    test: (v) => golds(v.c).some((t) => t.ev === "worldcup"),
+  },
   { id: "national_pillar", name: "국가대표 터줏대감", desc: "국가대표로 50경기 이상 출전", hint: "대표팀 소집에 빠지지 마세요", group: "life", test: (v) => v.c.nat.caps >= 50 },
   {
     id: "grand_slam",

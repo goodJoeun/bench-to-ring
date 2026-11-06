@@ -487,6 +487,8 @@ export interface Boost {
   sit?: number;
   /** 시즌 중에만: 다쳐서 빠지는 경기 수 */
   injure?: number;
+  /** 업적에 쓰는 순간을 c.milestones에 남겨요 (예: "captain" 주장 완장) */
+  mark?: string;
   msg?: string;
   /** 소식 종류. 기본은 good */
   t?: NewsType;

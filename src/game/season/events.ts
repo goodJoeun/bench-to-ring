@@ -620,7 +620,7 @@ const EVENTS: LifeEvent[] = [
       title: "주장 제안",
       body: "감독이 다음 시즌 주장을 맡아 달래요. 후배들 고민 상담까지 해야 해요.",
       opts: [
-        opt("주장 완장을 찬다", { trust: 2, health: -3, msg: "주장이 됐어요. 책임감이 무거워요." }),
+        opt("주장 완장을 찬다", { trust: 2, health: -3, mark: "captain", msg: "주장이 됐어요. 책임감이 무거워요." }),
         opt("경기에만 집중하겠다고 말한다", { health: 2, msg: "주장은 고사하고 코트에서 보여주기로 했어요.", t: "info" }),
       ],
     }),

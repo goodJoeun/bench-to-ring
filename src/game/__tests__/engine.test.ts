@@ -2439,7 +2439,44 @@ describe("업적", () => {
     c.awards.ring = 1;
     c.donated = 1000;
     checkAchievements(c);
-    expect(c.achv).toEqual(expect.arrayContaining(["patriot", "grand_slam", "donor"]));
+    expect(c.achv).toEqual(expect.arrayContaining(["patriot", "grand_slam", "donor", "world_cup"]));
+  });
+
+  it("월드컵 금메달은 세계 최강이에요. 불참한 대회에서 대표팀이 딴 금메달은 치지 않아요", () => {
+    const c = fresh("ach7b");
+    const gold = (year: number, ev: "olympics" | "worldcup" | "asiangames", joined: boolean) =>
+      ({ year, ev, name: "대회", joined, label: "", medal: "금" as const, story: "", games: [] });
+    c.natLog.push(gold(2031, "worldcup", false), gold(2032, "asiangames", false), gold(2033, "olympics", false), gold(2034, "asiangames", true), gold(2035, "asiangames", true));
+    checkAchievements(c);
+    expect(c.achv).not.toContain("world_cup");
+    expect(c.achv).not.toContain("patriot");
+    c.natLog.push(gold(2036, "worldcup", true));
+    checkAchievements(c);
+    expect(c.achv).toEqual(expect.arrayContaining(["world_cup", "patriot"]));
+  });
+
+  it("주장 제안을 받아들이면 캡틴이에요. 고사하면 따지 못해요", () => {
+    const offer = (seed: number) => {
+      setRandom(seeded(seed));
+      const c = fresh(`cap${seed}`);
+      c.stage = "pro";
+      c.team = { name: "서울 SK 나이츠", color: "#E4002B", q: 0.5, lg: "kbl" };
+      c.age = 30;
+      for (let i = 0; i < 200; i++) {
+        const d = lifeEvent(c);
+        if (d?.title === "주장 제안") return { c, d };
+      }
+      throw new Error("주장 제안이 나오지 않았어요");
+    };
+    const no = offer(1);
+    applyAction(no.c, no.d.opts[1].act);
+    checkAchievements(no.c);
+    expect(no.c.achv).not.toContain("captain");
+    const yes = offer(2);
+    applyAction(yes.c, yes.d.opts[0].act);
+    expect(yes.c.milestones).toContain("captain");
+    checkAchievements(yes.c);
+    expect(yes.c.achv).toContain("captain");
   });
 
   it("처음 오른 프로 결승에서 우승하면 로열 로더, 데뷔 시즌 벤치에서 NBA 우승까지 가면 벤치에서 반지까지예요", () => {
