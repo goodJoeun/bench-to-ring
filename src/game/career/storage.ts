@@ -148,6 +148,7 @@ function normalize(c: Career): Career {
   c.achv ??= [];
   c.raises ??= 0;
   c.clutchWins ??= 0;
+  c.rivalWins ??= 0;
   // 이 기능 전의 저장이면, 이미 NBA를 밟았는지 기록에서 찾아 입성 축하를 건너뛰어요. 트레이드로 팀을 옮길 때 다시 뜨지 않게요.
   if (!c.milestones) c.milestones = c.team?.lg === "nba" || c.hist.some((h) => h.lg === "nba") ? ["nba"] : [];
   c.draftShow ??= null;

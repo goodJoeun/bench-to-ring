@@ -1230,13 +1230,16 @@ export function injuryDecision(out: number): Decision {
   };
 }
 
+/** 큰 경기(빅매치·클러치) 성공 확률 보정: 승부사는 오르고 새가슴은 내려가요. */
+const bigGameEdge = (c: Career, x = 0.1) => (c.p.trait === "승부사" ? x : c.p.trait === "새가슴" ? -x * 0.8 : 0);
+
 /**
  * 빅매치나 결승을 앞두고 몸을 던질지 고르는 결정. 건강할수록 강행이 성공하기 쉬워요.
  * 성공하면 경기력이 오르고, 실패하면 다쳐서 다음 경기(결승이면 결승)에 나서지 못해요.
  */
 export function bigGameDecision(c: Career, label: string, final: boolean): Decision {
   const h = Math.round(c.health);
-  const p = clamp(0.3 + c.health / 140 + (c.p.trait === "승부사" ? 0.1 : 0), 0.3, 0.92);
+  const p = clamp(0.3 + c.health / 140 + bigGameEdge(c), 0.3, 0.92);
   const hurt = final ? 3 : ri(1, 3);
   const body = h >= 75 ? "몸 상태는 괜찮아요" : h >= 50 ? "다리가 조금 무거워요" : "몸이 많이 지쳐 있어요";
   return {
@@ -1371,12 +1374,12 @@ export function boardScore(b: ClutchBoard): [number, number] {
   return [b.tie + Math.max(lead, 0), b.tie + Math.max(-lead, 0)];
 }
 
-/** 클러치 플레이 성공 확률: 맡은 능력치가 리그 평균보다 높을수록, 승부사면 더 높아요. 플레이마다 보정(edge)과 능력치 영향(swing)이 달라요. */
+/** 클러치 플레이 성공 확률: 맡은 능력치가 리그 평균보다 높을수록, 승부사면 더 높고 새가슴이면 낮아요. 플레이마다 보정(edge)과 능력치 영향(swing)이 달라요. */
 export const clutchOdds = (c: Career, attr: AttrKey, leagueAvg: number, x?: Pick<ClutchPlay, "edge" | "swing">): number =>
-  clamp(0.45 + (x?.edge ?? 0) + ((x?.swing ?? 1) * (c.p.attrs[attr] - leagueAvg)) / 40 + (c.p.trait === "승부사" ? 0.1 : 0), 0.1, 0.9);
+  clamp(0.45 + (x?.edge ?? 0) + ((x?.swing ?? 1) * (c.p.attrs[attr] - leagueAvg)) / 40 + bigGameEdge(c), 0.1, 0.9);
 
-/** 연장전 승리 확률: 오버롤이 리그 평균보다 높을수록, 승부사면 더 높아요. */
-export const overtimeOdds = (c: Career, leagueAvg: number): number => clamp(0.5 + (ovr(c.p) - leagueAvg) / 60 + (c.p.trait === "승부사" ? 0.05 : 0), 0.3, 0.75);
+/** 연장전 승리 확률: 오버롤이 리그 평균보다 높을수록, 승부사면 더 높고 새가슴이면 낮아요. */
+export const overtimeOdds = (c: Career, leagueAvg: number): number => clamp(0.5 + (ovr(c.p) - leagueAvg) / 60 + bigGameEdge(c, 0.05), 0.3, 0.75);
 
 /**
  * 주전 이상일 때 중요한 경기에서 마지막 플레이를 맡는 결정. 전광판의 점수 차로 상황이 정해져요.

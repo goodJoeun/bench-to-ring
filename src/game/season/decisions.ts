@@ -245,7 +245,8 @@ export const negotiable = (a: SignAction): boolean => !a.deal && a.lg !== "gleag
  */
 export function leverage(c: Career, lg: ProLeagueKey): number {
   const rating = c.last?.rating || 6;
-  return clamp(0.45 + (evalOvr(c.p) - LEAGUES[lg].avg) / 25 + (rating - 6.5) * 0.1 + (c.perks.agency ? 0.1 : 0), 0.15, 0.85);
+  const star = c.p.trait === "스타성" ? 0.12 : 0;
+  return clamp(0.45 + (evalOvr(c.p) - LEAGUES[lg].avg) / 25 + (rating - 6.5) * 0.1 + (c.perks.agency ? 0.1 : 0) + star, 0.15, 0.85);
 }
 
 /**

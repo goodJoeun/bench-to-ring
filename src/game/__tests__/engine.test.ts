@@ -107,6 +107,7 @@ import {
   clutchDecision,
   clutchFinal,
   clutchOdds,
+  overtimeOdds,
   drawClutchLead,
   injuryDecision,
   lifeEvent,
@@ -116,6 +117,8 @@ import {
 import { makeLiveGame } from "@/game/season/live";
 import { giveAward, setTeam } from "@/game/career/log";
 import { militaryDecision } from "@/game/world/military";
+import { TRAITS, TRAIT_KEYS } from "@/game/player/players";
+import { leverage } from "@/game/season/decisions";
 import { nationalCallUp, runNationalTeam } from "@/game/world/national";
 import { browserRecord, loadAchievements, loadLifeView, parseCareer, saveCareer, saveHall, startLifetime } from "@/game/career/storage";
 import { canDonate, donatedThisSeason, refreshShop, shopPerks } from "@/game/economy/shop";
@@ -2047,6 +2050,57 @@ describe("클러치", () => {
     expect(backToBack).toBeGreaterThan(0);
   });
 
+  it("특성마다 설명이 있고, 큰 경기 보정은 승부사 > 보통 > 새가슴, 스타성은 협상에 유리해요", () => {
+    expect(TRAIT_KEYS).toHaveLength(13);
+    for (const t of TRAIT_KEYS) expect(TRAITS[t].length, t).toBeGreaterThan(10);
+    const c = kblPlayer("trait", 0);
+    for (const k of ATTR_KEYS) c.p.attrs[k] = LEAGUES.kbl.avg;
+    const odds = (t: (typeof TRAIT_KEYS)[number]) => {
+      c.p.trait = t;
+      return [clutchOdds(c, "sht", LEAGUES.kbl.avg), overtimeOdds(c, LEAGUES.kbl.avg), leverage(c, "kbl")];
+    };
+    const [hero, normal, choke, star] = [odds("승부사"), odds("꾸준함"), odds("새가슴"), odds("스타성")];
+    expect(hero[0]).toBeGreaterThan(normal[0]);
+    expect(normal[0]).toBeGreaterThan(choke[0]);
+    expect(hero[1]).toBeGreaterThan(normal[1]);
+    expect(normal[1]).toBeGreaterThan(choke[1]);
+    expect(star[2]).toBeCloseTo(normal[2] + 0.12);
+  });
+
+  it("라이벌전으로 걸린 다음 경기는 기록에 라이벌전이 남고, 내가 뛰어서 이겨야 라이벌전 승리로 세요", () => {
+    setRandom(seeded(38));
+    const c = kblPlayer("rival", 8);
+    startSeason(c);
+    stepSeason(c);
+    const next = (forced: "win" | "loss", out = 0) => {
+      c.queue = [];
+      Object.assign(c.run!, { rival: true, forced, out, outWhy: out ? "부상" : c.run!.outWhy });
+      stepSeason(c);
+      return c.run!.log[0];
+    };
+    expect(next("win")).toMatchObject({ rival: true, win: true });
+    expect(c.rivalWins).toBe(1);
+    // 진 경기와 결장한 경기는 세지 않아요.
+    expect(next("loss")).toMatchObject({ rival: true, win: false });
+    expect(next("win", 2)).toMatchObject({ rival: true, win: true, out: "부상" });
+    expect(c.rivalWins).toBe(1);
+    // 그다음 경기는 다시 보통 경기예요.
+    c.queue = [];
+    c.run!.out = 0;
+    stepSeason(c);
+    expect(c.run!.log[0].rival).toBeUndefined();
+    c.rivalWins = 5;
+    checkAchievements(c);
+    expect(c.achv).not.toContain("rival_killer");
+    c.rivalWins = 6;
+    checkAchievements(c);
+    expect(c.achv).toContain("rival_killer");
+    // 예전 저장에는 0을 채워요.
+    const old = JSON.parse(JSON.stringify(c));
+    delete old.rivalWins;
+    expect(parseCareer(JSON.stringify(old))!.rivalWins).toBe(0);
+  });
+
   it("예전 저장처럼 최종 점수가 없는 클러치 경기는 전광판의 상대와 동점에서 2점 차로 끝나요", () => {
     setRandom(seeded(121));
     const c = kblPlayer("board", 8);
@@ -2500,6 +2554,44 @@ describe("업적", () => {
     c.run = null;
     checkAchievements(c);
     expect(has(c, "clutch_master")).toBe(true);
+  });
+
+  it("병역 업적: 상무 입대·D리그 우승·전역 뒤 NBA, 현역 입대·전역 뒤 MVP·우승. 입대 전 기록은 치지 않아요", () => {
+    const service = (year: number, kind: "sangmu" | "army", result: string): SeasonRecord => ({
+      ...season(year, kind === "sangmu" ? "상무 (국군체육부대)" : "육군 (현역 복무)", "kbl"), lg: null, pro: false, mil: kind, result,
+    });
+    const s = fresh("mil1");
+    checkAchievements(s);
+    expect(s.achv.some((id) => id.startsWith("sangmu") || id.startsWith("army"))).toBe(false);
+    s.hist.push(season(2034, "보스턴 셀틱스", "nba"));
+    s.mil = { s: "serving", kind: "sangmu" };
+    checkAchievements(s);
+    expect(has(s, "sangmu")).toBe(true);
+    s.hist.push(service(2035, "sangmu", "KBL D리그 준우승"), service(2036, "sangmu", "KBL D리그 우승"));
+    s.mil = { s: "served", kind: "sangmu" };
+    checkAchievements(s);
+    expect(has(s, "sangmu_champ")).toBe(true);
+    // 입대 전 NBA 시즌은 치지 않아요.
+    expect(has(s, "sangmu_nba")).toBe(false);
+    s.hist.push(season(2037, "보스턴 셀틱스", "nba"));
+    checkAchievements(s);
+    expect(has(s, "sangmu_nba")).toBe(true);
+    expect(s.achv.some((id) => id.startsWith("army"))).toBe(false);
+
+    const a = fresh("mil2");
+    a.hist.push(season(2033, "서울 SK 나이츠", "kbl", won));
+    a.awardLog.push({ y: 2033, k: "mvp", n: "KBL MVP" });
+    a.mil = { s: "serving", kind: "army" };
+    checkAchievements(a);
+    expect(has(a, "army")).toBe(true);
+    expect(has(a, "army_mvp") || has(a, "army_ring")).toBe(false);
+    a.hist.push({ ...service(2034, "army", "현역 복무"), gp: 0 });
+    a.mil = { s: "served", kind: "army" };
+    a.hist.push(season(2035, "서울 SK 나이츠", "kbl", won));
+    a.awardLog.push({ y: 2035, k: "mvp", n: "KBL MVP" });
+    checkAchievements(a);
+    expect(a.achv).toEqual(expect.arrayContaining(["army_mvp", "army_ring"]));
+    expect(has(a, "sangmu")).toBe(false);
   });
 
   it("끝까지 플레이한 커리어의 업적은 목록에 있는 것만 한 번씩이고, 예전 저장에는 빈 목록을 채워요", () => {

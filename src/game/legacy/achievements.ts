@@ -5,18 +5,18 @@ import { LEAGUES } from "../world/leagues";
 import { addNews, cheer } from "../career/log";
 import { shopItem } from "../economy/shop";
 import { EMPTY_LIFETIME, LIFETIME_PREFIX, addLifetime, fromCareer, subLifetime, type Lifetime } from "./lifetime";
-import type { AttrKey, AwardEntry, AwardKey, Career, LeagueKey, SeasonRecord } from "../core/types";
+import type { AttrKey, AwardEntry, AwardKey, Career, LeagueKey, MilitaryKind, SeasonRecord } from "../core/types";
 
 /**
  * 업적. 대부분 커리어 기록(시즌 기록, 수상, 드래프트, 국가대표, 기부, 산 것)으로 판정해요.
- * 기록에 남지 않는 것만 따로 세요: 연봉 인상 성공(c.raises), 클러치 성공(c.clutchWins), 워크온 입학(c.milestones).
+ * 기록에 남지 않는 것만 따로 세요: 연봉 인상 성공(c.raises), 클러치 성공(c.clutchWins), 라이벌전 승리(c.rivalWins), 워크온 입학(c.milestones).
  * 업적은 브라우저마다 한 번만 따요. 브라우저에서 이미 딴 업적은 새 커리어에서 조건을 채워도 다시 뜨지 않아요.
  * 커리어마다 처음 딴 업적은 c.achv에 남고, 브라우저에서 딴 업적과 누적 기록은 storage.ts가 모아 둬요(setBrowserRecord).
  * '누적 기록' 업적은 이 브라우저에서 누적 기록을 세기 시작한 뒤로 플레이한 모든 커리어를 더해 판정해요.
  * 업적 창은 따기 전에는 이름과 힌트(hint)만, 딴 뒤에는 조건(desc)까지 보여줘요.
  */
 
-export type AchievementGroup = "school" | "team" | "award" | "ability" | "path" | "life" | "lifetime";
+export type AchievementGroup = "school" | "team" | "award" | "ability" | "path" | "life" | "military" | "lifetime";
 
 export const ACHIEVEMENT_GROUPS: Record<AchievementGroup, string> = {
   school: "고교·대학",
@@ -25,6 +25,7 @@ export const ACHIEVEMENT_GROUPS: Record<AchievementGroup, string> = {
   ability: "능력치",
   path: "드래프트·진로",
   life: "국가대표·커리어",
+  military: "병역",
   lifetime: "누적 기록",
 };
 
@@ -128,6 +129,14 @@ const MAXED: Record<AttrKey, [string, string, string]> = {
   iq: ["농구 도사", "BQ", "농구가 제일 쉬웠어요!"],
   ath: ["휴먼 하이라이트 필름", "운동능력", "코트 위 모든 순간이 Kodak Moment"],
 };
+/** 상무나 현역으로 입대했는지 (복무 중이거나 전역) */
+const enlisted = (c: Career, kind: MilitaryKind) => c.mil.kind === kind && (c.mil.s === "serving" || c.mil.s === "served");
+/** 그 형태로 복무를 마치고 돌아온 뒤의 프로 시즌. 복무 시즌이 없으면 빈 목록이에요. */
+function afterService(v: View, kind: MilitaryKind): SeasonRecord[] {
+  const years = v.c.hist.filter((h) => h.mil === kind).map((h) => h.year);
+  return years.length ? v.pro.filter((h) => h.year > Math.max(...years)) : [];
+}
+
 /** 히든 스탯 보너스까지 더한 오버롤로 넘어야 하는 값 */
 const BEYOND = 100;
 
@@ -311,6 +320,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     group: "award",
     test: (v) => proCount(v, "scoring") >= 7,
   },
+  { id: "rival_killer", name: "라이벌 킬러", desc: "라이벌전에 뛰어 6번 이상 승리", hint: "라이벌만 만나면 더 힘이 나요", group: "award", test: (v) => (v.c.rivalWins ?? 0) >= 6 },
   { id: "clutch_master", name: "클러치 귀재", desc: "클러치 상황에서 10번 이상 성공", hint: "경기 막판, 마지막 공은 내 손에", group: "award", test: (v) => v.c.clutchWins >= 10 },
   {
     id: "ageless",
@@ -403,6 +413,38 @@ export const ACHIEVEMENTS: Achievement[] = [
     test: (v) => v.c.owned.filter((k) => shopItem(k)?.cat === "사치품").length >= LUXURY_COUNT,
   },
   { id: "donor", name: "기부천사", desc: "유소년 농구에 누적 1000억 이상 기부", hint: "유소년 농구에 아낌없이", group: "life", test: (v) => v.c.donated >= 1000 },
+
+  // 병역: 대한민국 선수만 입대해요.
+  { id: "sangmu", name: "국군체육부대 입단", desc: "상무에 입대", hint: "군복을 입고도 코트 위에", group: "military", test: (v) => enlisted(v.c, "sangmu") },
+  {
+    id: "sangmu_champ",
+    name: "불사조 군단",
+    desc: "상무에서 D리그 우승", hint: "군인 선수로도 정상에",
+    group: "military",
+    test: (v) => v.c.hist.some((h) => h.mil === "sangmu" && h.result === "KBL D리그 우승"),
+  },
+  {
+    id: "sangmu_nba",
+    name: "군필 NBA리거",
+    desc: "상무 전역 뒤 NBA 진출", hint: "군 복무를 마치고 꿈의 무대로",
+    group: "military",
+    test: (v) => afterService(v, "sangmu").some((h) => h.lg === "nba"),
+  },
+  { id: "army", name: "대한민국 육군", desc: "현역으로 입대", hint: "18개월 동안 코트 대신 연병장으로", group: "military", test: (v) => enlisted(v.c, "army") },
+  {
+    id: "army_mvp",
+    name: "예비역의 반란",
+    desc: "현역 전역 뒤 정규시즌 MVP", hint: "떨어진 감각을 되찾아 리그 최고로",
+    group: "military",
+    test: (v) => afterService(v, "army").some((h) => isMvp(v, h)),
+  },
+  {
+    id: "army_ring",
+    name: "병장 출신 챔피언",
+    desc: "현역 전역 뒤 프로 우승", hint: "전역하고 반지까지",
+    group: "military",
+    test: (v) => afterService(v, "army").some(champ),
+  },
 
   // 누적 기록: 이 브라우저에서 플레이한 모든 커리어를 더해요.
   lifetime("retire3", "다시 쓰는 농구 인생", "한 번의 농구 인생으로는 모자라요", "모든 커리어 합계 은퇴 3번", (l) => l.t.careers, 3, "번"),

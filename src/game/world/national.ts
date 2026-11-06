@@ -112,6 +112,9 @@ export function natEventFor(year: number, n: Nation): NatEventKey {
 
 export const nationOf = (c: Career): Nation => NATIONS.find((n) => n.name === c.p.nat) ?? NATIONS[0];
 
+/** 국대체질 선수가 대표팀 전력에 더 보태는 값 */
+const NAT_TRAIT_BOOST = 2;
+
 /** 선수 한 명이 대표팀 전력에 더하는 값. 발탁 기준을 넘을수록 커지지만 7이 한계예요. */
 export function playerBoost(o: number, n: Nation): number {
   return clamp(1 + (o - n.threshold) * 0.3, 1, 7);
@@ -304,9 +307,11 @@ export function runNationalTeam(c: Career, ev: NatEventKey, year: number, join: 
   const tag = decisionTag(c);
   const name = `${year} ${NAT_EVENTS[ev]}`;
   const o = ovr(c.p);
-  const power = teamPower(n, ev, join ? o : undefined);
+  // 국대체질: 대표팀에서 더 잘 뛰어 전력에 2만큼 더 보태요.
+  const extra = join && c.p.trait === "국대체질" ? NAT_TRAIT_BOOST : 0;
+  const power = teamPower(n, ev, join ? o : undefined) + extra;
   const wcq = c.nat.wcq;
-  const r = simulateTournament(ev, n, power, ev === "worldcup" && wcq?.y === year ? wcq.ok : undefined, join ? { boost: playerBoost(o, n) } : undefined);
+  const r = simulateTournament(ev, n, power, ev === "worldcup" && wcq?.y === year ? wcq.ok : undefined, join ? { boost: playerBoost(o, n) + extra } : undefined);
   if (ev === "wcq") c.nat.wcq = { y: year + 1, ok: r.label === "본선 진출 확정" };
   const t: NatTournament = { year, ev, name, joined: join, label: r.label, medal: r.medal, story: r.story, games: r.games };
   c.natLog = [...c.natLog, t].slice(-NAT_LOG_LIMIT);

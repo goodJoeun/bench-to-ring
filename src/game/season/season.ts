@@ -86,6 +86,15 @@ const POT_CUT_AGE = 21;
 
 /** 빅매치 이름 */
 const BIG_GAMES = ["라이벌전", "순위 싸움 빅매치", "전국 중계 경기", "연고지 더비"];
+/** 빅매치·클러치 이름 가운데 라이벌전. 걸리면 다음 경기를 라이벌전으로 기록해요. */
+const RIVAL_GAME = BIG_GAMES[0];
+
+/** 빅매치·클러치 이름을 뽑아요. 라이벌전이면 다음 경기를 라이벌전으로 표시해요. */
+function bigGameLabel(run: SeasonRun): string {
+  const label = pick(BIG_GAMES);
+  if (label === RIVAL_GAME) run.rival = true;
+  return label;
+}
 
 /**
  * 한 시즌 동안 다칠 위험. 건강이 낮을수록, 오래 뛸수록, 나이가 많을수록 커요.
@@ -98,6 +107,7 @@ function injuryRisk(c: Career, min: number, inv: InvestKey[]): number {
     (100 - c.health) / 300 +
     (p.trait === "유리몸" ? 0.12 : 0) -
     (p.trait === "강철몸" ? 0.05 : 0) +
+    (p.trait === "연습벌레" ? 0.03 : 0) +
     (min / 38) * 0.07 -
     (c.focus === "rest" ? 0.06 : 0) +
     (c.age > 30 ? (c.age - 30) * 0.012 : 0);
@@ -252,7 +262,7 @@ function planTeamSeason(c: Career, run: SeasonRun): void {
   const hd = p.h - 198;
   const wsd = p.wsd;
   const f = min / 36;
-  const vr = p.trait === "꾸준함" ? 0.05 : 0.1;
+  const vr = p.trait === "꾸준함" ? 0.05 : p.trait === "기분파" ? 0.2 : 0.1;
   const st = (v: number) => Math.max(0, v * f * rnd(1 - vr, 1 + vr));
   // 에이스 몫: NBA에서 리그 평균보다 크게 앞선 선수는 공격을 더 맡아 슛을 더 많이 쏴요.
   const ace = team.lg === "nba" ? 1 + clamp((ovr0 - L.avg - NBA_ACE_FROM) * NBA_ACE_STEP, 0, NBA_ACE_CAP) : 1;
@@ -270,7 +280,9 @@ function planTeamSeason(c: Career, run: SeasonRun): void {
 
   // 팀 성적: 승수를 먼저 정하고, 경기마다 남은 승수를 나눠 줘요.
   team.q = clamp(team.q + rnd(-0.06, 0.06), 0.2, 0.8);
-  const contrib = (ovr0 - L.avg) * 0.011 * clamp(min / 30, 0, 1.2) * (gp / L.games) * (ovr0 > L.avg ? fx.team : 1);
+  // 리더십: 뛴 만큼 팀 승률을 더 끌어올려요 (주전으로 시즌을 다 뛰면 +3%p).
+  const lead = p.trait === "리더십" ? 0.03 * clamp(min / 30, 0, 1) * (gp / L.games) : 0;
+  const contrib = (ovr0 - L.avg) * 0.011 * clamp(min / 30, 0, 1.2) * (gp / L.games) * (ovr0 > L.avg ? fx.team : 1) + lead;
   run.games = L.games;
   run.wins = Math.round(L.games * clamp(team.q + contrib + rnd(-0.06, 0.06), 0.1, 0.9));
   // 시즌 중 결정은 정규시즌 초중반과 후반에 한 번씩 생길 수 있어요.
@@ -373,6 +385,9 @@ function playGame(c: Career, run: SeasonRun, tag: string): void {
   const line: GameLine = { n, opp: next?.opp ?? nextOpponent(run, lg, team.name, c.p.nat)[0], us, them, win };
   if (forced) line.clutch = forced;
   if (forced && next?.ot) line.ot = true;
+  const rival = run.rival;
+  run.rival = false;
+  if (rival) line.rival = true;
   if (run.out > 0) {
     line.out = run.outWhy;
     addHealth(c, REST_HEAL);
@@ -381,6 +396,8 @@ function playGame(c: Career, run: SeasonRun, tag: string): void {
       if (run.outWhy === "합류 전") addNews(c, tag, "info", "전역 후 시즌 중반부터 팀에 합류했어요.");
     }
   } else line.me = playMinutes(c, run);
+  // 라이벌전은 내가 뛰어서 이겨야 세요.
+  if (rival && line.me && win) c.rivalWins++;
   run.log.unshift(line);
   if (run.log.length > LOG_LIMIT) run.log.length = LOG_LIMIT;
   // 이벤트로 오른(내린) 경기력은 경기를 치를수록 평소대로 돌아와요.
@@ -388,7 +405,7 @@ function playGame(c: Career, run: SeasonRun, tag: string): void {
   if (run.checks.includes(n)) checkEvent(c, EVENT_CHANCE);
   // 빅매치: 다음 경기에 몸을 던질지 고르게 해요. 로테이션 이상이고 뛸 수 있을 때만이에요.
   else if (run.bigs.includes(n) && run.out === 0 && run.min >= 10 && n < run.games && chance(BIG_GAME_CHANCE))
-    c.queue.push(bigGameDecision(c, pick(BIG_GAMES), false));
+    c.queue.push(bigGameDecision(c, bigGameLabel(run), false));
   // 클러치: 주전 이상이 다음 경기의 마지막 플레이를 맡아요. 정해 둔 경기에 다른 결정이 겹치거나 결장 중이면 다음 경기로 미뤄요.
   else if (run.shots.length > 0 && n >= run.shots[0] && run.out === 0 && run.min >= STARTER_MIN && n < run.games) {
     run.shots.shift();
@@ -396,7 +413,7 @@ function playGame(c: Career, run: SeasonRun, tag: string): void {
     const [oppName, oppColor] = nextOpponent(run, lg, team.name, c.p.nat);
     const board = { lg, team: team.name, teamColor: team.color, opp: oppName, oppColor, tie: gameScore(FINAL_SCORE[lg], true)[1], lead: drawClutchLead() };
     run.next = board;
-    c.queue.push(clutchDecision(c, pick(BIG_GAMES), LEAGUES[lg].avg, board));
+    c.queue.push(clutchDecision(c, bigGameLabel(run), LEAGUES[lg].avg, board));
   }
 }
 
@@ -454,7 +471,7 @@ function endRegularSeason(c: Career, run: SeasonRun, tag: string): void {
   const amateur = !LEAGUES[lg].pro;
   const wp = run.w / run.games;
   const playoffs = wp >= 0.55 || (wp >= 0.47 && chance(0.4));
-  const champ = playoffs && chance(sigmoid((wp - 0.63) / 0.05) * 0.6 + (c.p.trait === "승부사" ? 0.06 : 0));
+  const champ = playoffs && chance(sigmoid((wp - 0.63) / 0.05) * 0.6 + (c.p.trait === "승부사" ? 0.06 : c.p.trait === "새가슴" ? -0.03 : 0));
   // KBL은 정규리그 1·2위가 6강을 건너뛰고 4강으로 직행해요. 54경기에서 1·2위는 대개 승률 6할 5푼 안팎이에요.
   const bye = playoffs && lg === "kbl" && (wp >= 0.65 || (wp >= 0.59 && chance(0.4)));
   // 몇 라운드를 치르는지: 우승이면 결승까지 모두, 아니면 진 라운드까지
@@ -731,17 +748,34 @@ export function seasonProgress(run: SeasonRun): { label: string; pct: number } {
   return { label, pct };
 }
 
+/**
+ * 특성별 성장 배율. 성장 특성(조기성장·대기만성·꾸준함·연습벌레·천재형)이 커리어 전체로는 비슷한 결과를 내도록 맞춘 값이에요.
+ * 조기성장은 일찍 앞서는 대신 24세부터 확실히 느려지고, 대기만성은 늦게 출발해 22~28세에 크게 따라잡아 가장 높은 전성기에 닿아요.
+ * 바꿀 때는 특성마다 커리어 1,000개를 돌려 최고 오버롤·랭킹 점수·NBA 진출률이 비슷한지 확인해요.
+ */
+const TRAIT_GROWTH = {
+  early: { youth: 1.15, late: 0.65 },
+  bloomer: { youth: 0.9, peak: 1.35, from: 22, to: 28 },
+  steady: 1.05,
+  /** 연습벌레: 균형 훈련과 집중 훈련 배율 */
+  worker: { bal: 1.15, focus: 2.1 },
+  /** 천재형: BQ 성장 배율과, 떨어질 때 남기는 몫 */
+  genius: { grow: 1.35, decline: 0.5 },
+};
+
 function grow(c: Career, min: number, rating: number, tag: string, inv: InvestPerks): void {
   const p = c.p;
   const age = c.age;
   const base = ageBase(age);
   const t = p.trait;
   const ov = ovrOf(p.attrs, p.pos);
+  const G = TRAIT_GROWTH;
+  const blooming = t === "대기만성" && age >= G.bloomer.from && age <= G.bloomer.to;
   let tf = 1;
   if (base > 0) {
-    if (t === "조기성장") tf = age < 20 ? 1.25 : age >= 24 ? 0.7 : 1;
-    if (t === "대기만성") tf = age < 20 ? 0.8 : age >= 22 && age <= 28 ? 1.35 : 1;
-    if (t === "꾸준함") tf = 1.05;
+    if (t === "조기성장") tf = age < 20 ? G.early.youth : age >= 24 ? G.early.late : 1;
+    if (t === "대기만성") tf = age < 20 ? G.bloomer.youth : blooming ? G.bloomer.peak : 1;
+    if (t === "꾸준함") tf = G.steady;
   } else {
     if (t === "대기만성" && age <= 32) tf = 0.5;
     if (t === "강철몸") tf = 0.7;
@@ -764,8 +798,9 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: InvestPe
   const gear = shopPerks(c);
   const delta: Partial<Record<AttrKey, number>> = {};
   for (const [k] of ATTRS) {
-    // 균형은 모든 능력치가 1.1배, 집중은 고른 능력치만 1.5배로 커요.
-    const focus = c.focus === "bal" ? 1.1 : c.focus === "rest" ? 0.6 : c.focus === k ? 1.5 : 1;
+    // 균형은 모든 능력치가 1.1배, 집중은 고른 능력치만 1.5배로 커요. 연습벌레는 더 커요.
+    const worker = t === "연습벌레";
+    const focus = c.focus === "bal" ? (worker ? G.worker.bal : 1.1) : c.focus === "rest" ? 0.6 : c.focus === k ? (worker ? G.worker.focus : 1.5) : 1;
     let g: number;
     if (base > 0) g = base * headroom * minutesFactor * tf * perf * focus * rnd(0.55, 1.4);
     else {
@@ -774,6 +809,8 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: InvestPe
     }
     // 전담 트레이너: 맡은 능력치는 조금 더 크고, 노화로 떨어질 때는 덜 떨어져요.
     if (c.perks.trainer === k) g *= g > 0 ? 1.15 : 0.8;
+    // 천재형: BQ가 더 크고, 떨어질 때는 덜 떨어져요.
+    if (k === "iq" && t === "천재형") g *= g > 0 ? G.genius.grow : G.genius.decline;
     // 시즌 투자와 산 장비
     g *= g > 0 ? inv.growth[k] * gear.growth[k] : inv.decline[k] * gear.decline;
     if (k === "iq" && age >= 24 && age <= 33) g += 0.5;

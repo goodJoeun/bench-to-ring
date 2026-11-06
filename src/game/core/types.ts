@@ -38,7 +38,20 @@ export type InvestKey =
   | "academy";
 /** 상점 상품 키 (shop.ts의 SHOP 목록) */
 export type ShopKey = string;
-export type Trait = "조기성장" | "대기만성" | "꾸준함" | "강철몸" | "유리몸" | "승부사";
+export type Trait =
+  | "조기성장"
+  | "대기만성"
+  | "꾸준함"
+  | "기분파"
+  | "강철몸"
+  | "유리몸"
+  | "승부사"
+  | "새가슴"
+  | "연습벌레"
+  | "천재형"
+  | "스타성"
+  | "리더십"
+  | "국대체질";
 export type Grade = "S" | "A" | "B" | "C" | "D";
 export type Role = "에이스" | "주전" | "식스맨" | "로테이션" | "벤치" | "엔드 오브 벤치";
 export type NewsType = "info" | "good" | "bad" | "award" | "big" | "move";
@@ -234,6 +247,8 @@ export interface GameLine {
   clutch?: "win" | "loss";
   /** 연장전까지 간 경기 */
   ot?: boolean;
+  /** 라이벌전 (빅매치나 클러치가 라이벌전으로 걸린 경기) */
+  rival?: boolean;
 }
 
 /** 플레이오프(전국대회) 한 라운드 */
@@ -311,6 +326,8 @@ export interface SeasonRun {
   opps?: string[];
   /** 클러치가 걸린 다음 경기의 상대와 동점 점수. 그 경기는 이 상대를 만나 마지막 플레이로 2점 차가 나요. */
   next?: ClutchBoard | null;
+  /** 다음 경기가 라이벌전인지. 빅매치나 클러치가 라이벌전으로 걸리면 켜고, 그 경기를 치르면 꺼요. */
+  rival?: boolean;
   /** 전역 후 합류하는 시즌 */
   back: boolean;
   tot: SeasonTotals;
@@ -697,6 +714,8 @@ export interface Career {
   raises: number;
   /** 클러치 상황에서 성공한 횟수 (클러치 귀재) */
   clutchWins: number;
+  /** 라이벌전에 뛰어 이긴 횟수 (라이벌 킬러) */
+  rivalWins: number;
   /** 가장 최근 드래프트의 지명 순서 */
   draftShow: DraftShow | null;
   /** 다음 시즌에 할 투자 (고른 순서). 시즌을 시작할 때 비용을 내요. */
