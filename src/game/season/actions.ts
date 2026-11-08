@@ -7,8 +7,9 @@ import { currentDecision, negotiable, negotiation, resolveQueue } from "./decisi
 import { runDraft } from "../world/draft";
 import { addNews, decisionTag, joinTeam, leaveTeam, setTeam } from "../career/log";
 import { applyMilitary } from "../world/military";
-import { runNationalTeam } from "../world/national";
-import { clutchFinal } from "./events";
+import { runNationalTeam, settleNatFinal } from "../world/national";
+import { boardScore, clutchFinal, finalsPrize } from "./events";
+import { settleLeagueFinal } from "./season";
 import { chance, shuffle } from "../core/random";
 import type { Action, Boost, Career, ProLeagueKey, Team } from "../core/types";
 import { clamp, josa, money, ro, round2, roundSalary } from "../core/util";
@@ -127,6 +128,10 @@ export function applyAction(c: Career, a: Action): void {
       const ok = chance(a.p);
       // 뒤진 채 2점짜리 플레이는 성공해도 동점이라 연장에서 한 번 더 승부해요.
       const win = ok && (a.ot === undefined || chance(a.ot));
+      if (a.finals) {
+        applyFinalClutch(c, a, ok, win, tag);
+        break;
+      }
       if (c.run) {
         c.run.forced = win ? "win" : "loss";
         c.run.form = clamp(c.run.form + (win ? 0.8 : ok ? 0.2 : -0.4), -2, 2);
@@ -162,6 +167,39 @@ export function applyAction(c: Career, a: Action): void {
     case "none":
       break;
   }
+}
+
+/**
+ * 결승 클러치 결과: 리그 결승이면 우승·준우승과 시리즈를, 국가대표 결승이면 메달을 정해요.
+ * 성공하면 일반 클러치처럼 그 능력치가 오르고 클러치 승리로 세요.
+ */
+function applyFinalClutch(c: Career, a: Extract<Action, { k: "clutch" }>, ok: boolean, win: boolean, tag: string): void {
+  const board = a.finals === "nat" ? c.natFinal?.board : c.run?.next;
+  const end = board ? clutchFinal(board, a, ok, win) : {};
+  const fallback = board ? boardScore(board) : ([80, 78] as [number, number]);
+  const score = end.final ?? (win ? fallback : ([fallback[1], fallback[0] + 2] as [number, number]));
+  if (a.finals === "nat") settleNatFinal(c, win, score, end.ot);
+  else {
+    settleLeagueFinal(c, win, score, end.ot);
+    if (c.run && board) c.run.next = { ...board, ...end };
+  }
+  if (ok) addAttr(c.p.attrs, a.attr, 1);
+  if (win) c.clutchWins++;
+  const [prize, second] = board ? finalsPrize(board) : ["우승", "준우승"];
+  const name = board?.finals ?? "결승";
+  const up = `${SHORT[a.attr]} +1`;
+  addNews(
+    c,
+    tag,
+    win ? "big" : "bad",
+    !ok
+      ? `결승 클러치 실패. ${josa(a.play, "을", "를")} 노렸지만 막혀 ${name} ${second}에 그쳤어요.`
+      : a.ot === undefined
+        ? `결승 클러치 성공! ${ro(a.play)} ${name}에서 ${prize}을 확정했어요. ${up}`
+        : win
+          ? `결승 클러치 성공! ${ro(a.play)} 동점을 만들고 연장 끝에 ${prize}을 차지했어요. ${up}`
+          : `${ro(a.play)} 동점을 만들었지만 연장 끝에 져 ${second}에 그쳤어요. ${up}`,
+  );
 }
 
 /** 지금 결정의 i번째 선택지를 고르고, 다음 결정을 준비해요. */

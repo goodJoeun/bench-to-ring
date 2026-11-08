@@ -2173,6 +2173,150 @@ describe("클러치", () => {
   });
 });
 
+describe("결승 클러치", () => {
+  function kblAce(id: string, rel = 14): Career {
+    const c = createCareer({ name: "결승", num: 23, pos: "SF", path: "domestic" }, generateCandidates("SF")[0], id);
+    for (const k of ATTR_KEYS) c.p.attrs[k] = LEAGUES.kbl.avg + rel;
+    c.p.pot = 99;
+    c.age = 26;
+    c.mil = { s: "exempt" };
+    c.stage = "pro";
+    c.team = { name: "서울 SK 나이츠", color: "#D7141A", q: 0.75, lg: "kbl" };
+    c.contract = { years: 5, salary: 3 };
+    return c;
+  }
+  const isFinalClutch = (d: Decision | null) => !!d?.board?.finals && d.opts.every((o) => o.act.k === "clutch" && o.act.finals);
+  /** 결승 클러치의 성공 확률을 p로 고정하고 첫 선택지를 골라요. */
+  function pickFinal(c: Career, p: number) {
+    const d = currentDecision(c)!;
+    for (const o of d.opts) if (o.act.k === "clutch") Object.assign(o.act, { p, ot: o.act.ot === undefined ? undefined : 1 });
+    chooseOption(c, 0);
+  }
+  /** 결승 클러치가 걸리는 시즌까지 돌려요. 걸리면 그 결정에서 멈춘 커리어를 돌려줘요. */
+  function seasonWithFinalClutch(seed: number): Career {
+    setRandom(seeded(seed));
+    for (let i = 0; i < 80; i++) {
+      const c = kblAce(`fc${seed}-${i}`);
+      startSeason(c);
+      while (c.run) {
+        const d = currentDecision(c);
+        if (isFinalClutch(d)) return c;
+        if (d) chooseOption(c, 0);
+        else stepSeason(c);
+      }
+    }
+    throw new Error("결승 클러치가 걸린 시즌이 없어요");
+  }
+
+  it("에이스가 결승에 오르면 우승이 걸린 7차전 클러치가 걸리고, 성공하면 4-3 우승이에요", () => {
+    const c = seasonWithFinalClutch(301);
+    const d = currentDecision(c)!;
+    expect(d.art).toBe("clutch");
+    expect(d.title).toBe(`결승 클러치 · ${c.run!.year} KBL 챔피언결정전 7차전`);
+    expect(d.board).toMatchObject({ lg: "kbl", team: "서울 SK 나이츠", opp: c.run!.final!.opp, finals: `${c.run!.year} KBL 챔피언결정전 7차전` });
+    expect(d.opts.every((o) => o.sub?.includes("우승"))).toBe(true);
+    const rings = c.awards.ring ?? 0;
+    pickFinal(c, 1);
+    expect(c.run!.final).toMatchObject({ win: true, series: "4-3" });
+    expect(c.run!.champ).toBe(true);
+    expect(c.run!.post.at(-1)).toMatchObject({ win: true, score: "4-3" });
+    expect(c.news[0].m).toContain("결승 클러치 성공");
+    expect(c.run!.final!.us).toBeGreaterThan(c.run!.final!.them);
+    // 마지막 플레이로 경기가 끝났으니 결승을 처음부터 다시 중계하지 않고, 결승 결과 소식으로 넘어가요.
+    const steps: (string | null)[] = [];
+    while (c.run) steps.push(currentDecision(c) ? (chooseOption(c, 0), null) : stepSeason(c));
+    expect(steps).not.toContain("final");
+    expect(c.live?.key).not.toBe(`league-${c.last!.year}`);
+    expect(c.news.some((n) => n.m.startsWith(`KBL 챔피언결정전 · ${c.last!.final!.opp} 상대 4-3 승리`))).toBe(true);
+    expect(c.last!.result).toBe("리그 우승");
+    expect(c.awards.ring).toBe(rings + 1);
+    expect(c.last!.final).toMatchObject({ win: true, series: "4-3" });
+  });
+
+  it("결승 클러치에 실패하면 3-4 준우승이고 반지를 받지 못해요", () => {
+    const c = seasonWithFinalClutch(302);
+    const rings = c.awards.ring ?? 0;
+    pickFinal(c, 0);
+    expect(c.run!.final).toMatchObject({ win: false, series: "3-4" });
+    expect(c.news[0].m).toContain("결승 클러치 실패");
+    while (c.run) if (!stepSeason(c)) chooseOption(c, 0);
+    expect(c.last!.result).toBe("챔피언결정전 준우승");
+    expect(c.awards.ring ?? 0).toBe(rings);
+    expect(c.last!.final!.us).toBeLessThan(c.last!.final!.them);
+  });
+
+  it("결승에 오른 에이스·주전은 일정 확률로 결승 클러치를 맡고, 그 아래 역할은 맡지 않아요", () => {
+    setRandom(seeded(303));
+    const count = (rel: number) => {
+      let finals = 0;
+      let clutch = 0;
+      for (let i = 0; i < 60; i++) {
+        const c = kblAce(`rate${rel}-${i}`, rel);
+        startSeason(c);
+        let asked = false;
+        while (c.run) {
+          const d = currentDecision(c);
+          if (isFinalClutch(d)) asked = true;
+          if (d) chooseOption(c, 0);
+          else stepSeason(c);
+        }
+        if (c.last!.final && c.last!.gp > 0) {
+          finals++;
+          if (asked) clutch++;
+        }
+      }
+      return { finals, rate: clutch / Math.max(1, finals) };
+    };
+    const ace = count(14);
+    expect(ace.finals).toBeGreaterThan(10);
+    expect(ace.rate).toBeGreaterThan(0.3);
+    expect(ace.rate).toBeLessThan(0.9);
+    const bench = count(-14);
+    expect(bench.rate).toBe(0);
+  });
+
+  it("국가대표 결승 클러치: 결승 전까지만 치르고 기다렸다가, 고르면 메달·결승 중계·병역 특례를 정해요", () => {
+    setRandom(seeded(304));
+    const make = (i: number) => {
+      const c = createCareer({ name: "대표", num: 7, nat: "대한민국", pos: "SG", path: "domestic" }, generateCandidates("SG")[0], `nf${i}`);
+      for (const k of ATTR_KEYS) c.p.attrs[k] = 92;
+      c.age = 25;
+      return c;
+    };
+    for (const p of [1, 0]) {
+      let c: Career | null = null;
+      for (let i = 0; i < 200 && !c; i++) {
+        const x = make(i * 2 + p);
+        runNationalTeam(x, "asiangames", 2030, true);
+        if (x.natFinal) c = x;
+      }
+      expect(c).not.toBeNull();
+      const t = c!.natLog.at(-1)!;
+      expect(t).toMatchObject({ label: "결승 진출", medal: null });
+      expect(t.games.some((g) => g.stage === "결승")).toBe(false);
+      expect(c!.awards.nat_gold ?? 0).toBe(0);
+      expect(c!.live).toBeNull();
+      const d = currentDecision(c!)!;
+      expect(isFinalClutch(d)).toBe(true);
+      expect(d.board).toMatchObject({ lg: "nat", finals: "2030 아시안게임 결승" });
+      expect(d.opts.every((o) => o.sub?.includes("금메달"))).toBe(true);
+      const caps = c!.nat.caps;
+      pickFinal(c!, p);
+      const after = c!.natLog.at(-1)!;
+      expect(c!.natFinal).toBeNull();
+      expect(after.games.at(-1)).toMatchObject({ stage: "결승", win: p === 1 });
+      expect(after.medal).toBe(p === 1 ? "금" : "은");
+      expect(after.clutch).toMatchObject({ win: p === 1 });
+      expect(c!.nat.caps).toBe(caps + 1);
+      // 결승 마지막 플레이를 이미 골랐으니 결승 중계는 만들지 않아요.
+      expect(c!.live).toBeNull();
+      expect(p === 1 ? c!.awards.nat_gold : c!.awards.nat_silver).toBe(1);
+      // 아시안게임 금메달이면 병역 특례예요.
+      expect(c!.mil.s).toBe(p === 1 ? "exempt" : "none");
+    }
+  });
+});
+
 describe("리그별 시상", () => {
   it("같은 상도 리그마다 실제 이름으로 불러요", () => {
     expect(awardName("nba", "allleague")).toBe("올-NBA 퍼스트팀");

@@ -157,6 +157,7 @@ export function createCareer(input: NewCareerInput, cand: Candidate, id = String
     perks: {},
     mil: { s: "none" },
     natLog: [],
+    natFinal: null,
     live: null,
     draftShow: null,
     invest: [],

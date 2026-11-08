@@ -4,7 +4,7 @@ import { careerTotals, newlyRanked } from "../legacy/records";
 import { HEALTH_RANGE, addAttr, addHealth, clampTrust } from "../player/condition";
 import { ATTRS, POS, ROLE_RANK } from "../core/data";
 import { currentDecision } from "./decisions";
-import { bigGameDecision, clutchDecision, drawClutchLead, injuryDecision, seasonEvent } from "./events";
+import { FINAL_CLUTCH_CHANCE, bigGameDecision, clutchDecision, drawClutchLead, injuryDecision, seasonEvent } from "./events";
 import { LEAGUES, SCORING_TITLE, leagueTeams } from "../world/leagues";
 import { FINAL_SCORE, finalScore, gameScore, makeLiveGame } from "./live";
 import { ALL_DEF_TIERS, ALL_LEAGUE_TIERS, awardName, conferenceFinalsMvpName } from "../world/awards";
@@ -17,7 +17,7 @@ import { chance, pick, random, ri, rnd, seededPick, shuffle } from "../core/rand
 import { shopPerks } from "../economy/shop";
 import { BONUS_CAP, SPECIALTIES, combinedEffect, specialtiesOf } from "../player/specialty";
 import { ageBase, ovr, ovrOf, roleOf } from "../player/ratings";
-import type { AttrKey, AwardKey, Career, GameLine, InvestKey, LeagueKey, SeasonRecord, SeasonRun } from "../core/types";
+import type { AttrKey, AwardKey, Career, ClutchBoard, GameLine, InvestKey, LeagueKey, SeasonRecord, SeasonRun } from "../core/types";
 import { clamp, fmtNum, josa, r1, round2, sigmoid } from "../core/util";
 
 /*
@@ -330,16 +330,25 @@ export function stepSeason(c: Career): SeasonStep | null {
     c.queue.push(bigGameDecision(c, `${FINAL_NAME[c.team!.lg]}을 앞두고`, true));
     return "step";
   }
+  // 그다음, 주전·에이스면 우승이 걸린 결승 클러치가 걸릴 수 있어요. 고르고 나면 같은 칸을 다시 진행해 결승 중계를 보여줘요.
+  if (finalNext && run.finalClutch === undefined && run.tot.gp > 0 && run.out === 0) {
+    run.finalClutch = chance(FINAL_CLUTCH_CHANCE[roleOf(run.min)] ?? 0);
+    if (run.finalClutch) {
+      askFinalClutch(c, run, tag);
+      return "step";
+    }
+  }
   const round = run.post[run.shown++];
   const last = run.shown >= run.post.length;
   if (last) run.phase = "end";
   // 내가 뛴 경기가 있고 다치지 않았어야 결승 중계를 보여줘요.
+  // 결승 클러치로 끝난 결승은 마지막 플레이를 이미 골랐으니, 경기를 처음부터 다시 중계하지 않고 결과만 알려요.
   if (last && run.final && run.tot.gp > 0) {
-    if (run.out === 0) {
+    if (run.out === 0 && !run.finalClutch) {
       playFinal(c, run);
       return "final";
     }
-    addNews(c, tag, "bad", `${run.outWhy === "부상" ? "부상으로" : "몸 상태 때문에"} ${round.name}에 나서지 못했어요.`);
+    if (run.out > 0) addNews(c, tag, "bad", `${run.outWhy === "부상" ? "부상으로" : "몸 상태 때문에"} ${round.name}에 나서지 못했어요.`);
   }
   // 라운드 하나는 여러 경기라 결장도 몇 경기씩 지나가요.
   if (run.out > 0) run.out = Math.max(0, run.out - 3);
@@ -513,6 +522,51 @@ function endRegularSeason(c: Career, run: SeasonRun, tag: string): void {
     if (isFinal) run.final = { opp: opp.name, us, them, win, series };
   }
   run.phase = "post";
+}
+
+/**
+ * 결승 클러치: 결승 마지막 경기의 마지막 플레이를 맡겨요. 7전 4선승제는 3승 3패로 맞선 7차전, 단판은 결승 그 경기예요.
+ * 정해 둔 결승 결과는 클러치 결과로 다시 정해요(settleLeagueFinal).
+ */
+function askFinalClutch(c: Career, run: SeasonRun, tag: string): void {
+  const team = c.team!;
+  const lg = team.lg;
+  const f = run.final!;
+  const finals = `${run.year} ${FINAL_NAME[lg]}${f.series ? " 7차전" : ""}`;
+  const board: ClutchBoard = {
+    lg,
+    team: team.name,
+    teamColor: team.color,
+    opp: f.opp,
+    oppColor: run.post[run.post.length - 1].color,
+    tie: gameScore(FINAL_SCORE[lg], true)[1],
+    lead: drawClutchLead(),
+    finals,
+  };
+  run.next = board;
+  addNews(
+    c,
+    tag,
+    "big",
+    f.series ? `${FINAL_NAME[lg]} 3승 3패 · 운명의 7차전 막판, 우승이 당신 손에 걸렸어요.` : `${FINAL_NAME[lg]} 막판, 우승이 당신 손에 걸렸어요.`,
+  );
+  c.queue.push(clutchDecision(c, finals, LEAGUES[lg].avg, board));
+}
+
+/** 결승 클러치 결과로 결승과 시즌 성적을 정해요. 7전 4선승제면 시리즈는 4-3이나 3-4예요. */
+export function settleLeagueFinal(c: Career, win: boolean, score: [number, number], ot?: boolean): void {
+  const run = c.run;
+  const f = run?.final;
+  if (!run || !f || !c.team) return;
+  const lg = c.team.lg;
+  const series = f.series ? (win ? "4-3" : "3-4") : undefined;
+  run.final = { opp: f.opp, us: score[0], them: score[1], win, series, clutch: ot ? { ot } : {} };
+  run.champ = win;
+  const last = run.post[run.post.length - 1];
+  last.win = win;
+  last.score = series ?? `${score[0]}-${score[1]}`;
+  const all = playoffRounds(lg);
+  run.result = win ? (LEAGUES[lg].pro ? "리그 우승" : "전국대회 우승") : all.lose[all.lose.length - 1];
 }
 
 /** 결승 마지막 경기를 문자 중계로 만들어요. */

@@ -1755,12 +1755,12 @@ tr:last-child td {
 .cl-flash {
   position: fixed;
   inset: 0;
-  z-index: 70;
+  /* 국가대표 대회 진행 팝업(.sim, 70) 위에도 떠요. */
+  z-index: 72;
   display: grid;
   place-items: center;
   background: radial-gradient(circle at 50% 50%, rgba(255, 120, 40, 0.35), rgba(8, 10, 20, 0.82) 60%);
   animation: cl-flash-bg 1.5s ease-out both;
-  cursor: pointer;
 }
 .cl-flash::before {
   content: "";
@@ -1905,13 +1905,12 @@ tr:last-child td {
 .cl-res {
   position: fixed;
   inset: 0;
-  z-index: 70;
+  z-index: 72;
   display: grid;
   place-items: center;
   overflow: hidden;
   background: radial-gradient(circle at 50% 50%, rgba(30, 40, 60, 0.78), rgba(6, 8, 14, 0.94) 70%);
   animation: cl-flash-bg 1.9s ease-out both;
-  cursor: pointer;
 }
 .cl-res[data-win] {
   background: radial-gradient(circle at 50% 50%, rgba(120, 80, 10, 0.7), rgba(20, 14, 4, 0.93) 65%);
@@ -1959,7 +1958,9 @@ tr:last-child td {
 }
 .cl-res-core {
   position: relative;
+  max-width: calc(100vw - 32px);
   text-align: center;
+  text-wrap: balance;
   animation: cl-title 0.5s 0.1s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
 }
 .cl-res:not([data-win]) .cl-res-core {
@@ -2034,9 +2035,303 @@ tr:last-child td {
     translate: 0 -60px;
   }
 }
+/* 결승 클러치: 금테 전광판과 결승 이름 배너 */
+.cl-art[data-finals] {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 214, 102, 0.5), transparent 62%),
+    linear-gradient(180deg, #2a2210, #120e06);
+  box-shadow:
+    0 0 0 2px #d9a62e,
+    0 0 22px rgba(255, 196, 64, 0.45);
+  animation: cl-gold-pulse 1.6s ease-in-out infinite;
+}
+.cl-art[data-finals] .cl-board {
+  border-color: #c99a2e;
+}
+.cl-art[data-finals] .cl-score {
+  color: #ffe08a;
+  text-shadow: 0 0 14px rgba(255, 210, 90, 0.7);
+}
+.cl-banner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+  margin: -2px 2px 10px;
+}
+.cl-banner-icon {
+  grid-row: 1 / 3;
+  width: 30px;
+  height: 34px;
+  filter: drop-shadow(0 0 8px rgba(255, 210, 90, 0.8));
+}
+.cl-banner-t {
+  min-width: 0;
+  font-weight: 800;
+  font-size: 14px;
+  color: #ffe9a3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cl-banner-s {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #d9a62e;
+}
+/* 트로피·메달 그림 */
+.tr-cup {
+  fill: #f2c14e;
+}
+.tr-ear {
+  fill: none;
+  stroke: #f2c14e;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.tr-base {
+  fill: #b8860b;
+}
+.tr-shine {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.65);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.md-ribbon {
+  fill: #c8102e;
+}
+.md-ring {
+  fill: none;
+  stroke: #b8860b;
+  stroke-width: 2.5;
+}
+.md-star {
+  fill: #fff3c4;
+}
+@keyframes cl-gold-pulse {
+  50% {
+    box-shadow:
+      0 0 0 2px #ffd25a,
+      0 0 34px rgba(255, 210, 90, 0.7);
+  }
+}
+
+/* 결승 클러치 이펙트: 어두운 경기장에 엇갈리는 스포트라이트, 떠오르는 트로피, 관중석 카메라 플래시 */
+.cl-flash-finals {
+  overflow: hidden;
+  /* 국가대표 결승은 대회 진행 팝업 위에 떠서, 아래 제목이 비치지 않게 거의 불투명하게 덮어요. */
+  background: radial-gradient(circle at 50% 55%, rgb(74, 54, 10), rgb(6, 6, 12) 62%);
+  animation-duration: 2.3s;
+}
+.cl-flash-finals::before {
+  background: #fff4cc;
+}
+.cl-spot {
+  position: absolute;
+  top: -10%;
+  width: 46vmax;
+  height: 130vh;
+  background: linear-gradient(180deg, rgba(255, 244, 200, 0.55), rgba(255, 220, 120, 0.08) 75%, transparent);
+  clip-path: polygon(45% 0, 55% 0, 100% 100%, 0 100%);
+  transform-origin: 50% 0;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.cl-spot-l {
+  left: 2%;
+  animation: cl-sweep-l 2.3s ease-in-out both;
+}
+.cl-spot-r {
+  right: 2%;
+  animation: cl-sweep-r 2.3s ease-in-out both;
+}
+.cl-cam {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 18px 8px rgba(255, 255, 255, 0.85);
+  opacity: 0;
+  animation: cl-cam 0.32s var(--d) ease-out both;
+  pointer-events: none;
+}
+.cl-flash-finals .cl-flash-core {
+  /* 결승 이름과 상황이 길어서, 칸이 글자 길이만큼 늘지 않고 화면 안에서 줄을 바꿔요. */
+  grid-template-columns: minmax(0, 1fr);
+  width: min(640px, calc(100vw - 32px));
+  text-align: center;
+  animation: cl-rise 0.7s 0.15s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.cl-trophy {
+  width: 112px;
+  height: 126px;
+  filter: drop-shadow(0 0 26px rgba(255, 210, 90, 0.95));
+  animation: cl-float 1.4s 0.8s ease-in-out infinite alternate;
+}
+.cl-flash-finals .cl-flash-t {
+  /* 'FINALS CLUTCH'는 한 줄로 가운데에 둬요. 글자 크기는 화면 너비에 맞춰 줄어서 휴대폰에서도 넘치지 않아요. */
+  justify-self: center;
+  white-space: nowrap;
+  font-size: clamp(32px, 10vw, 56px);
+  background: linear-gradient(180deg, #fff7d6 10%, #ffd25a 55%, #c98a12);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 3px 0 #7a520a) drop-shadow(0 0 16px rgba(255, 200, 60, 0.7));
+}
+.cl-flash-finals .cl-flash-s {
+  text-align: center;
+  text-wrap: balance;
+  line-height: 1.5;
+  color: #ffe9a3;
+}
+@keyframes cl-sweep-l {
+  from {
+    rotate: -38deg;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  to {
+    rotate: 18deg;
+  }
+}
+@keyframes cl-sweep-r {
+  from {
+    rotate: 38deg;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  to {
+    rotate: -18deg;
+  }
+}
+@keyframes cl-cam {
+  0% {
+    opacity: 0;
+    scale: 0.3;
+  }
+  30% {
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.4;
+  }
+}
+@keyframes cl-rise {
+  from {
+    opacity: 0;
+    translate: 0 50px;
+    scale: 0.7;
+  }
+}
+@keyframes cl-float {
+  to {
+    translate: 0 -6px;
+  }
+}
+
+/* 결승 클러치 결과: 성공은 트로피가 솟고 축포가 터지는 우승 세리머니, 실패는 빛바랜 트로피와 준우승 */
+.cl-res[data-finals] {
+  background: radial-gradient(circle at 50% 50%, rgb(30, 40, 62), rgb(6, 8, 14) 70%);
+  animation-duration: 3s;
+}
+.cl-res[data-finals][data-win] {
+  background: radial-gradient(circle at 50% 45%, rgb(150, 102, 10), rgb(24, 16, 2) 66%);
+}
+.cl-res[data-finals][data-win] .cl-rays {
+  background: repeating-conic-gradient(rgba(255, 226, 120, 0.42) 0deg 6deg, transparent 6deg 15deg);
+  animation-duration: 9s;
+}
+.cl-res[data-finals] .cl-conf {
+  animation-duration: 2.4s;
+}
+.cl-fw {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 150px;
+  height: 150px;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(#ffd25a 0deg 4deg, transparent 4deg 18deg);
+  mask-image: radial-gradient(circle, transparent 18%, #000 22%, #000 46%, transparent 50%);
+  opacity: 0;
+  animation: cl-burst 0.9s var(--d) ease-out both;
+  pointer-events: none;
+}
+.cl-fw:nth-of-type(2n) {
+  background: repeating-conic-gradient(#ffffff 0deg 4deg, transparent 4deg 18deg);
+}
+.cl-fw:nth-of-type(3n) {
+  background: repeating-conic-gradient(#ff7a4a 0deg 4deg, transparent 4deg 18deg);
+}
+.cl-res-trophy {
+  display: block;
+  width: 96px;
+  height: 108px;
+  margin: 0 auto 6px;
+  filter: drop-shadow(0 0 28px rgba(255, 214, 90, 0.95));
+  animation: cl-lift 0.8s 0.1s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.cl-res:not([data-win]) .cl-res-trophy {
+  filter: grayscale(0.85) brightness(0.6);
+  animation: cl-drop 0.5s 0.1s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+.cl-res[data-finals][data-win] .cl-res-t {
+  background: linear-gradient(180deg, #fffbe6 10%, #ffd25a 55%, #c98a12);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 4px 0 #7a520a) drop-shadow(0 0 20px rgba(255, 200, 60, 0.85));
+}
+@keyframes cl-burst {
+  0% {
+    opacity: 0;
+    scale: 0.1;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.3;
+  }
+}
+@keyframes cl-lift {
+  from {
+    opacity: 0;
+    translate: 0 70px;
+    scale: 0.6;
+  }
+  70% {
+    translate: 0 -10px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .cl-rays,
   .cl-conf,
+  .cl-art[data-finals],
+  .cl-spot,
+  .cl-cam,
+  .cl-trophy,
+  .cl-fw,
+  .cl-res-trophy,
+  .cl-res:not([data-win]) .cl-res-trophy,
+  .cl-flash-finals .cl-flash-core,
   .cl-crack,
   .cl-res-core,
   .cl-res[data-win]::before,

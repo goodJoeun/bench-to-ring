@@ -172,7 +172,8 @@ export function ActionPanel({ career: c, playing, speed, busy, outcome, onAdvanc
 
   if (decision) {
     const remaining = c.queue.length;
-    const kind = run ? "시즌 중 결정" : "오프시즌 결정";
+    // 결승 클러치는 클럽 결승(시즌 중)과 국가대표 결승(오프시즌) 모두 같은 이름으로 보여줘요.
+    const kind = decision.board?.finals ? "결승전" : run ? "시즌 중 결정" : "오프시즌 결정";
     return (
       <>
         <button type="button" className="advance pending" onClick={() => setHiddenKey(null)}>

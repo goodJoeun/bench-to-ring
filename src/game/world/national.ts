@@ -2,9 +2,10 @@ import { addHealth } from "../player/condition";
 import { addNews, decisionTag, giveAward } from "../career/log";
 import { chance, pick, random, ri, rnd } from "../core/random";
 import { ovr } from "../player/ratings";
+import { FINAL_CLUTCH_CHANCE, clutchDecision, drawClutchLead } from "../season/events";
 import { makeLiveGame } from "../season/live";
 import { grantExemption, owesService } from "./military";
-import type { Career, Decision, NatEventKey, NatGame, Nation, NatTournament } from "../core/types";
+import type { Career, ClutchBoard, Decision, NatEventKey, NatGame, Nation, NatTournament, Role } from "../core/types";
 import { clamp, josa, sigmoid } from "../core/util";
 
 /*
@@ -291,15 +292,29 @@ export function simulateTournament(ev: NatEventKey, n: Nation, power: number, qu
       : done("4위", null, `준결승에서 ${sf.opp}에, 3·4위전에서 ${br.opp}에 져 4위로 마쳤어요.`);
   }
   const f = g(top(2), "결승");
+  return { ...finalResult(f), games, final: f };
+}
+
+/** 결승 결과로 정해지는 최종 성적 */
+function finalResult(f: NatGame): Pick<NatResult, "label" | "medal" | "story"> {
   return f.win
-    ? done("금메달", "금", `결승에서 ${josa(f.opp, "을", "를")} 꺾고(${score(f)}) 우승했어요!`, f)
-    : done("은메달", "은", `결승에서 ${f.opp}에 져(${score(f)}) 은메달을 땄어요.`, f);
+    ? { label: "금메달", medal: "금", story: `결승에서 ${josa(f.opp, "을", "를")} 꺾고(${score(f)}) 우승했어요!` }
+    : { label: "은메달", medal: "은", story: `결승에서 ${f.opp}에 져(${score(f)}) 은메달을 땄어요.` };
 }
 
 /* ---------- 결정 적용 ---------- */
 
 const MEDAL_KEY = { 금: "nat_gold", 은: "nat_silver", 동: "nat_bronze" } as const;
 const NAT_LOG_LIMIT = 40;
+
+/** 국가대표 결승 클러치에서 능력치를 견주는 수준: 발탁 기준 오버롤 + 이만큼. 결승 금메달 비율이 클러치 전과 비슷하게 맞췄어요. */
+const NAT_FINAL_LEVEL = 6;
+
+/** 대표팀에서의 역할: 전력에 보태는 몫(playerBoost)이 클수록 에이스예요. 결승 클러치는 주전 이상만 맡아요. */
+function natRole(o: number, n: Nation): Role {
+  const boost = playerBoost(o, n);
+  return boost >= 4 ? "에이스" : boost >= 2.5 ? "주전" : "로테이션";
+}
 
 /** 대표팀 합류 또는 불참. 어느 쪽이든 대표팀은 대회를 치르고, 결과를 기록과 소식으로 남겨요. */
 export function runNationalTeam(c: Career, ev: NatEventKey, year: number, join: boolean): NatTournament {
@@ -320,13 +335,63 @@ export function runNationalTeam(c: Career, ev: NatEventKey, year: number, join: 
     addNews(c, tag, "info", `${name}에 불참하고 몸을 추슬렀어요. ${n.name} 대표팀은 ${r.label} · ${r.story}`);
     return t;
   }
-  c.nat.caps += r.games.length;
   addHealth(c, -ri(2, 5));
+  if (chance(0.04)) {
+    addHealth(c, -10);
+    addNews(c, tag, "bad", "대표팀 경기 중 가벼운 부상을 입었어요. 다음 시즌 초반 몸 관리가 필요해요.");
+  }
+  // 결승에 오르면 주전·에이스는 금메달이 걸린 결승 클러치를 맡을 수 있어요. 메달은 클러치를 고른 뒤 정해요(settleNatFinal).
+  const f = r.final;
+  if (f && chance(FINAL_CLUTCH_CHANCE[natRole(o, n)] ?? 0)) {
+    t.games = r.games.slice(0, -1);
+    t.label = "결승 진출";
+    t.medal = null;
+    t.story = `결승에서 ${josa(f.opp, "과", "와")} 금메달을 다퉈요.`;
+    c.nat.caps += t.games.length;
+    const board: ClutchBoard = {
+      lg: "nat",
+      team: n.name,
+      teamColor: natColor(n.name),
+      opp: f.opp,
+      oppColor: natColor(f.opp),
+      tie: ri(62, 84),
+      lead: drawClutchLead(),
+      finals: `${name} 결승`,
+    };
+    c.natFinal = { year, ev, pts: f.pts, board };
+    addNews(c, tag, "big", `${n.name} 대표로 ${name} 출전 · 결승 진출! 금메달이 걸린 마지막 플레이가 당신 손에 걸렸어요.`);
+    // 결승 상대는 세계 정상급이라, 발탁 기준 오버롤보다 NAT_FINAL_LEVEL 높은 수준과 견줘요.
+    c.queue.unshift(clutchDecision(c, board.finals!, n.threshold + NAT_FINAL_LEVEL, board));
+    return t;
+  }
+  c.nat.caps += r.games.length;
+  finishNational(c, t, r.final);
+  return t;
+}
+
+/** 결승 클러치 결과로 국가대표 결승과 메달을 정하고 대회를 마무리해요. */
+export function settleNatFinal(c: Career, win: boolean, score: [number, number], ot?: boolean): void {
+  const pending = c.natFinal;
+  c.natFinal = null;
+  const t = pending && c.natLog.findLast((x) => x.year === pending.year && x.ev === pending.ev);
+  if (!pending || !t) return;
+  const f: NatGame = { stage: "결승", opp: pending.board.opp, us: score[0], them: score[1], win, pts: pending.pts };
+  t.games = [...t.games, f];
+  Object.assign(t, finalResult(f), { clutch: { win, us: score[0], them: score[1], opp: f.opp, ...(ot && { ot }) } });
+  c.nat.caps += 1;
+  // 결승 마지막 플레이를 이미 골랐으니 결승 중계는 만들지 않아요. 대회 화면은 결과 이펙트 뒤에 바로 최종 성적을 보여줘요.
+  finishNational(c, t, undefined);
+}
+
+/** 대표팀에 합류한 대회를 마무리해요: 메달, 소식, 결승 중계(f가 있으면), 병역 특례 */
+function finishNational(c: Career, t: NatTournament, f: NatGame | undefined): void {
+  const n = nationOf(c);
+  const tag = decisionTag(c);
+  const { year, ev, name } = t;
   const rec = c.hist.find((h) => h.year === year);
-  if (r.medal) giveAward(c, MEDAL_KEY[r.medal], `${name} ${r.medal}메달`, rec);
-  addNews(c, tag, r.medal ? "award" : "good", `${n.name} 대표로 ${name} 출전 · ${r.label} · ${r.story}`);
-  if (r.final) {
-    const f = r.final;
+  if (t.medal) giveAward(c, MEDAL_KEY[t.medal], `${name} ${t.medal}메달`, rec);
+  addNews(c, tag, t.medal ? "award" : "good", `${n.name} 대표로 ${name} 출전 · ${t.label} · ${t.story}`);
+  if (f) {
     c.live = makeLiveGame({
       title: `${name} 결승`,
       key: `nat-${year}`,
@@ -341,11 +406,6 @@ export function runNationalTeam(c: Career, ev: NatEventKey, year: number, join: 
       mine: { pts: f.pts ?? 0, reb: ri(1, 8), ast: ri(1, 6) },
     });
   }
-  if (n.name === "대한민국" && ((ev === "asiangames" && r.medal === "금") || (ev === "olympics" && r.medal)))
-    grantExemption(c, tag, `${name} ${r.medal}`);
-  if (chance(0.04)) {
-    addHealth(c, -10);
-    addNews(c, tag, "bad", "대표팀 경기 중 가벼운 부상을 입었어요. 다음 시즌 초반 몸 관리가 필요해요.");
-  }
-  return t;
+  if (n.name === "대한민국" && ((ev === "asiangames" && t.medal === "금") || (ev === "olympics" && t.medal)))
+    grantExemption(c, tag, `${name} ${t.medal}`);
 }

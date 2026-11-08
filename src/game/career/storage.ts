@@ -143,6 +143,7 @@ function normalize(c: Career): Career {
   c.perks ??= {};
   c.mil ??= { s: "none" };
   c.natLog ??= [];
+  c.natFinal ??= null;
   c.live ??= null;
   c.cheers ??= [];
   c.achv ??= [];

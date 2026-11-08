@@ -1,7 +1,7 @@
 import { SHORT } from "../core/data";
 import { pick, random, ri, rnd, shuffle } from "../core/random";
 import { ovr } from "../player/ratings";
-import type { AttrKey, Boost, Career, ClutchBoard, Decision, DecisionOption } from "../core/types";
+import type { AttrKey, Boost, Career, ClutchBoard, Decision, DecisionOption, Role } from "../core/types";
 import { clamp, josa, money, roundSalary } from "../core/util";
 
 /* ---------- 선택지 만들기 ---------- */
@@ -1349,6 +1349,21 @@ export const CLUTCH_SCENES: Record<ClutchScene, { lead: number; clock: string; s
     body: "2점 앞선 4쿼터 마지막 8초, 상대의 마지막 공격이에요. 이것만 막으면 이겨요. 어떻게 막을까요?",
   },
 };
+/** 결승에서 우승(국가대표는 금메달)이 걸린 마지막 플레이를 맡을 확률. 에이스와 주전만 맡아요. */
+export const FINAL_CLUTCH_CHANCE: Partial<Record<Role, number>> = { 에이스: 0.6, 주전: 0.35 };
+
+/** 결승 클러치의 상황 설명. 우승(국가대표는 금메달)이 걸려 있어요. */
+const FINAL_BODY: Record<ClutchScene, (prize: string) => string> = {
+  tie: (prize) =>
+    `동점으로 맞선 마지막 24초, ${prize}까지 남은 건 이 한 번의 플레이예요. 관중이 모두 일어섰고, 감독은 작전 타임에서 당신에게 공을 맡겼어요.`,
+  behind: (prize) =>
+    `2점 뒤진 마지막 12초, ${prize}을 향한 마지막 공격이에요. 3점으로 단번에 뒤집을까요, 동점을 만들어 연장으로 끌고 갈까요?`,
+  ahead: (prize) => `2점 앞선 마지막 8초, 상대의 마지막 공격만 막으면 ${prize}이에요. 어떻게 막을까요?`,
+};
+
+/** 결승 클러치에 걸린 것: [이기면, 지면] */
+export const finalsPrize = (b: Pick<ClutchBoard, "lg">): [string, string] => (b.lg === "nat" ? ["금메달", "은메달"] : ["우승", "준우승"]);
+
 /** 클러치 상황이 나오는 비율: 동점, 뒤진 채 공격, 앞선 채 수비 */
 const SCENE_WEIGHTS: [ClutchScene, number][] = [
   ["tie", 0.45],
@@ -1388,9 +1403,12 @@ export const overtimeOdds = (c: Career, leagueAvg: number): number => clamp(0.5 
  * - 2점 앞섬: 상대의 마지막 공격을 막는 수비 플레이 넷
  * 고른 플레이의 능력치가 리그 평균보다 높을수록 성공하기 쉬워요. 어떤 능력치를 쓰는지와 확률은 보여주지 않아요.
  * 성공하면 그 능력치가 오르고 경기를 이겨요(연장이면 연장에서 이겨야 해요). 실패하면 져요.
+ * 전광판에 결승 이름(finals)이 있으면 우승(국가대표는 금메달)이 걸린 결승 클러치예요. 이기면 우승, 지면 준우승으로 끝나요.
  */
 export function clutchDecision(c: Career, label: string, leagueAvg: number, board?: ClutchBoard): Decision {
   const scene = clutchScene(board);
+  const finals = board?.finals ? (board.lg === "nat" ? "nat" : "league") : undefined;
+  const [prize, second] = board ? finalsPrize(board) : ["", ""];
   let shown: ClutchPlay[];
   if (scene === "ahead") shown = shuffle(CLUTCH_DEFENSE).slice(0, CLUTCH_SHOWN);
   else {
@@ -1404,12 +1422,21 @@ export function clutchDecision(c: Career, label: string, leagueAvg: number, boar
   return {
     art: "clutch",
     ...(board && { board }),
-    title: `클러치 · ${label}`,
-    body: CLUTCH_SCENES[scene].body,
+    title: finals ? `결승 클러치 · ${label}` : `클러치 · ${label}`,
+    body: finals ? FINAL_BODY[scene](prize) : CLUTCH_SCENES[scene].body,
     opts: shown.map((x) => {
       const tying = scene === "behind" && x.pts < 3;
-      const sub =
-        scene === "ahead"
+      const sub = finals
+        ? scene === "ahead"
+          ? x.pts > 0
+            ? `성공하면 쐐기 득점과 ${prize} · 뚫리면 역전패로 ${second}`
+            : `막아 내면 ${prize} · 뚫리면 역전패로 ${second}`
+          : tying
+            ? `성공하면 동점, 연장에서 ${prize} 승부 · 실패하면 ${second}`
+            : scene === "behind"
+              ? `성공하면 역전 ${prize} · 실패하면 ${second}`
+              : `성공하면 ${prize}과 능력치 상승 · 실패하면 ${second}`
+        : scene === "ahead"
           ? x.pts > 0
             ? "성공하면 쐐기 득점까지 · 실패하면 역전패"
             : "막아 내면 승리 · 뚫리면 역전패"
@@ -1422,7 +1449,7 @@ export function clutchDecision(c: Career, label: string, leagueAvg: number, boar
         label: x.label,
         sub,
         tag: x.side,
-        act: { k: "clutch", attr: x.attr, play: x.play, p: clutchOdds(c, x.attr, leagueAvg, x), pts: x.pts, ...(tying && { ot }) },
+        act: { k: "clutch", attr: x.attr, play: x.play, p: clutchOdds(c, x.attr, leagueAvg, x), pts: x.pts, ...(tying && { ot }), ...(finals && { finals }) },
       };
     }),
   };

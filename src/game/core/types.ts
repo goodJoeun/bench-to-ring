@@ -318,6 +318,8 @@ export interface SeasonRun {
   bigs: number[];
   /** 결승 전에 출전 여부를 이미 물었는지 */
   clutch: boolean;
+  /** 결승 클러치를 따져 봤는지 (걸렸으면 true, 안 걸렸으면 false). 따져 보기 전에는 없어요. */
+  finalClutch?: boolean;
   /** 클러치가 남은 경기 번호 (주전 이상일 때만, 시즌마다 한두 번). 걸리면 앞에서부터 지워요. */
   shots: number[];
   /** 클러치 결과로 정해진 다음 경기 결과 */
@@ -349,6 +351,8 @@ export interface FinalSummary {
   win: boolean;
   /** 7전 4선승제 시리즈 성적 (예: "4-2"). 단판이면 없음 */
   series?: string;
+  /** 결승 클러치로 정해진 결승이면 그 결과 (연장까지 갔는지) */
+  clutch?: { ot?: boolean };
 }
 
 /** 빠르게 돌려 보는 결승전 한 경기의 문자 중계 */
@@ -404,6 +408,17 @@ export interface NatTournament {
   medal: "금" | "은" | "동" | null;
   story: string;
   games: NatGame[];
+  /** 결승 클러치로 메달 색이 정해졌으면 그 결과. 대회 진행 화면이 결승 중계 전에 성공·실패 이펙트를 보여줘요. */
+  clutch?: { win: boolean; us: number; them: number; opp: string; ot?: boolean };
+}
+
+/** 결승 클러치를 기다리는 국가대표 결승. 고르고 나면 결승 결과와 메달을 정해요. */
+export interface NatFinalPending {
+  year: number;
+  ev: NatEventKey;
+  /** 결승에서 내가 넣은 득점 (대회 시뮬레이션에서 정한 값) */
+  pts?: number;
+  board: ClutchBoard;
 }
 
 /* ---------- 병역 ---------- */
@@ -459,7 +474,7 @@ export type Action =
    * 클러치: 확률 p로 성공하면 다음 경기를 이기고 attr이 올라요. 실패하면 져요. play는 소식에 쓰는 플레이 이름.
    * pts는 성공하면 우리가 넣는 점수(없으면 2), ot가 있으면 성공해도 동점까지라 연장에서 확률 ot로 이겨요.
    */
-  | { k: "clutch"; attr: AttrKey; p: number; play: string; pts?: number; ot?: number }
+  | { k: "clutch"; attr: AttrKey; p: number; play: string; pts?: number; ot?: number; finals?: "league" | "nat" }
   | { k: "retire" }
   /** 국가대표 대회 합류(join) 또는 불참 */
   | { k: "national"; ev: NatEventKey; year: number; join: boolean }
@@ -519,7 +534,8 @@ export interface Decision {
 
 /** 클러치 상황의 전광판. 그 경기는 이 상대와 이 점수에서 마지막 플레이로 끝나요. */
 export interface ClutchBoard {
-  lg: LeagueKey;
+  /** 엠블럼 모양. 국가대표 결승이면 nat이에요. */
+  lg: LeagueKey | "nat";
   team: string;
   teamColor: string;
   opp: string;
@@ -532,6 +548,8 @@ export interface ClutchBoard {
   final?: [number, number];
   /** 연장전까지 갔는지 */
   ot?: boolean;
+  /** 우승(금메달)이 걸린 결승 클러치면 그 경기 이름: "2031 NBA 파이널 7차전", "2028 올림픽 결승" */
+  finals?: string;
 }
 
 /** 차례가 왔을 때 그 시점의 능력치로 만들어지는 결정 */
@@ -704,6 +722,8 @@ export interface Career {
   mil: Military;
   /** 국가대표 대회 기록 (최근 순 아님, 치른 순서) */
   natLog: NatTournament[];
+  /** 결승 클러치를 기다리는 국가대표 결승 */
+  natFinal: NatFinalPending | null;
   /** 아직 보지 않은 결승전 중계. 보여준 뒤에도 다음 결승 전까지 남아 있어요. */
   live: LiveGame | null;
   /** 아직 보여주지 않은 축하 팝업 (오래된 것부터) */

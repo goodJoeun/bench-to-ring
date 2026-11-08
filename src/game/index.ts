@@ -26,7 +26,7 @@ export { draftSlot } from "./world/draft";
 export { NATIONS, NAT_EVENTS, natColor, natEventFor, simulateTournament, teamPower } from "./world/national";
 export { ARMY, ENLIST_DEADLINE, SANGMU, militaryDecision, militaryUnit, owesService } from "./world/military";
 export { chooseOption, applyAction } from "./season/actions";
-export { CLUTCH_SCENES, boardScore, clutchScene, type ClutchScene } from "./season/events";
+export { CLUTCH_SCENES, boardScore, clutchScene, finalsPrize, type ClutchScene } from "./season/events";
 export {
   INVESTMENTS,
   INVEST_SLOTS,
