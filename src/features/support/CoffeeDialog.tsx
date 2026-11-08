@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Sheet } from "@/shared/ui/Sheet";
 import { SUPPORT_ACCOUNT } from "@/shared/lib/site";
 
-/** 상단 '커피' 버튼으로 여는 후원 안내: 계좌번호를 보여주고 눌러서 복사해요. */
+/** 상단 '서버비 후원하기' 버튼으로 여는 후원 안내: 계좌번호를 보여주고 눌러서 복사해요. */
 export function CoffeeDialog({ onClose }: { onClose: () => void }) {
   const { bank, number, holder } = SUPPORT_ACCOUNT;
   const [copied, setCopied] = useState<boolean | null>(null);
@@ -27,11 +27,11 @@ export function CoffeeDialog({ onClose }: { onClose: () => void }) {
         </svg>
       </button>
       <span className="cf-cup" aria-hidden="true">
-        ☕
+        💛
       </span>
-      <h2 id="cf-title">개발자에게 커피 한 잔</h2>
+      <h2 id="cf-title">서버비 후원하기</h2>
       <p className="sheet-desc">
-        농구 선수 키우기는 광고 없이 무료로 운영하고 있어요. 재밌게 즐기셨다면 커피 한 잔으로 응원해 주세요. 서버비와 다음 업데이트에 보탤게요.
+        농구 선수 키우기는 광고 없이 무료로 운영하고 있어요. 재밌게 즐기셨다면 서버비 후원으로 응원해 주세요. 보내 주신 후원은 서버비와 다음 업데이트에 보탤게요.
       </p>
       <div className="cf-account">
         <span className="cf-bank">{bank}</span>

@@ -268,6 +268,12 @@ h2.sec {
   margin-right: 6px;
   vertical-align: 1px;
 }
+.hleft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
 .hright {
   display: flex;
   align-items: center;
@@ -301,9 +307,9 @@ h2.sec {
   background: var(--panel2);
 }
 
-/* 커피 후원: 헤더 단추는 따뜻한 색으로 구분하고, 시트에 계좌를 크게 보여줘요. */
-.coffee-btn svg {
-  fill: #b5651d;
+/* 서버비 후원: 헤더 단추는 게임 제목 오른쪽에 따뜻한 색으로 두고, 시트에 계좌를 크게 보여줘요. */
+.support-btn svg {
+  fill: #e0457b;
 }
 .cf-cup {
   font-size: 40px;
@@ -5350,6 +5356,7 @@ html:has(.sheet) .toast-zone {
   .hmeta .saved {
     display: none;
   }
+  .hleft,
   .hright {
     gap: 6px;
   }
@@ -5357,6 +5364,17 @@ html:has(.sheet) .toast-zone {
     height: 32px;
     padding: 0 10px 0 8px;
     font-size: 12.5px;
+  }
+}
+@media (max-width: 1099px) {
+  /* '서버비 후원하기'는 이름이 길어서, 헤더가 800px로 넓어지는 1100px 화면부터 이름을 보여주고 그 아래는 하트 아이콘만 둬요. 이름은 aria-label이 대신해요. */
+  .support-btn {
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+  .support-btn span {
+    display: none;
   }
 }
 @media (max-width: 600px) {
@@ -5378,6 +5396,7 @@ html:has(.sheet) .toast-zone {
   .top {
     gap: 8px;
   }
+  .hleft,
   .hright {
     gap: 4px;
   }

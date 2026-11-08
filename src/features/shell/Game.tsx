@@ -86,29 +86,31 @@ export function Game() {
   return (
     <>
       <header className="top">
-        <div className="brand">
-          <span className="ball" aria-hidden="true" />
-          <span className="brand-text">
-            <span>농구 선수 키우기</span>
-            <span className="brand-sub">벤치 뎁혀 반지 굽기</span>
-          </span>
-        </div>
-        <div className="hright">
+        <div className="hleft">
+          <div className="brand">
+            <span className="ball" aria-hidden="true" />
+            <span className="brand-text">
+              <span>농구 선수 키우기</span>
+              <span className="brand-sub">벤치 뎁혀 반지 굽기</span>
+            </span>
+          </div>
           {SUPPORT_ACCOUNT.number && (
             <button
               type="button"
-              className="guide-btn coffee-btn"
-              aria-label="개발자에게 커피 후원"
+              className="guide-btn support-btn"
+              aria-label="서버비 후원하기"
               aria-haspopup="dialog"
               aria-expanded={coffeeOpen}
               onClick={() => setCoffeeOpen(true)}
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 8h13v5a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6zm13 1h1.5a3 3 0 0 1 0 6H17v-2h1.5a1 1 0 0 0 0-2H17zM8 2c1 1.2 1 2.3 0 3.5S7 7.8 8 9H6.4c-.9-1.2-.9-2.3 0-3.5s.9-2.3 0-3.5zm4 0c1 1.2 1 2.3 0 3.5s-1 2.3 0 3.5h-1.6c-.9-1.2-.9-2.3 0-3.5s.9-2.3 0-3.5zM3 20h16v2H3z" />
+                <path d="M12 21.4 10.5 20C5.4 15.4 2 12.3 2 8.5 2 5.4 4.4 3 7.5 3c1.7 0 3.4.8 4.5 2.1C13.1 3.8 14.8 3 16.5 3 19.6 3 22 5.4 22 8.5c0 3.8-3.4 6.9-8.5 11.5z" />
               </svg>
-              <span>커피</span>
+              <span>서버비 후원하기</span>
             </button>
           )}
+        </div>
+        <div className="hright">
           <Link className="guide-btn" href="/rankings" aria-label="랭킹">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M7 4h10v2h3v3a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 15.9V18h3v2H8v-2h3v-2.1A5 5 0 0 1 8.4 13H8a4 4 0 0 1-4-4V6h3zm0 4H6v1a2 2 0 0 0 1 1.7zm10 0v2.7A2 2 0 0 0 18 9V8z" />

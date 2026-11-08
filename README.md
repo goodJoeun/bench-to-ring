@@ -79,7 +79,7 @@ src/
 │  ├─ hall-of-fame/        명예의 전당
 │  ├─ notice/              공지 창과 공지 글 목록 notices.ts (새 글은 맨 위에 추가)
 │  ├─ achievements/        업적 창
-│  └─ feedback/ · guide/ · settings/ · support/   의견 보내기, 게임 안내, 설정, 커피 후원
+│  └─ feedback/ · guide/ · settings/ · support/   의견 보내기, 게임 안내, 설정, 서버비 후원
 ├─ shared/                 여러 기능이 같이 쓰는 것
 │  ├─ ui/                  Panel·StatTiles 같은 UI, 시트, 토스트
 │  │  ├─ sprite/           Canvas 선수 캐릭터, 표지 그림, 기록의 캐릭터
@@ -197,6 +197,10 @@ src/
 ## 업데이트 내역
 
 최근 것이 위에 있어요. 밸런스 수치는 위 "밸런스 패치 내역"에, 그 전 기록은 `git log`에 있어요.
+
+### 2026-11-08
+
+- 상단의 '커피' 버튼을 '서버비 후원하기'(하트 아이콘)로 바꾸고 게임 제목 오른쪽으로 옮겼어요. 화면이 1100px보다 좁으면 하트 아이콘만 보여요.
 
 ### 2026-11-06
 
