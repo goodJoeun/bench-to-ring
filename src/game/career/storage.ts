@@ -2,8 +2,8 @@ import { clampAttr } from "../player/condition";
 import { ATTR_KEYS } from "../core/data";
 import { ovrOf } from "../player/ratings";
 import { refreshShop } from "../economy/shop";
-import { EMPTY_LIFETIME, addLifetime, fromCareer, fromSummary, type Lifetime } from "../legacy/lifetime";
-import type { BrowserRecord } from "../legacy/achievements";
+import { EMPTY_LIFETIME, LIFETIME_PREFIX, addLifetime, fromCareer, subLifetime, type Lifetime } from "../legacy/lifetime";
+import type { BrowserRecord, LifeView } from "../legacy/achievements";
 import type { Action, AttrKey, Attrs, Boost, Career, CareerSummary, PosKey } from "../core/types";
 
 const SAVE_KEY = "b2r-save-v1";
@@ -14,8 +14,9 @@ const ENDING_KEY = "b2r-endings-v1";
 const ENDING_LIMIT = 20;
 /** 이 브라우저에서 딴 업적. 업적 id → 처음 딴 때와 선수 */
 const ACHV_KEY = "b2r-achv-v1";
-/** 이 브라우저에서 플레이한 모든 커리어의 누적 기록 */
-const LIFETIME_KEY = "b2r-lifetime-v1";
+/** 이 브라우저에서 플레이한 모든 커리어의 누적 기록. v1은 예전 은퇴 기록까지 옮겨 담던 것이라 버리고 새로 세요. */
+const LIFETIME_KEY = "b2r-lifetime-v2";
+const OLD_LIFETIME_KEY = "b2r-lifetime-v1";
 
 function read(key: string): string | null {
   try {
@@ -147,6 +148,7 @@ function normalize(c: Career): Career {
   c.achv ??= [];
   c.raises ??= 0;
   c.clutchWins ??= 0;
+  c.rivalWins ??= 0;
   // 이 기능 전의 저장이면, 이미 NBA를 밟았는지 기록에서 찾아 입성 축하를 건너뛰어요. 트레이드로 팀을 옮길 때 다시 뜨지 않게요.
   if (!c.milestones) c.milestones = c.team?.lg === "nba" || c.hist.some((h) => h.lg === "nba") ? ["nba"] : [];
   c.draftShow ??= null;
@@ -198,47 +200,89 @@ export function saveCareer(c: Career | null): void {
  * 다른 커리어를 저장하거나 새로 시작하면(null) cur를 base에 더해요. 그래서 은퇴하지 않고 그만둔 커리어도 남아요.
  */
 interface LifetimeStore {
+  /** 누적 기록을 세기 시작한 시각(ms). 이보다 먼저 딴 업적은 업적 사냥꾼이 세지 않아요. */
+  since: number;
   base: Lifetime;
   cur: { id: string; t: Lifetime } | null;
+  /** 세기 시작할 때 진행 중이던 커리어와 그때까지 쌓은 기록. 그 커리어는 이 뒤로 쌓은 만큼만 쳐요. */
+  start: { id: string; t: Lifetime } | null;
 }
 
 function readLifetime(): LifetimeStore | null {
   try {
     const o = JSON.parse(read(LIFETIME_KEY) ?? "null") as LifetimeStore | null;
-    return o && typeof o === "object" && o.base ? { base: { ...EMPTY_LIFETIME, ...o.base }, cur: o.cur ?? null } : null;
+    if (!o || typeof o !== "object" || !o.base || typeof o.since !== "number") return null;
+    return { since: o.since, base: { ...EMPTY_LIFETIME, ...o.base }, cur: o.cur ?? null, start: o.start ?? null };
   } catch {
     return null;
   }
 }
 
-/** 누적 기록이 생기기 전이면 명예의 전당(은퇴 요약)으로 채워요. 지금 커리어는 cur로 따로 쳐요. */
-function lifetimeStore(currentId?: string): LifetimeStore {
+/**
+ * 누적 기록을 지금부터 세기 시작해요. 이미 세고 있으면 그대로예요.
+ * 예전 은퇴 기록은 옮기지 않고, 진행 중인 커리어 c가 이미 쌓은 기록은 start로 남겨 빼요.
+ * 예전 버전(v1)이 옮겨 담은 기록으로 딴 누적 기록 업적은 브라우저 기록과 c에서 지워 새로 따게 해요.
+ * 앱이 처음 불러올 때 불러요.
+ */
+export function startLifetime(c: Career | null): void {
+  if (readLifetime()) return;
+  const got = loadAchievements();
+  const stale = Object.keys(got).filter((id) => id.startsWith(LIFETIME_PREFIX));
+  if (stale.length) {
+    for (const id of stale) delete got[id];
+    write(ACHV_KEY, JSON.stringify(got));
+  }
+  if (c) c.achv = c.achv.filter((id) => !id.startsWith(LIFETIME_PREFIX));
+  write(OLD_LIFETIME_KEY, null);
+  const store: LifetimeStore = { since: Date.now(), base: EMPTY_LIFETIME, cur: null, start: c ? { id: c.id, t: fromCareer(c) } : null };
+  write(LIFETIME_KEY, JSON.stringify(store));
+}
+
+function lifetimeStore(c: Career | null): LifetimeStore {
   const saved = readLifetime();
   if (saved) return saved;
-  const base = loadHall()
-    .filter((s) => s.id !== currentId)
-    .map(fromSummary)
-    .reduce(addLifetime, EMPTY_LIFETIME);
-  return { base, cur: null };
+  startLifetime(c);
+  return readLifetime() ?? { since: Date.now(), base: EMPTY_LIFETIME, cur: null, start: c ? { id: c.id, t: fromCareer(c) } : null };
 }
+
+/** 세기 시작할 때 진행 중이던 커리어면, 그때까지 쌓은 기록 */
+const startOf = (store: LifetimeStore, c: Career): Lifetime | undefined => (store.start?.id === c.id ? store.start.t : undefined);
 
 function recordLifetime(c: Career | null): void {
-  const store = lifetimeStore(c?.id);
+  const store = lifetimeStore(c);
   let base = store.base;
   if (store.cur && store.cur.id !== c?.id) base = addLifetime(base, store.cur.t);
-  write(LIFETIME_KEY, JSON.stringify({ base, cur: c ? { id: c.id, t: fromCareer(c) } : null } satisfies LifetimeStore));
+  let cur: LifetimeStore["cur"] = null;
+  if (c) {
+    const start = startOf(store, c);
+    cur = { id: c.id, t: start ? subLifetime(fromCareer(c), start) : fromCareer(c) };
+  }
+  write(LIFETIME_KEY, JSON.stringify({ ...store, base, cur } satisfies LifetimeStore));
 }
 
-/** 이 브라우저에서 플레이한 모든 커리어를 더한 누적 기록 (마지막으로 저장한 커리어 포함) */
-export function loadLifetime(): Lifetime {
-  const { base, cur } = lifetimeStore();
-  return cur ? addLifetime(base, cur.t) : base;
+/** 이 브라우저에서 누적 기록을 세기 시작한 뒤로 딴 업적 수 */
+function recentAchievements(store: LifetimeStore, got: Record<string, AchievementRecord>): number {
+  return Object.values(got).filter((r) => r.at >= store.since).length;
+}
+
+/** 업적 창에 보여줄 누적 기록: 모든 커리어(마지막으로 저장한 커리어 포함)를 더한 기록과, 세기 시작한 뒤로 딴 업적 수 */
+export function loadLifeView(): LifeView {
+  const store = readLifetime();
+  if (!store) return { t: EMPTY_LIFETIME, achv: 0 };
+  return { t: store.cur ? addLifetime(store.base, store.cur.t) : store.base, achv: recentAchievements(store, loadAchievements()) };
 }
 
 /** 업적 판정에 쓰는 브라우저 기록: 이미 딴 업적과, 이 커리어를 뺀 누적 기록 */
 export function browserRecord(c: Career): BrowserRecord {
-  const { base, cur } = lifetimeStore(c.id);
-  return { unlocked: new Set(Object.keys(loadAchievements())), others: cur && cur.id !== c.id ? addLifetime(base, cur.t) : base };
+  const store = lifetimeStore(c);
+  const got = loadAchievements();
+  const { base, cur } = store;
+  return {
+    unlocked: new Set(Object.keys(got)),
+    recent: recentAchievements(store, got),
+    others: cur && cur.id !== c.id ? addLifetime(base, cur.t) : base,
+    start: startOf(store, c),
+  };
 }
 
 /** 이 브라우저에서 처음 딴 업적 하나: 딴 시각(ms), 딴 선수 이름, 커리어 id */

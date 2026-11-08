@@ -10,6 +10,8 @@ import { ovr, ovrOf } from "../player/ratings";
 import type { Career, Decision, QueueItem } from "../core/types";
 
 export const RETIRE_AGE = 40;
+/** 계약이 남아 있어도 오프시즌마다 은퇴를 물어보는 나이 */
+const RETIRE_PROMPT_AGE = 35;
 
 /**
  * 시즌이 끝난 뒤(나이·연도는 이미 1 늘어난 상태) 몸의 변화와 결정 대기열을 만들어요.
@@ -76,14 +78,15 @@ export function runOffseason(c: Career, finishedYear: number, natCall: Decision 
     else {
       const offer = chance(0.6) ? nbaOffer(c) : null;
       if (offer) q.push(offer);
-      else if (chance(0.08)) {
+      // 은퇴를 묻는 오프시즌에는 트레이드하지 않아요. 옮긴 팀에서 한 경기도 안 뛰고 은퇴하면 엔딩과 랭킹의 팀이 엇갈려요.
+      else if (chance(0.08) && c.age < RETIRE_PROMPT_AGE) {
         const lg = c.team.lg;
         const from = c.team.name;
         const t = pickTeam(lg, new Set([from]));
         joinTeam(c, lg, t);
         addNews(c, tag, "move", `트레이드 · ${from}에서 ${t.name}로 이적했어요.`);
       }
-      if (c.age >= 35) q.push(retirementPrompt(c));
+      if (c.age >= RETIRE_PROMPT_AGE) q.push(retirementPrompt(c));
     }
   } else if (c.stage === "free") q.push({ lazy: "faFree" });
 

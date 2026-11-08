@@ -4,19 +4,19 @@ import { evalOvr } from "../player/ratings";
 import { LEAGUES } from "../world/leagues";
 import { addNews, cheer } from "../career/log";
 import { shopItem } from "../economy/shop";
-import { EMPTY_LIFETIME, addLifetime, fromCareer, type Lifetime } from "./lifetime";
-import type { AttrKey, AwardEntry, AwardKey, Career, LeagueKey, SeasonRecord } from "../core/types";
+import { EMPTY_LIFETIME, LIFETIME_PREFIX, addLifetime, fromCareer, subLifetime, type Lifetime } from "./lifetime";
+import type { AttrKey, AwardEntry, AwardKey, Career, LeagueKey, MilitaryKind, SeasonRecord } from "../core/types";
 
 /**
  * 업적. 대부분 커리어 기록(시즌 기록, 수상, 드래프트, 국가대표, 기부, 산 것)으로 판정해요.
- * 기록에 남지 않는 것만 따로 세요: 연봉 인상 성공(c.raises), 클러치 성공(c.clutchWins), 워크온 입학(c.milestones).
+ * 기록에 남지 않는 것만 따로 세요: 연봉 인상 성공(c.raises), 클러치 성공(c.clutchWins), 라이벌전 승리(c.rivalWins), 워크온 입학·주장 완장(c.milestones).
  * 업적은 브라우저마다 한 번만 따요. 브라우저에서 이미 딴 업적은 새 커리어에서 조건을 채워도 다시 뜨지 않아요.
  * 커리어마다 처음 딴 업적은 c.achv에 남고, 브라우저에서 딴 업적과 누적 기록은 storage.ts가 모아 둬요(setBrowserRecord).
- * '누적 기록' 업적은 이 브라우저에서 플레이한 모든 커리어를 더한 기록으로 판정해요.
+ * '누적 기록' 업적은 이 브라우저에서 누적 기록을 세기 시작한 뒤로 플레이한 모든 커리어를 더해 판정해요.
  * 업적 창은 따기 전에는 이름과 힌트(hint)만, 딴 뒤에는 조건(desc)까지 보여줘요.
  */
 
-export type AchievementGroup = "school" | "team" | "award" | "ability" | "path" | "life" | "lifetime";
+export type AchievementGroup = "school" | "team" | "award" | "ability" | "path" | "life" | "military" | "lifetime";
 
 export const ACHIEVEMENT_GROUPS: Record<AchievementGroup, string> = {
   school: "고교·대학",
@@ -25,16 +25,23 @@ export const ACHIEVEMENT_GROUPS: Record<AchievementGroup, string> = {
   ability: "능력치",
   path: "드래프트·진로",
   life: "국가대표·커리어",
+  military: "병역",
   lifetime: "누적 기록",
 };
 
-/** 이 브라우저의 기록: 이미 딴 업적과, 지금 커리어를 뺀 다른 커리어들의 누적 기록 */
+/** 이 브라우저의 기록 */
 export interface BrowserRecord {
+  /** 이미 딴 업적 */
   unlocked: ReadonlySet<string>;
+  /** 그 가운데 누적 기록을 세기 시작한 뒤로 딴 업적 수. 업적 사냥꾼이 세요. */
+  recent: number;
+  /** 지금 커리어를 뺀 다른 커리어들의 누적 기록 */
   others: Lifetime;
+  /** 누적 기록을 세기 시작할 때 지금 커리어가 이미 쌓아 둔 기록. 이만큼은 빼요. */
+  start?: Lifetime;
 }
 
-const NO_RECORD: BrowserRecord = { unlocked: new Set(), others: EMPTY_LIFETIME };
+const NO_RECORD: BrowserRecord = { unlocked: new Set(), recent: 0, others: EMPTY_LIFETIME };
 let browserRecord: (c: Career) => BrowserRecord = () => NO_RECORD;
 
 /** 브라우저 기록을 읽는 함수를 정해요. 앱이 처음 불러올 때 storage.ts와 이어 주고, 테스트에서는 바꿔 끼워요. 인자를 빼면 기록 없음으로 돌아가요. */
@@ -42,7 +49,7 @@ export function setBrowserRecord(fn?: (c: Career) => BrowserRecord): void {
   browserRecord = fn ?? (() => NO_RECORD);
 }
 
-/** 누적 기록 업적이 보는 값: 모든 커리어를 더한 기록과 브라우저에서 딴 업적 수 */
+/** 누적 기록 업적이 보는 값: 모든 커리어를 더한 기록과, 누적 기록을 세기 시작한 뒤로 딴 업적 수 */
 export interface LifeView {
   t: Lifetime;
   achv: number;
@@ -63,7 +70,7 @@ interface View {
   proAwards: AwardEntry[];
   /** 은퇴했는지. 은퇴해야 정해지는 업적이 있어요. */
   retired: boolean;
-  /** 이 브라우저의 모든 커리어(지금 커리어 포함)를 더한 기록 */
+  /** 이 브라우저의 모든 커리어(지금 커리어 포함)를 더한 누적 기록 */
   life: LifeView;
 }
 
@@ -108,7 +115,8 @@ function longestRun(rows: SeasonRecord[], ok: (h: SeasonRecord) => boolean, same
 }
 
 const distinct = (rows: SeasonRecord[]) => new Set(rows.map((h) => h.team)).size;
-const golds = (c: Career) => c.natLog.filter((t) => t.medal === "금");
+/** 대표팀에 합류해 딴 금메달. 불참한 대회에서 대표팀이 딴 금메달은 치지 않아요. */
+const golds = (c: Career) => c.natLog.filter((t) => t.joined && t.medal === "금");
 /** 상점의 사치품 수. 사치품은 한 번씩만 살 수 있어요. */
 const LUXURY_COUNT = 5;
 /** 능력치 최고값 */
@@ -122,12 +130,20 @@ const MAXED: Record<AttrKey, [string, string, string]> = {
   iq: ["농구 도사", "BQ", "농구가 제일 쉬웠어요!"],
   ath: ["휴먼 하이라이트 필름", "운동능력", "코트 위 모든 순간이 Kodak Moment"],
 };
+/** 상무나 현역으로 입대했는지 (복무 중이거나 전역) */
+const enlisted = (c: Career, kind: MilitaryKind) => c.mil.kind === kind && (c.mil.s === "serving" || c.mil.s === "served");
+/** 그 형태로 복무를 마치고 돌아온 뒤의 프로 시즌. 복무 시즌이 없으면 빈 목록이에요. */
+function afterService(v: View, kind: MilitaryKind): SeasonRecord[] {
+  const years = v.c.hist.filter((h) => h.mil === kind).map((h) => h.year);
+  return years.length ? v.pro.filter((h) => h.year > Math.max(...years)) : [];
+}
+
 /** 히든 스탯 보너스까지 더한 오버롤로 넘어야 하는 값 */
 const BEYOND = 100;
 
 /** 누적 기록 업적: 모든 커리어를 더한 값이 목표 이상이면 따요. */
-function lifetime(id: string, name: string, hint: string, desc: string, of: (l: LifeView) => number, n: number, unit: string): Achievement {
-  return { id, name, hint, desc, group: "lifetime", test: (v) => of(v.life) >= n, goal: { of, n, unit } };
+function lifetime(key: string, name: string, hint: string, desc: string, of: (l: LifeView) => number, n: number, unit: string): Achievement {
+  return { id: LIFETIME_PREFIX + key, name, hint, desc, group: "lifetime", test: (v) => of(v.life) >= n, goal: { of, n, unit } };
 }
 
 export const ACHIEVEMENTS: Achievement[] = [
@@ -198,6 +214,7 @@ export const ACHIEVEMENTS: Achievement[] = [
       test: (v) => longestRun(v.seasons, (h) => h.lg === lg && champ(h)) >= 3,
     }),
   ),
+  { id: "captain", name: "캡틴", desc: "소속팀 주장 완장을 차기", hint: "베테랑이 되면 감독이 먼저 부탁해 올 거예요", group: "team", test: (v) => v.c.milestones.includes("captain") },
   { id: "rings", name: "반지의 제왕", desc: "프로 우승 6회 이상", hint: "손가락이 모자랄 만큼", group: "team", test: (v) => (v.c.awards.ring ?? 0) >= 6 },
   {
     id: "underdog",
@@ -305,6 +322,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     group: "award",
     test: (v) => proCount(v, "scoring") >= 7,
   },
+  { id: "rival_killer", name: "라이벌 킬러", desc: "라이벌전에 뛰어 6번 이상 승리", hint: "라이벌만 만나면 더 힘이 나요", group: "award", test: (v) => (v.c.rivalWins ?? 0) >= 6 },
   { id: "clutch_master", name: "클러치 귀재", desc: "클러치 상황에서 10번 이상 성공", hint: "경기 막판, 마지막 공은 내 손에", group: "award", test: (v) => v.c.clutchWins >= 10 },
   {
     id: "ageless",
@@ -380,6 +398,13 @@ export const ACHIEVEMENTS: Achievement[] = [
 
   // 국가대표·커리어
   { id: "patriot", name: "애국자", desc: "국제대회 금메달 3회 이상", hint: "국가대표로 시상대 맨 위에 여러 번", group: "life", test: (v) => golds(v.c).length >= 3 },
+  {
+    id: "world_cup",
+    name: "세계 최강",
+    desc: "국가대표로 FIBA 농구 월드컵 금메달", hint: "대표팀과 함께 세계 정상에",
+    group: "life",
+    test: (v) => golds(v.c).some((t) => t.ev === "worldcup"),
+  },
   { id: "national_pillar", name: "국가대표 터줏대감", desc: "국가대표로 50경기 이상 출전", hint: "대표팀 소집에 빠지지 마세요", group: "life", test: (v) => v.c.nat.caps >= 50 },
   {
     id: "grand_slam",
@@ -398,20 +423,52 @@ export const ACHIEVEMENTS: Achievement[] = [
   },
   { id: "donor", name: "기부천사", desc: "유소년 농구에 누적 1000억 이상 기부", hint: "유소년 농구에 아낌없이", group: "life", test: (v) => v.c.donated >= 1000 },
 
+  // 병역: 대한민국 선수만 입대해요.
+  { id: "sangmu", name: "국군체육부대 입단", desc: "상무에 입대", hint: "군복을 입고도 코트 위에", group: "military", test: (v) => enlisted(v.c, "sangmu") },
+  {
+    id: "sangmu_champ",
+    name: "불사조 군단",
+    desc: "상무에서 D리그 우승", hint: "군인 선수로도 정상에",
+    group: "military",
+    test: (v) => v.c.hist.some((h) => h.mil === "sangmu" && h.result === "KBL D리그 우승"),
+  },
+  {
+    id: "sangmu_nba",
+    name: "군필 NBA리거",
+    desc: "상무 전역 뒤 NBA 진출", hint: "군 복무를 마치고 꿈의 무대로",
+    group: "military",
+    test: (v) => afterService(v, "sangmu").some((h) => h.lg === "nba"),
+  },
+  { id: "army", name: "대한민국 육군", desc: "현역으로 입대", hint: "18개월 동안 코트 대신 연병장으로", group: "military", test: (v) => enlisted(v.c, "army") },
+  {
+    id: "army_mvp",
+    name: "예비역의 반란",
+    desc: "현역 전역 뒤 정규시즌 MVP", hint: "떨어진 감각을 되찾아 리그 최고로",
+    group: "military",
+    test: (v) => afterService(v, "army").some((h) => isMvp(v, h)),
+  },
+  {
+    id: "army_ring",
+    name: "병장 출신 챔피언",
+    desc: "현역 전역 뒤 프로 우승", hint: "전역하고 반지까지",
+    group: "military",
+    test: (v) => afterService(v, "army").some(champ),
+  },
+
   // 누적 기록: 이 브라우저에서 플레이한 모든 커리어를 더해요.
-  lifetime("life_retire3", "다시 쓰는 농구 인생", "한 번의 농구 인생으로는 모자라요", "모든 커리어 합계 은퇴 3번", (l) => l.t.careers, 3, "번"),
-  lifetime("life_retire10", "농구 인생 10회차", "코트를 떠나고 또 돌아오기를 여러 번", "모든 커리어 합계 은퇴 10번", (l) => l.t.careers, 10, "번"),
-  lifetime("life_seasons", "100시즌의 추억", "시즌을 쌓고 또 쌓아 보세요", "모든 커리어 합계 프로 100시즌", (l) => l.t.seasons, 100, "시즌"),
-  lifetime("life_games", "3000경기의 땀방울", "여러 커리어에 걸쳐 코트를 누비세요", "모든 커리어 합계 프로 3000경기 출전", (l) => l.t.gp, 3000, "경기"),
-  lifetime("life_points", "5만 득점의 손끝", "여러 커리어의 득점을 모아 보세요", "모든 커리어 합계 프로 50,000득점", (l) => l.t.pts, 50000, "점"),
-  lifetime("life_rings", "반지 보관함", "커리어마다 반지를 모아 보세요", "모든 커리어 합계 프로 우승 20회", (l) => l.t.rings, 20, "회"),
-  lifetime("life_mvp", "MVP 제조기", "누구로 뛰든 리그 최고의 선수로", "모든 커리어 합계 정규시즌 MVP 15회", (l) => l.t.mvp, 15, "회"),
-  lifetime("life_earn", "누적 연봉 3000억", "여러 커리어에 걸쳐 차곡차곡", "모든 커리어 합계 3000억 벌기", (l) => l.t.earn, 3000, "억"),
-  lifetime("life_nba", "NBA 단골손님", "꿈의 무대에 여러 번 서 보세요", "NBA를 밟은 커리어 5번", (l) => l.t.nba, 5, "번"),
-  lifetime("life_clutch", "강심장 유전자", "누구로 뛰든 마지막 공은 내 손에", "모든 커리어 합계 클러치 성공 50번", (l) => l.t.clutch, 50, "번"),
-  lifetime("life_positions", "포지션 마스터", "한 포지션만 고집하지 마세요", "다섯 포지션 모두 프로 무대 밟기", (l) => l.t.pos.length, 5, "포지션"),
-  lifetime("life_nations", "국경 없는 농구", "다른 나라 선수로도 뛰어 보세요", "서로 다른 국적 3가지로 프로 무대 밟기", (l) => l.t.nats.length, 3, "국적"),
-  lifetime("life_hunter", "업적 사냥꾼", "업적 창을 차근차근 채워 보세요", "업적 30개 달성", (l) => l.achv, 30, "개"),
+  lifetime("retire3", "다시 쓰는 농구 인생", "한 번의 농구 인생으로는 모자라요", "모든 커리어 합계 은퇴 3번", (l) => l.t.careers, 3, "번"),
+  lifetime("retire10", "농구 인생 10회차", "코트를 떠나고 또 돌아오기를 여러 번", "모든 커리어 합계 은퇴 10번", (l) => l.t.careers, 10, "번"),
+  lifetime("seasons", "100시즌의 추억", "시즌을 쌓고 또 쌓아 보세요", "모든 커리어 합계 프로 100시즌", (l) => l.t.seasons, 100, "시즌"),
+  lifetime("games", "3000경기의 땀방울", "여러 커리어에 걸쳐 코트를 누비세요", "모든 커리어 합계 프로 3000경기 출전", (l) => l.t.gp, 3000, "경기"),
+  lifetime("points", "5만 득점의 손끝", "여러 커리어의 득점을 모아 보세요", "모든 커리어 합계 프로 50,000득점", (l) => l.t.pts, 50000, "점"),
+  lifetime("rings", "반지 보관함", "커리어마다 반지를 모아 보세요", "모든 커리어 합계 프로 우승 20회", (l) => l.t.rings, 20, "회"),
+  lifetime("mvp", "MVP 제조기", "누구로 뛰든 리그 최고의 선수로", "모든 커리어 합계 정규시즌 MVP 15회", (l) => l.t.mvp, 15, "회"),
+  lifetime("earn", "누적 연봉 3000억", "여러 커리어에 걸쳐 차곡차곡", "모든 커리어 합계 3000억 벌기", (l) => l.t.earn, 3000, "억"),
+  lifetime("nba", "NBA 단골손님", "꿈의 무대에 여러 번 서 보세요", "NBA를 밟은 커리어 5번", (l) => l.t.nba, 5, "번"),
+  lifetime("clutch", "강심장 유전자", "누구로 뛰든 마지막 공은 내 손에", "모든 커리어 합계 클러치 성공 50번", (l) => l.t.clutch, 50, "번"),
+  lifetime("positions", "포지션 마스터", "한 포지션만 고집하지 마세요", "다섯 포지션 모두 프로 무대 밟기", (l) => l.t.pos.length, 5, "포지션"),
+  lifetime("nations", "국경 없는 농구", "다른 나라 선수로도 뛰어 보세요", "서로 다른 국적 3가지로 프로 무대 밟기", (l) => l.t.nats.length, 3, "국적"),
+  lifetime("hunter", "업적 사냥꾼", "업적 창을 차근차근 채워 보세요", "업적 30개 달성", (l) => l.achv, 30, "개"),
 ];
 
 const BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
@@ -432,7 +489,10 @@ function viewOf(c: Career, b: BrowserRecord): View {
     fmvp: years(["fmvp"]),
     proAwards: c.awardLog.filter((a) => proSeasonYears.has(a.y) && a.k !== "nat_gold"),
     retired: c.stage === "retired",
-    life: { t: addLifetime(b.others, fromCareer(c)), achv: new Set([...b.unlocked, ...c.achv]).size },
+    life: {
+      t: addLifetime(b.others, b.start ? subLifetime(fromCareer(c), b.start) : fromCareer(c)),
+      achv: b.recent + c.achv.filter((id) => !b.unlocked.has(id)).length,
+    },
   };
 }
 

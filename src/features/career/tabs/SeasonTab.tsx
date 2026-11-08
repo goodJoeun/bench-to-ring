@@ -214,6 +214,7 @@ function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
                 <small>
                   {g.us}-{g.them}
                 </small>
+                {g.rival && <em className="gclutch">라이벌전</em>}
                 {g.clutch && <em className="gclutch">클러치</em>}
                 {g.ot && <em className="gclutch">연장</em>}
               </span>

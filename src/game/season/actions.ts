@@ -28,6 +28,7 @@ function applyBoost(c: Career, b: Boost, tag: string): void {
   if (b.trust) c.trust = clampTrust(c.trust + b.trust);
   if (b.agency) c.perks.agency = true;
   if (b.trainer) c.perks.trainer = b.trainer;
+  if (b.mark && !c.milestones.includes(b.mark)) c.milestones.push(b.mark);
   // 시즌 중 이벤트: 남은 경기의 경기력과 결장
   const run = c.run;
   if (run && b.form) run.form = clamp(run.form + b.form, -2, 2);
