@@ -6,6 +6,7 @@
  * npm run flags            결과와 국가 코드가 없는 나라를 알려줘요.
  * npm run flags -- --quiet 요약만. npm run dev / build 전에 저절로 이렇게 돌아요.
  */
+import { createHash } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const SRC = "node_modules/flag-icons/flags/1x1";
@@ -57,7 +58,8 @@ for (const name of [...names].sort()) {
     continue;
   }
   copyFileSync(from, `${DIR}/${code}.svg`);
-  flags[name] = `/flags/${code}.svg`;
+  // 내용 해시를 붙여, 브라우저가 오래 캐시해도(next.config.ts) 파일이 바뀌면 새 주소로 받아요.
+  flags[name] = `/flags/${code}.svg?v=${createHash("sha1").update(readFileSync(from)).digest("hex").slice(0, 8)}`;
 }
 // MIT 라이선스 표시를 국기와 함께 둬요.
 copyFileSync("node_modules/flag-icons/LICENSE", `${DIR}/LICENSE`);

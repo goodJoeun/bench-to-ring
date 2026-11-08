@@ -13,6 +13,7 @@
  * npm run logos            변환·연결 결과와 함께 로고가 없는 팀의 파일 이름을 리그별로 모두 보여줘요.
  * npm run logos -- --quiet 요약만 보여줘요. npm run dev / build 전에 저절로 이렇게 돌아요.
  */
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
@@ -215,7 +216,8 @@ for (const f of files) {
   const name = f.replace(EXT, "").normalize("NFC");
   // 같은 이름이 여러 형식으로 있으면 변환한 PNG를 써요.
   if (logos[name] && !/\.png$/i.test(f)) continue;
-  logos[name] = `/logos/${encodeURIComponent(f)}`;
+  // 내용 해시를 붙여, 브라우저가 오래 캐시해도(next.config.ts) 파일이 바뀌면 새 주소로 받아요.
+  logos[name] = `/logos/${encodeURIComponent(f)}?v=${createHash("sha1").update(readFileSync(`${DIR}/${f}`)).digest("hex").slice(0, 8)}`;
 }
 
 const entries = Object.keys(logos)

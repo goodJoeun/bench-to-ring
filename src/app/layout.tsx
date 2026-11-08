@@ -8,6 +8,9 @@ import "@fontsource/ibm-plex-sans-kr/700.css";
 import "@fontsource/saira-condensed/500.css";
 import "@fontsource/saira-condensed/600.css";
 import "@fontsource/saira-condensed/700.css";
+// 자주 쓰는 한글을 굵기마다 파일 하나로 묶은 폰트(scripts/fonts.py). fontsource보다 나중에 선언해야 먼저 쓰여요.
+// 묶음에 없는 드문 글자만 위 fontsource 조각으로 받아요.
+import "./fonts/fonts.css";
 import "./globals.css";
 import { THEME_BOOT } from "@/shared/lib/theme";
 import { SITE_DESCRIPTION, SITE_KEYWORDS, SITE_NAME, SITE_TITLE, SITE_URL } from "@/shared/lib/site";
