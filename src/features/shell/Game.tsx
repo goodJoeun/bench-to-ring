@@ -20,11 +20,12 @@ import { RetiredScreen } from "@/features/retired/RetiredScreen";
 import { SettingsDialog } from "@/features/settings/SettingsDialog";
 import { LiveGameView } from "@/features/progress/LiveGameView";
 import { Popup } from "@/features/progress/Popup";
+import { StandingsPopup } from "@/features/progress/StandingsPopup";
 import { Toast } from "@/shared/ui/Toast";
 import { TournamentLoading } from "@/features/progress/TournamentLoading";
 
 export function Game() {
-  const { ready, career, draft, hall, endings, ending, playing, speed, final, farewell, farewellReplay, tournament, drafting, toast, outcome } = useGame();
+  const { ready, career, draft, hall, endings, ending, playing, speed, final, standings, farewell, farewellReplay, tournament, drafting, toast, outcome } = useGame();
   // 탭은 커리어마다 홈에서 시작해요.
   const [view, setView] = useState<{ id: string | null; tab: TabKey }>({ id: null, tab: "season" });
   const tab = career && view.id === career.id ? view.tab : "season";
@@ -34,8 +35,10 @@ export function Game() {
   const retiredShown = ending ?? (career?.stage === "retired" ? career : null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [achvOpen, setAchvOpen] = useState(false);
-  // 축하 팝업은 다른 진행 화면(시즌 진행·결승 중계·대회·드래프트·회고)이 다 끝난 뒤에 한 장씩 띄워요.
-  const cheer = inGame && !playing && !final && !tournament && !drafting && !farewell ? career.cheers[0] : undefined;
+  // 시즌이 끝나면 순위표부터 보여줘요. 진행 중인 시즌이 없고 지난 시즌이 팀 시즌일 때만이에요.
+  const standingsRec = inGame && standings && !career.run && career.last?.lg ? career.last : null;
+  // 축하 팝업은 다른 진행 화면(시즌 진행·결승 중계·순위표·대회·드래프트·회고)이 다 끝난 뒤에 한 장씩 띄워요.
+  const cheer = inGame && !playing && !final && !standingsRec && !tournament && !drafting && !farewell ? career.cheers[0] : undefined;
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [noticeOpen, setNoticeOpen] = useState(false);
@@ -77,8 +80,8 @@ export function Game() {
         onTab={openTab}
         playing={playing}
         speed={speed}
-        // 축하 팝업을 다 닫아야 오프시즌 결정 시트가 올라와요.
-        busy={final || tournament || drafting || !!cheer}
+        // 순위표와 축하 팝업을 다 닫아야 오프시즌 결정 시트가 올라와요.
+        busy={final || !!standingsRec || tournament || drafting || !!cheer}
         outcome={outcome}
       />
     );
@@ -106,7 +109,10 @@ export function Game() {
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 21.4 10.5 20C5.4 15.4 2 12.3 2 8.5 2 5.4 4.4 3 7.5 3c1.7 0 3.4.8 4.5 2.1C13.1 3.8 14.8 3 16.5 3 19.6 3 22 5.4 22 8.5c0 3.8-3.4 6.9-8.5 11.5z" />
               </svg>
-              <span>서버비 후원하기</span>
+              {/* 좁은 화면에서는 앞뒤를 덜어 '서버비 후원', '후원'으로 줄여요 (globals.css). */}
+              <span className="sp-label">
+                <span className="sp-pre">서버비 </span>후원<span className="sp-post">하기</span>
+              </span>
             </button>
           )}
         </div>
@@ -178,6 +184,7 @@ export function Game() {
           <LiveGameView game={career.live} onDone={() => gameActions.finishFinal()} />
         </Popup>
       )}
+      {standingsRec && career && <StandingsPopup career={career} rec={standingsRec} />}
       {tournament && career && <TournamentLoading career={career} />}
       {drafting && career?.draftShow && <DraftLoading career={career} show={career.draftShow} />}
       {farewell && retiredShown && <FarewellLoading career={retiredShown} />}

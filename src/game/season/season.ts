@@ -7,7 +7,7 @@ import { currentDecision } from "./decisions";
 import { FINAL_CLUTCH_CHANCE, bigGameDecision, clutchDecision, drawClutchLead, injuryDecision, seasonEvent } from "./events";
 import { LEAGUES, SCORING_TITLE, leagueTeams } from "../world/leagues";
 import { FINAL_SCORE, finalScore, gameScore, makeLiveGame } from "./live";
-import { ALL_DEF_TIERS, ALL_LEAGUE_TIERS, awardName, conferenceFinalsMvpName } from "../world/awards";
+import { ALL_DEF_TIERS, ALL_LEAGUE_TIERS, awardName, conferenceFinalsMvpName, nbaConference } from "../world/awards";
 import { addNews, giveAward, pickTeam } from "../career/log";
 import { STUDENT_ALLOWANCE, investPerks, payInvestments, type InvestPerks } from "../economy/invest";
 import { serviceSeason } from "../world/military";
@@ -510,13 +510,16 @@ function endRegularSeason(c: Career, run: SeasonRun, tag: string): void {
   // NBA·KBL은 7전 4선승제 시리즈, 나머지는 단판이에요.
   const best7 = lg === "nba" || lg === "kbl";
   const used = new Set([team.name]);
+  const pool = leagueTeams(lg, c.p.nat);
+  const conf = nbaConference(team.name);
   for (let i = 0; i < rounds; i++) {
     const win = champ || i < rounds - 1;
-    const opp = pickTeam(lg, used, leagueTeams(lg, c.p.nat));
+    const isFinal = i === total - 1;
+    // NBA는 파이널 전까지 같은 컨퍼런스 팀과, 파이널에서 다른 컨퍼런스 우승 팀과 붙어요. 뽑는 횟수는 같아서 난수 흐름은 그대로예요.
+    const opp = pickTeam(lg, used, lg === "nba" ? pool.filter(([name]) => (nbaConference(name) === conf) !== isFinal) : pool);
     used.add(opp.name);
     const other = ri(0, 3);
     const series = best7 ? (win ? `4-${other}` : `${other}-4`) : undefined;
-    const isFinal = i === total - 1;
     const [us, them] = isFinal ? finalScore(FINAL_SCORE[lg], win) : gameScore(FINAL_SCORE[lg], win);
     run.post.push({ name: names[i], opp: opp.name, color: opp.color, win, score: series ?? `${us}-${them}` });
     if (isFinal) run.final = { opp: opp.name, us, them, win, series };
@@ -699,6 +702,7 @@ function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord 
     rating: gp ? r1(clamp(t.rating / gp, 3.5, 9.9)) : 5.5, w: W, l: run.l, result: run.result, ovr0: ov0, ovr1: ov0, awards: [],
   };
   if (gp > 0 && run.final) rec.final = run.final;
+  if (run.post.length) rec.opps = run.post.map((r) => r.opp);
   if (gp > 0) {
     rec.tpm = threesPerGame(rec.pts, p);
     if (rec.tpm >= 0.2) rec.tpp = threePct(c, run.year);

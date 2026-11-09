@@ -81,7 +81,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 | `shell/` | `Game.tsx`: 화면 전환(생성 / 커리어 / 은퇴), 상단 메뉴, 진행 팝업과 창 띄우기 |
 | `create/` | 첫 화면(표지)과 단계별 선수 생성 |
 | `career/` | 커리어 진행 화면. `tabs/`에 시즌 · 기록 · 트로피 · 설정 탭 |
-| `progress/` | 진행 팝업 (국가대표 대회, 드래프트, 결승 중계, 응원, 은퇴 회고) |
+| `progress/` | 진행 팝업 (시즌 순위표, 국가대표 대회, 드래프트, 결승 중계, 응원, 은퇴 회고) |
 | `retired/` | 은퇴 화면, 역대 기록 순위, 닮은 꼴 선수, 기록 카드 공유 |
 | `rankings/` | 랭킹 페이지 (베스트 5, 랭킹 100, 포지션별, 스탯 랭킹, 나의 기록) |
 | `hall-of-fame/` | 명예의 전당 (내 기기 기록과 온라인 순위) |
@@ -112,7 +112,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 |---|---|---|
 | `core/` | 모든 곳이 쓰는 바탕 | `types` 저장 데이터 모양, `data` 공통 상수·룰셋 버전, `random` 시드 난수, `util` 작은 도우미 |
 | `player/` | 선수 자체 | `create` 후보 생성·커리어 시작, `players` 플레이 유형·외모, `ratings` 오버롤·출전 시간·연봉, `specialty` 히든 스탯, `condition` 능력치·건강 범위 |
-| `world/` | 리그와 제도 | `leagues` 리그·구단·학교, `awards` 리그별 상 이름, `draft` 드래프트, `national` 국가대표, `military` 병역 |
+| `world/` | 리그와 제도 | `leagues` 리그·구단·학교, `awards` 리그별 상 이름, `draft` 드래프트, `national` 국가대표, `military` 병역, `standings` 시즌 순위표 |
 | `season/` | 시즌 흐름과 결정 | `season` 시즌 진행·성장·시상, `live` 결승 중계, `offseason` 오프시즌과 결정 대기열, `events` 이벤트, `decisions` 진로·계약 결정, `actions` 결정 처리 |
 | `economy/` | 돈 쓰기 | `invest` 시즌 투자, `shop` 상점·기부 |
 | `career/` | 커리어 기록과 저장 | `career` 은퇴·요약·레거시, `log` 소식·수상·입단 기록, `storage` localStorage 저장·마이그레이션, 브라우저 업적과 누적 기록 |
@@ -136,6 +136,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 테스트는 대상 옆 `__tests__/`에 둬요 (`vitest.config.mts`가 `src/**/*.test.ts`를 찾아요).
 
 - `game/__tests__/engine.test.ts`
+- `game/__tests__/standings.test.ts`
 - `features/retired/__tests__/careerCard.test.ts`
 - `server/__tests__/feedback.test.ts`
 - `server/leaderboard/__tests__/validate.test.ts`

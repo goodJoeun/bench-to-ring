@@ -225,6 +225,8 @@ export interface SeasonRecord {
   mil?: MilitaryKind;
   /** 챔피언결정전(결승)에 올랐으면 그 결과 */
   final?: FinalSummary;
+  /** 플레이오프(전국대회 본선)에서 만난 팀, 라운드 순서대로. 시즌 순위표가 이 팀들을 진출선 안에 둬요. 예전 기록에는 없어요. */
+  opps?: string[];
   /** 이 시즌에 비용을 내고 한 투자 */
   invest?: InvestKey[];
 }

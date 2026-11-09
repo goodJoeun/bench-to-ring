@@ -1,5 +1,6 @@
 import { LEAGUES, currentExpectedMinutes, militaryUnit, r1, roleOf, seasonProgress, type Career, type SeasonRecord, type SeasonRun } from "@/game";
 import { keepTogether } from "@/shared/lib/format";
+import { gameActions } from "@/shared/store/game-store";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 import { AwardName, Panel } from "@/shared/ui/ui";
 import { ContractPanel } from "../ContractPanel";
@@ -75,6 +76,13 @@ function ResultCard({ r }: { r: SeasonRecord }) {
           결승 상대 {r.final.opp} · {r.final.series ? `시리즈 ${r.final.series} · ` : ""}마지막 경기 {r.final.us}-{r.final.them}{" "}
           {r.final.win ? "승리" : "패배"}
         </p>
+      )}
+      {r.lg && (
+        <div className="row-btns">
+          <button type="button" className="btn" aria-haspopup="dialog" onClick={() => gameActions.openStandings()}>
+            {r.year} 시즌 순위 보기
+          </button>
+        </div>
       )}
       {r.awards.length > 0 && (
         <>

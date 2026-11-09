@@ -311,6 +311,26 @@ h2.sec {
 .support-btn svg {
   fill: #e0457b;
 }
+/* 이름은 화면 폭에 따라 '서버비 후원하기' → '서버비 후원'(1099px 이하) → '후원'(600px 이하) → 하트만(400px 이하)으로 줄어요. */
+@media (max-width: 1099px) {
+  .support-btn .sp-post {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .support-btn .sp-pre {
+    display: none;
+  }
+}
+@media (max-width: 400px) {
+  .support-btn {
+    padding: 0;
+    justify-content: center;
+  }
+  .support-btn .sp-label {
+    display: none;
+  }
+}
 .cf-cup {
   font-size: 40px;
   line-height: 1;
@@ -4110,6 +4130,174 @@ select {
     background: rgba(255, 214, 107, 0.34);
   }
 }
+/* 시즌 순위표: 시즌이 끝나면 뜨는 리그(NBA는 컨퍼런스) 정규시즌 순위. 내 팀은 드래프트의 내 이름처럼 금색이에요. */
+.standings {
+  gap: 8px;
+}
+.st-tabs {
+  display: flex;
+  gap: 6px;
+}
+.st-tabs button {
+  flex: 1;
+  min-height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background: none;
+  color: var(--sim-soft);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.st-tabs button[aria-pressed="true"] {
+  border-color: #fff;
+  background: #fff;
+  color: var(--sim-bg);
+}
+.st-tabs button:focus-visible {
+  outline-color: #ffd66b;
+}
+.st-wrap {
+  max-height: max(176px, calc(100dvh - 380px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 10px;
+}
+@media (min-width: 481px) {
+  .st-wrap {
+    max-height: max(176px, calc(min(900px, 100dvh) - 380px));
+  }
+}
+.st-table {
+  min-width: 0;
+  border-collapse: separate;
+  border-spacing: 0 3px;
+  margin-top: -3px;
+  font-size: 13px;
+  color: #fff;
+}
+.st-table th,
+.st-table td {
+  padding: 6px 6px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.08);
+}
+.st-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-block: 5px;
+  background: var(--sim-bg);
+  color: var(--sim-lbl);
+  font-size: 11px;
+  letter-spacing: 0;
+}
+.st-table td {
+  width: 2.4em;
+  font-size: 14px;
+}
+.st-table tbody td:first-child {
+  border-radius: 8px 0 0 8px;
+  box-shadow: inset 4px 0 0 var(--tc);
+}
+.st-table tbody td:last-child {
+  border-radius: 0 8px 8px 0;
+  padding-right: 10px;
+}
+.st-table thead th:last-child {
+  padding-right: 10px;
+}
+.st-rank {
+  font-weight: 700;
+  font-size: 15px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.55);
+}
+.st-table tr[data-zone="po"] .st-rank {
+  color: var(--sim-bar);
+}
+.st-table tr[data-zone="bye"] .st-rank {
+  color: #ffd66b;
+}
+.st-table .st-team {
+  width: auto;
+  max-width: 0;
+  text-align: left;
+  font-family: var(--f-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: #fff;
+}
+/* 긴 팀 이름만 말줄임하고, 엠블럼과 꼬리표는 그대로 둬요. */
+.st-tc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.st-tc > :not(.st-name) {
+  flex: none;
+}
+.st-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.st-team em {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 800;
+}
+.st-team em[data-final] {
+  background: #ffd66b;
+  color: #3a2a00;
+}
+.st-team em[data-me] {
+  background: #ffd66b;
+  color: #3a2a00;
+}
+.st-gb {
+  color: var(--sim-soft);
+}
+/* 플레이오프 진출선: 마지막 진출 팀 아래 점선 */
+.st-table tr[data-cut] td,
+.st-table tr[data-cut] th {
+  border-bottom: 2px dashed rgba(255, 255, 255, 0.45);
+}
+.st-table tr[data-me] td,
+.st-table tr[data-me] th {
+  background: rgba(255, 214, 107, 0.2);
+}
+.st-table tr[data-me] .st-name {
+  color: #ffd66b;
+}
+.st-table tr[data-me] .st-rank {
+  color: #ffd66b;
+}
+.st-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 14px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--sim-soft);
+}
+.st-legend i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--sim-bar);
+}
+.st-legend i[data-zone="bye"] {
+  background: #ffd66b;
+}
 /* 은퇴 화면의 닮은 꼴 선수 */
 .comps {
   display: grid;
@@ -5661,25 +5849,14 @@ html:has(.sheet) .toast-zone {
     font-size: 12.5px;
   }
 }
-@media (max-width: 1099px) {
-  /* '서버비 후원하기'는 이름이 길어서, 헤더가 800px로 넓어지는 1100px 화면부터 이름을 보여주고 그 아래는 하트 아이콘만 둬요. 이름은 aria-label이 대신해요. */
-  .support-btn {
-    width: 34px;
-    padding: 0;
-    justify-content: center;
-  }
-  .support-btn span {
-    display: none;
-  }
-}
 @media (max-width: 600px) {
   /* 좁은 화면에서는 이름표를 빼고 아이콘만 둬요. 이름은 aria-label이 대신해요. 단추가 넷이라 600px부터 줄여요. */
-  .guide-btn {
+  .guide-btn:not(.support-btn) {
     width: 34px;
     padding: 0;
     justify-content: center;
   }
-  .guide-btn span {
+  .guide-btn:not(.support-btn) span {
     display: none;
   }
 }
