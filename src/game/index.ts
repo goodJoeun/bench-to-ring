@@ -87,13 +87,14 @@ export {
   ACHIEVEMENT_GROUPS,
   achievementById,
   checkAchievements,
+  rankAchievements,
   setBrowserRecord,
   type Achievement,
   type AchievementGroup,
   type BrowserRecord,
   type LifeView,
 } from "./legacy/achievements";
-export { EMPTY_LIFETIME, LIFETIME_PREFIX, addLifetime, fromCareer, subLifetime, type Lifetime } from "./legacy/lifetime";
+export { EMPTY_LIFETIME, LIFETIME_PREFIX, addLifetime, fromCareer, nbaTriple, subLifetime, type Lifetime } from "./legacy/lifetime";
 export {
   RECORD_BOARDS,
   RECORD_GROUPS,

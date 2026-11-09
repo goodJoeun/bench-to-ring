@@ -4,6 +4,7 @@ import { natColor, playerLook, type Career, type Cheer } from "@/game";
 import { gameActions } from "@/shared/store/game-store";
 import { NO_TEAM_COLOR, keepTogether, nameFit } from "@/shared/lib/format";
 import { useAutoFocus } from "@/shared/lib/hooks";
+import { Medal } from "@/shared/ui/badge/Medal";
 import { Sprite } from "@/shared/ui/sprite/Sprite";
 import { AwardName } from "@/shared/ui/ui";
 import { Popup } from "./Popup";
@@ -46,13 +47,7 @@ function AchievementMedal() {
       {SPARKS.map(([deg, dist, delay], i) => (
         <i key={i} className="achv-spark" style={{ "--a": `${deg}deg`, "--d": `${-dist}px`, animationDelay: `${0.2 + delay}s` } as React.CSSProperties} />
       ))}
-      <svg className="achv-medal" viewBox="0 0 64 64">
-        <polygon points="18,2 30,2 36,24 26,28" fill="#E0503A" />
-        <polygon points="34,2 46,2 38,28 28,24" fill="#3D7BFF" />
-        <circle cx="32" cy="40" r="20" fill="#FFD66B" stroke="#E2A93B" strokeWidth="3" />
-        <circle cx="32" cy="40" r="14" fill="#F5B83D" />
-        <polygon points="32,30 34.47,36.6 41.51,36.91 35.99,41.3 37.88,48.09 32,44.2 26.12,48.09 28.01,41.3 22.49,36.91 29.53,36.6" fill="#FFF7D6" />
-      </svg>
+      <Medal className="achv-medal" />
     </div>
   );
 }

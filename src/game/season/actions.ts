@@ -139,7 +139,7 @@ export function applyAction(c: Career, a: Action): void {
       }
       // 최고 오버롤은 시즌을 마칠 때 기록해요.
       if (ok) addAttr(p.attrs, a.attr, 1);
-      if (win) c.clutchWins++;
+      countClutch(c, win);
       const up = `${SHORT[a.attr]} +1`;
       addNews(
         c,
@@ -169,6 +169,12 @@ export function applyAction(c: Career, a: Action): void {
   }
 }
 
+/** 클러치 결과를 세요: 승리 수와 연속 기록. 동점을 만들고 연장에서 졌으면 실패로 쳐요. */
+function countClutch(c: Career, win: boolean): void {
+  if (win) c.clutchWins++;
+  c.clutchStreak = win ? Math.max(0, c.clutchStreak) + 1 : Math.min(0, c.clutchStreak) - 1;
+}
+
 /**
  * 결승 클러치 결과: 리그 결승이면 우승·준우승과 시리즈를, 국가대표 결승이면 메달을 정해요.
  * 성공하면 일반 클러치처럼 그 능력치가 오르고 클러치 승리로 세요.
@@ -184,7 +190,8 @@ function applyFinalClutch(c: Career, a: Extract<Action, { k: "clutch" }>, ok: bo
     if (c.run && board) c.run.next = { ...board, ...end };
   }
   if (ok) addAttr(c.p.attrs, a.attr, 1);
-  if (win) c.clutchWins++;
+  countClutch(c, win);
+  if (win) c.finalClutchWins++;
   const [prize, second] = board ? finalsPrize(board) : ["우승", "준우승"];
   const name = board?.finals ?? "결승";
   const up = `${SHORT[a.attr]} +1`;

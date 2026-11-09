@@ -172,6 +172,8 @@ export function createCareer(input: NewCareerInput, cand: Candidate, id = String
     achv: [],
     raises: 0,
     clutchWins: 0,
+    clutchStreak: 0,
+    finalClutchWins: 0,
     rivalWins: 0,
   };
   refreshShop(c);

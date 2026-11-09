@@ -1,31 +1,36 @@
-import { ATTR_KEYS } from "../core/data";
+import { ATTR_KEYS, POS, POS_KEYS } from "../core/data";
 import { ATTR_RANGE } from "../player/condition";
 import { evalOvr } from "../player/ratings";
 import { LEAGUES } from "../world/leagues";
+import { PLAYOFF_SPOTS, seasonStandings } from "../world/standings";
 import { addNews, cheer } from "../career/log";
 import { shopItem } from "../economy/shop";
 import { EMPTY_LIFETIME, LIFETIME_PREFIX, addLifetime, fromCareer, subLifetime, type Lifetime } from "./lifetime";
-import type { AttrKey, AwardEntry, AwardKey, Career, LeagueKey, MilitaryKind, SeasonRecord } from "../core/types";
+import type { AttrKey, AwardEntry, AwardKey, Career, LeagueKey, MilitaryKind, PosKey, SeasonRecord } from "../core/types";
 
 /**
  * 업적. 대부분 커리어 기록(시즌 기록, 수상, 드래프트, 국가대표, 기부, 산 것)으로 판정해요.
- * 기록에 남지 않는 것만 따로 세요: 연봉 인상 성공(c.raises), 클러치 성공(c.clutchWins), 라이벌전 승리(c.rivalWins), 워크온 입학·주장 완장(c.milestones).
+ * 기록에 남지 않는 것만 따로 세요: 연봉 인상 성공(c.raises), 클러치 성공(c.clutchWins)과 연속 기록(c.clutchStreak), 결승 클러치 성공(c.finalClutchWins),
+ * 라이벌전 승리(c.rivalWins), 워크온 입학·주장 완장(c.milestones).
+ * '역대 랭킹' 업적은 엔진이 판정하지 않아요. 은퇴 기록을 온라인 랭킹에 올리고 받은 순위로 rankAchievements가 정해요.
  * 업적은 브라우저마다 한 번만 따요. 브라우저에서 이미 딴 업적은 새 커리어에서 조건을 채워도 다시 뜨지 않아요.
  * 커리어마다 처음 딴 업적은 c.achv에 남고, 브라우저에서 딴 업적과 누적 기록은 storage.ts가 모아 둬요(setBrowserRecord).
  * '누적 기록' 업적은 이 브라우저에서 누적 기록을 세기 시작한 뒤로 플레이한 모든 커리어를 더해 판정해요.
  * 업적 창은 따기 전에는 이름과 힌트(hint)만, 딴 뒤에는 조건(desc)까지 보여줘요.
  */
 
-export type AchievementGroup = "school" | "team" | "award" | "ability" | "path" | "life" | "military" | "lifetime";
+export type AchievementGroup = "school" | "team" | "award" | "clutch" | "ability" | "path" | "life" | "military" | "rank" | "lifetime";
 
 export const ACHIEVEMENT_GROUPS: Record<AchievementGroup, string> = {
   school: "고교·대학",
   team: "팀·우승",
   award: "개인상·기록",
+  clutch: "클러치",
   ability: "능력치",
   path: "드래프트·진로",
   life: "국가대표·커리어",
   military: "병역",
+  rank: "역대 랭킹",
   lifetime: "누적 기록",
 };
 
@@ -85,6 +90,8 @@ export interface Achievement {
   test: (v: View) => boolean;
   /** 누적 기록 업적의 진행도: 지금 값과 목표. 업적 창이 따기 전에 보여줘요. */
   goal?: { of: (l: LifeView) => number; n: number; unit: string };
+  /** 역대 랭킹 업적: 온라인 역대 랭킹에서 이 순위 안에 들면 따요. pos가 있으면 그 포지션 순위예요. */
+  rank?: { top: number; pos?: PosKey };
 }
 
 const PRO_LEAGUES: LeagueKey[] = ["nba", "euro", "gleague", "kbl"];
@@ -137,6 +144,29 @@ function afterService(v: View, kind: MilitaryKind): SeasonRecord[] {
   const years = v.c.hist.filter((h) => h.mil === kind).map((h) => h.year);
   return years.length ? v.pro.filter((h) => h.year > Math.max(...years)) : [];
 }
+
+/** 그 시즌 정규시즌 순위 (NBA는 컨퍼런스 순위). 시즌 순위표와 같은 순위예요. */
+const standingRank = (v: View, h: SeasonRecord) => seasonStandings(v.c, h)?.rank;
+/** 플레이오프 첫 시리즈에서 졌는지. KBL 정규리그 1·2위는 4강에 직행해서 4강이 첫 시리즈예요. */
+const firstRoundExit = (h: SeasonRecord) =>
+  h.result === "플레이오프 1라운드" || h.result === "6강 플레이오프" || (h.lg === "kbl" && h.result === "4강 플레이오프" && h.opps?.length === 1);
+/** 정규시즌 전 경기에 나선 시즌 */
+const everyGame = (h: SeasonRecord) => !!h.lg && h.gp >= LEAGUES[h.lg].games;
+/** 클러치 연속 성공(얼음 심장)·연속 실패(새가슴) 업적의 횟수 */
+const CLUTCH_HOT = 8;
+const CLUTCH_COLD = 5;
+/** 결승전의 사나이: 한 커리어의 결승 클러치 성공 횟수 */
+const FINAL_CLUTCH = 10;
+/** 역대 랭킹 업적의 순위 */
+const RANK_TOP = 10;
+/** 포지션별 역대 랭킹 TOP 10 업적: 이름과 힌트 */
+const POS_LEGEND: Record<PosKey, [string, string]> = {
+  PG: ["야전사령관", "코트 위 모든 공격이 내 손끝에서 시작됐다"],
+  SG: ["백코트의 저격수", "어디서든 던지면 꽂히는 슈터의 계보"],
+  SF: ["코트 위의 팔방미인", "공격도 수비도, 무엇이든 해내는 포워드"],
+  PF: ["페인트존의 투사", "몸싸움이라면 누구에게도 지지 않는 파워"],
+  C: ["골밑의 수호신", "림을 지키는 거인의 계보"],
+};
 
 /** 히든 스탯 보너스까지 더한 오버롤로 넘어야 하는 값 */
 const BEYOND = 100;
@@ -248,6 +278,34 @@ export const ACHIEVEMENTS: Achievement[] = [
       return v.retired && after.length >= 5 && distinct(after) === 1 && !(v.c.awards.ring ?? 0);
     },
   },
+  {
+    id: "runner_up",
+    name: "만년 2인자",
+    desc: "프로 결승에서 4번 이상 지기", hint: "정상 바로 앞에서 번번이",
+    group: "team",
+    test: (v) => v.pro.filter((h) => h.final && !h.final.win).length >= 4,
+  },
+  {
+    id: "last_train",
+    name: "막차 타고 정상까지",
+    desc: "플레이오프에 오르는 마지막 순위(NBA 컨퍼런스 8위·KBL 6위·유로리그·G리그 8위)로 올라가 우승", hint: "턱걸이로 들어간 플레이오프에서 끝까지",
+    group: "team",
+    test: (v) => v.pro.some((h) => champ(h) && !!PLAYOFF_SPOTS[h.lg!] && standingRank(v, h) === PLAYOFF_SPOTS[h.lg!]),
+  },
+  {
+    id: "first_curse",
+    name: "1위의 저주",
+    desc: "정규시즌 1위로 마치고 플레이오프 첫 시리즈에서 탈락", hint: "정규시즌의 왕이 봄에는…",
+    group: "team",
+    test: (v) => v.pro.some((h) => firstRoundExit(h) && standingRank(v, h) === 1),
+  },
+  {
+    id: "bench_keeper",
+    name: "벤치의 터줏대감",
+    desc: "프로 6시즌 이상 뛰는 동안 식스맨 이상 역할을 한 번도 맡지 못하고 은퇴", hint: "벤치에도 지정석이 있다면",
+    group: "team",
+    test: (v) => v.retired && v.pro.length >= 6 && v.pro.every((h) => BENCH.includes(h.role) || h.role === "로테이션"),
+  },
 
   // 개인상
   ...PRO_LEAGUES.map(
@@ -323,13 +381,67 @@ export const ACHIEVEMENTS: Achievement[] = [
     test: (v) => proCount(v, "scoring") >= 7,
   },
   { id: "rival_killer", name: "라이벌 킬러", desc: "라이벌전에 뛰어 6번 이상 승리", hint: "라이벌만 만나면 더 힘이 나요", group: "award", test: (v) => (v.c.rivalWins ?? 0) >= 6 },
-  { id: "clutch_master", name: "클러치 귀재", desc: "클러치 상황에서 10번 이상 성공", hint: "경기 막판, 마지막 공은 내 손에", group: "award", test: (v) => v.c.clutchWins >= 10 },
   {
     id: "ageless",
     name: "나이는 숫자에 불과",
     desc: "35세 이상 프로 시즌을 오버롤 92 이상으로 마치기", hint: "30대 중반에도 리그 최정상급 기량을",
     group: "award",
     test: (v) => v.pro.some((h) => h.age >= 35 && h.ovr1 >= 92),
+  },
+  {
+    id: "lone_wolf",
+    name: "고군분투",
+    desc: "정규시즌 승률 5할 미만 팀에서 정규시즌 MVP", hint: "팀은 졌어도 리그는 나를 봤어요",
+    group: "award",
+    test: (v) => v.pro.some((h) => isMvp(v, h) && h.w < h.l),
+  },
+  {
+    id: "sixth_rebel",
+    name: "식스맨의 반란",
+    desc: "식스맨상을 받은 뒤 정규시즌 MVP", hint: "벤치에서 출발해 리그의 주인공으로",
+    group: "award",
+    test: (v) => {
+      const six = v.proAwards.filter((a) => a.k === "sixth").map((a) => a.y);
+      return six.length > 0 && v.pro.some((h) => isMvp(v, h) && h.year > Math.min(...six));
+    },
+  },
+  {
+    id: "bomber",
+    name: "득점 폭격기",
+    desc: "프로 한 시즌 평균 40득점 이상", hint: "한 경기에 혼자 40점씩, 시즌 내내",
+    group: "award",
+    test: (v) => v.pro.some((h) => h.gp >= 10 && h.pts >= 40),
+  },
+  {
+    id: "ironman",
+    name: "강철 체력",
+    desc: "프로 정규시즌 전 경기 출전 8시즌 이상", hint: "다치지 않는 것도 재능이에요",
+    group: "award",
+    test: (v) => v.pro.filter(everyGame).length >= 8,
+  },
+
+  // 클러치
+  { id: "clutch_master", name: "클러치 귀재", desc: "클러치 상황에서 10번 이상 성공", hint: "경기 막판, 마지막 공은 내 손에", group: "clutch", test: (v) => v.c.clutchWins >= 10 },
+  {
+    id: "ice_heart",
+    name: "얼음 심장",
+    desc: `클러치 ${CLUTCH_HOT}연속 성공`, hint: "떨리는 순간에도 심장은 차갑게, 한 번도 빠짐없이",
+    group: "clutch",
+    test: (v) => v.c.clutchStreak >= CLUTCH_HOT,
+  },
+  {
+    id: "chicken_heart",
+    name: "새가슴",
+    desc: `클러치 ${CLUTCH_COLD}연속 실패 (동점을 만들고 연장에서 진 것도 실패로 쳐요)`, hint: "마지막 공만 잡으면 손이 떨려요",
+    group: "clutch",
+    test: (v) => v.c.clutchStreak <= -CLUTCH_COLD,
+  },
+  {
+    id: "final_man",
+    name: "결승전의 사나이",
+    desc: `한 커리어에서 결승 클러치(우승·금메달이 걸린 마지막 플레이) ${FINAL_CLUTCH}번 성공`, hint: "우승이 걸린 마지막 공은 언제나 내 몫",
+    group: "clutch",
+    test: (v) => v.c.finalClutchWins >= FINAL_CLUTCH,
   },
 
   // 능력치
@@ -394,6 +506,13 @@ export const ACHIEVEMENTS: Achievement[] = [
       return nba >= 0 && v.pro.slice(nba + 1).some((h) => h.lg === "kbl" && champ(h));
     },
   },
+  {
+    id: "thirty_rookie",
+    name: "서른 즈음에",
+    desc: "30세 이후에 NBA 데뷔", hint: "꿈의 무대는 늦게 밟아도 꿈의 무대",
+    group: "path",
+    test: (v) => (v.pro.find((h) => h.lg === "nba")?.age ?? 0) >= 30,
+  },
   { id: "negotiator", name: "협상의 귀재", desc: "연봉 인상 요구를 5번 이상 관철", hint: "협상 테이블에서 물러서지 마세요", group: "path", test: (v) => v.c.raises >= 5 },
 
   // 국가대표·커리어
@@ -422,6 +541,13 @@ export const ACHIEVEMENTS: Achievement[] = [
     test: (v) => v.c.owned.filter((k) => shopItem(k)?.cat === "사치품").length >= LUXURY_COUNT,
   },
   { id: "donor", name: "기부천사", desc: "유소년 농구에 누적 1000억 이상 기부", hint: "유소년 농구에 아낌없이", group: "life", test: (v) => v.c.donated >= 1000 },
+  {
+    id: "giving_tree",
+    name: "아낌없이 주는 나무",
+    desc: "커리어 동안 번 돈의 절반 이상(100억 이상)을 유소년 농구에 기부하고 은퇴", hint: "번 것보다 나눈 것으로 기억되고 싶다면",
+    group: "life",
+    test: (v) => v.retired && v.c.donated >= 100 && v.c.donated * 2 >= v.c.earnings + v.c.spent,
+  },
 
   // 병역: 대한민국 선수만 입대해요.
   { id: "sangmu", name: "국군체육부대 입단", desc: "상무에 입대", hint: "군복을 입고도 코트 위에", group: "military", test: (v) => enlisted(v.c, "sangmu") },
@@ -455,6 +581,20 @@ export const ACHIEVEMENTS: Achievement[] = [
     test: (v) => afterService(v, "army").some(champ),
   },
 
+  // 역대 랭킹: 은퇴 기록을 온라인 랭킹에 올리고 받은 순위로 따요 (rankAchievements). 엔진은 판정하지 않아요.
+  {
+    id: "goat",
+    name: "나 정도면 GOAT?",
+    desc: `온라인 역대 랭킹 전체 TOP ${RANK_TOP} 진입`, hint: "역대 전체 순위표의 맨 윗줄에 이름을",
+    group: "rank",
+    test: () => false,
+    rank: { top: RANK_TOP },
+  },
+  ...POS_KEYS.map((pos): Achievement => {
+    const [name, hint] = POS_LEGEND[pos];
+    return { id: `legend_${pos}`, name, hint, desc: `온라인 역대 랭킹 ${POS[pos].name} TOP ${RANK_TOP} 진입`, group: "rank", test: () => false, rank: { top: RANK_TOP, pos } };
+  }),
+
   // 누적 기록: 이 브라우저에서 플레이한 모든 커리어를 더해요.
   lifetime("retire3", "다시 쓰는 농구 인생", "한 번의 농구 인생으로는 모자라요", "모든 커리어 합계 은퇴 3번", (l) => l.t.careers, 3, "번"),
   lifetime("retire10", "농구 인생 10회차", "코트를 떠나고 또 돌아오기를 여러 번", "모든 커리어 합계 은퇴 10번", (l) => l.t.careers, 10, "번"),
@@ -468,6 +608,10 @@ export const ACHIEVEMENTS: Achievement[] = [
   lifetime("clutch", "강심장 유전자", "누구로 뛰든 마지막 공은 내 손에", "모든 커리어 합계 클러치 성공 50번", (l) => l.t.clutch, 50, "번"),
   lifetime("positions", "포지션 마스터", "한 포지션만 고집하지 마세요", "다섯 포지션 모두 프로 무대 밟기", (l) => l.t.pos.length, 5, "포지션"),
   lifetime("nations", "국경 없는 농구", "다른 나라 선수로도 뛰어 보세요", "서로 다른 국적 3가지로 프로 무대 밟기", (l) => l.t.nats.length, 3, "국적"),
+  lifetime(
+    "allround", "올-어라운드 플레이어", "어느 포지션으로 뛰든 꿈의 무대 정상에",
+    "다섯 포지션 모두, 한 커리어에서 NBA 우승·NBA MVP·NBA 파이널 MVP를 모두 받기", (l) => l.t.allround.length, 5, "포지션",
+  ),
   lifetime("hunter", "업적 사냥꾼", "업적 창을 차근차근 채워 보세요", "업적 30개 달성", (l) => l.achv, 30, "개"),
 ];
 
@@ -475,6 +619,11 @@ const BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
 
 /** id로 업적을 찾아요. 없어진 업적이면 undefined예요. */
 export const achievementById = (id: string): Achievement | undefined => BY_ID.get(id);
+
+/** 온라인 역대 랭킹 순위로 따는 역대 랭킹 업적 id. pos는 그 커리어의 포지션, posRank는 그 포지션 안의 순위예요. */
+export function rankAchievements(r: { pos: PosKey; rank: number; posRank: number }): string[] {
+  return ACHIEVEMENTS.filter((a) => a.rank && (a.rank.pos ? a.rank.pos === r.pos && r.posRank <= a.rank.top : r.rank <= a.rank.top)).map((a) => a.id);
+}
 
 function viewOf(c: Career, b: BrowserRecord): View {
   const years = (keys: string[]) => new Set(c.awardLog.filter((a) => keys.includes(a.k)).map((a) => a.y));

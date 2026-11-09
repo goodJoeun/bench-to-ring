@@ -738,6 +738,10 @@ export interface Career {
   raises: number;
   /** 클러치 상황에서 성공한 횟수 (클러치 귀재) */
   clutchWins: number;
+  /** 클러치 연속 기록: 이어서 성공하면 +1씩, 이어서 실패하면 -1씩. 결과가 바뀌면 ±1부터 다시 세요. (얼음 심장, 새가슴) */
+  clutchStreak: number;
+  /** 결승 클러치(리그·국가대표 결승의 마지막 플레이)에서 성공한 횟수 (결승전의 사나이) */
+  finalClutchWins: number;
   /** 라이벌전에 뛰어 이긴 횟수 (라이벌 킬러) */
   rivalWins: number;
   /** 가장 최근 드래프트의 지명 순서 */

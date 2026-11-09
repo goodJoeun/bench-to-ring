@@ -3,6 +3,7 @@ import {
   HOME_NATION,
   INVEST_SLOTS,
   LOOKS,
+  achievementById,
   buy,
   canRetire,
   checkAchievements,
@@ -14,6 +15,7 @@ import {
   donate,
   generateCandidates,
   hsSchools,
+  rankAchievements,
   randomLooks,
   shuffle,
   toLook,
@@ -35,7 +37,18 @@ import {
   type SeasonStep,
   type ShopKey,
 } from "@/game";
-import { browserRecord, startLifetime, loadCareer, loadEnding, loadEndingIds, loadHall, saveCareer, saveEnding, saveHall } from "@/game/career/storage";
+import {
+  browserRecord,
+  startLifetime,
+  loadCareer,
+  loadEnding,
+  loadEndingIds,
+  loadHall,
+  saveCareer,
+  saveEnding,
+  saveHall,
+  unlockAchievements,
+} from "@/game/career/storage";
 import { flushPending, submitCareer } from "@/shared/leaderboard/client";
 
 /** 선수 생성 화면의 입력값 */
@@ -193,8 +206,11 @@ function ensureLoaded(): void {
   const ids = loadEndingIds();
   const endings = career?.stage === "retired" && career.summary?.seasons && !ids.includes(career.id) ? saveEnding(career) : ids;
   snapshot = { ...SERVER_SNAPSHOT, ready: true, career, draft: freshDraft(), hall: loadHall(), endings };
-  // 지난번에 보내지 못한 은퇴 기록을 온라인 랭킹에 다시 보내요.
-  void flushPending();
+  // 지난번에 보내지 못한 은퇴 기록을 온라인 랭킹에 다시 보내요. 올라가면 그 순위로 역대 랭킹 업적을 따요.
+  void flushPending().then((results) => {
+    const got = [...results].flatMap(([id, r]) => rankUnlock(id, r));
+    if (got.length) set({ toast: toast(`업적 달성 · ${got.join(", ")}!`) });
+  });
 }
 
 function set(patch: Partial<GameSnapshot>): void {
@@ -255,10 +271,29 @@ function afterStep(res: SeasonStep | null, before: NewsItem | undefined): void {
   if (msg) set({ toast: toast(msg) });
 }
 
-/** 은퇴 기록을 온라인 랭킹에 올리고, 올라가면 순위를 알려요. 실패하면 조용히 넘어가요. */
+/**
+ * 온라인 역대 랭킹 순위로 역대 랭킹 업적(전체·포지션 TOP 10)을 따요. 처음 딴 업적의 이름을 돌려줘요.
+ * 이 브라우저에서 은퇴한 커리어(명예의 전당)만 쳐요. 지금 커리어면 은퇴 화면의 '이번 커리어 업적'에도 넣어요.
+ */
+function rankUnlock(careerId: string, r: { rank: number; posRank: number }): string[] {
+  const s = snapshot.hall.find((h) => h.id === careerId);
+  if (!s) return [];
+  const fresh = unlockAchievements(rankAchievements({ pos: s.pos, ...r }), { name: s.name, career: s.id });
+  const c = snapshot.career;
+  if (fresh.length && c?.id === careerId) {
+    const next = { ...c, achv: [...c.achv, ...fresh.filter((id) => !c.achv.includes(id))] };
+    saveCareer(next);
+    set({ career: next, endings: c.stage === "retired" ? saveEnding(next) : snapshot.endings });
+  }
+  return fresh.map((id) => achievementById(id)?.name ?? id);
+}
+
+/** 은퇴 기록을 온라인 랭킹에 올리고, 올라가면 순위와 새로 딴 역대 랭킹 업적을 알려요. 실패하면 조용히 넘어가요. */
 function submitOnline(s: CareerSummary): void {
   void submitCareer(s).then((r) => {
-    if (r) set({ toast: toast(`온라인 랭킹 전체 ${r.rank}위 · ${r.pos} ${r.posRank}위 (${r.total}명 중)`) });
+    if (!r) return;
+    const got = rankUnlock(s.id, r);
+    set({ toast: toast(`온라인 랭킹 전체 ${r.rank}위 · ${r.pos} ${r.posRank}위 (${r.total}명 중)${got.length ? ` · 업적 달성: ${got.join(", ")}!` : ""}`) });
   });
 }
 
@@ -393,6 +428,11 @@ export const gameActions = {
   /** 1배속 → 2배속 → 4배속 → 1배속 */
   cycleSpeed() {
     set({ speed: SPEEDS[(SPEEDS.indexOf(snapshot.speed) + 1) % SPEEDS.length] });
+  },
+  /** 랭킹 페이지에서 불러온 내 기록의 지금 순위로 역대 랭킹 업적을 따요. 새로 딴 게 있으면 알려요. */
+  claimRanks(list: { careerId: string; rank: number; posRank: number }[]) {
+    const got = list.flatMap((m) => rankUnlock(m.careerId, m));
+    if (got.length) set({ toast: toast(`업적 달성 · ${got.join(", ")}!`) });
   },
   /** 지난 시즌 순위표를 다시 열어요. 팀 경기가 없던 시즌(무소속·군 복무)은 순위표가 없어요. */
   openStandings() {

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { POS, POS_KEYS, fmtNum, type PosKey } from "@/game";
-import { useGame } from "@/shared/store/game-store";
+import { gameActions, useGame } from "@/shared/store/game-store";
 import { fetchBoard, fetchBoardDays, fetchMine, fetchStatBoard, pendingIds } from "@/shared/leaderboard/client";
 import { daysBack, kstDay } from "@/shared/leaderboard/days";
 import { STAT_KEYS, type Board, type BoardCount, type BoardDay, type BoardDays, type MyRanks, type StatBoard, type StatKey } from "@/shared/leaderboard/types";
@@ -206,6 +206,7 @@ function useMine() {
   useEffect(() => {
     let live = true;
     void fetchMine().then((m) => {
+      if (m) gameActions.claimRanks(m.careers);
       if (live) setMine(m);
     });
     return () => {

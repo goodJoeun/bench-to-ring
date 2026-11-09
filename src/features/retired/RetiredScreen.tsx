@@ -10,6 +10,7 @@ import { SimilarPlayers } from "./SimilarPlayers";
 import { ShareSheet } from "./ShareSheet";
 import { SeasonTable } from "@/features/career/tabs/RecordTab";
 import { HallOfFame } from "@/features/hall-of-fame/HallOfFame";
+import { AchievedBadge } from "@/shared/ui/badge/Medal";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 import { AwardName, CourtStage, Panel, StatTiles } from "@/shared/ui/ui";
 
@@ -52,6 +53,7 @@ function CareerAchievements({ career: c, past }: { career: Career; past: boolean
         <ul className="achv-list">
           {list.map((a) => (
             <li key={a.id} data-done>
+              <AchievedBadge />
               <b>{a.name}</b>
               <span>{a.desc}</span>
             </li>

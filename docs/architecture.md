@@ -97,7 +97,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 |---|---|
 | `ui/` | `ui.tsx`(Panel, StatTiles, Choice…), `Sheet.tsx`, `Toast.tsx` |
 | `ui/sprite/` | Canvas 선수 캐릭터 `Sprite.tsx`, 표지 그림 `coverArt.ts`, 기록의 캐릭터·유니폼 `look.ts` |
-| `ui/badge/` | `TeamBadge.tsx`(국기·로고·엠블럼), `emblem.ts`, 만든 파일 `logos.generated.ts`·`flags.generated.ts` |
+| `ui/badge/` | `TeamBadge.tsx`(국기·로고·엠블럼), `Medal.tsx`(업적 메달과 딴 업적 카드의 훈장), `emblem.ts`, 만든 파일 `logos.generated.ts`·`flags.generated.ts` |
 | `lib/` | 공통 문구와 색 `format.ts`, 훅 `hooks.ts`, 사이트 정보 `site.ts`, 테마 `theme.ts` |
 | `store/` | `game-store.ts`: 화면과 엔진을 잇는 상태 저장소 (useSyncExternalStore) |
 | `leaderboard/` | 랭킹 API 타입 `types.ts`, 날짜 규칙 `days.ts`, 브라우저 클라이언트 `client.ts` |
@@ -116,7 +116,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 | `season/` | 시즌 흐름과 결정 | `season` 시즌 진행·성장·시상, `live` 결승 중계, `offseason` 오프시즌과 결정 대기열, `events` 이벤트, `decisions` 진로·계약 결정, `actions` 결정 처리 |
 | `economy/` | 돈 쓰기 | `invest` 시즌 투자, `shop` 상점·기부 |
 | `career/` | 커리어 기록과 저장 | `career` 은퇴·요약·레거시, `log` 소식·수상·입단 기록, `storage` localStorage 저장·마이그레이션, 브라우저 업적과 누적 기록 |
-| `legacy/` | 평가와 업적 | `hall` 랭킹 점수, `records` 역대 기록 순위표, `comps` 닮은 꼴 선수, `namu` 나무위키 링크, `achievements` 업적 (브라우저마다 한 번만, `setBrowserRecord`로 저장소와 이어요), `lifetime` 모든 커리어 누적 기록 |
+| `legacy/` | 평가와 업적 | `hall` 랭킹 점수, `records` 역대 기록 순위표, `comps` 닮은 꼴 선수, `namu` 나무위키 링크, `achievements` 업적 (브라우저마다 한 번만, `setBrowserRecord`로 저장소와 이어요. 역대 랭킹 업적은 온라인 순위로 `rankAchievements`), `lifetime` 모든 커리어 누적 기록 |
 
 밸런스 수치는 대부분 `world/leagues.ts`, `core/data.ts`, `player/ratings.ts`, `season/season.ts`에 있어요.
 
@@ -136,6 +136,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 테스트는 대상 옆 `__tests__/`에 둬요 (`vitest.config.mts`가 `src/**/*.test.ts`를 찾아요).
 
 - `game/__tests__/engine.test.ts`
+- `game/__tests__/achievements.test.ts`
 - `game/__tests__/standings.test.ts`
 - `features/retired/__tests__/careerCard.test.ts`
 - `server/__tests__/feedback.test.ts`
