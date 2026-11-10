@@ -781,6 +781,28 @@ describe("시즌 투자", () => {
     }
   });
 
+  it("99를 찍은 능력치만 키우는 투자는 나오지 않아요", () => {
+    const c = pro("inv10");
+    c.p.attrs.sht = 99;
+    c.p.attrs.ath = 98.6; // 화면에 99로 보여요
+    c.p.attrs.iq = 99;
+    c.p.attrs.pas = 80;
+    for (let y = 2030; y < 2080; y++) {
+      c.year = y;
+      const keys = investLineup(c).map((i) => i.key);
+      expect(keys).toHaveLength(INVEST_OFFER);
+      for (const k of ["shootcamp", "gym", "altitude", "video"] as const) expect(keys).not.toContain(k);
+    }
+    // 패스·BQ를 함께 키우는 세미나는 패스가 남아서 나올 수 있어요.
+    expect(Array.from({ length: 50 }, (_, i) => ((c.year = 2030 + i), investLineup(c).some((x) => x.key === "passcamp"))).some(Boolean)).toBe(true);
+    // 모든 능력치가 99면 전체 성장 투자도 빠지고, 회복·체력 투자만 남아요.
+    for (const k of Object.keys(c.p.attrs) as (keyof typeof c.p.attrs)[]) c.p.attrs[k] = 99;
+    for (let y = 2030; y < 2060; y++) {
+      c.year = y;
+      for (const i of investLineup(c)) expect(i.growth ?? i.growthAll).toBeUndefined();
+    }
+  });
+
   it("이번 시즌에 없는 투자는 고른 채로 남아 있어도 내지 않아요", () => {
     setRandom(seeded(33));
     const c = pro("inv7");

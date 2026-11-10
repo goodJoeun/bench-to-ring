@@ -1,6 +1,7 @@
 import { ATTR_KEYS } from "../core/data";
 import { addNews } from "../career/log";
 import { seededPick } from "../core/random";
+import { ATTR_RANGE } from "../player/condition";
 import type { AttrKey, Career, InvestKey } from "../core/types";
 import { money, round2 } from "../core/util";
 
@@ -103,14 +104,26 @@ export const INVESTMENTS: ReadonlyArray<Investment> = [
 
 const investment = (key: InvestKey): Investment => INVESTMENTS.find((i) => i.key === key)!;
 
+/** 화면에 99로 보이는(반올림해 최대치인) 능력치 */
+const maxed = (c: Career, k: AttrKey): boolean => Math.round(c.p.attrs[k]) >= ATTR_RANGE[1];
+
+/**
+ * 키울 능력치가 모두 99라 성장 효과가 소용없는 투자. 특정 능력치를 키우는 투자는 그 능력치가 모두 99면,
+ * 모든 능력치를 키우는 투자는 모든 능력치가 99면 그래요. 성장 효과가 없는 투자(회복·체력 등)는 해당하지 않아요.
+ */
+export function investMaxed(c: Career, i: Investment): boolean {
+  const targets = i.growthAll ? ATTR_KEYS : (Object.keys(i.growth ?? {}) as AttrKey[]);
+  return targets.length > 0 && targets.every((k) => maxed(c, k));
+}
+
 /**
  * 이번 시즌에 고를 수 있는 투자: 지금 나올 수 있는 투자 중 무작위 INVEST_OFFER가지를 목록 순서대로.
- * 커리어와 연도로 정해서, 같은 시즌이면 다시 열어도 같은 목록이 나와요.
+ * 99를 찍은 능력치만 키우는 투자는 빼고 골라요. 커리어와 연도로 정해서, 같은 시즌이면 다시 열어도 같은 목록이 나와요.
  */
 export function investLineup(c: Career): Investment[] {
   const rand = seededPick(`${c.id}:${c.year}:invest`);
   const picked = new Set(
-    INVESTMENTS.filter((i) => i.when?.(c) ?? true)
+    INVESTMENTS.filter((i) => (i.when?.(c) ?? true) && !investMaxed(c, i))
       .map((i) => ({ i, r: rand() }))
       .sort((a, b) => a.r - b.r)
       .slice(0, INVEST_OFFER)
