@@ -101,6 +101,8 @@ const HANDS = {
   dunk2: [[82, 54], [118, 46]],
   dunkR: [[30, 120], [124, 46]],
   chest: [[62, 122], [98, 122]],
+  /** 악수: 오른손을 허리 높이에서 옆으로 내밀어요. */
+  shake: [[42, 152], [128, 146]],
 } satisfies Record<string, [Pt, Pt]>;
 type HandKey = keyof typeof HANDS;
 
@@ -1574,6 +1576,72 @@ function living(p: Paint): void {
   rrect(ctx, cx + 24, 100, 132, 26, 10, "#6A8CB6");
   rrect(ctx, cx + 30, 124, 8, 14, 2, "#5E3E22");
   rrect(ctx, cx + 142, 124, 8, 14, 2, "#5E3E22");
+}
+
+
+/* ---------- 입단 기자회견 (축하 팝업) ---------- */
+
+/** 입단 기자회견 그림의 높이. 두 사람이 전신으로 서요. */
+export const SIGNING_H = 196;
+/** 구단 관계자(단장): 희끗한 넘긴 머리 */
+const OFFICIAL: Look = { kind: "white", skin: "#E8C3A0", hair: "#9A9A9A", style: "swept", beard: "none", eyes: "#3A2A1C" };
+const OFFICIAL_SUIT = "#232A3B";
+/** 카메라 플래시가 터지는 자리(너비 비율, 높이)와 한 바퀴(FLASH_LOOP초) 안에서 터지는 때 */
+const SIGN_FLASHES: [number, number, number][] = [
+  [0.08, 150, 0.1],
+  [0.92, 132, 0.35],
+  [0.2, 60, 0.6],
+  [0.8, 48, 0.85],
+  [0.04, 96, 1.15],
+  [0.96, 172, 1.4],
+  [0.28, 168, 1.7],
+  [0.7, 156, 1.95],
+];
+const FLASH_LOOP = 2.4;
+/** 화면 전체가 하얗게 번쩍이는 때 (한 바퀴 안에서) */
+const SHUTTERS = [0.1, 1.15];
+
+/**
+ * 입단 기자회견: 로고 배경판(화면 쪽에서 캔버스 뒤에 깔아요) 앞 무대에서, 새 팀 유니폼을 입은 내 선수와 정장 차림 구단 관계자가
+ * 가운데서 악수하며 카메라를 봐요. t(초)에 따라 카메라 플래시가 여기저기서 터지고, 셔터가 터질 때 화면이 하얗게 번쩍여요.
+ */
+export function drawSigning(p: Paint, t: number): void {
+  const { ctx, cx, w } = p;
+  const H = SIGNING_H;
+  // 무대 바닥: 팀 색 카펫
+  band(p, H - 22, H, grad(ctx, H - 22, H, [shade(p.color, -0.35), shade(p.color, -0.55)]));
+  rrect(ctx, 0, H - 23, w, 3, 0, shade(p.color, 0.3));
+  const o = { scale: 0.74, feet: H - 8 };
+  // 두 사람이 가운데서 손을 맞잡을 만큼 떨어져 서요(내민 손이 몸 가운데서 36px쯤 나가요).
+  const gap = 36;
+  const me = figure(p, cx - gap, "shake", "beam", o);
+  const gm = figure(p, cx + gap, "shake", "smile", { ...o, flip: true, look: OFFICIAL, color: OFFICIAL_SUIT, outfit: "suit" });
+  // 가슴의 등번호
+  const top = o.feet - 231 * o.scale;
+  text(ctx, String(p.num), cx - gap, top + 128 * o.scale, 22, shade(p.color, 0.8), 900);
+  // 맞잡은 두 손
+  const [hx, hy] = [(me.r[0] + gm.r[0]) / 2, (me.r[1] + gm.r[1]) / 2];
+  ellipse(ctx, hx - 2, hy, 7, 6, shade(OFFICIAL.skin, -0.04));
+  ellipse(ctx, hx + 2, hy + 1, 7, 6, p.look.skin);
+  // 플래시와 셔터
+  const k = t % FLASH_LOOP;
+  for (const [fx, fy, at] of SIGN_FLASHES) {
+    const a = 1 - (k - at) / 0.3;
+    if (k < at || a <= 0) continue;
+    ctx.save();
+    ctx.globalAlpha = a;
+    flash(ctx, fx * w, fy, 12 + 8 * a);
+    ctx.restore();
+  }
+  for (const at of SHUTTERS) {
+    const a = 0.32 * (1 - (k - at) / 0.14);
+    if (k < at || a <= 0) continue;
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, w, H);
+    ctx.restore();
+  }
 }
 
 /** 화면을 살짝 기울여 찍는 장면 */

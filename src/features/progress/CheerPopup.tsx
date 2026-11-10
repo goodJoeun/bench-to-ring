@@ -8,6 +8,7 @@ import { Medal } from "@/shared/ui/badge/Medal";
 import { Sprite } from "@/shared/ui/sprite/Sprite";
 import { AwardName } from "@/shared/ui/ui";
 import { Popup } from "./Popup";
+import { SigningArt } from "./SigningArt";
 
 const KICKER: Record<Cheer["kind"], string> = {
   title: "우승",
@@ -16,6 +17,7 @@ const KICKER: Record<Cheer["kind"], string> = {
   mvp: "시즌 최고의 선수",
   fmvp: "파이널의 주인공",
   achv: "업적 달성",
+  sign: "입단 기자회견",
 };
 
 /** 꽃가루 조각: 가로 위치(%), 늦게 떨어지는 정도(s), 색 */
@@ -55,6 +57,7 @@ function AchievementMedal() {
 /**
  * 축하 팝업: 우승, 국가대표 금메달, NBA 첫 입성, NBA MVP, 파이널 MVP, 업적 달성.
  * 업적 달성은 다른 축하와 한눈에 구별되게 보라 바탕에 메달·빛줄기·별 조각을 터뜨려요.
+ * 다른 팀에 입단(이적)하면 꽃가루 대신 입단 기자회견 그림(로고 배경판 앞 악수와 카메라 플래시)을 보여줘요.
  * 한 번에 한 장씩, '계속'을 누르면 다음 축하로 넘어가요.
  */
 export function CheerPopup({ career: c, cheer }: { career: Career; cheer: Cheer }) {
@@ -62,15 +65,25 @@ export function CheerPopup({ career: c, cheer }: { career: Career; cheer: Cheer 
   const left = c.cheers.length - 1;
   const color = cheer.kind === "gold" ? natColor(c.p.nat) : (cheer.color ?? NO_TEAM_COLOR);
   const achv = cheer.kind === "achv";
+  const sign = cheer.kind === "sign";
   return (
-    <Popup labelledBy="cheer-title" className={achv ? "cheer cheer-achv" : "cheer"} key={`${cheer.year}-${cheer.title}`}>
+    <Popup labelledBy="cheer-title" className={achv ? "cheer cheer-achv" : sign ? "cheer cheer-sign" : "cheer"} key={`${cheer.year}-${cheer.title}`}>
       {achv && <span className="achv-flash" aria-hidden="true" />}
-      <div className="cheer-confetti" aria-hidden="true">
-        {CONFETTI.map(([x, d, col], i) => (
-          <i key={i} style={{ left: `${x}%`, animationDelay: `${d}s`, background: col }} />
-        ))}
-      </div>
-      {achv ? (
+      {!sign && (
+        <div className="cheer-confetti" aria-hidden="true">
+          {CONFETTI.map(([x, d, col], i) => (
+            <i key={i} style={{ left: `${x}%`, animationDelay: `${d}s`, background: col }} />
+          ))}
+        </div>
+      )}
+      {sign ? (
+        <>
+          <SigningArt career={c} cheer={cheer} />
+          <span className="sim-team" style={nameFit(`${KICKER.sign} · ${c.p.name} #${c.p.num}`)}>
+            {KICKER.sign} · {c.p.name} #{c.p.num}
+          </span>
+        </>
+      ) : achv ? (
         <>
           <AchievementMedal />
           <span className="achv-banner">업적 달성!</span>

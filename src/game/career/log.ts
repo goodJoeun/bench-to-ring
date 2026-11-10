@@ -69,6 +69,18 @@ export function joinTeam(c: Career, lg: LeagueKey, t: Team): void {
   c.trust = 0;
 }
 
+/**
+ * 입단 기자회견 축하: 새 팀 유니폼을 입고 구단 관계자와 악수하며 사진을 찍어요. how는 계약 조건이나 트레이드 사연이에요.
+ * 이번에 NBA 첫 입성 축하가 막 생겼으면(setTeam) 두 장을 띄우지 않고 그 자리를 'NBA 입성!' 기자회견으로 바꿔요.
+ */
+export function signingCheer(c: Career, lg: LeagueKey, t: Pick<Team, "name" | "color">, how: string, title = `${t.name} 입단`): void {
+  const last = c.cheers.at(-1);
+  const nba = last?.kind === "nba" && last.year === c.year;
+  const x: Cheer = { kind: "sign", title: nba ? "NBA 입성!" : title, sub: `${t.name} · ${how} · 등번호 ${c.p.num}`, year: c.year, color: t.color, team: t.name, lg };
+  if (nba) c.cheers[c.cheers.length - 1] = x;
+  else cheer(c, x);
+}
+
 /** 소속팀과 계약 없이 무소속이 돼요. */
 export function leaveTeam(c: Career): void {
   c.stage = "free";

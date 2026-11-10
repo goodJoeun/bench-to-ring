@@ -2,16 +2,46 @@ import { POS, POS_GROWTH } from "../core/data";
 import { TRAITS } from "../player/players";
 import { forcedRetirement, nbaOffer, resolveQueue, retirementPrompt } from "./decisions";
 import { lifeEvent } from "./events";
-import { addNews, joinTeam, pickTeam } from "../career/log";
+import { addNews, pickTeam } from "../career/log";
 import { endService, militaryDecision } from "../world/military";
 import { chance, ri } from "../core/random";
 import { refreshShop } from "../economy/shop";
 import { ovr, ovrOf } from "../player/ratings";
 import type { Career, Decision, QueueItem } from "../core/types";
+import { josa, ro } from "../core/util";
 
 export const RETIRE_AGE = 40;
 /** 계약이 남아 있어도 오프시즌마다 은퇴를 물어보는 나이 */
 const RETIRE_PROMPT_AGE = 35;
+
+/** 거절하면 떨어지는 코치 신뢰. 이적 요청이 거절될 때(-1)보다 덜해요. */
+const TRADE_REFUSE_TRUST = -0.5;
+
+/** 구단의 트레이드 제안: 같은 리그 다른 팀으로 옮길지 물어요. 받아들이면 남은 계약 그대로 옮기고 입단 기자회견을 열어요. */
+function tradeOffer(c: Career): Decision {
+  const team = c.team!;
+  const lg = team.lg;
+  const t = pickTeam(lg, new Set([team.name]));
+  const years = c.contract!.years;
+  return {
+    scene: "deal",
+    title: "트레이드 제안",
+    body: `${team.name} 구단이 ${josa(t.name, "과", "와")} 트레이드를 추진하고 있어요. 받아들이면 남은 계약 ${years}년을 ${t.name}에서 이어 가요.`,
+    opts: [
+      {
+        label: `${ro(t.name)} 간다`,
+        sub: "새 팀에서 다시 시작해요 · 코치 신뢰는 처음부터 쌓아요",
+        tag: "트레이드",
+        act: { k: "trade", lg, team: t, from: team.name },
+      },
+      {
+        label: `${team.name}에 남겠다고 버틴다`,
+        sub: "팀에 남지만 구단과 사이가 조금 서먹해져요",
+        act: { k: "boost", trust: TRADE_REFUSE_TRUST, t: "info", msg: `트레이드를 거절하고 ${team.name}에 남았어요. 구단과 사이가 조금 서먹해졌어요.` },
+      },
+    ],
+  };
+}
 
 /**
  * 시즌이 끝난 뒤(나이·연도는 이미 1 늘어난 상태) 몸의 변화와 결정 대기열을 만들어요.
@@ -79,14 +109,9 @@ export function runOffseason(c: Career, finishedYear: number, natCall: Decision 
     else {
       const offer = chance(0.6) ? nbaOffer(c) : null;
       if (offer) q.push(offer);
-      // 은퇴를 묻는 오프시즌에는 트레이드하지 않아요. 옮긴 팀에서 한 경기도 안 뛰고 은퇴하면 엔딩과 랭킹의 팀이 엇갈려요.
-      else if (chance(0.08) && c.age < RETIRE_PROMPT_AGE) {
-        const lg = c.team.lg;
-        const from = c.team.name;
-        const t = pickTeam(lg, new Set([from]));
-        joinTeam(c, lg, t);
-        addNews(c, tag, "move", `트레이드 · ${from}에서 ${t.name}로 이적했어요.`);
-      }
+      // 구단이 트레이드를 추진하면 갑자기 옮기지 않고 받아들일지 물어요.
+      // 은퇴를 묻는 오프시즌에는 묻지 않아요. 옮긴 팀에서 한 경기도 안 뛰고 은퇴하면 엔딩과 랭킹의 팀이 엇갈려요.
+      else if (chance(0.08) && c.age < RETIRE_PROMPT_AGE) q.push(tradeOffer(c));
       if (c.age >= RETIRE_PROMPT_AGE) q.push(retirementPrompt(c));
     }
   } else if (c.stage === "free") q.push({ lazy: "faFree" });

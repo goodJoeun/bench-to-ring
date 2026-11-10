@@ -2073,7 +2073,7 @@ describe("클러치", () => {
     expect(backToBack).toBeGreaterThan(0);
   });
 
-  it("은퇴를 묻는 오프시즌(35세 이상)에는 트레이드하지 않아서, 옮긴 팀에서 안 뛰고 은퇴하는 일이 없어요", () => {
+  it("은퇴를 묻는 오프시즌(35세 이상)에는 트레이드 제안이 오지 않아서, 옮긴 팀에서 안 뛰고 은퇴하는 일이 없어요", () => {
     const traded = (age: number) => {
       let n = 0;
       for (let i = 0; i < 400; i++) {
@@ -2082,7 +2082,9 @@ describe("클러치", () => {
         c.age = age;
         c.contract = { years: 3, salary: 5 };
         runOffseason(c, c.year - 1);
-        if (c.team!.name !== "서울 SK 나이츠") n++;
+        // 트레이드는 제안으로만 와요. 오프시즌이 혼자 팀을 바꾸지 않아요.
+        expect(c.team!.name).toBe("서울 SK 나이츠");
+        if (c.queue.some((q) => "title" in q && q.title === "트레이드 제안")) n++;
         if (age >= 35) expect(c.queue.some((q) => "title" in q && q.title.includes("은퇴"))).toBe(true);
       }
       return n;
@@ -2192,6 +2194,86 @@ describe("클러치", () => {
     expect(Math.max(...starter)).toBe(1);
     expect(starter.filter((n) => n === 1).length / starter.length).toBeGreaterThan(0.85);
     expect(bench.every((n) => n === 0)).toBe(true);
+  });
+});
+
+describe("입단 기자회견", () => {
+  const pro = (id: string) => {
+    const c = createCareer({ name: "이적", num: 7, pos: "SG", path: "domestic" }, generateCandidates("SG")[0], id);
+    c.stage = "pro";
+    c.age = 27;
+    c.team = { name: "서울 SK 나이츠", color: "#E4002B", q: 0.5, lg: "kbl" };
+    c.contract = { years: 1, salary: 3 };
+    c.cheers = [];
+    return c;
+  };
+
+  it("다른 팀과 계약하면 새 팀 로고와 계약 조건이 담긴 입단 기자회견이 떠요", () => {
+    const c = pro("sign1");
+    applyAction(c, { k: "sign", lg: "kbl", team: { name: "부산 KCC 이지스", color: "#003A70", q: 0.5 }, years: 3, salary: 4.5 });
+    expect(c.team?.name).toBe("부산 KCC 이지스");
+    expect(c.cheers).toEqual([
+      { kind: "sign", title: "부산 KCC 이지스 입단", sub: "부산 KCC 이지스 · 3년 · 연봉 4.5억 · 등번호 7", year: c.year, color: "#003A70", team: "부산 KCC 이지스", lg: "kbl" },
+    ]);
+  });
+
+  it("같은 팀과 재계약하면 기자회견을 열지 않아요", () => {
+    const c = pro("sign2");
+    applyAction(c, { k: "sign", lg: "kbl", team: { name: "서울 SK 나이츠", color: "#E4002B", q: 0.5 }, years: 2, salary: 5 });
+    expect(c.cheers).toEqual([]);
+  });
+
+  it("오프시즌에 구단이 혼자 트레이드하지 않고, 트레이드를 추진하면 받아들일지 물어요", () => {
+    setRandom(seeded(611));
+    let offers = 0;
+    for (let i = 0; i < 300; i++) {
+      const c = pro(`trade${i}`);
+      c.contract = { years: 3, salary: 3 };
+      runOffseason(c, c.year - 1);
+      expect(c.team?.name).toBe("서울 SK 나이츠");
+      expect(c.cheers.some((x) => x.kind === "sign")).toBe(false);
+      const d = c.queue.find((q): q is Decision => !("lazy" in q) && q.title === "트레이드 제안");
+      if (!d) continue;
+      offers++;
+      expect(d.opts.map((o) => o.act.k)).toEqual(["trade", "boost"]);
+    }
+    expect(offers).toBeGreaterThan(5);
+  });
+
+  it("트레이드를 받아들이면 남은 계약 그대로 옮기고 기자회견을 열어요. 거절하면 남지만 신뢰가 떨어져요", () => {
+    const c = pro("trade-yes");
+    c.contract = { years: 2, salary: 3 };
+    c.trust = 1;
+    applyAction(c, { k: "trade", lg: "kbl", team: { name: "창원 LG 세이커스", color: "#C8102E", q: 0.5 }, from: "서울 SK 나이츠" });
+    expect(c.team?.name).toBe("창원 LG 세이커스");
+    expect(c.contract).toEqual({ years: 2, salary: 3 });
+    expect(c.trust).toBe(0);
+    expect(c.cheers[0]).toMatchObject({ kind: "sign", title: "창원 LG 세이커스 이적", sub: "창원 LG 세이커스 · 트레이드 · 서울 SK 나이츠에서 이적 · 등번호 7" });
+    expect(c.news[0].m).toBe("트레이드 · 서울 SK 나이츠에서 창원 LG 세이커스로 이적했어요.");
+
+    setRandom(seeded(612));
+    let refused: Career | null = null;
+    for (let i = 0; i < 300 && !refused; i++) {
+      const x = pro(`trade-no${i}`);
+      x.contract = { years: 3, salary: 3 };
+      x.trust = 1;
+      runOffseason(x, x.year - 1);
+      const at = x.queue.findIndex((q) => !("lazy" in q) && q.title === "트레이드 제안");
+      if (at < 0) continue;
+      x.queue = x.queue.slice(at);
+      chooseOption(x, 1);
+      refused = x;
+    }
+    expect(refused!.team?.name).toBe("서울 SK 나이츠");
+    expect(refused!.trust).toBe(0.5);
+    expect(refused!.cheers).toEqual([]);
+  });
+
+  it("NBA에 처음 입단하면 NBA 입성 축하와 기자회견을 한 장으로 합쳐요", () => {
+    const c = pro("sign3");
+    applyAction(c, { k: "sign", lg: "nba", team: { name: "보스턴 셀틱스", color: "#007A33", q: 0.5 }, years: 2, salary: 30 });
+    expect(c.cheers).toHaveLength(1);
+    expect(c.cheers[0]).toMatchObject({ kind: "sign", title: "NBA 입성!", team: "보스턴 셀틱스", lg: "nba" });
   });
 });
 

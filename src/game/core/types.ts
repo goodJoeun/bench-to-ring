@@ -427,7 +427,8 @@ export interface NatFinalPending {
 
 /** 축하 팝업 한 장: 우승, 금메달, NBA 첫 입성, NBA MVP, 파이널 MVP, 업적 달성 */
 export interface Cheer {
-  kind: "title" | "gold" | "nba" | "mvp" | "fmvp" | "achv";
+  /** sign: 새 팀 입단 기자회견 (다른 팀과 계약·트레이드) */
+  kind: "title" | "gold" | "nba" | "mvp" | "fmvp" | "achv" | "sign";
   /** 큰 글씨: "NBA 우승", "NBA 입성" */
   title: string;
   /** 작은 글씨: 팀, 시즌, 기록 */
@@ -435,6 +436,9 @@ export interface Cheer {
   year: number;
   /** 유니폼 색. 모르면 null */
   color: string | null;
+  /** 입단 기자회견의 새 팀과 리그 (배경판 로고) */
+  team?: string;
+  lg?: LeagueKey;
 }
 
 /** 병역. none: 아직, serving: 복무 중, served: 전역, exempt: 병역 특례 */
@@ -467,6 +471,8 @@ export type Action =
   | { k: "nego"; lg: ProLeagueKey; team: Team; years: number; salary: number; ask: number; p: number; walk?: DecisionOption[] }
   /** 위약금을 내고 계약을 해지해 FA가 돼요. */
   | { k: "buyout"; cost: number }
+  /** 구단의 트레이드 제안을 받아들여 남은 계약 그대로 team으로 옮겨요. from은 떠나는 팀이에요. */
+  | { k: "trade"; lg: LeagueKey; team: Team; from: string }
   | { k: "skip" }
   | { k: "pos"; pos: PosKey }
   | ({ k: "boost" } & Boost)

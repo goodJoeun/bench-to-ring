@@ -5,7 +5,7 @@ import { checkAchievements } from "../legacy/achievements";
 import { addAttr, addHealth, clampTrust } from "../player/condition";
 import { currentDecision, negotiable, negotiation, resolveQueue } from "./decisions";
 import { runDraft } from "../world/draft";
-import { addNews, decisionTag, joinTeam, leaveTeam, setTeam } from "../career/log";
+import { addNews, decisionTag, joinTeam, leaveTeam, setTeam, signingCheer } from "../career/log";
 import { applyMilitary } from "../world/military";
 import { runNationalTeam, settleNatFinal } from "../world/national";
 import { boardScore, clutchFinal, finalsPrize } from "./events";
@@ -50,7 +50,10 @@ function sign(c: Career, lg: ProLeagueKey, team: Team, years: number, salary: nu
   const same = c.team?.name === team.name && c.team?.lg === lg;
   c.stage = "pro";
   c.contract = { years, salary };
-  if (!same) joinTeam(c, lg, team);
+  if (!same) {
+    joinTeam(c, lg, team);
+    signingCheer(c, lg, team, `${years}년 · 연봉 ${money(salary)}`);
+  }
   addNews(
     c,
     decisionTag(c),
@@ -108,6 +111,11 @@ export function applyAction(c: Career, a: Action): void {
       c.queue.unshift({ lazy: "faFree" });
       break;
     }
+    case "trade":
+      joinTeam(c, a.lg, a.team);
+      addNews(c, tag, "move", `트레이드 · ${a.from}에서 ${ro(a.team.name)} 이적했어요.`);
+      signingCheer(c, a.lg, a.team, `트레이드 · ${a.from}에서 이적`, `${a.team.name} 이적`);
+      break;
     case "skip":
       leaveTeam(c);
       addNews(c, tag, "info", "소속팀 없이 개인 훈련으로 다음 시즌을 보내기로 했어요.");

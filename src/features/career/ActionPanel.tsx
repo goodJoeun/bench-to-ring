@@ -33,7 +33,7 @@ import { Choice } from "@/shared/ui/ui";
 
 /** 팀이 걸린 선택지(입학, 계약 제안)에는 그 팀 엠블럼을 붙여요. 협상 중인 같은 팀 선택지에는 붙이지 않아요. */
 function optionBadge(a: Action): React.ReactNode {
-  if ((a.k === "sign" && !a.deal) || a.k === "school") return <TeamBadge name={a.team.name} kind={a.lg} color={a.team.color} size={30} />;
+  if ((a.k === "sign" && !a.deal) || a.k === "school" || a.k === "trade") return <TeamBadge name={a.team.name} kind={a.lg} color={a.team.color} size={30} />;
   return undefined;
 }
 
