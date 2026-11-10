@@ -29,23 +29,23 @@ export const VIEW = { left: 40, top: 90, w: 240, h: 330 };
 /** 한 단계에 머무는 시간(초). 동작은 이 안에 끝나고 마지막 자세로 멈춰요. */
 export const STAGE_SEC = 3.4;
 
-/* 그리기 도구 */
+/* 그리기 도구 (결정 장면 그림 sceneArt도 같이 써요) */
 
-function ellipse(ctx: Ctx, x: number, y: number, rx: number, ry: number, color: string): void {
+export function ellipse(ctx: Ctx, x: number, y: number, rx: number, ry: number, color: string): void {
   ctx.fillStyle = color;
   ctx.beginPath();
   ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
   ctx.fill();
 }
 
-function rrect(ctx: Ctx, x: number, y: number, w: number, h: number, r: number, color: string): void {
+export function rrect(ctx: Ctx, x: number, y: number, w: number, h: number, r: number, color: string): void {
   ctx.fillStyle = color;
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, r);
   ctx.fill();
 }
 
-function poly(ctx: Ctx, pts: Pt[], color: string): void {
+export function poly(ctx: Ctx, pts: Pt[], color: string): void {
   ctx.fillStyle = color;
   ctx.beginPath();
   pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
@@ -53,7 +53,7 @@ function poly(ctx: Ctx, pts: Pt[], color: string): void {
   ctx.fill();
 }
 
-function line(ctx: Ctx, pts: Pt[], color: string, width: number): void {
+export function line(ctx: Ctx, pts: Pt[], color: string, width: number): void {
   ctx.strokeStyle = color;
   ctx.lineWidth = width;
   ctx.lineCap = "round";
@@ -64,7 +64,7 @@ function line(ctx: Ctx, pts: Pt[], color: string, width: number): void {
 }
 
 /** 네 갈래 반짝임 */
-function sparkle(ctx: Ctx, x: number, y: number, r: number, color: string): void {
+export function sparkle(ctx: Ctx, x: number, y: number, r: number, color: string): void {
   ctx.fillStyle = color;
   ctx.beginPath();
   ctx.moveTo(x, y - r);
@@ -446,15 +446,22 @@ function drawPlayer(ctx: Ctx, look: Look, stage: StageKey, p: Pose, mood: Mood):
   drawFigure(ctx, look, OUTFIT[stage], stage === "bench", p, mood);
 }
 
+/** drawPosed의 덧옵션: 옷(기본 유니폼), 고개 숙임(0~1)과 기울임(라디안) */
+export interface PosedExtra {
+  outfit?: Outfit["kind"];
+  bow?: number;
+  tilt?: number;
+}
+
 /**
- * 유니폼 입고 선 선수 한 명을 손 위치와 표정만 정해 그려요(라이벌 도발 삽화 등). 160x240 판 기준이고, 손은 판 밖으로 나갈 수 있어요.
- * 팔꿈치는 팔 길이에 맞춰 구해요.
+ * 선 선수 한 명을 손 위치와 표정만 정해 그려요(라이벌 도발 삽화, 결정 장면 그림). 160x240 판 기준이고, 손은 판 밖으로 나갈 수 있어요.
+ * 팔꿈치는 팔 길이에 맞춰 구해요. 옷은 기본이 유니폼이고, 티셔츠나 정장으로 바꿀 수 있어요.
  */
-export function drawPosed(ctx: Ctx, look: Look, color: string, lh: Pt, rh: Pt, mood: Mood): void {
-  const p: Pose = { ...BASE };
+export function drawPosed(ctx: Ctx, look: Look, color: string, lh: Pt, rh: Pt, mood: Mood, extra: PosedExtra = {}): void {
+  const p: Pose = { ...BASE, bow: extra.bow ?? 0, tilt: extra.tilt ?? 0 };
   [p.le, p.lh] = arm(SHOULDER.l, lh);
   [p.re, p.rh] = arm(SHOULDER.r, rh);
-  drawFigure(ctx, look, { kind: "jersey", color }, false, p, mood);
+  drawFigure(ctx, look, { kind: extra.outfit ?? "jersey", color }, false, p, mood);
 }
 
 function drawFigure(ctx: Ctx, look: Look, o: Outfit, sitting: boolean, p: Pose, mood: Mood): void {

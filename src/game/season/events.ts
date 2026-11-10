@@ -1,7 +1,7 @@
 import { SHORT } from "../core/data";
 import { pick, random, ri, rnd, shuffle } from "../core/random";
 import { ovr } from "../player/ratings";
-import type { AttrKey, Boost, Career, ClutchBoard, Decision, DecisionOption, Role } from "../core/types";
+import type { AttrKey, Boost, Career, ClutchBoard, Decision, DecisionOption, Role, SceneKey } from "../core/types";
 import { clamp, josa, money, roundSalary } from "../core/util";
 
 /* ---------- 선택지 만들기 ---------- */
@@ -48,6 +48,8 @@ interface LifeEvent {
   when?: (c: Career) => boolean;
   /** 커리어에서 한 번만 */
   once?: boolean;
+  /** 결정 시트 위에 그릴 장면 */
+  scene: SceneKey;
   make: (c: Career) => Decision;
 }
 
@@ -73,6 +75,7 @@ const EVENTS: LifeEvent[] = [
   /* 어느 단계에서나 */
   {
     id: "camp",
+    scene: "gym",
     when: (c) => !isFree(c),
     make: () => ({
       title: "여름 스킬 캠프 초청",
@@ -85,6 +88,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "dawn",
+    scene: "dawn",
     make: () => ({
       title: "새벽 슈팅 루틴",
       body: "매일 새벽 슈팅 500개. 루틴을 시작할까요?",
@@ -96,6 +100,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "film",
+    scene: "screen",
     when: hasTeam,
     make: () => ({
       title: "필름 세션 제안",
@@ -109,6 +114,7 @@ const EVENTS: LifeEvent[] = [
 
   {
     id: "yoga",
+    scene: "wellness",
     make: (c) => {
       const fee = cut(c, 0.01, 0.01, 1);
       return {
@@ -123,6 +129,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "gaming",
+    scene: "screen",
     make: () => ({
       title: "새로 나온 농구 게임",
       body: "친구들이 새로 나온 농구 게임을 밤새 같이 하자고 해요. 게임 속 내 능력치가 실제보다 낮게 나와서 은근히 자존심이 상해요.",
@@ -139,6 +146,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "dunkshow",
+    scene: "stage",
     when: (c) => !isFree(c),
     make: () => ({
       title: "덩크 콘테스트 초청",
@@ -158,6 +166,7 @@ const EVENTS: LifeEvent[] = [
   /* 고등학생 */
   {
     id: "talent",
+    scene: "stage",
     when: isHs,
     make: () => ({
       title: "학교 축제 장기자랑",
@@ -175,6 +184,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "exam",
+    scene: "study",
     when: isHs,
     make: () => ({
       title: "시험 기간, 공부냐 농구냐",
@@ -193,6 +203,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "trip",
+    scene: "travel",
     when: isHs,
     make: () => ({
       title: "수학여행과 전지훈련",
@@ -205,6 +216,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "senior",
+    scene: "clash",
     when: isHs,
     make: () => ({
       title: "선배와의 갈등",
@@ -222,6 +234,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "parents",
+    scene: "home",
     when: isHs,
     once: true,
     make: () => ({
@@ -241,6 +254,7 @@ const EVENTS: LifeEvent[] = [
 
   {
     id: "transfer-hs",
+    scene: "phone",
     when: isHs,
     make: () => ({
       title: "명문고 감독의 전화",
@@ -258,6 +272,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "letter",
+    scene: "love",
     when: isHs,
     make: () => ({
       title: "사물함 속 편지",
@@ -270,6 +285,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "growthplate",
+    scene: "clinic",
     when: (c) => isHs(c) && c.age <= 18,
     make: () => ({
       title: "성장판 검사",
@@ -282,6 +298,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "alumni",
+    scene: "gym",
     when: isHs,
     make: () => ({
       title: "프로 선배의 모교 방문",
@@ -294,6 +311,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "relay",
+    scene: "track",
     when: isHs,
     make: () => ({
       title: "체육대회 계주 마지막 주자",
@@ -313,6 +331,7 @@ const EVENTS: LifeEvent[] = [
   /* 대학생 */
   {
     id: "grades",
+    scene: "study",
     when: isCollege,
     make: () => ({
       title: "학점 경고",
@@ -330,6 +349,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "vlog",
+    scene: "studio",
     when: isCollege,
     make: () => ({
       title: "농구 브이로그 제안",
@@ -347,6 +367,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "nil",
+    scene: "deal",
     when: (c) => isCollege(c) && c.team?.lg === "ncaa",
     make: () => {
       const pay = roundSalary(rnd(0.2, 0.8));
@@ -362,6 +383,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "mt",
+    scene: "travel",
     when: isCollege,
     make: () => ({
       title: "MT와 연습 경기",
@@ -375,6 +397,7 @@ const EVENTS: LifeEvent[] = [
 
   {
     id: "abroadcamp",
+    scene: "travel",
     when: isCollege,
     make: () => ({
       title: "해외 대학 연합 캠프",
@@ -387,6 +410,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "roommate",
+    scene: "home",
     when: isCollege,
     make: () => ({
       title: "기숙사 룸메이트",
@@ -399,6 +423,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "lab",
+    scene: "screen",
     when: isCollege,
     make: () => ({
       title: "스포츠과학 연구 참여",
@@ -411,6 +436,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "universiade",
+    scene: "national",
     when: isCollege,
     make: () => ({
       title: "유니버시아드 대표 선발전",
@@ -430,6 +456,7 @@ const EVENTS: LifeEvent[] = [
   /* 프로 */
   {
     id: "method",
+    scene: "board",
     when: isPro,
     make: () => ({
       title: "훈련 방식 재검토",
@@ -447,6 +474,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "agency",
+    scene: "deal",
     when: (c) => isPro(c) && !c.perks.agency,
     once: true,
     make: (c) => {
@@ -463,6 +491,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "trainer",
+    scene: "gym",
     when: isPro,
     make: (c) => {
       const cost = roundSalary(clamp(salary(c) * 0.03, 0.05, 10));
@@ -481,6 +510,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "sns",
+    scene: "phone",
     when: isPro,
     make: () => ({
       title: "SNS 논란",
@@ -498,6 +528,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "ad",
+    scene: "studio",
     when: (c) => isPro(c) && ovr(c.p) >= 72,
     make: (c) => {
       const pay = roundSalary(clamp(ovr(c.p) - 70, 1, 20) * 1.5);
@@ -513,6 +544,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "variety",
+    scene: "stage",
     when: (c) => isPro(c) && ovr(c.p) >= 70,
     make: (c) => {
       const pay = roundSalary(clamp((ovr(c.p) - 65) * 0.4, 0.5, 15));
@@ -528,6 +560,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "mentor",
+    scene: "gym",
     when: (c) => isPro(c) && c.age <= 24,
     make: () => ({
       title: "베테랑의 개인 레슨",
@@ -540,6 +573,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "youth",
+    scene: "kids",
     when: (c) => isPro(c) && c.age >= 25,
     make: () => ({
       title: "모교 유소년 캠프",
@@ -553,6 +587,7 @@ const EVENTS: LifeEvent[] = [
 
   {
     id: "dog",
+    scene: "dog",
     when: isPro,
     once: true,
     make: () => ({
@@ -566,6 +601,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "charity",
+    scene: "kids",
     when: isPro,
     make: () => ({
       title: "자선 경기 초청",
@@ -578,6 +614,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "scheme",
+    scene: "money",
     when: isPro,
     make: (c) => {
       const stake = cut(c, 0.2, 0.05, 50);
@@ -598,6 +635,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "diet-shift",
+    scene: "wellness",
     when: isPro,
     make: () => ({
       title: "식단 혁명",
@@ -615,6 +653,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "captain",
+    scene: "captain",
     when: (c) => isPro(c) && c.age >= 27,
     make: () => ({
       title: "주장 제안",
@@ -627,6 +666,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "shoe",
+    scene: "shoe",
     when: (c) => isPro(c) && ovr(c.p) >= 78,
     once: true,
     make: (c) => {
@@ -643,6 +683,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "podcast",
+    scene: "studio",
     when: isPro,
     make: (c) => {
       const pay = cut(c, 0.02, 0.02, 3);
@@ -663,6 +704,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "summerleague",
+    scene: "travel",
     when: (c) => isPro(c) && c.age <= 27,
     make: () => ({
       title: "해외 서머리그 초청",
@@ -677,6 +719,7 @@ const EVENTS: LifeEvent[] = [
   /* 무소속 */
   {
     id: "coachjob",
+    scene: "kids",
     when: isFree,
     make: () => ({
       title: "유소년 코치 아르바이트",
@@ -689,6 +732,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "street",
+    scene: "street",
     when: isFree,
     make: () => ({
       title: "3대3 길거리 대회",
@@ -706,6 +750,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "tryout",
+    scene: "gym",
     when: isFree,
     make: () => ({
       title: "구단 공개 테스트",
@@ -723,6 +768,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "asialeague",
+    scene: "travel",
     when: isFree,
     make: () => ({
       title: "아시아 리그 단기 계약 제안",
@@ -736,6 +782,7 @@ const EVENTS: LifeEvent[] = [
   /* 연애·사생활 */
   {
     id: "dating",
+    scene: "love",
     when: (c) => isPro(c) && ovr(c.p) >= 66,
     make: () => ({
       title: "열애설 보도",
@@ -759,6 +806,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "campus-couple",
+    scene: "love",
     when: isCollege,
     make: () => ({
       title: "캠퍼스 커플 소문",
@@ -771,6 +819,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "breakup",
+    scene: "heartbreak",
     when: (c) => (isPro(c) || isCollege(c)) && c.age >= 21,
     make: (c) => {
       const fee = cut(c, 0.03, 0.05, 3);
@@ -787,6 +836,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "nightlife",
+    scene: "phone",
     when: isPro,
     make: (c) => {
       const fee = cut(c, 0.05, 0.1, 5);
@@ -808,6 +858,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "wedding",
+    scene: "wedding",
     once: true,
     when: (c) => isPro(c) && c.age >= 27,
     make: (c) => {
@@ -837,6 +888,7 @@ const offCourt = (c: Career) => !!c.run && c.run.games === 0;
 const SEASON_EVENTS: LifeEvent[] = [
   {
     id: "s-slump",
+    scene: "slump",
     when: inGames,
     make: (c) => {
       const fee = roundSalary(clamp(salary(c) * 0.02, 0.01, 2));
@@ -853,6 +905,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-rival",
+    scene: "clash",
     when: inGames,
     make: () => ({
       art: "rival",
@@ -871,6 +924,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-vet",
+    scene: "gym",
     when: inGames,
     make: () => ({
       title: "선배의 개인 지도",
@@ -883,6 +937,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-buzzer",
+    scene: "buzzer",
     when: inGames,
     make: () => ({
       title: "놓친 버저비터",
@@ -900,6 +955,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-argue",
+    scene: "clash",
     when: inGames,
     make: () => ({
       title: "동료와 언쟁",
@@ -917,6 +973,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-flu",
+    scene: "sick",
     when: inGames,
     make: () => ({
       title: "원정길 몸살",
@@ -929,6 +986,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-fatigue",
+    scene: "tired",
     when: inProGames,
     make: () => ({
       title: "연전 피로",
@@ -941,6 +999,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-media",
+    scene: "studio",
     when: inProGames,
     make: (c) => {
       const pay = roundSalary(clamp(salary(c) * 0.03, 0.05, 3));
@@ -956,6 +1015,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-press",
+    scene: "press",
     when: (c) => inGames(c) && (isPro(c) || isCollege(c)),
     make: (c) => {
       const run = c.run!;
@@ -1005,6 +1065,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-trade-rumor",
+    scene: "phone",
     when: inProGames,
     make: () => ({
       title: "트레이드 루머",
@@ -1022,6 +1083,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-fanmeet",
+    scene: "crowd",
     when: inProGames,
     make: () => ({
       title: "올스타 팬 투표 독려",
@@ -1034,6 +1096,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-scout",
+    scene: "crowd",
     when: inSchoolGames,
     make: () => ({
       title: "관중석의 스카우트",
@@ -1051,6 +1114,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-midterm",
+    scene: "study",
     when: inSchoolGames,
     make: () => ({
       title: "중간고사와 원정 경기",
@@ -1063,6 +1127,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-chant",
+    scene: "crowd",
     when: inSchoolGames,
     make: () => ({
       title: "응원단의 깜짝 응원가",
@@ -1080,6 +1145,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-newrole",
+    scene: "board",
     when: inSchoolGames,
     make: () => ({
       title: "감독님의 포지션 실험",
@@ -1092,6 +1158,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-pickup",
+    scene: "street",
     when: (c) => offCourt(c) && isFree(c),
     make: () => ({
       title: "실내 체육관 픽업 게임",
@@ -1109,6 +1176,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-gymclosed",
+    scene: "street",
     when: (c) => offCourt(c) && isFree(c),
     make: () => ({
       title: "다니던 체육관 공사",
@@ -1121,6 +1189,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-unitcup",
+    scene: "military",
     when: (c) => offCourt(c) && c.stage === "military",
     make: () => ({
       title: "부대 대항 체육대회",
@@ -1138,6 +1207,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-barracks",
+    scene: "military",
     when: (c) => offCourt(c) && c.stage === "military",
     make: () => ({
       title: "부대의 개인 정비 시간",
@@ -1151,6 +1221,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   /* 연애·사생활 */
   {
     id: "s-dating-press",
+    scene: "press",
     when: (c) => inProGames(c) && ovr(c.p) >= 66,
     make: () => ({
       title: "기자회견: 열애설 질문",
@@ -1174,6 +1245,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-leak",
+    scene: "phone",
     when: inProGames,
     make: (c) => {
       const fee = cut(c, 0.03, 0.05, 3);
@@ -1200,6 +1272,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-feud-press",
+    scene: "press",
     when: (c) => inGames(c) && (isPro(c) || isCollege(c)),
     make: () => ({
       title: "기자회견: 불화설",
@@ -1221,6 +1294,7 @@ const SEASON_EVENTS: LifeEvent[] = [
 /** 의료진이 오래 쉬라고 할 때 고르는 복귀 시점 */
 export function injuryDecision(out: number): Decision {
   return {
+    scene: "injury",
     title: "부상 복귀 시점",
     body: `의료진은 ${out}경기 정도 쉬어야 한다고 해요. 팀은 하루라도 빨리 돌아오길 바라는 눈치예요.`,
     opts: [
@@ -1237,12 +1311,13 @@ const bigGameEdge = (c: Career, x = 0.1) => (c.p.trait === "승부사" ? x : c.p
  * 빅매치나 결승을 앞두고 몸을 던질지 고르는 결정. 건강할수록 강행이 성공하기 쉬워요.
  * 성공하면 경기력이 오르고, 실패하면 다쳐서 다음 경기(결승이면 결승)에 나서지 못해요.
  */
-export function bigGameDecision(c: Career, label: string, final: boolean): Decision {
+export function bigGameDecision(c: Career, label: string, final: boolean, scene: SceneKey = "bigmatch"): Decision {
   const h = Math.round(c.health);
   const p = clamp(0.3 + c.health / 140 + bigGameEdge(c), 0.3, 0.92);
   const hurt = final ? 3 : ri(1, 3);
   const body = h >= 75 ? "몸 상태는 괜찮아요" : h >= 50 ? "다리가 조금 무거워요" : "몸이 많이 지쳐 있어요";
   return {
+    scene: final ? "finalGame" : scene,
     title: final ? "결승 출전" : `빅매치 · ${label}`,
     body: `${final ? label : `${josa(label, "이", "가")} 다가와요`}. ${body}(건강 ${h}). 몸을 던지면 경기력이 오르지만, 버티지 못하면 다쳐서 ${final ? "결승에" : "다음 경기에"} 나서지 못해요.`,
     opts: [
@@ -1485,7 +1560,7 @@ function drawEvent(c: Career, events: LifeEvent[]): Decision | null {
   if (!pool.length) return null;
   const e = pick(pool);
   seen[e.id] = c.year;
-  return e.make(c);
+  return { scene: e.scene, ...e.make(c) };
 }
 
 /** 지금 단계에 맞는 생활 이벤트를 하나 골라요. 오프시즌에 생겨요. */

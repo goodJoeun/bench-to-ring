@@ -80,7 +80,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 |---|---|
 | `shell/` | `Game.tsx`: 화면 전환(생성 / 커리어 / 은퇴), 상단 메뉴, 진행 팝업과 창 띄우기 |
 | `create/` | 첫 화면(표지)과 단계별 선수 생성 |
-| `career/` | 커리어 진행 화면. `tabs/`에 시즌 · 기록 · 트로피 · 설정 탭 |
+| `career/` | 커리어 진행 화면. `tabs/`에 시즌 · 기록 · 트로피 · 설정 탭. 결정 시트 위 삽화는 라이벌 `RivalArt`, 클러치 `ClutchArt`, 그 밖의 장면 `SceneArt`(그리기는 `sceneDraw.ts`, 장면 종류는 엔진의 `SceneKey`) |
 | `progress/` | 진행 팝업 (시즌 순위표, 국가대표 대회, 드래프트, 결승 중계, 응원, 은퇴 회고) |
 | `retired/` | 은퇴 화면, 역대 기록 순위, 닮은 꼴 선수, 기록 카드 공유 |
 | `rankings/` | 랭킹 페이지 (베스트 5, 랭킹 100, 포지션별, 스탯 랭킹, 나의 기록) |

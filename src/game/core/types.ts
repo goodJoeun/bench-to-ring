@@ -524,12 +524,64 @@ export interface DecisionOption {
   act: Action;
 }
 
+/**
+ * 결정 시트의 장면 그림 종류. 화면(features/career/sceneDraw.ts)이 장면마다 배경·소품·자세·표정을 정해 그려요.
+ * 이벤트는 events.ts에서, 진로·계약·병역 같은 결정은 만드는 곳에서 골라요.
+ */
+export type SceneKey =
+  | "gym"
+  | "dawn"
+  | "slump"
+  | "captain"
+  | "board"
+  | "screen"
+  | "study"
+  | "track"
+  | "stage"
+  | "studio"
+  | "press"
+  | "phone"
+  | "deal"
+  | "dealOff"
+  | "shoe"
+  | "money"
+  | "home"
+  | "dog"
+  | "love"
+  | "heartbreak"
+  | "wedding"
+  | "clinic"
+  | "injury"
+  | "sick"
+  | "tired"
+  | "wellness"
+  | "street"
+  | "travel"
+  | "kids"
+  | "clash"
+  | "crowd"
+  | "bigmatch"
+  | "rivalGame"
+  | "standings"
+  | "broadcast"
+  | "derby"
+  | "finalGame"
+  | "buzzer"
+  | "draft"
+  | "undrafted"
+  | "path"
+  | "military"
+  | "national"
+  | "retire";
+
 export interface Decision {
   title: string;
   body: string;
   opts: DecisionOption[];
   /** 결정 시트 위에 띄우는 삽화 (라이벌 도발, 클러치) */
   art?: "rival" | "clutch";
+  /** 결정 시트 위에 띄우는 장면 그림. art가 있으면 art를 그려요. 예전 저장의 결정에는 없어요. */
+  scene?: SceneKey;
   /** 클러치 전광판: 우리 팀과 상대, 지금 동점 점수 */
   board?: ClutchBoard;
 }

@@ -92,6 +92,7 @@ export function applyAction(c: Career, a: Action): void {
       } else {
         addNews(c, tag, "bad", `${a.team.name} 구단이 협상 테이블을 떠났어요.`);
         c.queue.unshift({
+          scene: "dealOff",
           title: "협상 결렬",
           body: `${a.team.name} 구단이 제안을 거둬들였어요. 남은 선택지에서 고르세요.`,
           opts: a.walk.length ? a.walk : [{ label: "무소속으로 1년 개인 훈련", sub: "다음 시장을 노려요", act: { k: "skip" } }],

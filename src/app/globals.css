@@ -1749,6 +1749,44 @@ tr:last-child td {
     scale: 0.4;
   }
 }
+/* 결정 장면 그림: 상황에 맞는 배경·소품 속의 내 캐릭터. 캔버스는 시트 너비를 따라가요. */
+.sc-art {
+  position: relative;
+  height: 150px;
+  margin: 4px -8px 6px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--panel2);
+  animation: sc-in 0.35s ease-out both;
+}
+.sc-art canvas {
+  display: block;
+  width: 100%;
+  height: 150px;
+}
+.sc-flag {
+  position: absolute;
+  left: calc(50% + 67px);
+  top: 10px;
+  width: 44px;
+  height: 33px;
+  object-fit: cover;
+  border-radius: 2px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  transform-origin: left center;
+  animation: sc-wave 2.4s ease-in-out infinite;
+}
+@keyframes sc-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+@keyframes sc-wave {
+  50% {
+    transform: skewY(-4deg) scaleX(0.94);
+  }
+}
 /* 클러치 전광판: 양 팀 엠블럼·이름·동점 점수와 가운데 4Q 0:24 */
 .cl-art {
   margin: 4px -8px 8px;
@@ -2431,6 +2469,8 @@ tr:last-child td {
   .cl-flash::before {
     animation: none;
   }
+  .sc-art,
+  .sc-flag,
   .rv-me,
   .rv-rival,
   .rv-vs,

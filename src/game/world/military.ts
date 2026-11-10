@@ -59,6 +59,7 @@ export function militaryDecision(c: Career): Decision | null {
       act: { k: "military", choice: "defer" },
     });
   return {
+    scene: "military",
     title: forced ? "병역 · 입대 기한" : "병역 · 입대 시기",
     body: forced
       ? `만 ${c.age}세가 되어 더는 입대를 미룰 수 없어요. 상무에 떨어지면 현역으로 입대해요.`

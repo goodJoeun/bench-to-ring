@@ -26,6 +26,7 @@ import { focusName } from "@/shared/lib/format";
 import { InvestPicker } from "./InvestPicker";
 import { ClutchArt, ClutchFlash, ClutchResult } from "./ClutchArt";
 import { RivalArt } from "./RivalArt";
+import { SceneArt } from "./SceneArt";
 import { Sheet } from "@/shared/ui/Sheet";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 import { Choice } from "@/shared/ui/ui";
@@ -87,6 +88,7 @@ function DecisionSheet({ career: c, decision, kind, remaining, onHide }: { caree
     <Sheet labelledBy="decision-title">
       {decision.art === "rival" && <RivalArt career={c} />}
       {decision.art === "clutch" && <ClutchArt board={decision.board} />}
+      {!decision.art && decision.scene && <SceneArt career={c} scene={decision.scene} />}
       <span className="sheet-kicker">
         {kind}
         {remaining > 1 && ` · 남은 결정 ${remaining}개`}

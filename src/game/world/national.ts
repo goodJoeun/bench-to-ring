@@ -160,6 +160,7 @@ export function nationalCallUp(c: Career, ov: number, gp: number, year: number):
   const power = teamPower(n, ev, ov);
   const first = !c.nat.caps;
   return {
+    scene: "national",
     title: `${first ? "국가대표 첫 발탁" : "국가대표 발탁"} · ${year} ${name}`,
     body: `${n.name} 대표팀 최종 명단에 이름을 올렸어요. ${outlook(ev, n, power)}${exemptHint(c, ev)}`,
     opts: [

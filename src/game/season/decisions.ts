@@ -90,7 +90,7 @@ export function highSchoolGraduation(c: Career): Decision {
       tag: "드래프트",
       act: { k: "draft", d: "kbl" },
     });
-  return { title: "고교 졸업, 진로 선택", body: `고교 3년 동안 오버롤 ${ovr(c.p)}까지 성장했어요. 다음 무대를 고르세요.`, opts };
+  return { scene: "path", title: "고교 졸업, 진로 선택", body: `고교 3년 동안 오버롤 ${ovr(c.p)}까지 성장했어요. 다음 무대를 고르세요.`, opts };
 }
 
 export function collegeSeasonEnd(c: Career): Decision {
@@ -119,6 +119,7 @@ export function collegeSeasonEnd(c: Career): Decision {
     act: { k: "draft", d: "kbl" },
   });
   return {
+    scene: years >= 4 ? "draft" : "path",
     title: years >= 4 ? "대학 졸업, 드래프트" : "대학 시즌 종료",
     body: years >= 4 ? "졸업 학년이에요. 드래프트에 나설 차례예요." : `대학 ${years}학년 시즌을 마쳤어요. 지금 오버롤은 ${ovr(c.p)}예요.`,
     opts,
@@ -198,6 +199,7 @@ export function freeAgency(c: Career, isFree: boolean): Decision {
     opts.push(skipOption("경기는 못 뛰지만 다음 시장을 노려요"));
   if (!opts.length) opts.push(RETIRE_OPTION);
   return {
+    scene: "deal",
     title: isFree ? "다시 시장에 나왔어요" : "FA 시장이 열렸어요",
     body: offers.length ? "계약이 끝났어요. 다음 팀을 고르세요." : "아직 들어온 제안이 없어요.",
     opts,
@@ -207,7 +209,7 @@ export function freeAgency(c: Career, isFree: boolean): Decision {
 export function undrafted(c: Career): Decision {
   const opts: DecisionOption[] = generateOffers(c, null, 6).map((o) => ({ ...o, tag: "육성 계약" }));
   opts.push(skipOption("다음 시즌 시장을 노려요"));
-  return { title: "지명받지 못했어요", body: "드래프트에서 이름이 불리지 않았지만 다른 길이 남아 있어요.", opts };
+  return { scene: "undrafted", title: "지명받지 못했어요", body: "드래프트에서 이름이 불리지 않았지만 다른 길이 남아 있어요.", opts };
 }
 
 export function nbaOffer(c: Career): Decision | null {
@@ -221,6 +223,7 @@ export function nbaOffer(c: Career): Decision | null {
   const sal = fromDev ? 17 : roundSalary(salaryFor("nba", o));
   const years = fromDev ? 2 : 3;
   return {
+    scene: "deal",
     title: fromDev ? "NBA 콜업" : "NBA 영입 제안",
     body: fromDev
       ? `${t.name} 구단에서 G리그에서 NBA로 불러올리고 싶어해요.`
@@ -281,6 +284,7 @@ export function negotiation(c: Career, a: SignAction, others: DecisionOption[]):
       act: { k: "nego", ...base, years: a.years + 1, ask: 1, p: clamp(lev + 0.1 - (c.age >= 30 ? 0.25 : 0), 0.1, 0.9) },
     });
   return {
+    scene: "deal",
     title: `${a.team.name} 연봉 협상`,
     body: `${LEAGUES[a.lg].name} · ${a.years}년 · 연봉 ${money(a.salary)}를 제시했어요. 에이전트는 ${mood}.`,
     opts,
@@ -321,6 +325,7 @@ export function requestTransfer(c: Career): boolean {
     }
     addNews(c, tag, "info", `${team.name} 구단이 이적 요청을 받아들였어요.`);
     c.queue.unshift({
+      scene: "deal",
       title: "이적 시장",
       body: `${team.name} 구단이 트레이드 상대를 찾았어요. 새 팀을 고르면 연봉을 협상해요.`,
       opts: [...offers.map((o) => ({ ...o, tag: o.tag ?? "이적" })), stay],
@@ -339,6 +344,7 @@ export function requestTransfer(c: Career): boolean {
       act: { k: "buyout", cost },
     });
   c.queue.unshift({
+    scene: "dealOff",
     title: "이적 요청 거절",
     body: `구단은 아직 당신이 필요하대요.${opts.length > 1 ? "" : ` 계약을 해지하려면 위약금 ${money(cost)}이 필요해요.`}`,
     opts,
@@ -348,6 +354,7 @@ export function requestTransfer(c: Career): boolean {
 
 export function retirementPrompt(c: Career): Decision {
   return {
+    scene: "retire",
     title: "은퇴를 고민할 나이",
     body: `${c.age}세. 계약은 ${c.contract?.years ?? 0}년 남았어요.`,
     opts: [{ label: "계속 뛴다", sub: "아직 코트에서 보여줄 게 있어요", act: { k: "none" } }, RETIRE_OPTION],
@@ -356,6 +363,7 @@ export function retirementPrompt(c: Career): Decision {
 
 export function forcedRetirement(): Decision {
   return {
+    scene: "retire",
     title: "은퇴의 시간",
     body: "마흔. 이제 코트를 떠날 때예요.",
     opts: [{ label: "은퇴식 하기", sub: "커리어를 마무리하고 기록을 남겨요", tag: "은퇴", act: { k: "retire" } }],

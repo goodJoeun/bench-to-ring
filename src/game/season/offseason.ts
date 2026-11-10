@@ -46,6 +46,7 @@ export function runOffseason(c: Career, finishedYear: number, natCall: Decision 
     const before = ovr(p);
     const after = Math.round(ovrOf(p.attrs, np));
     q.push({
+      scene: "board",
       title: "포지션 전환 제안",
       body: `키가 ${p.h}cm까지 자랐어요. 코치가 ${POS[np].name}로 뛰어보자고 해요.`,
       opts: [

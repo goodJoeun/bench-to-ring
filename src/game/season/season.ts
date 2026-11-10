@@ -17,7 +17,7 @@ import { chance, pick, random, ri, rnd, seededPick, shuffle } from "../core/rand
 import { shopPerks } from "../economy/shop";
 import { BONUS_CAP, SPECIALTIES, combinedEffect, specialtiesOf } from "../player/specialty";
 import { ageBase, ovr, ovrOf, roleOf } from "../player/ratings";
-import type { AttrKey, AwardKey, Career, ClutchBoard, GameLine, InvestKey, LeagueKey, SeasonRecord, SeasonRun } from "../core/types";
+import type { AttrKey, AwardKey, Career, ClutchBoard, GameLine, InvestKey, LeagueKey, SceneKey, SeasonRecord, SeasonRun } from "../core/types";
 import { clamp, fmtNum, josa, r1, round2, sigmoid } from "../core/util";
 
 /*
@@ -84,14 +84,19 @@ const NCAA_COACHING = 1.2;
 /** 출전 시간이 부족하면 성장 한계가 깎이기 시작하는 나이 */
 const POT_CUT_AGE = 21;
 
-/** 빅매치 이름 */
-const BIG_GAMES = ["라이벌전", "순위 싸움 빅매치", "전국 중계 경기", "연고지 더비"];
+/** 빅매치 이름과 빅매치 결정 시트에 그릴 장면 */
+const BIG_GAMES: Record<string, SceneKey> = {
+  라이벌전: "rivalGame",
+  "순위 싸움 빅매치": "standings",
+  "전국 중계 경기": "broadcast",
+  "연고지 더비": "derby",
+};
 /** 빅매치·클러치 이름 가운데 라이벌전. 걸리면 다음 경기를 라이벌전으로 기록해요. */
-const RIVAL_GAME = BIG_GAMES[0];
+const RIVAL_GAME = "라이벌전";
 
 /** 빅매치·클러치 이름을 뽑아요. 라이벌전이면 다음 경기를 라이벌전으로 표시해요. */
 function bigGameLabel(run: SeasonRun): string {
-  const label = pick(BIG_GAMES);
+  const label = pick(Object.keys(BIG_GAMES));
   if (label === RIVAL_GAME) run.rival = true;
   return label;
 }
@@ -413,8 +418,10 @@ function playGame(c: Career, run: SeasonRun, tag: string): void {
   run.form *= 0.97;
   if (run.checks.includes(n)) checkEvent(c, EVENT_CHANCE);
   // 빅매치: 다음 경기에 몸을 던질지 고르게 해요. 로테이션 이상이고 뛸 수 있을 때만이에요.
-  else if (run.bigs.includes(n) && run.out === 0 && run.min >= 10 && n < run.games && chance(BIG_GAME_CHANCE))
-    c.queue.push(bigGameDecision(c, bigGameLabel(run), false));
+  else if (run.bigs.includes(n) && run.out === 0 && run.min >= 10 && n < run.games && chance(BIG_GAME_CHANCE)) {
+    const label = bigGameLabel(run);
+    c.queue.push(bigGameDecision(c, label, false, BIG_GAMES[label]));
+  }
   // 클러치: 주전 이상이 다음 경기의 마지막 플레이를 맡아요. 정해 둔 경기에 다른 결정이 겹치거나 결장 중이면 다음 경기로 미뤄요.
   else if (run.shots.length > 0 && n >= run.shots[0] && run.out === 0 && run.min >= STARTER_MIN && n < run.games) {
     run.shots.shift();
