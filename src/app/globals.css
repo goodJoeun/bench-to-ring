@@ -4406,6 +4406,284 @@ select {
 .st-legend i[data-zone="bye"] {
   background: #ffd66b;
 }
+/* 시즌 결산 탭(리포트·순위표·커뮤니티): 밑줄 탭 */
+.st-views {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+.st-views button {
+  flex: 1;
+  min-height: 38px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--sim-soft);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.st-views button[aria-selected="true"] {
+  border-bottom-color: #ffd66b;
+  color: #fff;
+}
+.st-views button:focus-visible {
+  outline-color: #ffd66b;
+}
+.rp-wrap {
+  text-align: left;
+}
+/* 시즌 리포트 */
+.rp {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 4px;
+}
+.rp h3,
+.cm-post h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+}
+.rp h3 span {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--sim-lbl);
+}
+.rp-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rp-tiles li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 8px 4px 7px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.rp-tiles li[data-high] {
+  background: rgba(255, 214, 107, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 214, 107, 0.6);
+}
+.rp-tiles b {
+  font-family: var(--f-num);
+  font-size: 20px;
+  line-height: 1.1;
+}
+.rp-l,
+.rp-sub {
+  font-size: 11px;
+  color: var(--sim-lbl);
+}
+.rp-high {
+  position: absolute;
+  top: -7px;
+  right: 4px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: #ffd66b;
+  color: #3a2a00;
+  font-size: 9.5px;
+  font-weight: 800;
+}
+.rp-total {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--sim-soft);
+}
+.rp-total span {
+  margin-left: 6px;
+  color: #9fe3b5;
+  font-weight: 700;
+}
+.rp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rp-list li {
+  padding: 8px 10px 8px 30px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+  line-height: 1.45;
+  position: relative;
+}
+.rp-list li::before {
+  position: absolute;
+  left: 10px;
+  top: 8px;
+}
+.rp-list li[data-kind="milestone"]::before {
+  content: "🎉";
+}
+.rp-list li[data-kind="real"]::before {
+  content: "🏀";
+}
+.rp-list li[data-kind="hall"]::before {
+  content: "🏛️";
+}
+.rp-list li[data-kind="next"] {
+  background: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+  color: var(--sim-soft);
+}
+.rp-list li[data-kind="next"]::before {
+  content: "🎯";
+}
+.rp-list li.rp-none {
+  padding-left: 10px;
+  color: var(--sim-lbl);
+}
+.rp-list b {
+  color: #ffd66b;
+}
+.rp-awards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rp-awards li {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 214, 107, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 214, 107, 0.55);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.rp-awards li::before {
+  content: "🏅 ";
+}
+/* 커뮤니티 반응: 게시글 하나와 베스트 댓글부터 */
+.cm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cm-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-bottom: 4px;
+  background: var(--sim-bg);
+}
+.cm-post {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.cm-post h3 {
+  margin-bottom: 4px;
+  line-height: 1.35;
+}
+/* 커뮤니티 이름 표시: 곳마다 대표 색 */
+.cm-site {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--cm-c, rgba(255, 255, 255, 0.18));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+.cm-post[data-style="dc"] {
+  --cm-c: #3b4890;
+}
+.cm-post[data-style="fm"] {
+  --cm-c: #4a6fd1;
+}
+.cm-post[data-style="mlbpark"] {
+  --cm-c: #1d5c3a;
+}
+.cm-post[data-style="reddit"] {
+  --cm-c: #ff4500;
+}
+.cm-post[data-style="realgm"] {
+  --cm-c: #b3262d;
+}
+.cm-post[data-style="reddit"] .cm-like {
+  color: #ffb08a;
+}
+.cm-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-size: 11.5px;
+  color: var(--sim-lbl);
+}
+.cm-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cm-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  padding: 9px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+.cm-nick {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--sim-lbl);
+}
+.cm-nick em {
+  margin-right: 5px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: #e8505b;
+  color: #fff;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+}
+.cm-list p {
+  grid-column: 1;
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: #fff;
+}
+.cm-like {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #9fe3b5;
+}
+.cm-list li[data-mood="down"] .cm-like {
+  color: #ffb3b8;
+}
+.cm-empty,
+.cm-note {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--sim-soft);
+}
+.cm-note {
+  font-size: 11px;
+  color: var(--sim-lbl);
+  text-align: center;
+}
 /* 은퇴 화면의 닮은 꼴 선수 */
 .comps {
   display: grid;

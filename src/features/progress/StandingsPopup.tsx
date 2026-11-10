@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LEAGUES, seasonStandings, type Career, type SeasonRecord, type StandingRow, type StandingsTable } from "@/game";
+import { LEAGUES, seasonCommunity, seasonReport, seasonStandings, type Career, type CareerSummary, type SeasonRecord, type StandingRow, type StandingsTable } from "@/game";
 import { gameActions } from "@/shared/store/game-store";
 import { useEscapeKey } from "@/shared/lib/hooks";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 import { Popup } from "./Popup";
+import { CommunityView, ReportView } from "./SeasonReport";
 
 /** 진출선 안의 자리: 4강 직행, 플레이오프 진출 */
 function zoneOf(t: StandingsTable, r: StandingRow): "bye" | "po" | undefined {
@@ -13,12 +14,23 @@ function zoneOf(t: StandingsTable, r: StandingRow): "bye" | "po" | undefined {
   if (t.cut && r.rank <= t.cut) return "po";
 }
 
+type View = "report" | "standings" | "community";
+const VIEWS: [View, string][] = [
+  ["report", "시즌 리포트"],
+  ["standings", "순위표"],
+  ["community", "커뮤니티"],
+];
+
 /**
- * 시즌 순위표: 시즌이 끝나면 방금 끝난 시즌의 정규시즌 순위를 보여줘요. 홈의 시즌 결과에서 다시 열 수도 있어요.
- * NBA는 내 컨퍼런스가 먼저 보이고, 다른 컨퍼런스로 바꿔 볼 수 있어요. 내 팀 줄이 보이게 목록을 내려 둬요.
+ * 시즌 결산: 시즌이 끝나면 방금 끝난 시즌의 리포트(개인 스탯·누적 기록·수상), 정규시즌 순위, 커뮤니티 반응을 탭으로 보여줘요.
+ * 홈의 시즌 결과에서 다시 열 수도 있어요. 리포트가 먼저 보여요.
+ * 순위표는 NBA면 내 컨퍼런스가 먼저 보이고, 다른 컨퍼런스로 바꿔 볼 수 있어요. 내 팀 줄이 보이게 목록을 내려 둬요.
  */
-export function StandingsPopup({ career: c, rec }: { career: Career; rec: SeasonRecord }) {
+export function StandingsPopup({ career: c, rec, hall }: { career: Career; rec: SeasonRecord; hall: CareerSummary[] }) {
   const st = useMemo(() => seasonStandings(c, rec), [c, rec]);
+  const report = useMemo(() => seasonReport(c, rec, hall), [c, rec, hall]);
+  const community = useMemo(() => seasonCommunity(c, rec), [c, rec]);
+  const [view, setView] = useState<View>("report");
   const [tab, setTab] = useState(0);
   const wrapRef = useRef<HTMLDivElement>(null);
   const goRef = useRef<HTMLButtonElement>(null);
@@ -34,7 +46,7 @@ export function StandingsPopup({ career: c, rec }: { career: Career; rec: Season
     const wrap = wrapRef.current;
     const me = wrap?.querySelector<HTMLElement>("tr[data-me]");
     if (wrap) wrap.scrollTop = me ? Math.max(0, me.offsetTop - (wrap.clientHeight - me.offsetHeight) / 2) : 0;
-  }, [tab]);
+  }, [tab, view]);
 
   if (!st) return null;
   const L = LEAGUES[st.lg];
@@ -54,7 +66,24 @@ export function StandingsPopup({ career: c, rec }: { career: Career; rec: Season
       <p className="sim-phase">
         {rec.team} · {rec.w}승 {rec.l}패 · {rec.result}
       </p>
-      {st.tables.length > 1 && (
+      <div className="st-views" role="tablist" aria-label="시즌 결산">
+        {VIEWS.filter(([v]) => v !== "community" || community).map(([v, label]) => (
+          <button type="button" role="tab" key={v} aria-selected={view === v} onClick={() => setView(v)}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {view === "report" && (
+        <div className="st-wrap rp-wrap" ref={wrapRef}>
+          <ReportView report={report} />
+        </div>
+      )}
+      {view === "community" && community && (
+        <div className="st-wrap rp-wrap" ref={wrapRef}>
+          <CommunityView domestic={community.domestic} overseas={community.overseas} name={c.p.name} />
+        </div>
+      )}
+      {view === "standings" && st.tables.length > 1 && (
         <div className="st-tabs" role="group" aria-label="컨퍼런스">
           {st.tables.map((t, i) => (
             <button type="button" key={t.name} aria-pressed={tab === i} onClick={() => setTab(i)}>
@@ -64,49 +93,51 @@ export function StandingsPopup({ career: c, rec }: { career: Career; rec: Season
           ))}
         </div>
       )}
-      <div className="st-wrap" ref={wrapRef}>
-        <table className="st-table">
-          <caption className="sr-only">
-            {rec.year} 시즌 {table.name} 정규시즌 순위
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">순위</th>
-              <th scope="col" className="l">
-                팀
-              </th>
-              <th scope="col">승</th>
-              <th scope="col">패</th>
-              <th scope="col">승차</th>
-            </tr>
-          </thead>
-          <tbody>
-            {table.rows.map((r) => (
-              <tr
-                key={r.team}
-                data-me={r.me}
-                data-zone={zoneOf(table, r)}
-                data-cut={(table.cut && r.rank === table.cut) || undefined}
-                style={{ "--tc": r.color } as React.CSSProperties}
-              >
-                <td className="st-rank">{r.rank}</td>
-                <th scope="row" className="st-team">
-                  <span className="st-tc">
-                    <TeamBadge name={r.team} kind={st.lg} color={r.color} size={18} />
-                    <span className="st-name">{r.team}</span>
-                    {r.me && <em data-me>내 팀</em>}
-                    {r.met && <em data-final={r.met === "final" || undefined}>{metLabel(r.met)}</em>}
-                  </span>
+      {view === "standings" && (
+        <div className="st-wrap" ref={wrapRef}>
+          <table className="st-table">
+            <caption className="sr-only">
+              {rec.year} 시즌 {table.name} 정규시즌 순위
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">순위</th>
+                <th scope="col" className="l">
+                  팀
                 </th>
-                <td>{r.w}</td>
-                <td>{r.l}</td>
-                <td className="st-gb">{r.gb ? r.gb : "-"}</td>
+                <th scope="col">승</th>
+                <th scope="col">패</th>
+                <th scope="col">승차</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {table.cut > 0 && (
+            </thead>
+            <tbody>
+              {table.rows.map((r) => (
+                <tr
+                  key={r.team}
+                  data-me={r.me}
+                  data-zone={zoneOf(table, r)}
+                  data-cut={(table.cut && r.rank === table.cut) || undefined}
+                  style={{ "--tc": r.color } as React.CSSProperties}
+                >
+                  <td className="st-rank">{r.rank}</td>
+                  <th scope="row" className="st-team">
+                    <span className="st-tc">
+                      <TeamBadge name={r.team} kind={st.lg} color={r.color} size={18} />
+                      <span className="st-name">{r.team}</span>
+                      {r.me && <em data-me>내 팀</em>}
+                      {r.met && <em data-final={r.met === "final" || undefined}>{metLabel(r.met)}</em>}
+                    </span>
+                  </th>
+                  <td>{r.w}</td>
+                  <td>{r.l}</td>
+                  <td className="st-gb">{r.gb ? r.gb : "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {view === "standings" && table.cut > 0 && (
         <p className="st-legend">
           {table.bye > 0 && (
             <span>

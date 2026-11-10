@@ -79,6 +79,17 @@ export {
   type JourneyStep,
   type TitleEntry,
 } from "./career/career";
+export {
+  REPORT_STAT_NAME,
+  seasonReport,
+  type Milestone,
+  type NextTarget,
+  type PassedHall,
+  type PassedReal,
+  type ReportStat,
+  type SeasonReport,
+} from "./legacy/report";
+export { romanizeName, seasonCommunity, type CommentMood, type CommunityBoard, type CommunityComment, type SiteStyle } from "./legacy/community";
 export { LEAGUE_WEIGHT, SCORE_AWARDS, SCORE_CAP, SCORE_NBA, SCORE_OTHER, bestFive, compareCareers, playedNba, rankHall, rankScore, scoreParts, type ScoreParts } from "./legacy/hall";
 export { COMPS, careerProfile, similarPlayers, type CompLeague, type CompMatch, type CompPlayer, type CompProfile } from "./legacy/comps";
 export { namuWikiUrl } from "./legacy/namu";

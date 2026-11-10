@@ -81,7 +81,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 | `shell/` | `Game.tsx`: 화면 전환(생성 / 커리어 / 은퇴), 상단 메뉴, 진행 팝업과 창 띄우기 |
 | `create/` | 첫 화면(표지)과 단계별 선수 생성 |
 | `career/` | 커리어 진행 화면. `tabs/`에 시즌 · 기록 · 트로피 · 설정 탭. 결정 시트 위 삽화는 라이벌 `RivalArt`, 클러치 `ClutchArt`, 그 밖의 장면 `SceneArt`(그리기는 `sceneDraw.ts`, 장면 종류는 엔진의 `SceneKey`) |
-| `progress/` | 진행 팝업 (시즌 순위표, 국가대표 대회, 드래프트, 결승 중계, 응원, 은퇴 회고) |
+| `progress/` | 진행 팝업 (시즌 결산: 리포트·순위표·커뮤니티 `StandingsPopup`·`SeasonReport`, 국가대표 대회, 드래프트, 결승 중계, 응원, 은퇴 회고) |
 | `retired/` | 은퇴 화면, 역대 기록 순위, 닮은 꼴 선수, 기록 카드 공유 |
 | `rankings/` | 랭킹 페이지 (베스트 5, 랭킹 100, 포지션별, 스탯 랭킹, 나의 기록) |
 | `hall-of-fame/` | 명예의 전당 (내 기기 기록과 온라인 순위) |
@@ -116,7 +116,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 | `season/` | 시즌 흐름과 결정 | `season` 시즌 진행·성장·시상, `live` 결승 중계, `offseason` 오프시즌과 결정 대기열, `events` 이벤트, `decisions` 진로·계약 결정, `actions` 결정 처리 |
 | `economy/` | 돈 쓰기 | `invest` 시즌 투자, `shop` 상점·기부 |
 | `career/` | 커리어 기록과 저장 | `career` 은퇴·요약·레거시, `log` 소식·수상·입단 기록, `storage` localStorage 저장·마이그레이션, 브라우저 업적과 누적 기록 |
-| `legacy/` | 평가와 업적 | `hall` 랭킹 점수, `records` 역대 기록 순위표, `comps` 닮은 꼴 선수, `namu` 나무위키 링크, `achievements` 업적 (브라우저마다 한 번만, `setBrowserRecord`로 저장소와 이어요. 역대 랭킹 업적은 온라인 순위로 `rankAchievements`), `lifetime` 모든 커리어 누적 기록 |
+| `legacy/` | 평가와 업적 | `hall` 랭킹 점수, `records` 역대 기록 순위표, `comps` 닮은 꼴 선수, `namu` 나무위키 링크, `achievements` 업적 (브라우저마다 한 번만, `setBrowserRecord`로 저장소와 이어요. 역대 랭킹 업적은 온라인 순위로 `rankAchievements`), `lifetime` 모든 커리어 누적 기록, `report` 시즌 결산 리포트(커리어 하이·통산 이정표·넘은 선수), `community` 시즌 커뮤니티 반응(국내·해외 댓글) |
 
 밸런스 수치는 대부분 `world/leagues.ts`, `core/data.ts`, `player/ratings.ts`, `season/season.ts`에 있어요.
 
@@ -137,6 +137,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 
 - `game/__tests__/engine.test.ts`
 - `game/__tests__/achievements.test.ts`
+- `game/__tests__/report.test.ts`
 - `game/__tests__/standings.test.ts`
 - `features/retired/__tests__/careerCard.test.ts`
 - `server/__tests__/feedback.test.ts`

@@ -184,7 +184,7 @@ export function Game() {
           <LiveGameView game={career.live} onDone={() => gameActions.finishFinal()} />
         </Popup>
       )}
-      {standingsRec && career && <StandingsPopup career={career} rec={standingsRec} />}
+      {standingsRec && career && <StandingsPopup career={career} rec={standingsRec} hall={hall} />}
       {tournament && career && <TournamentLoading career={career} />}
       {drafting && career?.draftShow && <DraftLoading career={career} show={career.draftShow} />}
       {farewell && retiredShown && <FarewellLoading career={retiredShown} />}
