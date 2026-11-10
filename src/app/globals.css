@@ -3965,6 +3965,9 @@ select {
   margin: 8px 0 0;
   padding-left: 18px;
 }
+.about ul + p {
+  margin-top: 8px;
+}
 .about + .foot {
   margin-top: 16px;
 }

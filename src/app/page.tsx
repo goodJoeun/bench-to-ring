@@ -37,6 +37,11 @@ export default function Home() {
           <li>드래프트와 이적 제안, 국가대표 대회, 병역까지 실제 선수처럼 진로를 골라요.</li>
           <li>은퇴하면 명예의 전당에 올라 다른 플레이어의 선수들과 랭킹을 겨뤄요.</li>
         </ul>
+        {/* '벤치에서 발롱까지 농구(버전)'으로 찾아오는 사람을 위한 문장. 제휴로 보이지 않게 별개의 게임임을 같이 밝혀요. */}
+        <p>
+          축구 커리어 게임 ‘벤치에서 발롱까지’처럼 벤치에서 시작해 정상까지 오르는 성장 게임을 농구로 해 보고
+          싶었다면 이 게임이 그 농구 버전이에요. ‘벤치에서 발롱까지’와는 관련 없는 별개의 게임이에요.
+        </p>
       </section>
       <p className="foot">비공식 팬 게임이에요. 리그·구단·대회 명칭과 로고의 권리는 각 권리자에게 있어요.</p>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
