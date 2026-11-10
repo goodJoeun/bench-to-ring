@@ -538,6 +538,7 @@ export type SceneKey =
   | "study"
   | "track"
   | "stage"
+  | "dunk"
   | "studio"
   | "press"
   | "phone"

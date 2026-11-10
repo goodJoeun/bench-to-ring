@@ -146,7 +146,7 @@ const EVENTS: LifeEvent[] = [
   },
   {
     id: "dunkshow",
-    scene: "stage",
+    scene: "dunk",
     when: (c) => !isFree(c),
     make: () => ({
       title: "덩크 콘테스트 초청",

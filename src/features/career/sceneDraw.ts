@@ -97,6 +97,9 @@ const HANDS = {
   mic: [[42, 152], [96, 96]],
   bag: [[42, 152], [128, 136]],
   dribble: [[42, 152], [122, 146]],
+  dunk: [[30, 84], [128, 48]],
+  dunk2: [[82, 54], [118, 46]],
+  dunkR: [[30, 120], [124, 46]],
   chest: [[62, 122], [98, 122]],
 } satisfies Record<string, [Pt, Pt]>;
 type HandKey = keyof typeof HANDS;
@@ -473,6 +476,80 @@ function arenaBg(p: Paint, bright = true, crowd?: (x: number) => string[]): void
     }
 }
 
+/**
+ * 덩크 콘테스트의 덩크 세 가지. 손 자세, 몸 기울기, 골대가 놓이는 쪽(side: 1이면 오른쪽), 공에서 림까지의 거리를 정해요.
+ * - one: 오른손 하나로 림에 내리꽂아요. 왼팔은 옆으로 뻗어 균형을 잡아요.
+ * - two: 두 손으로 머리 위에 든 공을 꽂아요.
+ * - reverse: 골대 반대쪽으로 몸을 크게 젖힌 채 오른팔을 뒤로 넘겨 꽂아요. 몸을 따라 도는 회전 화살표가 붙어요.
+ */
+const DUNKS = [
+  { kind: "one", hands: "dunk", lean: 0.16, side: 1, rim: [6, 9], mood: "focus" },
+  { kind: "two", hands: "dunk2", lean: 0.32, side: 1, rim: [8, 14], mood: "focus" },
+  { kind: "reverse", hands: "dunkR", lean: -0.3, side: 1, rim: [8, 10], mood: "beam" },
+] as const satisfies { kind: string; hands: HandKey; lean: number; side: 1 | -1; rim: Pt; mood: Mood }[];
+
+function drawDunk(p: Paint, d: (typeof DUNKS)[number]): void {
+  const { ctx, cx } = p;
+  arenaBg(p);
+  const { side } = d;
+  const x = d.kind === "reverse" ? cx - 20 : side > 0 ? cx - 34 : cx + 30;
+  const feet = 124;
+  const s = 0.5;
+  // 뛰어오른 선수가 바닥에 남긴 그림자
+  ellipse(ctx, x + 6 * side, 146, 22, 4, "rgba(0,0,0,0.35)");
+  // 손 위치를 몸 기울기만큼 돌려서 공 자리를 구하고, 림은 공 바로 아래 앞에 둬요.
+  const top = feet - 231 * s;
+  const rot = ([qx, qy]: Pt): Pt => {
+    const [dx, dy] = [qx - x, qy - feet];
+    return [x + dx * Math.cos(d.lean) - dy * Math.sin(d.lean), feet + dx * Math.sin(d.lean) + dy * Math.cos(d.lean)];
+  };
+  const [hl, hr] = HANDS[d.hands].map(([bx, by]) => rot([x + (bx - 80) * s, top + by * s]));
+  const ballAt: Pt = d.kind === "two" ? [(hl[0] + hr[0]) / 2 + 3, (hl[1] + hr[1]) / 2 - 9] : [hr[0] + 4, hr[1] - 1];
+  const rim: Pt = [ballAt[0] + d.rim[0], ballAt[1] + d.rim[1]];
+  // 기둥과 팔은 골대 바깥쪽에, 백보드는 위로 조금 잘려요.
+  const px = rim[0] + side * 37;
+  rrect(ctx, px - 3, rim[1] - 30, 6, FEET - rim[1] + 30, 2, "#4A5361");
+  rrect(ctx, px - 6, FEET - 40, 12, 40, 4, "#2F5DB0");
+  poly(ctx, [[rim[0] + side * 10, rim[1] - 28], [px, rim[1] - 26], [px, rim[1] - 19], [rim[0] + side * 10, rim[1] - 17]], "#4A5361");
+  ctx.save();
+  ctx.translate(rim[0], rim[1]);
+  ctx.scale(0.8, 0.8);
+  hoop(ctx, 0, 0, false);
+  ctx.restore();
+  // 뛰어오른 궤적: 골대 반대쪽 아래로 남는 바람 선
+  for (const [sx, sy] of [[-20, -74], [-26, -52], [-20, -30]] as const) line(ctx, [[x + sx * side, feet + sy], [x + (sx - 20) * side, feet + sy + 18]], "rgba(255,255,255,0.75)", 2.5);
+  ctx.save();
+  ctx.translate(x, feet);
+  ctx.rotate(d.lean);
+  ctx.translate(-x, -feet);
+  figure(p, x, d.hands, d.mood, { scale: s, feet });
+  ctx.restore();
+  ball(ctx, ballAt[0], ballAt[1], 7.5);
+  // 리버스: 젖힌 몸 왼쪽을 따라 위로 도는 회전 화살표
+  if (d.kind === "reverse") {
+    const [bx, by] = rot([x, top + 120 * s]);
+    const r = 46;
+    const [a0, a1] = [0.8 * Math.PI, 1.38 * Math.PI];
+    ctx.strokeStyle = "#FFE58A";
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.arc(bx, by, r, a0, a1);
+    ctx.stroke();
+    const [ex, ey] = [bx + Math.cos(a1) * r, by + Math.sin(a1) * r];
+    poly(ctx, [[ex + 7, ey - 2], [ex - 3, ey - 6], [ex - 2, ey + 5]], "#FFE58A");
+  }
+  // 림에 꽂히는 충격선
+  for (const a of [-2.4, -1.9, -0.5, -0.1]) line(ctx, [[rim[0] + Math.cos(a) * 20, rim[1] + Math.sin(a) * 14], [rim[0] + Math.cos(a) * 28, rim[1] + Math.sin(a) * 20]], "#FFE58A", 2.5);
+  // 심사위원 점수판: 골대 반대쪽 바닥
+  for (const [i, dx] of (side > 0 ? [-150, -122, -94] : [70, 98, 126]).entries()) {
+    const up = i === 1 ? 4 : 0;
+    rrect(ctx, cx + dx, 112 - up, 24, 18, 3, "#FFFFFF");
+    text(ctx, "10", cx + dx + 12, 121 - up, 11, "#E8505B", 900);
+    rrect(ctx, cx + dx + 10, 130 - up, 4, 16, 1, "#C9D1DC");
+  }
+}
+
 /** 관중 피부색. 자리마다 돌아가며 써요. */
 const FAN_SKINS = ["#F1CFA4", "#D9A577", "#A8714A", "#6B4428", "#E8BC94"];
 
@@ -709,6 +786,11 @@ const scenes: Record<SceneKey, Scene> = {
       line(ctx, [[x + 4, y], [x + 4, y - 18], [x + 12, y - 14]], "#F4F4F4", 2);
     }
     figure(p, cx - 30, "wave", "beam", { outfit: "tee" });
+  },
+
+  dunk(p) {
+    // 덩크는 결정마다 원핸드·투핸드·리버스 가운데 하나예요.
+    drawDunk(p, DUNKS[Math.floor(p.seed / 7) % DUNKS.length]);
   },
 
   studio(p) {
