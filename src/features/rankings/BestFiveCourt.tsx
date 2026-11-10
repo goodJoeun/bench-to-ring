@@ -1,5 +1,4 @@
-import type { PosKey } from "@/game";
-import type { BoardEntry } from "@/shared/leaderboard/types";
+import type { LookRecord, PosKey } from "@/game";
 import { nameFit } from "@/shared/lib/format";
 import { Sprite } from "@/shared/ui/sprite/Sprite";
 import { jerseyOf, lookOf } from "../../shared/ui/sprite/look";
@@ -29,8 +28,19 @@ function CourtLines() {
   );
 }
 
-/** 역대 Best 5: 포지션마다 1위를 코트 위에 세워요. */
-export function BestFiveCourt({ best5, mine }: { best5: { pos: PosKey; career: BoardEntry | null }[]; mine: Set<string> }) {
+/** 코트에 세우는 선수: 온라인 순위표의 기록(BoardEntry)이나 이 브라우저의 은퇴 기록에서 만들어요. */
+export interface CourtPlayer {
+  id: string;
+  name: string;
+  /** 최고 오버롤 */
+  peak: number;
+  /** 마지막 소속팀 (유니폼 색) */
+  team: string | null;
+  look: LookRecord | null;
+}
+
+/** Best 5: 포지션마다 1위를 코트 위에 세워요. 온라인 전체 랭킹과 내 은퇴 선수 모두 이 코트를 써요. */
+export function BestFiveCourt({ best5, mine }: { best5: { pos: PosKey; career: CourtPlayer | null }[]; mine?: Set<string> }) {
   return (
     <div className="rk-court">
       <CourtLines />
@@ -39,7 +49,7 @@ export function BestFiveCourt({ best5, mine }: { best5: { pos: PosKey; career: B
           {e ? (
             <>
               <Sprite look={lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={3} className="rk-sprite" label={`${e.name} 캐릭터`} />
-              <span className="rk-plate" data-mine={mine.has(e.id) || undefined}>
+              <span className="rk-plate" data-mine={mine?.has(e.id) || undefined}>
                 <b style={nameFit(e.name)}>{e.name}</b>
                 <span>
                   {pos} · OVR {e.peak}

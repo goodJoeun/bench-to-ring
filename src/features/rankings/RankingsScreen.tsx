@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { POS, POS_KEYS, fmtNum, type PosKey } from "@/game";
+import { POS, POS_KEYS, bestFive, fmtNum, type CareerSummary, type PosKey } from "@/game";
 import { gameActions, useGame } from "@/shared/store/game-store";
 import { fetchBoard, fetchBoardDays, fetchMine, fetchStatBoard, pendingIds } from "@/shared/leaderboard/client";
 import { daysBack, kstDay } from "@/shared/leaderboard/days";
@@ -22,6 +22,15 @@ const TABS = [
 ] as const;
 type Tab = (typeof TABS)[number][0];
 type PosFilter = PosKey | "all";
+/** 베스트 5를 누구 중에서 뽑는지: 온라인 전체 유저, 또는 이 브라우저에서 은퇴한 내 선수 */
+type Who = "all" | "mine";
+
+/** 내 은퇴 선수 베스트 5: 명예의 전당과 같은 규칙(bestFive)으로 포지션마다 랭킹 점수 1위를 골라 코트에 세울 모양으로 바꿔요. */
+const myBestFive = (hall: CareerSummary[]) =>
+  bestFive(hall).map(({ pos, career: s }) => ({
+    pos,
+    career: s && { id: s.id, name: s.name, peak: s.peak, team: s.teams.at(-1) ?? null, look: s.look ?? null },
+  }));
 /** 고른 날짜: 오늘부터 며칠 전인지(0이 오늘), 또는 올타임 */
 type DayPick = number | "all";
 
@@ -219,6 +228,7 @@ function useMine() {
 export function RankingsScreen() {
   const tab = useSyncExternalStore(subscribeHash, readTab, () => "best5" as Tab);
   const [pos, setPos] = useState<PosKey>("PG");
+  const [who, setWho] = useState<Who>("all");
   const [pick, setPick] = useState<DayPick>(0);
   const today = useSyncExternalStore(subscribeNever, readToday, () => "");
   const days = today ? daysBack(today) : [];
@@ -237,7 +247,9 @@ export function RankingsScreen() {
     () => true,
     () => false,
   );
-  const all = useBoard("all", day, hydrated && (tab === "best5" || tab === "ranking"));
+  // 내 선수 베스트 5는 이 브라우저의 기록이라 온라인 순위표를 부르지 않아요.
+  const myBest = tab === "best5" && who === "mine";
+  const all = useBoard("all", day, hydrated && ((tab === "best5" && !myBest) || tab === "ranking"));
   const byPos = useBoard(pos, day, hydrated && tab === "position");
   const myIds = new Set((mine?.careers ?? []).map((c) => c.id));
 
@@ -273,13 +285,37 @@ export function RankingsScreen() {
           ))}
         </div>
         <section className="rk-panel" role="tabpanel" id="rk-panel" aria-labelledby={`rk-tab-${tab}`}>
-          {tab !== "mine" && hydrated && (
+          {tab === "best5" && hydrated && (
+            <div className="rk-chips" role="group" aria-label="베스트 5 고르기">
+              <button type="button" aria-pressed={who === "all"} onClick={() => setWho("all")}>
+                전체 유저
+              </button>
+              <button type="button" aria-pressed={who === "mine"} onClick={() => setWho("mine")}>
+                내 선수
+              </button>
+            </div>
+          )}
+          {tab !== "mine" && !myBest && hydrated && (
             <>
               <DayChips days={days} pick={pick} onPick={setPick} counts={counts} />
               <DayCount counts={counts} day={day} today={today} />
             </>
           )}
-          {tab === "mine" ? (
+          {myBest ? (
+            !hall.length ? (
+              <div className="rk-empty">
+                <b>아직 은퇴한 내 선수가 없어요</b>
+                <span>선수가 은퇴하면 포지션마다 가장 빛난 선수로 내 베스트 5가 꾸려져요.</span>
+              </div>
+            ) : (
+              <>
+                <BestFiveCourt best5={myBestFive(hall)} />
+                <p className="hint">
+                  이 브라우저에서 은퇴한 선수 {fmtNum(hall.length)}명 중 포지션마다 랭킹 점수 1위예요. 기록이 없는 포지션은 비어 있어요.
+                </p>
+              </>
+            )
+          ) : tab === "mine" ? (
             <MyRecords hall={hall} mine={mine} pending={new Set(pending ? pending.split("\n") : [])} endings={new Set(endings)} />
           ) : tab === "stats" ? (
             hydrated && <StatsPanel mine={myIds} day={day} today={today} />
