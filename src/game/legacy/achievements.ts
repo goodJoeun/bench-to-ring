@@ -454,6 +454,14 @@ export const ACHIEVEMENTS: Achievement[] = [
   // 스타성: 스타성은 시즌마다 식으니 그 수치에 닿은 순간 따요.
   { id: "star_rising", name: "떠오르는 별", desc: `스타성 ${STAR_POPULAR} 이상`, hint: "팬들이 내 이름을 외우기 시작해요", group: "star", test: (v) => v.c.star >= STAR_POPULAR },
   { id: "superstar", name: "슈퍼스타", desc: `스타성 ${STAR_SUPER} 이상`, hint: "어딜 가도 사인 요청이 쏟아질 만큼", group: "star", test: (v) => v.c.star >= STAR_SUPER },
+  {
+    id: "homegrown_star",
+    name: "토종 슈퍼스타",
+    desc: `NBA를 밟지 않고 스타성 ${STAR_SUPER} 이상`,
+    hint: "바다를 건너지 않아도 모두가 내 이름을 알아요",
+    group: "star",
+    test: (v) => v.c.star >= STAR_SUPER && v.c.team?.lg !== "nba" && !v.c.hist.some((h) => h.lg === "nba"),
+  },
   { id: "star_icon", name: "아이콘", desc: `스타성 ${STAR_ICON} 이상`, hint: "농구를 모르는 사람도 내 이름을 알아요", group: "star", test: (v) => v.c.star >= STAR_ICON },
   {
     id: "signature_cele",

@@ -144,6 +144,17 @@ describe("스타성", () => {
     expect(c.achv).toEqual(expect.arrayContaining(["star_icon", "signature_cele", "signature_shoe"]));
   });
 
+  it("NBA를 밟지 않고 스타성 75에 닿으면 토종 슈퍼스타예요", () => {
+    const home = pro("home", 75);
+    checkAchievements(home);
+    expect(home.achv).toContain("homegrown_star");
+    const nba = pro("abroad", 75);
+    nba.hist = [season({ lg: "nba", team: "보스턴 셀틱스" })];
+    checkAchievements(nba);
+    expect(nba.achv).toContain("superstar");
+    expect(nba.achv).not.toContain("homegrown_star");
+  });
+
   it("시그니처 농구화 제안은 어느 쪽을 골라도 농구화가 나와요", () => {
     setRandom(seeded(21));
     const c = pro("shoe", 80);
