@@ -1,6 +1,7 @@
 import { ATTR_KEYS, POS, POS_KEYS } from "../core/data";
 import { ATTR_RANGE } from "../player/condition";
 import { evalOvr } from "../player/ratings";
+import { starNeed } from "../player/star";
 import { LEAGUES } from "../world/leagues";
 import { PLAYOFF_SPOTS, seasonStandings } from "../world/standings";
 import { addNews, cheer } from "../career/log";
@@ -11,7 +12,7 @@ import type { AttrKey, AwardEntry, AwardKey, Career, LeagueKey, MilitaryKind, Po
 /**
  * 업적. 대부분 커리어 기록(시즌 기록, 수상, 드래프트, 국가대표, 기부, 산 것)으로 판정해요.
  * 기록에 남지 않는 것만 따로 세요: 연봉 인상 성공(c.raises), 클러치 성공(c.clutchWins)과 연속 기록(c.clutchStreak), 결승 클러치 성공(c.finalClutchWins),
- * 라이벌전 승리(c.rivalWins), 워크온 입학·주장 완장(c.milestones).
+ * 라이벌전 승리(c.rivalWins), 워크온 입학·주장 완장·시그니처 농구화(c.milestones), 스타성(c.star)과 시그니처 세리머니(c.perks.celebration).
  * '역대 랭킹' 업적은 엔진이 판정하지 않아요. 은퇴 기록을 온라인 랭킹에 올리고 받은 순위로 rankAchievements가 정해요.
  * 업적은 브라우저마다 한 번만 따요. 브라우저에서 이미 딴 업적은 새 커리어에서 조건을 채워도 다시 뜨지 않아요.
  * 커리어마다 처음 딴 업적은 c.achv에 남고, 브라우저에서 딴 업적과 누적 기록은 storage.ts가 모아 둬요(setBrowserRecord).
@@ -19,13 +20,14 @@ import type { AttrKey, AwardEntry, AwardKey, Career, LeagueKey, MilitaryKind, Po
  * 업적 창은 따기 전에는 이름과 힌트(hint)만, 딴 뒤에는 조건(desc)까지 보여줘요.
  */
 
-export type AchievementGroup = "school" | "team" | "award" | "clutch" | "ability" | "path" | "life" | "military" | "rank" | "lifetime";
+export type AchievementGroup = "school" | "team" | "award" | "clutch" | "star" | "ability" | "path" | "life" | "military" | "rank" | "lifetime";
 
 export const ACHIEVEMENT_GROUPS: Record<AchievementGroup, string> = {
   school: "고교·대학",
   team: "팀·우승",
   award: "개인상·기록",
   clutch: "클러치",
+  star: "스타성",
   ability: "능력치",
   path: "드래프트·진로",
   life: "국가대표·커리어",
@@ -95,6 +97,11 @@ export interface Achievement {
 }
 
 const PRO_LEAGUES: LeagueKey[] = ["nba", "euro", "gleague", "kbl"];
+
+/** 스타성 업적 문턱: 인기 선수(예능 제안), 슈퍼스타(시그니처 농구화 제안), 아이콘 */
+const STAR_POPULAR = starNeed("variety");
+const STAR_SUPER = starNeed("shoe");
+const STAR_ICON = 90;
 
 const champ = (h: SeasonRecord) => h.pro && h.result === "리그 우승";
 const isMvp = (v: View, h: SeasonRecord) => h.pro && v.mvp.has(h.year);
@@ -442,6 +449,27 @@ export const ACHIEVEMENTS: Achievement[] = [
     desc: `한 커리어에서 결승 클러치(우승·금메달이 걸린 마지막 플레이) ${FINAL_CLUTCH}번 성공`, hint: "우승이 걸린 마지막 공은 언제나 내 몫",
     group: "clutch",
     test: (v) => v.c.finalClutchWins >= FINAL_CLUTCH,
+  },
+
+  // 스타성: 스타성은 시즌마다 식으니 그 수치에 닿은 순간 따요.
+  { id: "star_rising", name: "떠오르는 별", desc: `스타성 ${STAR_POPULAR} 이상`, hint: "팬들이 내 이름을 외우기 시작해요", group: "star", test: (v) => v.c.star >= STAR_POPULAR },
+  { id: "superstar", name: "슈퍼스타", desc: `스타성 ${STAR_SUPER} 이상`, hint: "어딜 가도 사인 요청이 쏟아질 만큼", group: "star", test: (v) => v.c.star >= STAR_SUPER },
+  { id: "star_icon", name: "아이콘", desc: `스타성 ${STAR_ICON} 이상`, hint: "농구를 모르는 사람도 내 이름을 알아요", group: "star", test: (v) => v.c.star >= STAR_ICON },
+  {
+    id: "signature_cele",
+    name: "나만의 세리머니",
+    desc: "시그니처 세리머니 정하기",
+    hint: "득점 뒤 팬들이 따라 하는 동작이 있다면",
+    group: "star",
+    test: (v) => !!v.c.perks.celebration,
+  },
+  {
+    id: "signature_shoe",
+    name: "내 이름의 농구화",
+    desc: "시그니처 농구화 출시",
+    hint: "스포츠 브랜드가 먼저 찾아올 만큼 인기를 모으세요",
+    group: "star",
+    test: (v) => v.c.milestones.includes("shoe"),
   },
 
   // 능력치

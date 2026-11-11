@@ -155,6 +155,9 @@ function normalize(c: Career): Career {
   c.rivalWins ??= 0;
   // 스타성이 생기기 전의 저장이면 지금까지 받은 상과 시즌 기록으로 어림해요.
   if (typeof c.star !== "number") c.star = estimateStar(c);
+  // 시그니처 농구화 업적이 생기기 전에 이미 농구화를 낸 저장이면(제안을 받아 골랐으면) 출시로 쳐요.
+  if (c.events.shoe !== undefined && !c.milestones.includes("shoe") && !c.queue.some((q) => "title" in q && q.title === "시그니처 농구화 제안"))
+    c.milestones.push("shoe");
   // 이 기능 전의 저장이면, 이미 NBA를 밟았는지 기록에서 찾아 입성 축하를 건너뛰어요. 트레이드로 팀을 옮길 때 다시 뜨지 않게요.
   if (!c.milestones) c.milestones = c.team?.lg === "nba" || c.hist.some((h) => h.lg === "nba") ? ["nba"] : [];
   c.draftShow ??= null;

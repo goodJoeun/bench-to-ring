@@ -2,7 +2,7 @@ import { ATTR_KEYS, POS, SHORT } from "../core/data";
 import { LEAGUES } from "../world/leagues";
 import { retire } from "../career/career";
 import { checkAchievements } from "../legacy/achievements";
-import { addAttr, addHealth, clampTrust } from "../player/condition";
+import { addAttr, addHealth, clampTrust, randomGrowable } from "../player/condition";
 import { CLUTCH_STAR, FINAL_CLUTCH_STAR, addStar } from "../player/star";
 import { currentDecision, negotiable, negotiation, resolveQueue } from "./decisions";
 import { runDraft } from "../world/draft";
@@ -11,7 +11,7 @@ import { applyMilitary } from "../world/military";
 import { runNationalTeam, settleNatFinal } from "../world/national";
 import { boardScore, clutchFinal, finalsPrize } from "./events";
 import { settleLeagueFinal } from "./season";
-import { chance, shuffle } from "../core/random";
+import { chance } from "../core/random";
 import type { Action, Boost, Career, ProLeagueKey, Team } from "../core/types";
 import { clamp, josa, money, ro, round2, roundSalary } from "../core/util";
 
@@ -21,9 +21,10 @@ function applyBoost(c: Career, b: Boost, tag: string): void {
   let msg = b.msg ?? "";
   if (b.attrs) for (const k of ATTR_KEYS) if (b.attrs[k]) addAttr(p.attrs, k, b.attrs[k] ?? 0);
   if (b.rand && b.amt) {
-    const keys = shuffle(ATTR_KEYS).slice(0, b.rand);
+    // 이미 99인 능력치는 빼고 골라요.
+    const keys = randomGrowable(p.attrs, b.rand);
     for (const k of keys) addAttr(p.attrs, k, b.amt);
-    msg += ` ${keys.map((k) => SHORT[k]).join("·")} +${b.amt}`;
+    if (keys.length) msg += ` ${keys.map((k) => SHORT[k]).join("·")} +${b.amt}`;
   }
   if (b.health) addHealth(c, b.health);
   if (b.money) c.earnings = round2(Math.max(0, c.earnings + b.money));

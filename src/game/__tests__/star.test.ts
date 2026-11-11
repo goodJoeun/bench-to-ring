@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { STAR_UNLOCKS, applyAction, createCareer, generateCandidates, resetRandom, seeded, setRandom, starTier, type Career, type SeasonRecord } from "@/game";
+import { checkAchievements } from "@/game/legacy/achievements";
+import { randomGrowable } from "@/game/player/condition";
+import { buy } from "@/game/economy/shop";
 import { describeBoost, lifeEvent } from "@/game/season/events";
 import { giveAward } from "@/game/career/log";
 import { parseCareer } from "@/game/career/storage";
@@ -124,5 +127,55 @@ describe("스타성", () => {
     const loaded = parseCareer(JSON.stringify(raw))!;
     expect(loaded.star).toBe(estimateStar(c));
     expect(loaded.star).toBeGreaterThan(START_STAR);
+  });
+
+  it("스타성 업적: 문턱에 닿으면 떠오르는 별·슈퍼스타·아이콘을, 세리머니와 농구화로도 따요", () => {
+    const c = pro("achv", 29);
+    checkAchievements(c);
+    expect(c.achv).not.toContain("star_rising");
+    c.star = 76;
+    checkAchievements(c);
+    expect(c.achv).toEqual(expect.arrayContaining(["star_rising", "superstar"]));
+    expect(c.achv).not.toContain("star_icon");
+    c.star = 90;
+    c.perks.celebration = "쉿! 손가락";
+    c.milestones.push("shoe");
+    checkAchievements(c);
+    expect(c.achv).toEqual(expect.arrayContaining(["star_icon", "signature_cele", "signature_shoe"]));
+  });
+
+  it("시그니처 농구화 제안은 어느 쪽을 골라도 농구화가 나와요", () => {
+    setRandom(seeded(21));
+    const c = pro("shoe", 80);
+    let d = lifeEvent(c);
+    for (let i = 0; i < 300 && d?.title !== "시그니처 농구화 제안"; i++) {
+      c.events = {};
+      d = lifeEvent(c);
+    }
+    expect(d?.title).toBe("시그니처 농구화 제안");
+    for (const o of d!.opts) expect(o.act.k === "boost" && o.act.mark).toBe("shoe");
+  });
+});
+
+describe("무작위 능력치 +1", () => {
+  it("이미 99인 능력치는 고르지 않아요", () => {
+    setRandom(seeded(3));
+    const c = pro("max", 10);
+    c.p.attrs = { sht: 99, hdl: 99, pas: 99, def: 99, iq: 70, ath: 98.6 };
+    for (let i = 0; i < 30; i++) expect(randomGrowable(c.p.attrs, 2)).toEqual(["iq"]);
+    applyAction(c, { k: "boost", rand: 2, amt: 1, msg: "캠프를 마쳤어요." });
+    expect(c.p.attrs).toMatchObject({ sht: 99, hdl: 99, pas: 99, def: 99, iq: 71 });
+    expect(c.news[0].m).toBe("캠프를 마쳤어요. BQ +1");
+  });
+
+  it("모든 능력치가 99면 무작위 능력치 상품은 살 수 없어요", () => {
+    const c = pro("shop", 10);
+    c.p.attrs = { sht: 99, hdl: 99, pas: 99, def: 99, iq: 99, ath: 99 };
+    c.earnings = 100;
+    c.shop = { year: c.year, keys: ["bootcamp"], bought: [] };
+    expect(buy(c, "bootcamp")).toBe(false);
+    c.p.attrs.iq = 80;
+    expect(buy(c, "bootcamp")).toBe(true);
+    expect(c.p.attrs.iq).toBe(81);
   });
 });

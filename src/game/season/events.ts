@@ -708,8 +708,8 @@ const EVENTS: LifeEvent[] = [
         title: "시그니처 농구화 제안",
         body: "스포츠 브랜드가 내 이름을 단 농구화를 만들고 싶대요. 슈퍼스타만 받는 제안이에요. 디자인 회의에 자주 나와야 해요.",
         opts: [
-          opt("디자인까지 참여한다", { money: pay, health: -3, star: 4, msg: "내 이름이 새겨진 농구화가 나왔어요." }, "시그니처"),
-          opt("이름만 빌려준다", { money: roundSalary(pay * 0.4), star: 1, msg: "농구화는 나왔지만 디자인은 조금 아쉬워요." }),
+          opt("디자인까지 참여한다", { money: pay, health: -3, star: 4, mark: "shoe", msg: "내 이름이 새겨진 농구화가 나왔어요." }, "시그니처"),
+          opt("이름만 빌려준다", { money: roundSalary(pay * 0.4), star: 1, mark: "shoe", msg: "농구화는 나왔지만 디자인은 조금 아쉬워요." }),
         ],
       };
     },
