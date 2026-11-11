@@ -2,6 +2,7 @@ import { clampAttr } from "../player/condition";
 import { ATTR_KEYS } from "../core/data";
 import { ovrOf } from "../player/ratings";
 import { refreshShop } from "../economy/shop";
+import { estimateStar } from "../player/star";
 import { EMPTY_LIFETIME, LIFETIME_PREFIX, addLifetime, fromCareer, subLifetime, type Lifetime } from "../legacy/lifetime";
 import type { BrowserRecord, LifeView } from "../legacy/achievements";
 import type { Action, AttrKey, Attrs, Boost, Career, CareerSummary, PosKey } from "../core/types";
@@ -152,6 +153,8 @@ function normalize(c: Career): Career {
   c.clutchStreak ??= 0;
   c.finalClutchWins ??= 0;
   c.rivalWins ??= 0;
+  // 스타성이 생기기 전의 저장이면 지금까지 받은 상과 시즌 기록으로 어림해요.
+  if (typeof c.star !== "number") c.star = estimateStar(c);
   // 이 기능 전의 저장이면, 이미 NBA를 밟았는지 기록에서 찾아 입성 축하를 건너뛰어요. 트레이드로 팀을 옮길 때 다시 뜨지 않게요.
   if (!c.milestones) c.milestones = c.team?.lg === "nba" || c.hist.some((h) => h.lg === "nba") ? ["nba"] : [];
   c.draftShow ??= null;

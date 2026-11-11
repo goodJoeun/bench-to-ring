@@ -3,6 +3,7 @@ import { LEAGUES } from "../world/leagues";
 import { retire } from "../career/career";
 import { checkAchievements } from "../legacy/achievements";
 import { addAttr, addHealth, clampTrust } from "../player/condition";
+import { CLUTCH_STAR, FINAL_CLUTCH_STAR, addStar } from "../player/star";
 import { currentDecision, negotiable, negotiation, resolveQueue } from "./decisions";
 import { runDraft } from "../world/draft";
 import { addNews, decisionTag, joinTeam, leaveTeam, setTeam, signingCheer } from "../career/log";
@@ -27,6 +28,8 @@ function applyBoost(c: Career, b: Boost, tag: string): void {
   if (b.health) addHealth(c, b.health);
   if (b.money) c.earnings = round2(Math.max(0, c.earnings + b.money));
   if (b.trust) c.trust = clampTrust(c.trust + b.trust);
+  if (b.celebration) c.perks.celebration = b.celebration;
+  const starUp = b.star ? addStar(c, b.star) : null;
   if (b.agency) c.perks.agency = true;
   if (b.trainer) c.perks.trainer = b.trainer;
   if (b.mark && !c.milestones.includes(b.mark)) c.milestones.push(b.mark);
@@ -43,6 +46,7 @@ function applyBoost(c: Career, b: Boost, tag: string): void {
   }
   // 최고 오버롤은 시즌을 마칠 때만 기록해요(시즌 기록의 오버롤과 맞추려고요).
   if (msg) addNews(c, tag, b.t ?? "good", msg.trim());
+  if (starUp) addNews(c, tag, "big", starUp);
 }
 
 /** 계약서에 서명해요. 같은 팀이면 재계약이에요. */
@@ -179,8 +183,13 @@ export function applyAction(c: Career, a: Action): void {
 }
 
 /** 클러치 결과를 세요: 승리 수와 연속 기록. 동점을 만들고 연장에서 졌으면 실패로 쳐요. */
-function countClutch(c: Career, win: boolean): void {
-  if (win) c.clutchWins++;
+function countClutch(c: Career, win: boolean, finals = false): void {
+  if (win) {
+    c.clutchWins++;
+    // 클러치 성공은 하이라이트로 돌아 스타성이 올라요. 결승 클러치는 더 크게 올라요.
+    const up = addStar(c, finals ? FINAL_CLUTCH_STAR : CLUTCH_STAR);
+    if (up) addNews(c, decisionTag(c), "big", up);
+  }
   c.clutchStreak = win ? Math.max(0, c.clutchStreak) + 1 : Math.min(0, c.clutchStreak) - 1;
 }
 
@@ -199,7 +208,7 @@ function applyFinalClutch(c: Career, a: Extract<Action, { k: "clutch" }>, ok: bo
     if (c.run && board) c.run.next = { ...board, ...end };
   }
   if (ok) addAttr(c.p.attrs, a.attr, 1);
-  countClutch(c, win);
+  countClutch(c, win, true);
   if (win) c.finalClutchWins++;
   const [prize, second] = board ? finalsPrize(board) : ["우승", "준우승"];
   const name = board?.finals ?? "결승";

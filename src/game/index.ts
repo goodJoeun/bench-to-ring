@@ -133,6 +133,15 @@ export {
 } from "./player/ratings";
 export { fmtNum, josa, money, r1, ro, stripYear } from "./core/util";
 export {
+  STAR_RANGE,
+  STAR_TIERS,
+  STAR_UNLOCKS,
+  hasStar,
+  starNeed,
+  starTier,
+  type StarUnlockKey,
+} from "./player/star";
+export {
   BONUS_CAP,
   PAIR_FLOOR,
   PAIR_GAP,

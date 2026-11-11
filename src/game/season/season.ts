@@ -5,6 +5,7 @@ import { HEALTH_RANGE, addAttr, addHealth, clampTrust } from "../player/conditio
 import { ATTRS, POS, ROLE_RANK } from "../core/data";
 import { currentDecision } from "./decisions";
 import { FINAL_CLUTCH_CHANCE, bigGameDecision, clutchDecision, drawClutchLead, injuryDecision, seasonEvent } from "./events";
+import { addStar, seasonStar } from "../player/star";
 import { LEAGUES, SCORING_TITLE, leagueTeams } from "../world/leagues";
 import { FINAL_SCORE, finalScore, gameScore, makeLiveGame } from "./live";
 import { ALL_DEF_TIERS, ALL_LEAGUE_TIERS, awardName, conferenceFinalsMvpName, nbaConference } from "../world/awards";
@@ -610,6 +611,8 @@ function finishSeason(c: Career): SeasonRecord {
   const tag = seasonTag(run);
   const ov0 = Math.round(run.ovr0);
   const inv = investPerks(run.inv);
+  /** 시즌을 시작할 때의 스타성. 시즌 결산에서 이만큼을 기준으로 관심이 식어요. */
+  const star0 = c.star;
   let rec: SeasonRecord;
   let min = 0;
   let rating = 6;
@@ -649,6 +652,9 @@ function finishSeason(c: Career): SeasonRecord {
   // 시즌이 끝난 여름의 국가대표 대회. 성장까지 반영한 오버롤로 발탁해요.
   const call = nationalCallUp(c, rec.ovr1, played, yr);
   c.peakOvr = Math.max(c.peakOvr, rec.ovr1);
+  // 스타성: 지난 관심이 조금 식고 이번 시즌 활약이 더해져요. 상과 클러치로 오른 몫은 이미 더했어요.
+  const starUp = addStar(c, seasonStar(star0, rec));
+  if (starUp) addNews(c, tag, "big", starUp);
   c.trust = c.team ? clampTrust((rating - 6.3) * 1.4 + inv.trust) : 0;
   // 돈은 0.01억 단위로 맞춰 둬요. 소수 오차로 '700만으로 500만 + 200만'을 못 고르는 일이 없게요.
   c.paidSalary = c.contract?.salary ?? 0;

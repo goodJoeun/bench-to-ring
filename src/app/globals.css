@@ -1048,6 +1048,100 @@ main.grid {
 .spec-chip b {
   color: var(--ink);
 }
+/* 스타성: 단계, 시그니처 세리머니, 막대(눈금은 제안이 열리는 수치), 제안 목록 */
+.star {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.star-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.star-tier {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--gold);
+}
+.star-cele {
+  margin-left: auto;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.star-cele b {
+  color: var(--ink);
+}
+.star-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 8px;
+}
+.star-row .v {
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-size: 17px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.star-track {
+  position: relative;
+  height: 10px;
+  border-radius: 5px;
+}
+.star-fill {
+  background: linear-gradient(90deg, #e8b53c, #ffd25a);
+}
+.star-tick {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--muted);
+  opacity: 0.55;
+}
+.star-tick[data-on] {
+  background: var(--panel);
+  opacity: 0.9;
+}
+.star-unlocks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.star-unlocks li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  color: var(--muted);
+  background: var(--panel2);
+  border: 1px dashed var(--line);
+}
+.star-unlocks li b {
+  font-family: var(--f-num);
+  font-size: 12.5px;
+}
+.star-unlocks li[data-on] {
+  color: var(--gold);
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  background: color-mix(in srgb, var(--gold) 12%, var(--panel2));
+  font-weight: 700;
+}
+.star-unlocks li[data-on] b {
+  color: var(--ink);
+  font-family: inherit;
+}
 .phys {
   display: flex;
   flex-wrap: wrap;

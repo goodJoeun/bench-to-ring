@@ -520,6 +520,10 @@ export interface Boost {
   injure?: number;
   /** 업적에 쓰는 순간을 c.milestones에 남겨요 (예: "captain" 주장 완장) */
   mark?: string;
+  /** 스타성 변화 (player/star.ts) */
+  star?: number;
+  /** 시그니처 세리머니로 정해요. */
+  celebration?: string;
   msg?: string;
   /** 소식 종류. 기본은 good */
   t?: NewsType;
@@ -529,6 +533,8 @@ export interface Boost {
 export interface Perks {
   agency?: boolean;
   trainer?: AttrKey;
+  /** 시그니처 세리머니 이름 */
+  celebration?: string;
 }
 
 export interface DecisionOption {
@@ -758,6 +764,11 @@ export interface Career {
   health: number;
   /** 코치 신뢰 (-3~4). 출전 시간에 더해져요. */
   trust: number;
+  /**
+   * 스타성 (0~100). 팬과 미디어의 관심이에요. 활약·수상·클러치·인터뷰·세리머니·미담·팬 서비스로 오르고 시즌마다 조금씩 식어요.
+   * 일정 수치를 넘으면 예능·광고·유니폼 수익·시그니처 농구화 제안이 와요 (player/star.ts).
+   */
+  star: number;
   focus: FocusKey;
   team: CurrentTeam | null;
   contract: Contract | null;
