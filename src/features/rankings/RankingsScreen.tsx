@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { POS, POS_KEYS, bestFive, fmtNum, type CareerSummary, type PosKey } from "@/game";
 import { gameActions, useGame } from "@/shared/store/game-store";
-import { fetchBoard, fetchBoardDays, fetchMine, fetchStatBoard, pendingIds } from "@/shared/leaderboard/client";
+import { pendingIds } from "@/shared/leaderboard/client";
+import { boardDaysQuery, boardQuery, mineQuery, statQuery } from "@/shared/leaderboard/queries";
+import { loadState } from "@/shared/query/load-state";
 import { daysBack, kstDay } from "@/shared/leaderboard/days";
-import { STAT_KEYS, type Board, type BoardCount, type BoardDay, type BoardDays, type MyRanks, type StatBoard, type StatKey } from "@/shared/leaderboard/types";
+import { STAT_KEYS, type BoardCount, type BoardDay, type BoardDays, type StatKey } from "@/shared/leaderboard/types";
 import { Loading } from "@/shared/ui/ui";
 import { BestFiveCourt } from "./BestFiveCourt";
 import { MyRecords } from "./MyRecords";
@@ -102,78 +105,27 @@ function DayCount({ counts, day, today }: { counts: BoardDays | null | undefined
   );
 }
 
-/** 날짜별 랭킹 등록 수. 화면을 열 때 한 번 불러와요. null은 불러오지 못한 것이에요. */
-function useBoardDays() {
-  const [counts, setCounts] = useState<BoardDays | null | undefined>(undefined);
-  useEffect(() => {
-    let live = true;
-    void fetchBoardDays().then((c) => {
-      if (live) setCounts(c);
-    });
-    return () => {
-      live = false;
-    };
-  }, []);
-  return counts;
+/** 날짜별 랭킹 등록 수. null은 불러오지 못한 것, undefined는 불러오는 중이에요. */
+function useBoardDays(): BoardDays | null | undefined {
+  const q = useQuery(boardDaysQuery());
+  return q.isError ? null : q.data;
 }
 
 /** 빈 순위표 문구에 쓰는 날짜 이름 */
 const dayName = (day: BoardDay, today: string) =>
   day === null ? "" : day === today ? "오늘 " : `${Number(day.slice(5, 7))}월 ${Number(day.slice(8))}일에 `;
 
-/**
- * 순위표는 그 순위표를 쓰는 탭을 열 때(`needed`) 처음 불러와요.
- * 한 번 불러온 순위표(날짜·포지션마다)는 이 화면에 있는 동안 다시 부르지 않아요. null은 불러오지 못한 것이에요.
- */
-function useBoard(pos: PosFilter, day: BoardDay, needed: boolean) {
-  const [boards, setBoards] = useState<Record<string, Board | null>>({});
-  const key = `${day ?? "all"}:${pos}`;
-  const loaded = key in boards;
-  useEffect(() => {
-    if (loaded || !needed) return;
-    let live = true;
-    void fetchBoard(undefined, pos === "all" ? null : pos, day).then((b) => {
-      if (live) setBoards((m) => ({ ...m, [key]: b }));
-    });
-    return () => {
-      live = false;
-    };
-  }, [key, pos, day, loaded, needed]);
-  const retry = () =>
-    setBoards((m) => {
-      const next = { ...m };
-      delete next[key];
-      return next;
-    });
-  return { board: boards[key], loaded, retry };
-}
+/** 순위표는 그 순위표를 쓰는 탭을 열 때(`needed`) 처음 불러와요. 날짜·포지션마다 따로 기억해요. */
+const useBoard = (pos: PosFilter, day: BoardDay, needed: boolean) =>
+  loadState(useQuery({ ...boardQuery(day, pos === "all" ? null : pos), enabled: needed }));
 
 /**
  * 스탯 랭킹 탭: 스탯을 고르면 그 스탯의 프로 통산 상위 50명을 불러와요. 날짜를 고르면 그날 올라온 기록끼리예요.
- * 한 번 불러온 스탯(날짜마다)은 이 화면에 있는 동안 다시 부르지 않아요. null은 불러오지 못한 것이에요.
+ * 불러온 스탯은 날짜·스탯마다 기억해 두고, 다시 고르면 바로 보여줘요.
  */
 function StatsPanel({ mine, day, today }: { mine: Set<string>; day: BoardDay; today: string }) {
   const [stat, setStat] = useState<StatKey>("pts");
-  const [boards, setBoards] = useState<Record<string, StatBoard | null>>({});
-  const key = `${day ?? "all"}:${stat}`;
-  const loaded = key in boards;
-  useEffect(() => {
-    if (loaded) return;
-    let live = true;
-    void fetchStatBoard(stat, undefined, day).then((b) => {
-      if (live) setBoards((m) => ({ ...m, [key]: b }));
-    });
-    return () => {
-      live = false;
-    };
-  }, [key, stat, day, loaded]);
-  const board = boards[key];
-  const retry = () =>
-    setBoards((m) => {
-      const next = { ...m };
-      delete next[key];
-      return next;
-    });
+  const { data: board, loading, retry } = loadState(useQuery(statQuery(day, stat)));
 
   return (
     <>
@@ -184,7 +136,7 @@ function StatsPanel({ mine, day, today }: { mine: Set<string>; day: BoardDay; to
           </button>
         ))}
       </div>
-      {!loaded ? (
+      {loading ? (
         <Loading label={`${STAT_LABELS[stat].name} 랭킹을 불러오고 있어요`} rows={8} />
       ) : !board ? (
         <div className="row">
@@ -210,19 +162,14 @@ function StatsPanel({ mine, day, today }: { mine: Set<string>; day: BoardDay; to
   );
 }
 
+/** 이 브라우저가 올린 기록의 순위. null은 올린 적이 없거나 불러오지 못한 것, undefined는 불러오는 중이에요. */
 function useMine() {
-  const [mine, setMine] = useState<MyRanks | null | undefined>(undefined);
+  const q = useQuery(mineQuery());
+  // 온라인 순위로 역대 랭킹 업적을 따요.
   useEffect(() => {
-    let live = true;
-    void fetchMine().then((m) => {
-      if (m) gameActions.claimRanks(m.careers);
-      if (live) setMine(m);
-    });
-    return () => {
-      live = false;
-    };
-  }, []);
-  return mine;
+    if (q.data) gameActions.claimRanks(q.data.careers);
+  }, [q.data]);
+  return q.isError ? null : q.data;
 }
 
 export function RankingsScreen() {
@@ -255,7 +202,6 @@ export function RankingsScreen() {
 
   // 베스트 5와 랭킹 100은 전체 순위표에, 포지션별 랭킹은 고른 포지션 순위표에 들어 있어요.
   const shown = tab === "position" ? byPos : all;
-  const failed = shown.loaded && !shown.board;
 
   return (
     <>
@@ -330,9 +276,9 @@ export function RankingsScreen() {
                   ))}
                 </div>
               )}
-              {!shown.loaded ? (
+              {shown.loading ? (
                 <Loading label="순위표를 불러오고 있어요" rows={tab === "best5" ? 5 : 8} />
-              ) : failed ? (
+              ) : !shown.data ? (
                 <div className="row">
                   <p className="empty" role="status">
                     온라인 랭킹을 불러오지 못했어요. 잠시 뒤에 다시 해 주세요.
@@ -341,7 +287,7 @@ export function RankingsScreen() {
                     다시 불러오기
                   </button>
                 </div>
-              ) : !shown.board!.top.length ? (
+              ) : !shown.data.top.length ? (
                 <div className="rk-empty">
                   <b>
                     {tab === "position"
@@ -353,9 +299,9 @@ export function RankingsScreen() {
                   <span>프로 무대를 밟은 선수가 은퇴하면 첫 기록이 돼요.</span>
                 </div>
               ) : tab === "best5" ? (
-                <BestFiveCourt best5={shown.board!.best5} mine={myIds} />
+                <BestFiveCourt best5={shown.data.best5} mine={myIds} />
               ) : (
-                <RankingList rows={shown.board!.top} byPos={tab === "position"} mine={myIds} />
+                <RankingList rows={shown.data.top} byPos={tab === "position"} mine={myIds} />
               )}
             </>
           )}

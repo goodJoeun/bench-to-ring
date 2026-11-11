@@ -13,6 +13,7 @@ import "@fontsource/saira-condensed/700.css";
 import "./fonts/fonts.css";
 import "./globals.css";
 import { THEME_BOOT } from "@/shared/lib/theme";
+import { QueryProvider } from "@/shared/query/QueryProvider";
 import { SITE_DESCRIPTION, SITE_KEYWORDS, SITE_NAME, SITE_TITLE, SITE_URL } from "@/shared/lib/site";
 
 export const metadata: Metadata = {
@@ -50,7 +51,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="ko" suppressHydrationWarning>
       <body suppressHydrationWarning>
-        {children}
+        <QueryProvider>{children}</QueryProvider>
         {/* 저장된 화면 테마를 하이드레이션 전에 적용해요. html의 data-theme 차이는 suppressHydrationWarning이 넘겨요. */}
         <Script id="theme-boot" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
         {/* Vercel 웹 분석: 페이지 방문 수를 세요. Vercel에 배포된 사이트에서만 데이터를 보내요. */}
