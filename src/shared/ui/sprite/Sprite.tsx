@@ -317,8 +317,9 @@ function drawBeard(ctx: Ctx, look: Look): void {
 /**
  * 표정. 기본은 웃는 얼굴(smile)이고, 표지 그림이 단계마다 바꿔 써요.
  * 시무룩(glum) · 긴장(nervous) · 집중(focus) · 감격(moved, 눈물) · 활짝(beam) · 입맞춤(kiss, 눈 감고 입술 모으기) · 비웃음(smirk)
+ * · 안간힘(strain, 덩크처럼 힘을 쏟을 때: 잔뜩 찌푸린 눈썹과 가늘게 뜬 눈, 악문 이)
  */
-export type Mood = "smile" | "glum" | "nervous" | "focus" | "moved" | "beam" | "kiss" | "smirk";
+export type Mood = "smile" | "glum" | "nervous" | "focus" | "moved" | "beam" | "kiss" | "smirk" | "strain";
 
 function drawFace(ctx: Ctx, look: Look, mood: Mood): void {
   const { kind, skin, hair } = look;
@@ -336,6 +337,11 @@ function drawFace(ctx: Ctx, look: Look, mood: Mood): void {
       c.quadraticCurveTo(70, by, 75, by - 4);
       c.moveTo(85, by - 4);
       c.quadraticCurveTo(90, by, 97, by + 1);
+    } else if (mood === "strain") {
+      c.moveTo(62, by - 5);
+      c.quadraticCurveTo(70, by - 3, 76, by + 4);
+      c.moveTo(84, by + 4);
+      c.quadraticCurveTo(90, by - 3, 98, by - 5);
     } else if (mood === "focus" || mood === "smirk") {
       c.moveTo(63, by - 3);
       c.quadraticCurveTo(70, by - 2, 75, by + 2);
@@ -372,6 +378,15 @@ function drawFace(ctx: Ctx, look: Look, mood: Mood): void {
       stroke(ctx, "#1A1210", 2.2, (c) => {
         c.moveTo(ex - 5.6, 57.2);
         c.lineTo(ex + 5.6, 57.2);
+      });
+    } else if (mood === "strain") {
+      // 가늘게 뜬 눈: 바깥쪽이 올라가고 안쪽이 내려온 눈꺼풀이 눈을 반쯤 덮어요.
+      const [outer, inner] = [ex + side * 5.8, ex - side * 5.8];
+      ellipse(ctx, ex, 58.8, 4.6, 1.7, "#FFFFFF");
+      ellipse(ctx, ex, 59, 1.9, 1.5, "#0E0A08");
+      stroke(ctx, "#1A1210", 2.6, (c) => {
+        c.moveTo(outer, 55.4);
+        c.lineTo(inner, 58.2);
       });
     } else if (mood === "nervous") {
       // 동그랗게 뜬 눈에 작은 눈동자
@@ -484,6 +499,24 @@ function drawMood(ctx: Ctx, mood: Mood): void {
       c.moveTo(74.5, 75.5);
       c.lineTo(85.5, 75.5);
     });
+  } else if (mood === "strain") {
+    // 악문 이: 벌린 입술 사이로 윗니와 아랫니가 맞물려 보여요.
+    fill(ctx, "#7A2A26", (c) => {
+      c.moveTo(70, 72);
+      c.quadraticCurveTo(80, 69.5, 90, 72);
+      c.lineTo(89, 79);
+      c.quadraticCurveTo(80, 81.5, 71, 79);
+      c.closePath();
+    });
+    roundRect(ctx, 72, 72.6, 16, 5.8, 1.6, "#FFFFFF");
+    stroke(ctx, "#B9AFA8", 1, (c) => {
+      c.moveTo(72.5, 75.5);
+      c.lineTo(87.5, 75.5);
+      for (const tx of [76, 80, 84]) {
+        c.moveTo(tx, 72.8);
+        c.lineTo(tx, 78.2);
+      }
+    });
   } else if (mood === "smirk") {
     // 한쪽 입꼬리만 올린 비웃음
     stroke(ctx, lip, 2.2, (c) => {
@@ -500,6 +533,21 @@ function drawMood(ctx: Ctx, mood: Mood): void {
       });
       ellipse(ctx, x1, 76, 2.6, 3.2, "#7CC8F2");
     }
+  }
+  if (mood === "strain") {
+    // 힘주느라 볼에 그은 주름과 이마의 땀방울
+    stroke(ctx, "#A8574A", 1.6, (c) => {
+      c.moveTo(62, 66);
+      c.lineTo(66, 70);
+      c.moveTo(98, 66);
+      c.lineTo(94, 70);
+    });
+    fill(ctx, "#8FD3F5", (c) => {
+      c.moveTo(101, 30);
+      c.quadraticCurveTo(105.5, 37, 101, 39);
+      c.quadraticCurveTo(96.5, 37, 101, 30);
+      c.closePath();
+    });
   }
   if (mood === "nervous") {
     // 관자놀이의 식은땀

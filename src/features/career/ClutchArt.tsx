@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useEffectEvent } from "react";
-import { CLUTCH_SCENES, boardScore, clutchScene, finalsPrize, type ClutchBoard } from "@/game";
+import { CLUTCH_SCENES, boardScore, clutchScene, finalsPrize, type ClutchBoard, type ClutchMove } from "@/game";
 import { reducedMotion } from "@/shared/lib/hooks";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
+import { ClutchMoveArt, MOVE_INFO, type ClutchCast } from "./ClutchMoveArt";
 
 /**
  * 클러치 결정 위에 띄우는 전광판: 4쿼터 남은 시간, 우리 팀과 상대의 엠블럼·이름·점수, 상황(동점 · 2점 차 열세 · 2점 차 리드).
@@ -147,8 +148,9 @@ export function ClutchFlash({ board, onDone }: { board?: ClutchBoard; onDone: ()
   );
 }
 
-/** 결과 이펙트를 보여주는 시간(ms). 결승 클러치는 우승 세리머니라 더 길어요. */
+/** 결과 이펙트를 보여주는 시간(ms). 결승 클러치는 우승 세리머니라, 플레이 장면이 있는 성공은 장면을 먼저 보여줘서 더 길어요. */
 const RESULT_MS = 1900;
+const MOVE_RESULT_MS = 2700;
 const FINALS_RESULT_MS = 3000;
 
 const CONFETTI = ["#ffd25a", "#ff5a4a", "#4fb3e8", "#7bd389", "#ffffff"];
@@ -163,6 +165,11 @@ export interface ClutchResultInfo {
   ot?: boolean;
   finals?: string;
   gold?: boolean;
+  /** 고른 플레이의 장면과 이름. 결승이 아닌 클러치 성공이면 그 장면을 그려요. */
+  move?: ClutchMove;
+  play?: string;
+  /** 상대 유니폼 색 (장면의 상대 선수) */
+  oppColor?: string;
 }
 
 /**
@@ -170,14 +177,17 @@ export interface ClutchResultInfo {
  * 실패면 화면이 어두워지고 금이 가며 '아쉬운 실패'와 패배 점수가 떠요. 연장까지 갔으면 그렇게 알려요. 끝나면 onDone을 불러요.
  * 결승 클러치 성공은 트로피(메달)가 솟아오르고 축포가 터지는 우승 세리머니로 'CHAMPIONS!'('GOLD!')를,
  * 실패는 금 간 화면 위로 빛바랜 트로피와 '준우승'('은메달')을 보여줘요.
+ * 결승이 아닌 클러치 성공은 먼저 고른 플레이의 장면(그물을 가르는 슛, 림이 흔들리는 덩크, 노룩 패스, 블록슛 등)을 그리고,
+ * 결정적인 순간에 맞춰 'CLUTCH!'와 꽃가루가 이어져요. 장면에는 cast(내 캐릭터와 유니폼 색, 상대 유니폼 색)로 선수를 그려요.
  */
-export function ClutchResult({ result, onDone }: { result: ClutchResultInfo; onDone: () => void }) {
+export function ClutchResult({ result, cast, onDone }: { result: ClutchResultInfo; cast?: ClutchCast; onDone: () => void }) {
   const done = useEffectEvent(onDone);
-  const { win, us, them, opp, ot, finals, gold } = result;
+  const { win, us, them, opp, ot, finals, gold, play } = result;
+  const move = win && !finals && cast ? result.move : undefined;
   useEffect(() => {
-    const timer = setTimeout(() => done(), reducedMotion() ? 700 : finals ? FINALS_RESULT_MS : RESULT_MS);
+    const timer = setTimeout(() => done(), reducedMotion() ? 900 : finals ? FINALS_RESULT_MS : move ? MOVE_RESULT_MS : RESULT_MS);
     return () => clearTimeout(timer);
-  }, [finals]);
+  }, [finals, move]);
   const score = us !== undefined && them !== undefined ? `${us} : ${them}` : null;
   const prize = gold ? ["금메달", "은메달"] : ["우승", "준우승"];
   const title = finals ? (win ? (gold ? "GOLD!" : "CHAMPIONS!") : prize[1]) : win ? "CLUTCH!" : ot ? "아쉬운 연장" : "아쉬운 실패";
@@ -194,11 +204,19 @@ export function ClutchResult({ result, onDone }: { result: ClutchResultInfo; onD
         ? "동점 성공 · 연장 승리"
         : "동점 성공 · 연장 끝 패배"
       : win
-        ? "마지막 플레이 성공 · 승리"
+        ? `${play ?? "마지막 플레이 성공"} · 승리`
         : "마지막 플레이 실패 · 패배";
   const palette = finals ? GOLD_CONFETTI : CONFETTI;
   return (
-    <div className="cl-res" data-win={win || undefined} data-finals={finals ? "" : undefined} role="status" aria-live="assertive">
+    <div
+      className="cl-res"
+      data-win={win || undefined}
+      data-finals={finals ? "" : undefined}
+      data-move={move}
+      style={move ? ({ "--hit": `${MOVE_INFO[move].hit}s` } as React.CSSProperties) : undefined}
+      role="status"
+      aria-live="assertive"
+    >
       {win ? (
         <>
           <span className="cl-rays" aria-hidden="true" />
@@ -226,6 +244,7 @@ export function ClutchResult({ result, onDone }: { result: ClutchResultInfo; onD
         </svg>
       )}
       <div className="cl-res-core">
+        {move && cast && <ClutchMoveArt move={move} cast={cast} />}
         {finals && (gold ? <MedalIcon className="cl-res-trophy" /> : <TrophyIcon className="cl-res-trophy" />)}
         <b className="cl-res-t">{title}</b>
         <span className="cl-res-s">

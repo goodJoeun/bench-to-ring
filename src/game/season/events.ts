@@ -1,7 +1,7 @@
 import { SHORT } from "../core/data";
 import { pick, random, ri, rnd, shuffle } from "../core/random";
 import { ovr } from "../player/ratings";
-import type { AttrKey, Boost, Career, ClutchBoard, Decision, DecisionOption, Role, SceneKey } from "../core/types";
+import type { AttrKey, Boost, Career, ClutchBoard, ClutchMove, Decision, DecisionOption, Role, SceneKey } from "../core/types";
 import { clamp, josa, money, roundSalary } from "../core/util";
 
 /* ---------- 선택지 만들기 ---------- */
@@ -1343,6 +1343,8 @@ export interface ClutchPlay {
   play: string;
   /** 성공하면 우리가 넣는 점수. 공격은 2(3점슛·앤드원은 3), 수비는 0(트랩은 스틸 뒤 속공 2) */
   pts: number;
+  /** 성공 이펙트에 그리는 장면 */
+  move: ClutchMove;
   /** 성공 확률 보정. 어려운 플레이(3점슛·트랩)는 낮고, 침착한 자유투나 주무기는 높아요. */
   edge?: number;
   /** 능력치에 따라 확률이 갈리는 정도(1이 보통). 높으면 잘하는 선수에게 더 유리하고 못하는 선수에게 더 불리해요. */
@@ -1351,23 +1353,23 @@ export interface ClutchPlay {
 
 /** 공격 플레이: 동점이거나 뒤진 채 우리가 마지막 공격을 할 때 */
 export const CLUTCH_OFFENSE: ClutchPlay[] = [
-  { attr: "sht", side: "공격", label: "풀업 점퍼로 끝낸다", play: "종료 버저와 함께 풀업 점퍼", pts: 2 },
-  { attr: "hdl", side: "공격", label: "아이솔레이션으로 돌파한다", play: "수비 둘을 제치는 돌파 레이업", pts: 2 },
-  { attr: "pas", side: "공격", label: "더블팀을 끌어내 빈 동료에게 준다", play: "더블팀 사이로 찌른 결승 어시스트", pts: 2 },
-  { attr: "iq", side: "공격", label: "수비의 빈틈을 읽고 백도어 컷", play: "수비 뒤를 파고든 백도어 컷 레이업", pts: 2 },
-  { attr: "ath", side: "공격", label: "공격 리바운드를 노려 풋백", play: "공중에서 낚아챈 풋백 득점", pts: 2 },
-  { attr: "sht", side: "공격", label: "3점 라인 밖에서 승부를 건다", play: "버저와 함께 꽂은 3점슛", pts: 3, edge: -0.08, swing: 1.3 },
-  { attr: "sht", side: "공격", label: "몸을 부딪쳐 파울을 얻어 낸다", play: "얻어 낸 파울과 침착한 클러치 자유투", pts: 2, edge: 0.04, swing: 0.6 },
-  { attr: "ath", side: "공격", label: "앤드원을 노리고 림으로 파고든다", play: "수비를 달고 넣은 앤드원", pts: 3, edge: -0.06 },
+  { attr: "sht", side: "공격", label: "풀업 점퍼로 끝낸다", play: "종료 버저와 함께 풀업 점퍼", pts: 2, move: "shot" },
+  { attr: "hdl", side: "공격", label: "아이솔레이션으로 돌파한다", play: "수비 둘을 제치는 돌파 레이업", pts: 2, move: "drive" },
+  { attr: "pas", side: "공격", label: "더블팀을 끌어내 빈 동료에게 준다", play: "더블팀 사이로 찌른 결승 어시스트", pts: 2, move: "pass" },
+  { attr: "iq", side: "공격", label: "수비의 빈틈을 읽고 백도어 컷", play: "수비 뒤를 파고든 백도어 컷 레이업", pts: 2, move: "drive" },
+  { attr: "ath", side: "공격", label: "공격 리바운드를 노려 풋백", play: "공중에서 낚아챈 풋백 득점", pts: 2, move: "dunk" },
+  { attr: "sht", side: "공격", label: "3점 라인 밖에서 승부를 건다", play: "버저와 함께 꽂은 3점슛", pts: 3, edge: -0.08, swing: 1.3, move: "three" },
+  { attr: "sht", side: "공격", label: "몸을 부딪쳐 파울을 얻어 낸다", play: "얻어 낸 파울과 침착한 클러치 자유투", pts: 2, edge: 0.04, swing: 0.6, move: "shot" },
+  { attr: "ath", side: "공격", label: "앤드원을 노리고 림으로 파고든다", play: "수비를 달고 넣은 앤드원", pts: 3, edge: -0.06, move: "dunk" },
 ];
 
 /** 수비 플레이: 앞선 채 상대가 마지막 공격을 할 때 */
 export const CLUTCH_DEFENSE: ClutchPlay[] = [
-  { attr: "def", side: "수비", label: "상대 에이스를 끝까지 막는다", play: "상대 에이스의 마지막 슛을 막아 낸 수비", pts: 0 },
-  { attr: "ath", side: "수비", label: "블록슛을 노린다", play: "마지막 슛을 쳐 낸 블록슛", pts: 0 },
-  { attr: "iq", side: "수비", label: "공격자 파울을 유도한다", play: "마지막 돌파를 멈춰 세운 차징 유도", pts: 0 },
-  { attr: "def", side: "수비", label: "기습적인 트랩으로 공을 빼앗는다", play: "기습 트랩으로 빼앗은 스틸과 속공 득점", pts: 2, edge: -0.05, swing: 1.4 },
-  { attr: "iq", side: "수비", label: "패스 길목을 읽고 가로챈다", play: "패스 길목을 끊은 가로채기", pts: 0, swing: 1.2 },
+  { attr: "def", side: "수비", label: "상대 에이스를 끝까지 막는다", play: "상대 에이스의 마지막 슛을 막아 낸 수비", pts: 0, move: "lockdown" },
+  { attr: "ath", side: "수비", label: "블록슛을 노린다", play: "마지막 슛을 쳐 낸 블록슛", pts: 0, move: "block" },
+  { attr: "iq", side: "수비", label: "공격자 파울을 유도한다", play: "마지막 돌파를 멈춰 세운 차징 유도", pts: 0, move: "charge" },
+  { attr: "def", side: "수비", label: "기습적인 트랩으로 공을 빼앗는다", play: "기습 트랩으로 빼앗은 스틸과 속공 득점", pts: 2, edge: -0.05, swing: 1.4, move: "steal" },
+  { attr: "iq", side: "수비", label: "패스 길목을 읽고 가로챈다", play: "패스 길목을 끊은 가로채기", pts: 0, swing: 1.2, move: "steal" },
 ];
 
 /** 모든 클러치 플레이 (주무기 제외) */
@@ -1378,22 +1380,23 @@ const THREE = CLUTCH_OFFENSE.find((x) => x.pts === 3 && x.attr === "sht")!;
 
 /**
  * 주무기: 가장 높은 공격 능력치(수비 제외)로 정해지는 가장 자신 있는 무브. 공격 상황마다 꼭 하나 나와요.
- * 가드·스몰포워드와 빅맨(파워포워드·센터)의 무브가 달라요. [무브, 소식에 쓰는 플레이, 점수]
+ * 가드·스몰포워드와 빅맨(파워포워드·센터)의 무브가 달라요. [무브, 소식에 쓰는 플레이, 점수, 성공 이펙트 장면]
  */
-const SIGNATURE: Record<Exclude<AttrKey, "def">, { wing: [string, string, number]; big: [string, string, number] }> = {
-  sht: { wing: ["스텝백 3점슛", "수비를 밀어내고 던진 스텝백 3점슛", 3], big: ["하이포스트 페이더웨이", "하이포스트에서 던진 페이더웨이 점퍼", 2] },
-  hdl: { wing: ["크로스오버 풀업 점퍼", "수비를 넘어뜨린 크로스오버 풀업 점퍼", 2], big: ["페이스업 돌파", "빅맨답지 않은 페이스업 돌파", 2] },
-  pas: { wing: ["픽앤롤 노룩 패스", "픽앤롤에서 뿌린 노룩 패스", 2], big: ["하이포스트 컷인 패스", "하이포스트에서 컷인하는 동료에게 내준 패스", 2] },
-  iq: { wing: ["턴어라운드 페이더웨이", "포스트업에 이은 턴어라운드 페이더웨이", 2], big: ["포스트업 훅슛", "골밑에서 돌아서며 올린 훅슛", 2] },
-  ath: { wing: ["림까지 날아오르는 덩크", "수비 위로 꽂은 덩크", 2], big: ["로포스트 파워 덩크", "로포스트에서 찍어 누른 파워 덩크", 2] },
+type Signature = [string, string, number, ClutchMove];
+const SIGNATURE: Record<Exclude<AttrKey, "def">, { wing: Signature; big: Signature }> = {
+  sht: { wing: ["스텝백 3점슛", "수비를 밀어내고 던진 스텝백 3점슛", 3, "three"], big: ["하이포스트 페이더웨이", "하이포스트에서 던진 페이더웨이 점퍼", 2, "shot"] },
+  hdl: { wing: ["크로스오버 풀업 점퍼", "수비를 넘어뜨린 크로스오버 풀업 점퍼", 2, "shot"], big: ["페이스업 돌파", "빅맨답지 않은 페이스업 돌파", 2, "drive"] },
+  pas: { wing: ["픽앤롤 노룩 패스", "픽앤롤에서 뿌린 노룩 패스", 2, "pass"], big: ["하이포스트 컷인 패스", "하이포스트에서 컷인하는 동료에게 내준 패스", 2, "pass"] },
+  iq: { wing: ["턴어라운드 페이더웨이", "포스트업에 이은 턴어라운드 페이더웨이", 2, "shot"], big: ["포스트업 훅슛", "골밑에서 돌아서며 올린 훅슛", 2, "shot"] },
+  ath: { wing: ["림까지 날아오르는 덩크", "수비 위로 꽂은 덩크", 2, "dunk"], big: ["로포스트 파워 덩크", "로포스트에서 찍어 누른 파워 덩크", 2, "dunk"] },
 };
 const SIGNATURE_EDGE = 0.06;
 
 export function signatureMove(c: Career): ClutchPlay {
   const keys = Object.keys(SIGNATURE) as (keyof typeof SIGNATURE)[];
   const attr = keys.reduce((best, k) => (c.p.attrs[k] > c.p.attrs[best] ? k : best));
-  const [move, play, pts] = SIGNATURE[attr][c.p.pos === "PF" || c.p.pos === "C" ? "big" : "wing"];
-  return { attr, side: "주무기", label: `가장 자신 있는 무브 · ${move}`, play, pts, edge: SIGNATURE_EDGE };
+  const [name, play, pts, move] = SIGNATURE[attr][c.p.pos === "PF" || c.p.pos === "C" ? "big" : "wing"];
+  return { attr, side: "주무기", label: `가장 자신 있는 무브 · ${name}`, play, pts, edge: SIGNATURE_EDGE, move };
 }
 
 /** 클러치 때 보여주는 선택지 수 */
@@ -1524,7 +1527,7 @@ export function clutchDecision(c: Career, label: string, leagueAvg: number, boar
         label: x.label,
         sub,
         tag: x.side,
-        act: { k: "clutch", attr: x.attr, play: x.play, p: clutchOdds(c, x.attr, leagueAvg, x), pts: x.pts, ...(tying && { ot }), ...(finals && { finals }) },
+        act: { k: "clutch", attr: x.attr, play: x.play, p: clutchOdds(c, x.attr, leagueAvg, x), pts: x.pts, move: x.move, ...(tying && { ot }), ...(finals && { finals }) },
       };
     }),
   };

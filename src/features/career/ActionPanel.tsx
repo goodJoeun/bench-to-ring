@@ -10,6 +10,7 @@ import {
   josa,
   money,
   negotiable,
+  playerLook,
   ro,
   roleOf,
   seasonProgress,
@@ -208,7 +209,12 @@ export function ActionPanel({ career: c, playing, speed, busy, outcome, onAdvanc
     return (
       <>
         <RunBar run={run} playing={playing} speed={speed} />
-        <ClutchResult key={outcome.id} result={outcome.clutch} onDone={() => setResultShown(outcome.id)} />
+        <ClutchResult
+          key={outcome.id}
+          result={outcome.clutch}
+          cast={{ look: playerLook(c.p), color: c.team?.color ?? "#2F5DB0", oppColor: outcome.clutch.oppColor, seed: outcome.clutch.opp }}
+          onDone={() => setResultShown(outcome.id)}
+        />
       </>
     );
   if (run && outcome) return <OutcomeCard key={outcome.id} outcome={outcome} />;
