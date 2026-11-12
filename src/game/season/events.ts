@@ -16,14 +16,13 @@ export function describeBoost(b: Boost): string {
   if (b.health) parts.push(`건강 ${b.health > 0 ? "+" : ""}${b.health}`);
   if (b.money) parts.push(b.money > 0 ? `수입 +${money(b.money)}` : `비용 ${money(-b.money)}`);
   if (b.trust) parts.push(b.trust > 0 ? "코치 신뢰 상승" : "코치 신뢰 하락");
-  if (b.star) parts.push(`스타성 ${b.star > 0 ? "+" : ""}${b.star}`);
   if (b.celebration) parts.push(`시그니처 세리머니 '${b.celebration}'`);
   if (b.agency) parts.push("앞으로 연봉 제안 +10%");
   if (b.trainer) parts.push(`${SHORT[b.trainer]} 성장 꾸준히 +15%`);
   if (b.form) parts.push(b.form > 0 ? "경기력 상승" : "경기력 하락");
   if (b.sit) parts.push(b.sit > 0 ? `${b.sit}경기 휴식` : `결장 ${-b.sit}경기 단축`);
   if (b.injure) parts.push(`부상으로 ${b.injure}경기 결장`);
-  return parts.join(" · ") || "변화 없음";
+  return parts.join(" · ") || (b.star ? "" : "변화 없음");
 }
 
 const opt = (label: string, b: Boost, tag?: string): DecisionOption => ({
@@ -36,7 +35,10 @@ const opt = (label: string, b: Boost, tag?: string): DecisionOption => ({
 /** 결과가 운에 달린 선택지. 확률은 숫자로 보여주지 않아요. */
 const risky = (label: string, p: number, win: Boost, lose: Boost): DecisionOption => ({
   label,
-  sub: `잘 되면 ${describeBoost(win)} · 안 되면 ${describeBoost(lose)}`,
+  sub: [
+    describeBoost(win) && `잘 되면 ${describeBoost(win)}`,
+    describeBoost(lose) && `안 되면 ${describeBoost(lose)}`,
+  ].filter(Boolean).join(" · ") || undefined,
   tag: "도전",
   act: { k: "gamble", p, win, lose },
 });

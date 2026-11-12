@@ -85,8 +85,10 @@ describe("스타성", () => {
     expect(born.star).toBeCloseTo(33 - 5);
   });
 
-  it("선택지 효과로 스타성과 시그니처 세리머니가 보여요", () => {
-    expect(describeBoost({ star: 5, celebration: "활시위 당기기" })).toBe("스타성 +5 · 시그니처 세리머니 '활시위 당기기'");
+  it("선택지에서는 스타성 변화를 숨기되 선택 결과에는 적용해요", () => {
+    expect(describeBoost({ star: 5, celebration: "활시위 당기기" })).toBe("시그니처 세리머니 '활시위 당기기'");
+    expect(describeBoost({ star: 5 })).toBe("");
+    expect(describeBoost({ star: -3, trust: -1 })).toBe("코치 신뢰 하락");
     const c = pro("b", 20);
     c.p.trait = "꾸준함";
     applyAction(c, { k: "boost", star: 5, celebration: "활시위 당기기", msg: "세리머니가 생겼어요." });
