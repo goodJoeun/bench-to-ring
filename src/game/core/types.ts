@@ -411,7 +411,7 @@ export interface NatTournament {
   story: string;
   games: NatGame[];
   /** 결승 클러치로 메달 색이 정해졌으면 그 결과. 대회 진행 화면이 결승 중계 전에 성공·실패 이펙트를 보여줘요. */
-  clutch?: { win: boolean; us: number; them: number; opp: string; ot?: boolean };
+  clutch?: { win: boolean; us: number; them: number; opp: string; ot?: boolean; move?: ClutchMove; play?: string; oppColor?: string };
 }
 
 /** 결승 클러치를 기다리는 국가대표 결승. 고르고 나면 결승 결과와 메달을 정해요. */

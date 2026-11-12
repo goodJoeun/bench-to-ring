@@ -23,7 +23,6 @@ import { Popup } from "@/features/progress/Popup";
 import { StandingsPopup } from "@/features/progress/StandingsPopup";
 import { Toast } from "@/shared/ui/Toast";
 import { TournamentLoading } from "@/features/progress/TournamentLoading";
-import { ClutchPreview } from "@/features/dev/ClutchPreview";
 
 export function Game() {
   const { ready, career, draft, hall, endings, ending, playing, speed, final, standings, farewell, farewellReplay, tournament, drafting, toast, outcome } = useGame();
@@ -190,8 +189,6 @@ export function Game() {
       {drafting && career?.draftShow && <DraftLoading career={career} show={career.draftShow} />}
       {farewell && retiredShown && <FarewellLoading career={retiredShown} />}
       {cheer && career && <CheerPopup career={career} cheer={cheer} />}
-      {/* 개발 서버에서만: 클러치 성공 장면을 테스트 데이터로 연달아 보는 팝업 */}
-      {process.env.NODE_ENV === "development" && ready && <ClutchPreview career={inGame ? career : null} />}
       {guideOpen && <GuideDialog onClose={() => setGuideOpen(false)} />}
       {achvOpen && <AchievementsDialog onClose={() => setAchvOpen(false)} />}
       {noticeOpen && <NoticeDialog onClose={() => setNoticeOpen(false)} />}

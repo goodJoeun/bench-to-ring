@@ -485,9 +485,12 @@ export const gameActions = {
         if (next?.final) outcome.clutch = { win, us: next.final[0], them: next.final[1], opp: next.opp, ot: next.ot };
         else outcome.clutch = b ? { win, us: win ? b.tie + 2 : b.tie, them: win ? b.tie : b.tie + 2, opp: b.opp } : { win };
         // 예전 저장의 선택지에는 장면이 없어요. 앞선 채 막는 상황이면 수비, 아니면 점퍼로 그려요.
-        outcome.clutch.move = opt.act.move ?? (clutchScene(b) === "ahead" ? "lockdown" : "shot");
+      }
+      if (opt.act.k === "clutch" && outcome.clutch) {
+        const board = currentDecision(c0)?.board;
+        outcome.clutch.move = opt.act.move ?? (clutchScene(board) === "ahead" ? "lockdown" : "shot");
         outcome.clutch.play = opt.act.play;
-        outcome.clutch.oppColor = b?.oppColor;
+        outcome.clutch.oppColor = board?.oppColor;
       }
       return set({ outcome });
     }

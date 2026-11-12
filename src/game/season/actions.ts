@@ -203,7 +203,7 @@ function applyFinalClutch(c: Career, a: Extract<Action, { k: "clutch" }>, ok: bo
   const end = board ? clutchFinal(board, a, ok, win) : {};
   const fallback = board ? boardScore(board) : ([80, 78] as [number, number]);
   const score = end.final ?? (win ? fallback : ([fallback[1], fallback[0] + 2] as [number, number]));
-  if (a.finals === "nat") settleNatFinal(c, win, score, end.ot);
+  if (a.finals === "nat") settleNatFinal(c, win, score, end.ot, a.move, a.play);
   else {
     settleLeagueFinal(c, win, score, end.ot);
     if (c.run && board) c.run.next = { ...board, ...end };

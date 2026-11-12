@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { CLUTCH_SCENES, boardScore, clutchScene, finalsPrize, type ClutchBoard, type ClutchMove } from "@/game";
 import { reducedMotion } from "@/shared/lib/hooks";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
@@ -148,10 +148,12 @@ export function ClutchFlash({ board, onDone }: { board?: ClutchBoard; onDone: ()
   );
 }
 
-/** 결과 이펙트를 보여주는 시간(ms). 결승 클러치는 우승 세리머니라, 플레이 장면이 있는 성공은 장면을 먼저 보여줘서 더 길어요. */
+/** 플레이 장면을 먼저 보여준 뒤 결과를 공개해요. */
 const RESULT_MS = 1900;
-const MOVE_RESULT_MS = 2700;
-const FINALS_RESULT_MS = 3000;
+const MOVE_SCENE_MS = 1350;
+const SHOT_SCENE_MS = 900;
+const MOVE_RESULT_MS = 3100;
+const FINALS_RESULT_MS = 3400;
 
 const CONFETTI = ["#ffd25a", "#ff5a4a", "#4fb3e8", "#7bd389", "#ffffff"];
 const GOLD_CONFETTI = ["#ffd25a", "#ffe9a3", "#f2b632", "#ffffff", "#ffd25a", "#e8a317"];
@@ -165,7 +167,7 @@ export interface ClutchResultInfo {
   ot?: boolean;
   finals?: string;
   gold?: boolean;
-  /** 고른 플레이의 장면과 이름. 결승이 아닌 클러치 성공이면 그 장면을 그려요. */
+  /** 고른 플레이의 장면과 이름. 성공·실패와 결승 모두 장면을 먼저 그려요. */
   move?: ClutchMove;
   play?: string;
   /** 상대 유니폼 색 (장면의 상대 선수) */
@@ -173,20 +175,22 @@ export interface ClutchResultInfo {
 }
 
 /**
- * 클러치 결과 이펙트. 성공이면 금빛 빛줄기와 꽃가루 속에 'CLUTCH!'와 승리 점수가,
- * 실패면 화면이 어두워지고 금이 가며 '아쉬운 실패'와 패배 점수가 떠요. 연장까지 갔으면 그렇게 알려요. 끝나면 onDone을 불러요.
+ * 고른 플레이의 성공·실패 장면을 먼저 보여주고 결과 이펙트와 점수를 공개해요. 끝나면 onDone을 불러요.
  * 결승 클러치 성공은 트로피(메달)가 솟아오르고 축포가 터지는 우승 세리머니로 'CHAMPIONS!'('GOLD!')를,
  * 실패는 금 간 화면 위로 빛바랜 트로피와 '준우승'('은메달')을 보여줘요.
- * 결승이 아닌 클러치 성공은 먼저 고른 플레이의 장면(그물을 가르는 슛, 림이 흔들리는 덩크, 노룩 패스, 블록슛 등)을 그리고,
- * 결정적인 순간에 맞춰 'CLUTCH!'와 꽃가루가 이어져요. 장면에는 cast(내 캐릭터와 유니폼 색, 상대 유니폼 색)로 선수를 그려요.
+ * 장면에는 cast(내 캐릭터와 유니폼 색, 상대 유니폼 색)로 선수를 그려요.
  */
 export function ClutchResult({ result, cast, onDone }: { result: ClutchResultInfo; cast?: ClutchCast; onDone: () => void }) {
   const done = useEffectEvent(onDone);
+  const [revealed, setRevealed] = useState(false);
   const { win, us, them, opp, ot, finals, gold, play } = result;
-  const move = win && !finals && cast ? result.move : undefined;
+  const move = cast ? result.move : undefined;
   useEffect(() => {
-    const timer = setTimeout(() => done(), reducedMotion() ? 900 : finals ? FINALS_RESULT_MS : move ? MOVE_RESULT_MS : RESULT_MS);
-    return () => clearTimeout(timer);
+    const reduced = reducedMotion();
+    const shot = move === "shot" || move === "three";
+    const revealTimer = setTimeout(() => setRevealed(true), move ? (reduced ? 400 : shot ? SHOT_SCENE_MS : MOVE_SCENE_MS) : 0);
+    const doneTimer = setTimeout(() => done(), reduced ? 1100 : finals ? FINALS_RESULT_MS : move ? MOVE_RESULT_MS : RESULT_MS);
+    return () => { clearTimeout(revealTimer); clearTimeout(doneTimer); };
   }, [finals, move]);
   const score = us !== undefined && them !== undefined ? `${us} : ${them}` : null;
   const prize = gold ? ["금메달", "은메달"] : ["우승", "준우승"];
@@ -210,14 +214,15 @@ export function ClutchResult({ result, cast, onDone }: { result: ClutchResultInf
   return (
     <div
       className="cl-res"
-      data-win={win || undefined}
-      data-finals={finals ? "" : undefined}
+      data-win={revealed && win || undefined}
+      data-finals={revealed && finals ? "" : undefined}
       data-move={move}
+      data-revealed={revealed || undefined}
       style={move ? ({ "--hit": `${MOVE_INFO[move].hit}s` } as React.CSSProperties) : undefined}
       role="status"
       aria-live="assertive"
     >
-      {win ? (
+      {revealed && (win ? (
         <>
           <span className="cl-rays" aria-hidden="true" />
           {finals &&
@@ -242,9 +247,10 @@ export function ClutchResult({ result, cast, onDone }: { result: ClutchResultInf
         <svg className="cl-crack" viewBox="0 0 200 200" preserveAspectRatio="none" aria-hidden="true">
           <path d="M100 96 72 40 60 0M100 96 140 52 176 30M100 96 150 120 200 116M100 96 118 150 110 200M100 96 54 132 0 150M100 96 30 84 0 70M72 40 48 52M140 52 150 22M118 150 142 172M54 132 50 168" />
         </svg>
-      )}
+      ))}
       <div className="cl-res-core">
-        {move && cast && <ClutchMoveArt move={move} cast={cast} />}
+        {move && cast && <ClutchMoveArt move={move} cast={cast} win={win} revealed={revealed} />}
+        {revealed && <>
         {finals && (gold ? <MedalIcon className="cl-res-trophy" /> : <TrophyIcon className="cl-res-trophy" />)}
         <b className="cl-res-t">{title}</b>
         <span className="cl-res-s">
@@ -263,6 +269,7 @@ export function ClutchResult({ result, cast, onDone }: { result: ClutchResultInf
             </>
           )}
         </span>
+        </>}
       </div>
     </div>
   );

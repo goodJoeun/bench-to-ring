@@ -39,6 +39,21 @@ const LABEL: Record<ClutchMove, string> = {
   steal: "패스 길목에 손을 뻗어 공을 가로채는 장면",
   charge: "자리를 지키고 선 내가 돌진하는 상대에 부딪혀 뒤로 넘어지고, 심판이 휘슬을 불며 공격자 파울 신호를 주는 장면",
 };
+const FAILURE_TAG: Record<ClutchMove, string> = {
+  shot: "RIM OUT", three: "RIM OUT", dunk: "DENIED", drive: "STRIPPED",
+  pass: "INTERCEPTED", lockdown: "SCORED", block: "TOO LATE", steal: "MISSED", charge: "NO CALL",
+};
+const FAILURE_LABEL: Record<ClutchMove, string> = {
+  shot: "슛이 림을 맞고 튕겨 나가는 장면",
+  three: "3점슛이 림을 맞고 튕겨 나가는 장면",
+  dunk: "덩크가 림에 막혀 튕겨 나가는 장면",
+  drive: "돌파 중 드리블한 공을 수비에게 빼앗기는 장면",
+  pass: "노룩 패스가 상대 수비에게 가로채이는 장면",
+  lockdown: "밀착 수비를 뚫고 상대 슛이 들어가는 장면",
+  block: "블록슛 시도가 늦어 상대 슛이 들어가는 장면",
+  steal: "가로채기 시도가 빗나가 상대 패스가 이어지는 장면",
+  charge: "몸을 부딪쳤지만 공격자 파울이 선언되지 않는 장면",
+};
 
 /** 장면에 나오는 사람들: 내 캐릭터와 유니폼 색, 상대 유니폼 색, 상대 생김새를 고르는 씨앗(상대 팀 이름) */
 export interface ClutchCast {
@@ -91,16 +106,14 @@ function castOf(c: ClutchCast): Cast {
   };
 }
 
-export function ClutchMoveArt({ move, cast }: { move: ClutchMove; cast: ClutchCast }) {
+export function ClutchMoveArt({ move, cast, win, revealed }: { move: ClutchMove; cast: ClutchCast; win: boolean; revealed: boolean }) {
   return (
-    <div className="mv" data-move={move} style={{ "--hit": `${MOVE_INFO[move].hit}s` } as React.CSSProperties}>
-      <svg className="mv-scene" viewBox="0 0 240 200" role="img" aria-label={LABEL[move]}>
+    <div className="mv" data-move={move} data-outcome={win ? "win" : "lose"} style={{ "--hit": `${MOVE_INFO[move].hit}s` } as React.CSSProperties}>
+      <svg className="mv-scene" viewBox="0 0 240 200" role="img" aria-label={revealed ? win ? LABEL[move] : FAILURE_LABEL[move] : "클러치 플레이 진행 중"}>
         <line className="mv-floor" x1="0" y1="192.5" x2="240" y2="192.5" />
-        {SCENES[move](castOf(cast))}
+        {(win ? SCENES : FAILURE_SCENES)[move](castOf(cast))}
       </svg>
-      <span className="mv-tag" aria-hidden="true">
-        {MOVE_INFO[move].tag}
-      </span>
+      {revealed && <span className="mv-tag" aria-hidden="true">{win ? MOVE_INFO[move].tag : FAILURE_TAG[move]}</span>}
     </div>
   );
 }
@@ -238,7 +251,7 @@ function Huh() {
 /* ---------- 장면 ---------- */
 
 /** 슛·3점슛: 뛰어올라 던진 공이 포물선(최고 높이 약 3.9m)을 그리며 림 한가운데로 떨어져요. */
-function ShotScene({ cast, three }: { cast: Cast; three?: boolean }) {
+function ShotScene({ cast, three, fail = false }: { cast: Cast; three?: boolean; fail?: boolean }) {
   const sx = three ? 26 : 52;
   return (
     <>
@@ -246,6 +259,7 @@ function ShotScene({ cast, three }: { cast: Cast; three?: boolean }) {
       <g transform={`translate(${sx} 192)`}>
         <g className="mv-shooter">
           <Player who={cast.me} {...SHOOT} />
+          {fail && <Player who={cast.me} {...SHOOT} mood="nervous" className="mv-result-face" />}
         </g>
       </g>
       <path className="mv-trail" pathLength={1} d={three ? "M42 98Q119 -50.8 196 52" : "M68 98Q132 -46.7 196 52"} />
@@ -357,17 +371,18 @@ function PassScene({ cast }: { cast: Cast }) {
 }
 
 /** 끝까지 막기: 붙어서 손을 뻗은 수비에 상대 슛이 짧아져 림 앞쪽을 맞고 튕겨 나가요. */
-function LockdownScene({ cast }: { cast: Cast }) {
+function LockdownScene({ cast, fail = false }: { cast: Cast; fail?: boolean }) {
   return (
     <>
       <g transform="translate(60 192)">
         <g className="mv-shooter">
-          <Player who={cast.opp(0)} {...SHOOT} mood="nervous" />
+          <Player who={cast.opp(0)} {...SHOOT} mood={fail ? "focus" : "nervous"} />
         </g>
       </g>
       <g transform="translate(104 192)">
         <g className="mv-contest">
           <Player who={cast.me} rh={[116, 46]} lh={[30, 140]} />
+          {fail && <Player who={cast.me} rh={[116, 46]} lh={[30, 140]} mood="nervous" className="mv-fail-face" />}
         </g>
       </g>
       <g transform="translate(196 52)">
@@ -385,7 +400,7 @@ function LockdownScene({ cast }: { cast: Cast }) {
 }
 
 /** 블록슛: 슛을 쏘는 순간 붙어서 뛰어오른 손바닥이 공을 쳐 내요. 공이 돌며 화면 밖으로 날아가요. */
-function BlockScene({ cast }: { cast: Cast }) {
+function BlockScene({ cast, fail = false }: { cast: Cast; fail?: boolean }) {
   return (
     <>
       <g transform="translate(196 52)">
@@ -394,12 +409,13 @@ function BlockScene({ cast }: { cast: Cast }) {
       </g>
       <g transform="translate(46 192)">
         <g className="mv-shooter">
-          <Player who={cast.opp(0)} {...SHOOT} mood="nervous" />
+          <Player who={cast.opp(0)} {...SHOOT} mood={fail ? "focus" : "nervous"} />
         </g>
       </g>
       <g transform="translate(94 192)">
         <g className="mv-jump">
           <Player who={cast.me} lh={[60, 48]} rh={[120, 46]} />
+          {fail && <Player who={cast.me} lh={[60, 48]} rh={[120, 46]} mood="nervous" className="mv-fail-face" />}
         </g>
       </g>
       <g className="mv-ball mv-ball-block">
@@ -411,20 +427,21 @@ function BlockScene({ cast }: { cast: Cast }) {
 }
 
 /** 가로채기: 패스 길목에 몸을 던져 공을 낚아채요. 끊긴 길목에 X가 그어져요. */
-function StealScene({ cast }: { cast: Cast }) {
+function StealScene({ cast, fail = false }: { cast: Cast; fail?: boolean }) {
   return (
     <>
       <line className="mv-lane" x1="66" y1="132" x2="176" y2="132" />
       <g transform="translate(30 192)">
-        <Player who={cast.opp(0)} rh={[160, 80]} mood="nervous" />
+        <Player who={cast.opp(0)} rh={[160, 80]} mood={fail ? "focus" : "nervous"} />
       </g>
       <g transform="translate(212 192)">
-        <Player who={cast.opp(1)} lh={[0, 80]} mood="nervous" />
+        <Player who={cast.opp(1)} lh={[0, 80]} mood={fail ? "focus" : "nervous"} />
       </g>
       <path className="mv-x" d="M160 126 172 138M172 126 160 138" />
       <g transform="translate(124 192)">
         <g className="mv-lunge">
           <Player who={cast.me} lh={[20, 130]} rh={[130, 50]} />
+          {fail && <Player who={cast.me} lh={[20, 130]} rh={[130, 50]} mood="nervous" className="mv-fail-face" />}
           <path className="mv-speed" d="M-28 -60H-48M-30 -46H-54M-28 -32H-46" />
         </g>
       </g>
@@ -485,5 +502,58 @@ const SCENES: Record<ClutchMove, (cast: Cast) => React.ReactNode> = {
   lockdown: (c) => <LockdownScene cast={c} />,
   block: (c) => <BlockScene cast={c} />,
   steal: (c) => <StealScene cast={c} />,
+  charge: (c) => <ChargeScene cast={c} />,
+};
+
+/** 실패 장면도 고른 플레이를 따라가요. 수비는 성공 장면의 같은 상황에서 결과만 갈라져요. */
+function MissDunkScene({ cast }: { cast: Cast }) {
+  return <>
+    <g transform="translate(170 52)"><HoopBack /><HoopFront /></g>
+    <g className="mv-fail-dunker">
+      <Player who={cast.me} lh={[30, 120]} rh={[118, 46]} mood="strain" />
+      <Player who={cast.me} lh={[30, 120]} rh={[118, 46]} mood="nervous" className="mv-fail-face" />
+    </g>
+    <g className="mv-fail-ball mv-fail-dunk-ball"><Ball /></g>
+    <Burst x={170} y={49} r={15} />
+  </>;
+}
+
+function TurnoverScene({ cast }: { cast: Cast }) {
+  return <>
+    <g className="mv-fail-driver">
+      <Player who={cast.me} rh={[126, 150]} />
+      <Player who={cast.me} rh={[126, 150]} mood="nervous" className="mv-fail-face" />
+    </g>
+    <g transform="translate(157 192)"><Player who={cast.opp(0)} lh={[18, 120]} rh={[120, 124]} /></g>
+    <g className="mv-fail-ball mv-fail-drive-ball"><Ball /></g>
+    <Burst x={143} y={147} r={12} />
+  </>;
+}
+
+function InterceptScene({ cast }: { cast: Cast }) {
+  return <>
+    <g transform="translate(64 192)">
+      <Player who={cast.me} rh={[160, 112]} />
+      <Player who={cast.me} rh={[160, 112]} mood="nervous" className="mv-fail-face" />
+    </g>
+    <g transform="translate(174 192)">
+      <Player who={cast.mate} lh={[8, 112]} />
+      <Player who={cast.mate} lh={[8, 112]} mood="nervous" className="mv-fail-face" />
+    </g>
+    <g transform="translate(138 192)"><Player who={cast.opp(0)} lh={[20, 100]} rh={[130, 54]} /></g>
+    <g className="mv-fail-ball mv-fail-pass-ball"><Ball /></g>
+    <Burst x={139} y={120} r={12} />
+  </>;
+}
+
+const FAILURE_SCENES: Record<ClutchMove, (cast: Cast) => React.ReactNode> = {
+  shot: (c) => <ShotScene cast={c} fail />,
+  three: (c) => <ShotScene cast={c} three fail />,
+  dunk: (c) => <MissDunkScene cast={c} />,
+  drive: (c) => <TurnoverScene cast={c} />,
+  pass: (c) => <InterceptScene cast={c} />,
+  lockdown: (c) => <LockdownScene cast={c} fail />,
+  block: (c) => <BlockScene cast={c} fail />,
+  steal: (c) => <StealScene cast={c} fail />,
   charge: (c) => <ChargeScene cast={c} />,
 };
