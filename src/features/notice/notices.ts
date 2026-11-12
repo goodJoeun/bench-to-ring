@@ -25,6 +25,22 @@ export interface Notice {
 
 const LIST: Notice[] = [
   {
+    id: "2026-11-13-event-balance",
+    kind: "patch",
+    date: "2026.11.13",
+    icon: "⚖️",
+    title: "이벤트 선택지 밸런스",
+    sections: [
+      {
+        title: "이벤트 선택지",
+        items: [
+          "한쪽만 고르면 되던 선택지를 손봤어요. 이제 모든 선택지에 저마다의 이득이 있어요.",
+          "'도전' 선택지는 성공하면 안전한 선택지보다 더 큰 보상을 받아요.",
+        ],
+      },
+    ],
+  },
+  {
     id: "2026-11-10-season-report",
     kind: "patch",
     date: "2026.11.10",
