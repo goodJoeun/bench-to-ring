@@ -11,6 +11,7 @@ export const HOME_NATION = "대한민국";
 export const NAME_MAX = 20;
 import { refreshShop } from "../economy/shop";
 import type { Archetype, AttrKey, Attrs, Candidate, Career, Grade, NewCareerInput, PosKey } from "../core/types";
+import { START_STAR } from "./star";
 import { clamp } from "../core/util";
 
 export const START_OVR = 45;
@@ -132,6 +133,7 @@ export function createCareer(input: NewCareerInput, cand: Candidate, id = String
     year: START_YEAR,
     health: 100,
     trust: -1.5,
+    star: START_STAR,
     focus: "bal",
     team: null,
     contract: null,

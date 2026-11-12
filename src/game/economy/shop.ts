@@ -1,7 +1,7 @@
 import { ATTR_KEYS, SHORT } from "../core/data";
-import { ATTR_RANGE, addAttr, addHealth } from "../player/condition";
+import { addAttr, addHealth, randomGrowable } from "../player/condition";
 import { addNews } from "../career/log";
-import { chance, seededPick, shuffle } from "../core/random";
+import { chance, seededPick } from "../core/random";
 import type { AttrKey, Career, ShopKey } from "../core/types";
 import { money, round2 } from "../core/util";
 
@@ -204,6 +204,8 @@ export const boughtThisSeason = (c: Career, key: ShopKey): boolean => !!c.shop?.
 export function canBuy(c: Career, key: ShopKey): boolean {
   const i = shopItem(key);
   if (!i || c.stage === "retired" || c.run || !c.shop?.keys.includes(key) || boughtThisSeason(c, key)) return false;
+  // 무작위 능력치를 올리는 상품은 모든 능력치가 99면 소용없어서 살 수 없어요.
+  if (i.rand && !randomGrowable(c.p.attrs, 1).length) return false;
   return (i.repeat || !owns(c, key)) && c.earnings + 1e-9 >= i.price;
 }
 
@@ -217,9 +219,10 @@ export function buy(c: Career, key: ShopKey): boolean {
   if (i.health) addHealth(c, i.health);
   let note = "";
   if (i.rand) {
-    const keys = shuffle(ATTR_KEYS).slice(0, i.rand);
+    // 이미 99인 능력치는 빼고 골라요.
+    const keys = randomGrowable(c.p.attrs, i.rand);
     for (const k of keys) addAttr(c.p.attrs, k, 1);
-    note = ` · ${keys.map((k) => SHORT[k]).join("·")} +1`;
+    if (keys.length) note = ` · ${keys.map((k) => SHORT[k]).join("·")} +1`;
   }
   addNews(c, `${c.year - 1} 오프시즌`, i.legacy && i.price >= 10 ? "big" : "good", `${i.name} · ${money(i.price)}${note}`);
   return true;
@@ -275,7 +278,7 @@ export function donate(c: Career, amount: number): boolean {
     const parts: string[] = [];
     if (r.rand) {
       // 이미 최대(99)를 채운 능력치는 빼고 골라요.
-      const keys = shuffle(ATTR_KEYS.filter((k) => Math.round(c.p.attrs[k]) < ATTR_RANGE[1])).slice(0, r.rand);
+      const keys = randomGrowable(c.p.attrs, r.rand);
       for (const k of keys) addAttr(c.p.attrs, k, 1);
       if (keys.length) parts.push(`${keys.map((k) => SHORT[k]).join("·")} +1`);
     }

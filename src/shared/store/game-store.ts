@@ -10,6 +10,7 @@ import {
   setBrowserRecord,
   chooseOption,
   chosenInvest,
+  clutchScene,
   createCareer,
   currentDecision,
   donate,
@@ -29,6 +30,7 @@ import {
   type Career,
   type CareerPath,
   type CareerSummary,
+  type ClutchMove,
   type FocusKey,
   type InvestKey,
   type Look,
@@ -128,8 +130,10 @@ export interface Outcome {
   /**
    * 클러치 결과: 성공·실패 이펙트와 최종 점수, 연장 여부. 전광판 정보가 없던 예전 결정은 점수 없이 와요.
    * 결승 클러치면 결승 이름(finals)이 있어서 우승 세리머니로 보여줘요.
+   * move와 play는 고른 플레이의 장면과 이름이에요. 성공 이펙트가 플레이마다 다른 장면을 그려요.
+   * oppColor는 상대 유니폼 색이에요. 장면의 상대 선수가 입어요.
    */
-  clutch?: { win: boolean; us?: number; them?: number; opp?: string; ot?: boolean; finals?: string; gold?: boolean };
+  clutch?: { win: boolean; us?: number; them?: number; opp?: string; ot?: boolean; finals?: string; gold?: boolean; move?: ClutchMove; play?: string; oppColor?: string };
 }
 
 const REROLLS = 5;
@@ -480,6 +484,13 @@ export const gameActions = {
         const b = currentDecision(c0)?.board;
         if (next?.final) outcome.clutch = { win, us: next.final[0], them: next.final[1], opp: next.opp, ot: next.ot };
         else outcome.clutch = b ? { win, us: win ? b.tie + 2 : b.tie, them: win ? b.tie : b.tie + 2, opp: b.opp } : { win };
+        // 예전 저장의 선택지에는 장면이 없어요. 앞선 채 막는 상황이면 수비, 아니면 점퍼로 그려요.
+      }
+      if (opt.act.k === "clutch" && outcome.clutch) {
+        const board = currentDecision(c0)?.board;
+        outcome.clutch.move = opt.act.move ?? (clutchScene(board) === "ahead" ? "lockdown" : "shot");
+        outcome.clutch.play = opt.act.play;
+        outcome.clutch.oppColor = board?.oppColor;
       }
       return set({ outcome });
     }

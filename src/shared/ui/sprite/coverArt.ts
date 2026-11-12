@@ -235,7 +235,8 @@ function moodAt(stage: StageKey, t: number, p: Pose): Mood {
 
 /* 선수 */
 
-type Outfit = { kind: "jersey" | "tee" | "suit"; color: string };
+/** 옷: 유니폼, 티셔츠, 정장, 심판복(흑백 세로 줄무늬 셔츠와 검은 바지, color는 쓰지 않아요) */
+type Outfit = { kind: "jersey" | "tee" | "suit" | "ref"; color: string };
 
 const OUTFIT: Record<StageKey, Outfit> = {
   bench: { kind: "jersey", color: "#2F5DB0" },
@@ -245,6 +246,9 @@ const OUTFIT: Record<StageKey, Outfit> = {
   mvp: { kind: "suit", color: "#232A3B" },
 };
 
+/** 심판복의 검은 줄무늬와 바지 */
+const REF_INK = "#1B1D22";
+
 function drawArm(ctx: Ctx, skin: string, o: Outfit, s: Pt, e: Pt, h: Pt): void {
   if (o.kind === "suit") {
     // 소매는 손목까지, 그 끝에 셔츠 소맷부리
@@ -253,7 +257,7 @@ function drawArm(ctx: Ctx, skin: string, o: Outfit, s: Pt, e: Pt, h: Pt): void {
     ellipse(ctx, wrist[0], wrist[1], 6.5, 6.5, "#F4F4F4");
   } else {
     line(ctx, [s, e, h], skin, 15);
-    if (o.kind === "tee") line(ctx, [s, [lerp(s[0], e[0], 0.42), lerp(s[1], e[1], 0.42)]], o.color, 21);
+    if (o.kind === "tee" || o.kind === "ref") line(ctx, [s, [lerp(s[0], e[0], 0.42), lerp(s[1], e[1], 0.42)]], o.kind === "ref" ? REF_INK : o.color, 21);
   }
   ellipse(ctx, h[0], h[1], 8, 8.5, skin);
 }
@@ -274,12 +278,12 @@ function drawStandingLegs(ctx: Ctx, skin: string, o: Outfit, p: Pose): void {
       rrect(ctx, lx - 1, 202, 18, 14, 3, "#F4F4F4");
       rrect(ctx, lx - 1, 206, 18, 3, 1, o.color);
     } else {
-      const pants = o.kind === "suit" ? shade(o.color, -0.1) : "#6A86B5";
+      const pants = o.kind === "suit" ? shade(o.color, -0.1) : o.kind === "ref" ? REF_INK : "#6A86B5";
       rrect(ctx, lx - 2, 150, 20, 68, 5, pants);
     }
-    const shoe = o.kind === "suit" ? "#17181C" : "#F4F4F4";
-    rrect(ctx, lx - 8, 213, 26, 16, 7, shoe);
-    rrect(ctx, lx - 9, 224, 28, 7, 3, o.kind === "suit" ? "#000000" : "#2A2A2A");
+    const dark = o.kind === "suit" || o.kind === "ref";
+    rrect(ctx, lx - 8, 213, 26, 16, 7, dark ? "#17181C" : "#F4F4F4");
+    rrect(ctx, lx - 9, 224, 28, 7, 3, dark ? "#000000" : "#2A2A2A");
     ctx.restore();
   }
 }
@@ -359,6 +363,36 @@ function drawTop(ctx: Ctx, o: Outfit, tug: number): void {
     ctx.quadraticCurveTo(57, 112, 44, 124);
     ctx.stroke();
     rrect(ctx, 45, b - 6, 70, 7, 2, shade(color, -0.35));
+    return;
+  }
+  if (o.kind === "ref") {
+    // 심판복: 흰 셔츠에 검은 세로 줄무늬, 검은 깃
+    const shirt: Pt[] = [
+      [50, 92],
+      [68, 88],
+      [92, 88],
+      [110, 92],
+      [113, 158],
+      [47, 158],
+    ];
+    poly(ctx, shirt, "#F4F4F4");
+    ctx.save();
+    ctx.beginPath();
+    shirt.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.closePath();
+    ctx.clip();
+    for (let x = 44; x < 116; x += 12) rrect(ctx, x, 86, 6, 74, 0, REF_INK);
+    ctx.restore();
+    line(
+      ctx,
+      [
+        [68, 89],
+        [80, 97],
+        [92, 89],
+      ],
+      REF_INK,
+      4,
+    );
     return;
   }
   if (o.kind === "tee") {

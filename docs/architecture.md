@@ -99,10 +99,13 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 | `ui/sprite/` | Canvas 선수 캐릭터 `Sprite.tsx`, 표지 그림 `coverArt.ts`, 기록의 캐릭터·유니폼 `look.ts` |
 | `ui/badge/` | `TeamBadge.tsx`(국기·로고·엠블럼), `Medal.tsx`(업적 메달과 딴 업적 카드의 훈장), `emblem.ts`, 만든 파일 `logos.generated.ts`·`flags.generated.ts` |
 | `lib/` | 공통 문구와 색 `format.ts`, 훅 `hooks.ts`, 사이트 정보 `site.ts`, 테마 `theme.ts` |
-| `store/` | `game-store.ts`: 화면과 엔진을 잇는 상태 저장소 (useSyncExternalStore) |
-| `leaderboard/` | 랭킹 API 타입 `types.ts`, 날짜 규칙 `days.ts`, 브라우저 클라이언트 `client.ts` |
+| `store/` | `game-store.ts`: 화면과 엔진을 잇는 상태 저장소 (useSyncExternalStore). 게임 상태만 둬요 |
+| `query/` | TanStack Query: 함께 쓰는 클라이언트 `query-client.ts`, 레이아웃에서 감싸는 `QueryProvider.tsx`, 쿼리 결과를 화면 상태로 나누는 `load-state.ts` |
+| `leaderboard/` | 랭킹 API 타입 `types.ts`, 날짜 규칙 `days.ts`, 브라우저 클라이언트 `client.ts`, 쿼리 키 `keys.ts`, 쿼리 `queries.ts` |
 
-`shared/leaderboard/`의 `types.ts`와 `days.ts`는 화면과 서버가 함께 쓰는 약속이라, 브라우저 전용 코드나 서버 전용 코드를 넣지 않아요. `client.ts`는 브라우저에서만 써요.
+`shared/leaderboard/`의 `types.ts`와 `days.ts`는 화면과 서버가 함께 쓰는 약속이라, 브라우저 전용 코드나 서버 전용 코드를 넣지 않아요. `client.ts`·`queries.ts`는 브라우저에서만 써요.
+
+서버에서 가져오는 데이터는 화면에서 `useEffect`로 직접 부르지 말고 `leaderboard/queries.ts`에 쿼리를 더해 `useQuery`로 읽어요. 키는 `keys.ts`의 `LEADERBOARD`로 시작하게 해서, 기록이 올라가면 한 번에 새로 불러오게 해요.
 
 ### `game/`: 게임 엔진
 

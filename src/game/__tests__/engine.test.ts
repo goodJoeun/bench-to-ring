@@ -345,7 +345,10 @@ describe("생활 이벤트", () => {
       const d = lifeEvent(c);
       if (d) {
         expect(d.opts.length).toBeGreaterThanOrEqual(2);
-        for (const o of d.opts) expect(o.sub, `${d.title} · ${o.label}`).toBeTruthy();
+        for (const o of d.opts) {
+          expect(o.label, d.title).toBeTruthy();
+          expect(o.sub ?? "", `${d.title} · ${o.label}`).not.toContain("스타성");
+        }
         titles.push(d.title);
       }
       c.year++;
@@ -2404,13 +2407,14 @@ describe("결승 클러치", () => {
       expect(isFinalClutch(d)).toBe(true);
       expect(d.board).toMatchObject({ lg: "nat", finals: "2030 아시안게임 결승" });
       expect(d.opts.every((o) => o.sub?.includes("금메달"))).toBe(true);
+      const chosenMove = d.opts[0].act.k === "clutch" ? d.opts[0].act.move : undefined;
       const caps = c!.nat.caps;
       pickFinal(c!, p);
       const after = c!.natLog.at(-1)!;
       expect(c!.natFinal).toBeNull();
       expect(after.games.at(-1)).toMatchObject({ stage: "결승", win: p === 1 });
       expect(after.medal).toBe(p === 1 ? "금" : "은");
-      expect(after.clutch).toMatchObject({ win: p === 1 });
+      expect(after.clutch).toMatchObject({ win: p === 1, move: chosenMove });
       expect(c!.nat.caps).toBe(caps + 1);
       // 결승 마지막 플레이를 이미 골랐으니 결승 중계는 만들지 않아요.
       expect(c!.live).toBeNull();

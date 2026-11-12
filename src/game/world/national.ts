@@ -5,7 +5,7 @@ import { ovr } from "../player/ratings";
 import { FINAL_CLUTCH_CHANCE, clutchDecision, drawClutchLead } from "../season/events";
 import { makeLiveGame } from "../season/live";
 import { grantExemption, owesService } from "./military";
-import type { Career, ClutchBoard, Decision, NatEventKey, NatGame, Nation, NatTournament, Role } from "../core/types";
+import type { Career, ClutchBoard, ClutchMove, Decision, NatEventKey, NatGame, Nation, NatTournament, Role } from "../core/types";
 import { clamp, josa, sigmoid } from "../core/util";
 
 /*
@@ -371,14 +371,14 @@ export function runNationalTeam(c: Career, ev: NatEventKey, year: number, join: 
 }
 
 /** 결승 클러치 결과로 국가대표 결승과 메달을 정하고 대회를 마무리해요. */
-export function settleNatFinal(c: Career, win: boolean, score: [number, number], ot?: boolean): void {
+export function settleNatFinal(c: Career, win: boolean, score: [number, number], ot?: boolean, move?: ClutchMove, play?: string): void {
   const pending = c.natFinal;
   c.natFinal = null;
   const t = pending && c.natLog.findLast((x) => x.year === pending.year && x.ev === pending.ev);
   if (!pending || !t) return;
   const f: NatGame = { stage: "결승", opp: pending.board.opp, us: score[0], them: score[1], win, pts: pending.pts };
   t.games = [...t.games, f];
-  Object.assign(t, finalResult(f), { clutch: { win, us: score[0], them: score[1], opp: f.opp, ...(ot && { ot }) } });
+  Object.assign(t, finalResult(f), { clutch: { win, us: score[0], them: score[1], opp: f.opp, move, play, oppColor: pending.board.oppColor, ...(ot && { ot }) } });
   c.nat.caps += 1;
   // 결승 마지막 플레이를 이미 골랐으니 결승 중계는 만들지 않아요. 대회 화면은 결과 이펙트 뒤에 바로 최종 성적을 보여줘요.
   finishNational(c, t, undefined);

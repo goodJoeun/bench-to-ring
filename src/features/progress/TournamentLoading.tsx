@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { natColor, type Career } from "@/game";
+import { natColor, playerLook, type Career } from "@/game";
 import { ClutchResult } from "@/features/career/ClutchArt";
 import { gameActions } from "@/shared/store/game-store";
 import { useReveal } from "@/shared/lib/hooks";
@@ -57,7 +57,7 @@ export function TournamentLoading({ career: c }: { career: Career }) {
   // 결과 이펙트는 화면 전체를 덮어야 해서 팝업 카드 밖에 그려요. 카드 안의 너비 규칙(.sim-card > *)을 받지 않고, 뒤에는 대회 진행 화면이 남아요.
   const overlay =
     stage === "effect" && t.clutch ? (
-      <ClutchResult result={{ ...t.clutch, finals: `${t.name} 결승`, gold: true }} onDone={() => setStage(final ? "final" : "result")} />
+      <ClutchResult result={{ ...t.clutch, finals: `${t.name} 결승`, gold: true }} cast={{ look: playerLook(c.p), color, oppColor: t.clutch.oppColor, seed: t.clutch.opp }} onDone={() => setStage(final ? "final" : "result")} />
     ) : null;
 
   return (

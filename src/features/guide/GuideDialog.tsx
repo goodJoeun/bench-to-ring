@@ -1,12 +1,12 @@
 "use client";
 
-import { ENLIST_DEADLINE, INVEST_SLOTS, LEAGUES, type LeagueKey } from "@/game";
+import { ENLIST_DEADLINE, INVEST_SLOTS, LEAGUES, STAR_UNLOCKS, type LeagueKey } from "@/game";
 import { Sheet } from "@/shared/ui/Sheet";
 
-/* 플레이 가이드: 꼭 알아야 할 것만 카드 여덟 장으로. 오버롤 수치는 보여주지 않아요. */
+/* 플레이 가이드: 꼭 알아야 할 것만 카드 아홉 장으로. 오버롤 수치는 보여주지 않아요. */
 
 /** 두 칸을 다 쓰는 카드 */
-const WIDE = ["목표", "성장", "진로", "이벤트"];
+const WIDE = ["목표", "성장", "진로", "스타성", "이벤트"];
 
 /** 수준이 낮은 리그부터 */
 const LEAGUE_ORDER: LeagueKey[] = ["hs", "kuniv", "kbl", "ncaa", "gleague", "euro", "nba"];
@@ -30,8 +30,14 @@ export function GuideDialog({ onClose }: { onClose: () => void }) {
     ["병역", `23~${ENLIST_DEADLINE}세에 상무나 현역으로 가요. 아시안게임 금·올림픽 메달이면 병역 특례를 받아요.`],
     ["돈", `시즌 투자(${INVEST_SLOTS}개)와 상점으로 성장·건강을 챙겨요.`],
     [
+      "스타성",
+      `활약·수상·클러치, 도발적인 인터뷰, 시그니처 세리머니, 미담, 팬 서비스로 오르고 시즌마다 조금씩 식어요. ${STAR_UNLOCKS.filter((u) => u.key !== "nil")
+        .map((u) => `${u.min} 이상이면 ${u.name}`)
+        .join(", ")} 제안이 와요.`,
+    ],
+    [
       "이벤트",
-      "시즌 중과 오프시즌에 선택지가 나와요. 선택지마다 효과가 미리 보이고, '도전'은 운에 따라 크게 얻거나 잃어요. 결과는 능력치·건강·돈·코치 신뢰나 남은 경기력에 반영되고, 에이전시·전담 트레이너는 커리어 내내 남아요.",
+      "시즌 중과 오프시즌에 선택지가 나와요. 선택지에 따라 일부 효과가 미리 보이고, '도전'은 운에 따라 크게 얻거나 잃어요. 결과는 능력치·건강·돈·코치 신뢰·스타성이나 남은 경기력에 반영되고, 에이전시·전담 트레이너·시그니처 세리머니는 커리어 내내 남아요.",
     ],
   ];
   return (

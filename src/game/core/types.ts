@@ -411,7 +411,7 @@ export interface NatTournament {
   story: string;
   games: NatGame[];
   /** 결승 클러치로 메달 색이 정해졌으면 그 결과. 대회 진행 화면이 결승 중계 전에 성공·실패 이펙트를 보여줘요. */
-  clutch?: { win: boolean; us: number; them: number; opp: string; ot?: boolean };
+  clutch?: { win: boolean; us: number; them: number; opp: string; ot?: boolean; move?: ClutchMove; play?: string; oppColor?: string };
 }
 
 /** 결승 클러치를 기다리는 국가대표 결승. 고르고 나면 결승 결과와 메달을 정해요. */
@@ -481,14 +481,22 @@ export type Action =
   /**
    * 클러치: 확률 p로 성공하면 다음 경기를 이기고 attr이 올라요. 실패하면 져요. play는 소식에 쓰는 플레이 이름.
    * pts는 성공하면 우리가 넣는 점수(없으면 2), ot가 있으면 성공해도 동점까지라 연장에서 확률 ot로 이겨요.
+   * move는 성공 이펙트에 그리는 장면이에요. 예전 저장에는 없어요.
    */
-  | { k: "clutch"; attr: AttrKey; p: number; play: string; pts?: number; ot?: number; finals?: "league" | "nat" }
+  | { k: "clutch"; attr: AttrKey; p: number; play: string; pts?: number; ot?: number; finals?: "league" | "nat"; move?: ClutchMove }
   | { k: "retire" }
   /** 국가대표 대회 합류(join) 또는 불참 */
   | { k: "national"; ev: NatEventKey; year: number; join: boolean }
   /** 병역: 상무 지원, 현역 입대, 입대 연기 */
   | { k: "military"; choice: MilitaryKind | "defer" }
   | { k: "none" };
+
+/**
+ * 클러치 성공 이펙트에 그리는 장면.
+ * 공격: shot(점퍼·자유투, 공이 그물을 통과), three(3점슛), dunk(림이 흔들리는 덩크), drive(수비를 제치는 돌파 레이업), pass(노룩 패스).
+ * 수비: lockdown(끝까지 막아 림을 맞고 튕겨 나감), block(블록슛), steal(가로채기·트랩 스틸), charge(공격자 파울 유도).
+ */
+export type ClutchMove = "shot" | "three" | "dunk" | "drive" | "pass" | "lockdown" | "block" | "steal" | "charge";
 
 /** 이벤트 선택지가 주는 효과. 모든 값은 선택이에요. */
 export interface Boost {
@@ -512,6 +520,10 @@ export interface Boost {
   injure?: number;
   /** 업적에 쓰는 순간을 c.milestones에 남겨요 (예: "captain" 주장 완장) */
   mark?: string;
+  /** 스타성 변화 (player/star.ts) */
+  star?: number;
+  /** 시그니처 세리머니로 정해요. */
+  celebration?: string;
   msg?: string;
   /** 소식 종류. 기본은 good */
   t?: NewsType;
@@ -521,6 +533,8 @@ export interface Boost {
 export interface Perks {
   agency?: boolean;
   trainer?: AttrKey;
+  /** 시그니처 세리머니 이름 */
+  celebration?: string;
 }
 
 export interface DecisionOption {
@@ -750,6 +764,11 @@ export interface Career {
   health: number;
   /** 코치 신뢰 (-3~4). 출전 시간에 더해져요. */
   trust: number;
+  /**
+   * 스타성 (0~100). 팬과 미디어의 관심이에요. 활약·수상·클러치·인터뷰·세리머니·미담·팬 서비스로 오르고 시즌마다 조금씩 식어요.
+   * 일정 수치를 넘으면 예능·광고·유니폼 수익·시그니처 농구화 제안이 와요 (player/star.ts).
+   */
+  star: number;
   focus: FocusKey;
   team: CurrentTeam | null;
   contract: Contract | null;

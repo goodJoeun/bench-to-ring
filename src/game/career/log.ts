@@ -1,5 +1,6 @@
 import { TEAMS } from "../world/leagues";
 import { pick, rnd } from "../core/random";
+import { addStar, awardStar } from "../player/star";
 import type { AwardKey, Career, Cheer, LeagueKey, NewsType, SeasonRecord, Team } from "../core/types";
 
 const NEWS_LIMIT = 90;
@@ -35,6 +36,9 @@ export function giveAward(c: Career, k: AwardKey, name: string, rec?: SeasonReco
   c.awards[k] = (c.awards[k] ?? 0) + 1;
   c.awardLog.push({ y: year, k, n: name });
   if (rec) rec.awards.push(name);
+  // 상을 받으면 리그의 관심만큼 스타성이 올라요.
+  const up = addStar(c, awardStar(k, rec?.lg ?? c.team?.lg));
+  if (up) addNews(c, rec ? `${rec.year} 시즌` : decisionTag(c), "big", up);
   const kind = CHEER_KIND[k];
   if (!kind) return;
   let sub: string;

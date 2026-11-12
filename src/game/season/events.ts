@@ -1,7 +1,8 @@
 import { SHORT } from "../core/data";
 import { pick, random, ri, rnd, shuffle } from "../core/random";
 import { ovr } from "../player/ratings";
-import type { AttrKey, Boost, Career, ClutchBoard, Decision, DecisionOption, Role, SceneKey } from "../core/types";
+import { hasStar } from "../player/star";
+import type { AttrKey, Boost, Career, ClutchBoard, ClutchMove, Decision, DecisionOption, Role, SceneKey } from "../core/types";
 import { clamp, josa, money, roundSalary } from "../core/util";
 
 /* ---------- 선택지 만들기 ---------- */
@@ -15,12 +16,13 @@ export function describeBoost(b: Boost): string {
   if (b.health) parts.push(`건강 ${b.health > 0 ? "+" : ""}${b.health}`);
   if (b.money) parts.push(b.money > 0 ? `수입 +${money(b.money)}` : `비용 ${money(-b.money)}`);
   if (b.trust) parts.push(b.trust > 0 ? "코치 신뢰 상승" : "코치 신뢰 하락");
+  if (b.celebration) parts.push(`시그니처 세리머니 '${b.celebration}'`);
   if (b.agency) parts.push("앞으로 연봉 제안 +10%");
   if (b.trainer) parts.push(`${SHORT[b.trainer]} 성장 꾸준히 +15%`);
   if (b.form) parts.push(b.form > 0 ? "경기력 상승" : "경기력 하락");
   if (b.sit) parts.push(b.sit > 0 ? `${b.sit}경기 휴식` : `결장 ${-b.sit}경기 단축`);
   if (b.injure) parts.push(`부상으로 ${b.injure}경기 결장`);
-  return parts.join(" · ") || "변화 없음";
+  return parts.join(" · ") || (b.star ? "" : "변화 없음");
 }
 
 const opt = (label: string, b: Boost, tag?: string): DecisionOption => ({
@@ -33,7 +35,10 @@ const opt = (label: string, b: Boost, tag?: string): DecisionOption => ({
 /** 결과가 운에 달린 선택지. 확률은 숫자로 보여주지 않아요. */
 const risky = (label: string, p: number, win: Boost, lose: Boost): DecisionOption => ({
   label,
-  sub: `잘 되면 ${describeBoost(win)} · 안 되면 ${describeBoost(lose)}`,
+  sub: [
+    describeBoost(win) && `잘 되면 ${describeBoost(win)}`,
+    describeBoost(lose) && `안 되면 ${describeBoost(lose)}`,
+  ].filter(Boolean).join(" · ") || undefined,
   tag: "도전",
   act: { k: "gamble", p, win, lose },
 });
@@ -69,6 +74,36 @@ const TRAINERS: [AttrKey, string][] = [
   ["hdl", "볼 핸들링 트레이너"],
   ["pas", "플레이메이킹 코치"],
   ["def", "수비 전문 코치"],
+];
+
+/** 리그마다 스폰서 몸값: NBA는 크고, 학생·하부 리그는 작아요. */
+function leagueFame(c: Career): number {
+  const lg = c.team?.lg;
+  return lg === "nba" ? 2 : lg === "euro" ? 1.1 : lg === "kbl" ? 1 : 0.6;
+}
+
+/** 팬들에게 들려오는 미담: [본문, 말을 아낄 때 소식, 감사 인사를 남길 때 소식] */
+const GOOD_STORIES: [string, string, string][] = [
+  [
+    "경기장 앞에서 휠체어를 탄 어린 팬에게 신고 있던 농구화를 벗어 사인해 준 영상이 퍼졌어요. 정작 나는 맨발로 버스에 올랐대요.",
+    "말을 아낄수록 영상 조회수가 더 올라갔어요.",
+    "아이와 다시 만난 사진을 올렸더니 팬들이 함께 울었어요.",
+  ],
+  [
+    "몇 년째 이름을 숨기고 보육원에 농구공과 신발을 보내 왔다는 사실이 원장님 인터뷰로 알려졌어요.",
+    "끝까지 이름을 밝히지 않으려는 모습에 팬들이 더 감동했어요.",
+    "아이들에게 다음엔 직접 가겠다고 약속했어요.",
+  ],
+  [
+    "고교 시절 은사님의 병원비를 조용히 대신 냈다는 이야기가 동창 SNS로 알려졌어요.",
+    "은사님 이야기는 하지 말아 달라는 한마디가 더 화제가 됐어요.",
+    "은사님께 받은 첫 농구공 사진을 올리며 감사 인사를 전했어요.",
+  ],
+  [
+    "원정 경기 날 경기장 청소 직원들에게 몰래 간식을 돌렸다는 글이 커뮤니티에 올라왔어요.",
+    "본인은 모른 척했지만 '미담 제조기'라는 별명이 붙었어요.",
+    "직원분들 덕분에 뛸 수 있다는 글에 칭찬 댓글이 쏟아졌어요.",
+  ],
 ];
 
 const EVENTS: LifeEvent[] = [
@@ -155,7 +190,7 @@ const EVENTS: LifeEvent[] = [
         risky(
           "마스코트를 넘는다",
           0.5,
-          { attrs: { ath: 2 }, trust: 1, msg: "마스코트를 훌쩍 넘는 덩크로 하이라이트를 장식했어요." },
+          { attrs: { ath: 2 }, trust: 1, star: 5, msg: "마스코트를 훌쩍 넘는 덩크로 하이라이트를 장식했어요." },
           { health: -6, msg: "착지하다 발목을 접질렸어요. 마스코트는 무사해요.", t: "bad" },
         ),
         opt("심사위원석에 앉는다", { attrs: { iq: 1 }, msg: "남의 덩크를 보며 몸의 쓰임새를 공부했어요." }),
@@ -175,7 +210,7 @@ const EVENTS: LifeEvent[] = [
         risky(
           "무대에 선다",
           0.6,
-          { trust: 2, health: 5, msg: "축제 덩크 쇼로 학교의 스타가 됐어요. 코치도 자신감이 붙었다며 웃었어요." },
+          { trust: 2, health: 5, star: 3, msg: "축제 덩크 쇼로 학교의 스타가 됐어요. 코치도 자신감이 붙었다며 웃었어요." },
           { trust: -1, msg: "덩크를 놓쳐 웃음거리가 됐어요. 코치는 연습에나 집중하라고 했어요.", t: "bad" },
         ),
         opt("체육관에서 훈련", { rand: 1, amt: 1, health: -3, msg: "축제 대신 체육관을 지켰어요." }),
@@ -358,7 +393,7 @@ const EVENTS: LifeEvent[] = [
         risky(
           "채널을 연다",
           0.4,
-          { money: 0.3, msg: "브이로그가 입소문을 타 구독자가 크게 늘었어요." },
+          { money: 0.3, star: 5, msg: "브이로그가 입소문을 타 구독자가 크게 늘었어요." },
           { health: -3, msg: "촬영에 시간을 뺏겨 피곤한 여름이었어요.", t: "info" },
         ),
         opt("훈련에 집중", { trust: 1, msg: "카메라 대신 공에 집중했어요." }),
@@ -368,14 +403,14 @@ const EVENTS: LifeEvent[] = [
   {
     id: "nil",
     scene: "deal",
-    when: (c) => isCollege(c) && c.team?.lg === "ncaa",
-    make: () => {
-      const pay = roundSalary(rnd(0.2, 0.8));
+    when: (c) => isCollege(c) && c.team?.lg === "ncaa" && hasStar(c, "nil"),
+    make: (c) => {
+      const pay = roundSalary(clamp(rnd(0.2, 0.8) + (c.star - 15) * 0.02, 0.2, 2));
       return {
         title: "NIL 후원 제안",
         body: "지역 자동차 딜러가 이름·초상권(NIL) 후원 계약을 제안했어요. 광고 촬영이 몇 번 있어요.",
         opts: [
-          opt("계약한다", { money: pay, health: -2, msg: "첫 NIL 후원 계약을 맺었어요." }, "NIL"),
+          opt("계약한다", { money: pay, health: -2, star: 2, msg: "첫 NIL 후원 계약을 맺었어요." }, "NIL"),
           opt("농구에만 집중", { trust: 1, msg: "후원 제안을 정중히 거절했어요. 코치가 그 태도를 눈여겨봤어요." }),
         ],
       };
@@ -525,8 +560,8 @@ const EVENTS: LifeEvent[] = [
         risky(
           "라이브 방송으로 해명",
           0.5,
-          { trust: 1, money: cut(c, 0.02, 0.02, 3), msg: "솔직한 해명으로 오히려 팬이 늘었어요. 광고 문의까지 들어왔어요." },
-          { trust: -1, health: -4, msg: "해명이 논란을 키워 한동안 마음고생을 했어요.", t: "bad" },
+          { trust: 1, money: cut(c, 0.02, 0.02, 3), star: 3, msg: "솔직한 해명으로 오히려 팬이 늘었어요. 광고 문의까지 들어왔어요." },
+          { trust: -1, health: -4, star: -3, msg: "해명이 논란을 키워 한동안 마음고생을 했어요.", t: "bad" },
         ),
       ],
     }),
@@ -534,14 +569,14 @@ const EVENTS: LifeEvent[] = [
   {
     id: "ad",
     scene: "studio",
-    when: (c) => isPro(c) && ovr(c.p) >= 72,
+    when: (c) => isPro(c) && hasStar(c, "ad"),
     make: (c) => {
-      const pay = roundSalary(clamp(ovr(c.p) - 70, 1, 20) * 1.5);
+      const pay = roundSalary(clamp((c.star - 35) * 0.6, 2, 30) * leagueFame(c));
       return {
         title: "광고 모델 제안",
-        body: "스포츠 브랜드에서 광고 촬영을 제안했어요.",
+        body: "스포츠 브랜드에서 광고 촬영을 제안했어요. 높아진 인기에 광고 단가도 올라갔어요.",
         opts: [
-          opt("수락", { money: pay, health: -3, msg: "광고 촬영을 마쳤어요." }),
+          opt("수락", { money: pay, health: -3, star: 2, msg: "광고 촬영을 마쳤어요. 거리 곳곳에 내 얼굴이 걸렸어요." }),
           opt("거절하고 훈련", { trust: 1, msg: "시즌 준비에만 집중했어요." }),
         ],
       };
@@ -550,14 +585,14 @@ const EVENTS: LifeEvent[] = [
   {
     id: "variety",
     scene: "stage",
-    when: (c) => isPro(c) && ovr(c.p) >= 70,
+    when: (c) => isPro(c) && hasStar(c, "variety"),
     make: (c) => {
-      const pay = roundSalary(clamp((ovr(c.p) - 65) * 0.4, 0.5, 15));
+      const pay = roundSalary(clamp((c.star - 25) * 0.25, 0.5, 15));
       return {
         title: "예능 출연 제안",
         body: "인기 예능 프로그램에서 출연 제안이 왔어요. 촬영은 오프시즌 내내 이어져요.",
         opts: [
-          opt("출연한다", { money: pay, health: -3, trust: -1, msg: "예능 출연으로 얼굴을 알렸어요." }),
+          opt("출연한다", { money: pay, health: -3, trust: -1, star: 5, msg: "예능 출연으로 얼굴을 알렸어요." }),
           opt("시즌 준비에 집중", { trust: 1, msg: "예능 출연을 고사하고 시즌 준비에 집중했어요." }),
         ],
       };
@@ -612,7 +647,7 @@ const EVENTS: LifeEvent[] = [
       title: "자선 경기 초청",
       body: "소아암 환우를 돕는 자선 경기에 초청받았어요. 오프시즌 휴가와 겹쳐요.",
       opts: [
-        opt("뛴다", { trust: 1, health: -2, msg: "아이들의 응원 속에 의미 있는 경기를 뛰었어요." }),
+        opt("뛴다", { trust: 1, health: -2, star: 3, msg: "아이들의 응원 속에 의미 있는 경기를 뛰었어요." }),
         opt("휴가를 지킨다", { health: 5, msg: "가족과 푹 쉬며 휴가를 보냈어요.", t: "info" }),
       ],
     }),
@@ -672,19 +707,91 @@ const EVENTS: LifeEvent[] = [
   {
     id: "shoe",
     scene: "shoe",
-    when: (c) => isPro(c) && ovr(c.p) >= 78,
+    when: (c) => isPro(c) && hasStar(c, "shoe"),
     once: true,
     make: (c) => {
-      const pay = roundSalary(clamp((ovr(c.p) - 75) * 2, 2, 60));
+      const pay = roundSalary(clamp((c.star - 65) * 2, 10, 70) * leagueFame(c));
       return {
         title: "시그니처 농구화 제안",
-        body: "스포츠 브랜드가 내 이름을 단 농구화를 만들고 싶대요. 디자인 회의에 자주 나와야 해요.",
+        body: "스포츠 브랜드가 내 이름을 단 농구화를 만들고 싶대요. 슈퍼스타만 받는 제안이에요. 디자인 회의에 자주 나와야 해요.",
         opts: [
-          opt("디자인까지 참여한다", { money: pay, health: -4, msg: "내 이름이 새겨진 농구화가 나왔어요." }, "시그니처"),
-          opt("이름만 빌려준다", { money: roundSalary(pay * 0.6), health: 3, msg: "농구화는 나왔지만 디자인은 조금 아쉬워요. 그 시간에 몸을 만들었어요." }),
+          opt("디자인까지 참여한다", { money: pay, health: -4, star: 4, mark: "shoe", msg: "내 이름이 새겨진 농구화가 나왔어요." }, "시그니처"),
+          opt("이름만 빌려준다", { money: roundSalary(pay * 0.6), health: 3, star: 1, mark: "shoe", msg: "농구화는 나왔지만 디자인은 조금 아쉬워요. 그 시간에 몸을 만들었어요." }),
         ],
       };
     },
+  },
+  {
+    id: "jersey",
+    scene: "crowd",
+    when: (c) => isPro(c) && hasStar(c, "jersey"),
+    make: (c) => {
+      const pay = roundSalary(clamp((c.star - 45) * 0.5, 2, 25) * leagueFame(c));
+      return {
+        title: "유니폼 판매 수익 배분",
+        body: `내 이름과 등번호 ${c.p.num}번이 새겨진 유니폼이 리그 판매 상위권에 올랐어요. 구단이 판매 수익 일부를 나누자고 해요.`,
+        opts: [
+          opt("수익 배분 계약을 맺는다", { money: pay, msg: "유니폼이 팔릴 때마다 내 몫이 들어와요." }, "유니폼"),
+          opt("내 몫을 유소년 농구에 기부한다", { star: 6, trust: 1, msg: "유니폼 수익을 유소년 농구에 기부했어요. 팬들의 박수가 쏟아졌어요." }),
+        ],
+      };
+    },
+  },
+  {
+    id: "goodstory",
+    scene: "kids",
+    when: (c) => isPro(c) || isCollege(c),
+    make: (c) => {
+      const [body, quiet, loud] = pick(GOOD_STORIES);
+      const gift = cut(c, 0.05, 0.05, 5);
+      return {
+        title: "팬들에게 들려온 미담",
+        body,
+        opts: [
+          opt("쑥스러워 말을 아낀다", { star: 6, msg: quiet }),
+          opt("SNS에 짧게 감사 인사를 남긴다", { star: 4, health: 2, msg: loud }),
+          opt("이참에 꾸준히 이어 간다", { star: 8, money: -gift, trust: 1, msg: "같은 곳에 정기 후원을 시작했어요. 팬들이 '찐'이라며 감동했어요." }),
+        ],
+      };
+    },
+  },
+  {
+    id: "fansign",
+    scene: "crowd",
+    when: (c) => isPro(c) || isCollege(c),
+    make: (c) => ({
+      title: "팬 사인회",
+      body: `${josa(c.team?.name ?? "구단", "이", "가")} 오프시즌 팬 사인회를 열어요. 아침부터 줄이 경기장 밖까지 늘어섰대요.`,
+      opts: [
+        opt("마지막 팬까지 다 해 준다", { star: 5, health: -3, msg: "다섯 시간 동안 한 명 한 명 눈을 맞추며 사인했어요. 손목은 얼얼해요." }),
+        opt("팬과 자유투 대결을 연다", { star: 4, attrs: { sht: 1 }, msg: "팬과 자유투 대결을 벌였어요. 일부러 져 준 영상이 퍼졌어요." }),
+        opt("정해진 시간만 하고 훈련하러 간다", { star: 1, rand: 1, amt: 1, msg: "정해진 시간만 사인하고 체육관으로 향했어요.", t: "info" }),
+      ],
+    }),
+  },
+  {
+    id: "bold-interview",
+    scene: "studio",
+    when: (c) => isPro(c) || isCollege(c),
+    make: () => ({
+      title: "시즌 전 인터뷰",
+      body: "새 시즌을 앞둔 방송 인터뷰예요. 진행자가 웃으며 물어요. \"올 시즌 목표를 한마디로 말해 주세요.\"",
+      opts: [
+        risky(
+          "\"MVP는 제 겁니다\"라고 선언한다",
+          0.55,
+          { star: 8, msg: "자신감 넘치는 선언이 하루 종일 화제가 됐어요." },
+          { star: 3, trust: -1, msg: "말만 앞선다는 비판도 따라왔어요. 그래도 이름은 더 알려졌어요.", t: "bad" },
+        ),
+        risky(
+          "라이벌 팀을 콕 집어 도발한다",
+          0.45,
+          { star: 10, msg: "도발 영상이 퍼지며 맞대결 표가 매진됐어요." },
+          { star: 2, trust: -1, health: -3, msg: "선을 넘었다는 비난에 한동안 시달렸어요.", t: "bad" },
+        ),
+        opt("\"팀이 먼저입니다\"라고 답한다", { trust: 1, star: 1, msg: "모범 답안에 감독이 고개를 끄덕였어요." }),
+      ],
+    }),
   },
   {
     id: "podcast",
@@ -699,7 +806,7 @@ const EVENTS: LifeEvent[] = [
           risky(
             "거침없이 말한다",
             0.5,
-            { money: pay, trust: 1, msg: "솔직한 입담으로 화제가 됐어요." },
+            { money: pay, trust: 1, star: 3, msg: "솔직한 입담으로 화제가 됐어요." },
             { trust: -1, msg: "전 소속팀 이야기가 기사화돼 곤란했어요.", t: "bad" },
           ),
           opt("무난하게 마친다", { money: roundSalary(pay * 0.5), msg: "무난한 방송이었어요.", t: "info" }),
@@ -849,12 +956,12 @@ const EVENTS: LifeEvent[] = [
         title: "늦은 밤 목격담",
         body: "새벽까지 번화가에 있었다는 목격담과 사진이 커뮤니티에 올라왔어요. 구단이 사실 확인을 요청했어요.",
         opts: [
-          opt("구단과 팬에게 사과한다", { trust: 1, health: -2, msg: "자기 관리에 소홀했다고 사과하고 생활을 다잡았어요." }),
+          opt("구단과 팬에게 사과한다", { trust: 1, health: -2, star: -1, msg: "자기 관리에 소홀했다고 사과하고 생활을 다잡았어요." }),
           risky(
             "지인 생일 모임이었다고 해명한다",
             0.5,
             { trust: 1, health: 2, msg: "해명이 받아들여져 오히려 억울한 사정에 응원이 모였어요." },
-            { trust: -1, health: -4, msg: "해명과 다른 사진이 나오며 논란이 커졌어요.", t: "bad" },
+            { trust: -1, health: -4, star: -4, msg: "해명과 다른 사진이 나오며 논란이 커졌어요.", t: "bad" },
           ),
           opt("법적 대응을 예고한다", { money: -fee, health: 5, msg: "악의적인 게시물은 변호사에게 맡기고 마음의 짐을 덜었어요.", t: "info" }),
         ],
@@ -889,8 +996,72 @@ const inProGames = (c: Career) => inGames(c) && isPro(c);
 /** 팀 없이 보내는 시즌 */
 const offCourt = (c: Career) => !!c.run && c.run.games === 0;
 
+/** 시그니처 세리머니 후보: [이름, 소식] */
+const CELEBRATIONS: [string, string][] = [
+  ["활시위 당기기", "득점 뒤 관중석을 향해 활시위를 당기는 세리머니가 생겼어요."],
+  ["쉿! 손가락", "원정 관중을 향해 손가락을 입술에 대는 세리머니로 경기장을 조용하게 만들었어요."],
+  ["베개 베고 잠자기", "두 손을 모아 베개를 베는 '이제 잘 시간' 세리머니가 생겼어요."],
+  ["팔짱 끼고 끄덕끄덕", "득점 뒤 팔짱을 끼고 고개를 끄덕이는 여유로운 세리머니가 생겼어요."],
+  ["가슴 두드리고 하늘 가리키기", "가슴을 두 번 두드리고 하늘을 가리키는 세리머니가 생겼어요."],
+  ["보이지 않는 덤벨 들기", "득점 뒤 보이지 않는 덤벨을 들어 올리는 세리머니가 생겼어요."],
+  ["관중에게 귀 기울이기", "손을 귀에 대고 관중의 함성을 더 크게 끌어내는 세리머니가 생겼어요."],
+];
+
 /** 시즌 도중에 생기는 일. 경기력(form)과 휴식(sit)은 남은 경기에만 영향을 줘요. */
 const SEASON_EVENTS: LifeEvent[] = [
+  {
+    id: "s-trash",
+    scene: "press",
+    when: (c) => inGames(c) && (isPro(c) || isCollege(c)),
+    make: () => ({
+      title: "경기 전 인터뷰",
+      body: "선두 팀과의 경기 전, 중계 카메라와 마이크가 나를 찾아왔어요. \"오늘 경기 어떻게 될 것 같나요?\"",
+      opts: [
+        risky(
+          "\"오늘 밤은 제 무대입니다\"라고 도발한다",
+          0.5,
+          { form: 0.8, star: 6, msg: "말한 대로 코트를 지배했어요. 인터뷰 영상과 하이라이트가 같이 돌았어요." },
+          { form: -0.8, star: 2, trust: -1, msg: "도발한 날 부진해 조롱 섞인 짤이 돌았어요.", t: "bad" },
+        ),
+        opt("\"상대를 존중합니다\"라고 답한다", { form: 0.2, star: 1, msg: "차분한 답변을 남기고 경기를 준비했어요." }),
+      ],
+    }),
+  },
+  {
+    id: "s-celebration",
+    scene: "crowd",
+    when: (c) => inGames(c) && (isPro(c) || isCollege(c)) && !c.perks.celebration,
+    make: () => {
+      const picks = shuffle(CELEBRATIONS).slice(0, 2);
+      return {
+        title: "나만의 세리머니",
+        body: "지난 경기 득점 뒤 즉흥 세리머니가 하이라이트에 나왔어요. 팬들이 앞으로도 해 달라며 나만의 세리머니를 만들어 달래요.",
+        opts: [
+          ...picks.map(([name, msg]) => opt(`'${name}'로 정한다`, { celebration: name, star: 5, msg })),
+          risky(
+            "상대 벤치 앞에서 과감하게",
+            0.55,
+            { celebration: "상대 벤치 앞 세리머니", star: 8, form: 0.3, msg: "상대 벤치 앞에서 한 세리머니가 그 주 최고의 장면이 됐어요." },
+            { star: 3, form: -0.4, msg: "테크니컬 파울을 받았어요. 그래도 장면은 꽤 돌았어요.", t: "bad" },
+          ),
+        ],
+      };
+    },
+  },
+  {
+    id: "s-fanservice",
+    scene: "kids",
+    when: (c) => inGames(c) && (isPro(c) || isCollege(c)),
+    make: () => ({
+      title: "버스 앞의 어린 팬들",
+      body: "원정 경기를 마치고 나오니 팀 버스 앞에 어린 팬들이 내 유니폼을 입고 기다리고 있어요. 내일 아침 일찍 이동해야 해요.",
+      opts: [
+        opt("한 명 한 명 사인하고 사진을 찍는다", { star: 4, health: -2, msg: "마지막 아이까지 사진을 찍어 주고 버스에 올랐어요." }),
+        opt("오늘 신은 농구화를 벗어 선물한다", { star: 5, msg: "농구화를 받은 아이가 울음을 터뜨린 영상이 퍼졌어요." }),
+        pass("손만 흔들고 버스에 오른다", "아쉬워하는 아이들에게 손을 흔들고 버스에 올랐어요."),
+      ],
+    }),
+  },
   {
     id: "s-slump",
     scene: "slump",
@@ -1353,6 +1524,8 @@ export interface ClutchPlay {
   play: string;
   /** 성공하면 우리가 넣는 점수. 공격은 2(3점슛·앤드원은 3), 수비는 0(트랩은 스틸 뒤 속공 2) */
   pts: number;
+  /** 성공 이펙트에 그리는 장면 */
+  move: ClutchMove;
   /** 성공 확률 보정. 어려운 플레이(3점슛·트랩)는 낮고, 침착한 자유투나 주무기는 높아요. */
   edge?: number;
   /** 능력치에 따라 확률이 갈리는 정도(1이 보통). 높으면 잘하는 선수에게 더 유리하고 못하는 선수에게 더 불리해요. */
@@ -1361,23 +1534,23 @@ export interface ClutchPlay {
 
 /** 공격 플레이: 동점이거나 뒤진 채 우리가 마지막 공격을 할 때 */
 export const CLUTCH_OFFENSE: ClutchPlay[] = [
-  { attr: "sht", side: "공격", label: "풀업 점퍼로 끝낸다", play: "종료 버저와 함께 풀업 점퍼", pts: 2 },
-  { attr: "hdl", side: "공격", label: "아이솔레이션으로 돌파한다", play: "수비 둘을 제치는 돌파 레이업", pts: 2 },
-  { attr: "pas", side: "공격", label: "더블팀을 끌어내 빈 동료에게 준다", play: "더블팀 사이로 찌른 결승 어시스트", pts: 2 },
-  { attr: "iq", side: "공격", label: "수비의 빈틈을 읽고 백도어 컷", play: "수비 뒤를 파고든 백도어 컷 레이업", pts: 2 },
-  { attr: "ath", side: "공격", label: "공격 리바운드를 노려 풋백", play: "공중에서 낚아챈 풋백 득점", pts: 2 },
-  { attr: "sht", side: "공격", label: "3점 라인 밖에서 승부를 건다", play: "버저와 함께 꽂은 3점슛", pts: 3, edge: -0.08, swing: 1.3 },
-  { attr: "sht", side: "공격", label: "몸을 부딪쳐 파울을 얻어 낸다", play: "얻어 낸 파울과 침착한 클러치 자유투", pts: 2, edge: 0.04, swing: 0.6 },
-  { attr: "ath", side: "공격", label: "앤드원을 노리고 림으로 파고든다", play: "수비를 달고 넣은 앤드원", pts: 3, edge: -0.06 },
+  { attr: "sht", side: "공격", label: "풀업 점퍼로 끝낸다", play: "종료 버저와 함께 풀업 점퍼", pts: 2, move: "shot" },
+  { attr: "hdl", side: "공격", label: "아이솔레이션으로 돌파한다", play: "수비 둘을 제치는 돌파 레이업", pts: 2, move: "drive" },
+  { attr: "pas", side: "공격", label: "더블팀을 끌어내 빈 동료에게 준다", play: "더블팀 사이로 찌른 결승 어시스트", pts: 2, move: "pass" },
+  { attr: "iq", side: "공격", label: "수비의 빈틈을 읽고 백도어 컷", play: "수비 뒤를 파고든 백도어 컷 레이업", pts: 2, move: "drive" },
+  { attr: "ath", side: "공격", label: "공격 리바운드를 노려 풋백", play: "공중에서 낚아챈 풋백 득점", pts: 2, move: "dunk" },
+  { attr: "sht", side: "공격", label: "3점 라인 밖에서 승부를 건다", play: "버저와 함께 꽂은 3점슛", pts: 3, edge: -0.08, swing: 1.3, move: "three" },
+  { attr: "sht", side: "공격", label: "몸을 부딪쳐 파울을 얻어 낸다", play: "얻어 낸 파울과 침착한 클러치 자유투", pts: 2, edge: 0.04, swing: 0.6, move: "shot" },
+  { attr: "ath", side: "공격", label: "앤드원을 노리고 림으로 파고든다", play: "수비를 달고 넣은 앤드원", pts: 3, edge: -0.06, move: "dunk" },
 ];
 
 /** 수비 플레이: 앞선 채 상대가 마지막 공격을 할 때 */
 export const CLUTCH_DEFENSE: ClutchPlay[] = [
-  { attr: "def", side: "수비", label: "상대 에이스를 끝까지 막는다", play: "상대 에이스의 마지막 슛을 막아 낸 수비", pts: 0 },
-  { attr: "ath", side: "수비", label: "블록슛을 노린다", play: "마지막 슛을 쳐 낸 블록슛", pts: 0 },
-  { attr: "iq", side: "수비", label: "공격자 파울을 유도한다", play: "마지막 돌파를 멈춰 세운 차징 유도", pts: 0 },
-  { attr: "def", side: "수비", label: "기습적인 트랩으로 공을 빼앗는다", play: "기습 트랩으로 빼앗은 스틸과 속공 득점", pts: 2, edge: -0.05, swing: 1.4 },
-  { attr: "iq", side: "수비", label: "패스 길목을 읽고 가로챈다", play: "패스 길목을 끊은 가로채기", pts: 0, swing: 1.2 },
+  { attr: "def", side: "수비", label: "상대 에이스를 끝까지 막는다", play: "상대 에이스의 마지막 슛을 막아 낸 수비", pts: 0, move: "lockdown" },
+  { attr: "ath", side: "수비", label: "블록슛을 노린다", play: "마지막 슛을 쳐 낸 블록슛", pts: 0, move: "block" },
+  { attr: "iq", side: "수비", label: "공격자 파울을 유도한다", play: "마지막 돌파를 멈춰 세운 차징 유도", pts: 0, move: "charge" },
+  { attr: "def", side: "수비", label: "기습적인 트랩으로 공을 빼앗는다", play: "기습 트랩으로 빼앗은 스틸과 속공 득점", pts: 2, edge: -0.05, swing: 1.4, move: "steal" },
+  { attr: "iq", side: "수비", label: "패스 길목을 읽고 가로챈다", play: "패스 길목을 끊은 가로채기", pts: 0, swing: 1.2, move: "steal" },
 ];
 
 /** 모든 클러치 플레이 (주무기 제외) */
@@ -1388,22 +1561,23 @@ const THREE = CLUTCH_OFFENSE.find((x) => x.pts === 3 && x.attr === "sht")!;
 
 /**
  * 주무기: 가장 높은 공격 능력치(수비 제외)로 정해지는 가장 자신 있는 무브. 공격 상황마다 꼭 하나 나와요.
- * 가드·스몰포워드와 빅맨(파워포워드·센터)의 무브가 달라요. [무브, 소식에 쓰는 플레이, 점수]
+ * 가드·스몰포워드와 빅맨(파워포워드·센터)의 무브가 달라요. [무브, 소식에 쓰는 플레이, 점수, 성공 이펙트 장면]
  */
-const SIGNATURE: Record<Exclude<AttrKey, "def">, { wing: [string, string, number]; big: [string, string, number] }> = {
-  sht: { wing: ["스텝백 3점슛", "수비를 밀어내고 던진 스텝백 3점슛", 3], big: ["하이포스트 페이더웨이", "하이포스트에서 던진 페이더웨이 점퍼", 2] },
-  hdl: { wing: ["크로스오버 풀업 점퍼", "수비를 넘어뜨린 크로스오버 풀업 점퍼", 2], big: ["페이스업 돌파", "빅맨답지 않은 페이스업 돌파", 2] },
-  pas: { wing: ["픽앤롤 노룩 패스", "픽앤롤에서 뿌린 노룩 패스", 2], big: ["하이포스트 컷인 패스", "하이포스트에서 컷인하는 동료에게 내준 패스", 2] },
-  iq: { wing: ["턴어라운드 페이더웨이", "포스트업에 이은 턴어라운드 페이더웨이", 2], big: ["포스트업 훅슛", "골밑에서 돌아서며 올린 훅슛", 2] },
-  ath: { wing: ["림까지 날아오르는 덩크", "수비 위로 꽂은 덩크", 2], big: ["로포스트 파워 덩크", "로포스트에서 찍어 누른 파워 덩크", 2] },
+type Signature = [string, string, number, ClutchMove];
+const SIGNATURE: Record<Exclude<AttrKey, "def">, { wing: Signature; big: Signature }> = {
+  sht: { wing: ["스텝백 3점슛", "수비를 밀어내고 던진 스텝백 3점슛", 3, "three"], big: ["하이포스트 페이더웨이", "하이포스트에서 던진 페이더웨이 점퍼", 2, "shot"] },
+  hdl: { wing: ["크로스오버 풀업 점퍼", "수비를 넘어뜨린 크로스오버 풀업 점퍼", 2, "shot"], big: ["페이스업 돌파", "빅맨답지 않은 페이스업 돌파", 2, "drive"] },
+  pas: { wing: ["픽앤롤 노룩 패스", "픽앤롤에서 뿌린 노룩 패스", 2, "pass"], big: ["하이포스트 컷인 패스", "하이포스트에서 컷인하는 동료에게 내준 패스", 2, "pass"] },
+  iq: { wing: ["턴어라운드 페이더웨이", "포스트업에 이은 턴어라운드 페이더웨이", 2, "shot"], big: ["포스트업 훅슛", "골밑에서 돌아서며 올린 훅슛", 2, "shot"] },
+  ath: { wing: ["림까지 날아오르는 덩크", "수비 위로 꽂은 덩크", 2, "dunk"], big: ["로포스트 파워 덩크", "로포스트에서 찍어 누른 파워 덩크", 2, "dunk"] },
 };
 const SIGNATURE_EDGE = 0.06;
 
 export function signatureMove(c: Career): ClutchPlay {
   const keys = Object.keys(SIGNATURE) as (keyof typeof SIGNATURE)[];
   const attr = keys.reduce((best, k) => (c.p.attrs[k] > c.p.attrs[best] ? k : best));
-  const [move, play, pts] = SIGNATURE[attr][c.p.pos === "PF" || c.p.pos === "C" ? "big" : "wing"];
-  return { attr, side: "주무기", label: `가장 자신 있는 무브 · ${move}`, play, pts, edge: SIGNATURE_EDGE };
+  const [name, play, pts, move] = SIGNATURE[attr][c.p.pos === "PF" || c.p.pos === "C" ? "big" : "wing"];
+  return { attr, side: "주무기", label: `가장 자신 있는 무브 · ${name}`, play, pts, edge: SIGNATURE_EDGE, move };
 }
 
 /** 클러치 때 보여주는 선택지 수 */
@@ -1534,7 +1708,7 @@ export function clutchDecision(c: Career, label: string, leagueAvg: number, boar
         label: x.label,
         sub,
         tag: x.side,
-        act: { k: "clutch", attr: x.attr, play: x.play, p: clutchOdds(c, x.attr, leagueAvg, x), pts: x.pts, ...(tying && { ot }), ...(finals && { finals }) },
+        act: { k: "clutch", attr: x.attr, play: x.play, p: clutchOdds(c, x.attr, leagueAvg, x), pts: x.pts, move: x.move, ...(tying && { ot }), ...(finals && { finals }) },
       };
     }),
   };

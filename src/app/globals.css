@@ -490,6 +490,7 @@ h2.sec {
 }
 /* 업적 */
 .achv-bar {
+  flex: none;
   height: 8px;
   margin: 4px 0 8px;
   border-radius: 999px;
@@ -501,6 +502,44 @@ h2.sec {
   height: 100%;
   border-radius: inherit;
   background: var(--gold);
+}
+/* 업적 분류 탭: 4열 격자 (전체 + 분류 11개 = 4×3). 시트는 세로 flex라 줄어들지 않게 해요. */
+.achv-tabs {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin: 4px 0 6px;
+}
+.achv-tabs button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-height: 46px;
+  padding: 5px 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel2);
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  word-break: keep-all;
+  cursor: pointer;
+}
+.achv-tabs button span {
+  font-family: var(--f-num);
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+.achv-tabs button[aria-selected="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--panel);
 }
 .achv-list {
   display: grid;
@@ -1047,6 +1086,100 @@ main.grid {
 }
 .spec-chip b {
   color: var(--ink);
+}
+/* 스타성: 단계, 시그니처 세리머니, 막대(눈금은 제안이 열리는 수치), 제안 목록 */
+.star {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.star-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.star-tier {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--gold);
+}
+.star-cele {
+  margin-left: auto;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.star-cele b {
+  color: var(--ink);
+}
+.star-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 8px;
+}
+.star-row .v {
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-size: 17px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.star-track {
+  position: relative;
+  height: 10px;
+  border-radius: 5px;
+}
+.star-fill {
+  background: linear-gradient(90deg, #e8b53c, #ffd25a);
+}
+.star-tick {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--muted);
+  opacity: 0.55;
+}
+.star-tick[data-on] {
+  background: var(--panel);
+  opacity: 0.9;
+}
+.star-unlocks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.star-unlocks li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  color: var(--muted);
+  background: var(--panel2);
+  border: 1px dashed var(--line);
+}
+.star-unlocks li b {
+  font-family: var(--f-num);
+  font-size: 12.5px;
+}
+.star-unlocks li[data-on] {
+  color: var(--gold);
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  background: color-mix(in srgb, var(--gold) 12%, var(--panel2));
+  font-weight: 700;
+}
+.star-unlocks li[data-on] b {
+  color: var(--ink);
+  font-family: inherit;
 }
 .phys {
   display: flex;
@@ -2128,6 +2261,1257 @@ tr:last-child td {
 }
 .cl-res-opp {
   font-size: 13px;
+}
+
+/* 클러치 성공 장면: 고른 플레이마다 다른 장면(슛·3점슛·덩크·돌파·노룩 패스·끝까지 막기·블록슛·가로채기·차징 유도).
+   크기는 실제 규격(1m = 46단위, 바닥 y=192)이에요: 림 높이 3.05m, 백보드 1.8×1.05m, 선수 2m.
+   공(지름 17)과 림(지름 26)은 머리와 손이 큰 캐릭터에 맞춰 키웠고, 둘의 비율은 실제와 비슷해요.
+   장면은 1.25초 동안 움직이고, 결정적인 순간(--hit)에 장면 이름과 충격선이 터져요. 그 뒤에 'CLUTCH!'와 꽃가루가 이어져요.
+   움직임을 줄이면 결정적인 순간의 한 장면으로 멈춰 있어요(아래 기본 위치가 그 장면이에요). */
+.cl-res[data-move] {
+  animation-duration: 2.7s;
+}
+.cl-res[data-move]::before {
+  animation: mv-flash 0.45s ease-out both;
+}
+.cl-res[data-move] .cl-rays {
+  animation:
+    cl-spin 6s linear infinite,
+    mv-in 0.4s ease-out both;
+}
+.cl-res[data-move] .cl-res-core {
+  animation: none;
+}
+.cl-res[data-move] .cl-res-t,
+.cl-res[data-move] .cl-res-s {
+  animation: cl-title 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+.cl-res[data-move] .cl-conf {
+  animation-delay: var(--d);
+}
+.mv {
+  position: relative;
+  width: min(320px, calc(100vw - 40px));
+  margin: 0 auto 14px;
+}
+.mv-scene {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+}
+.mv-tag {
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  padding: 3px 12px 2px;
+  border-radius: 6px;
+  background: #ffd25a;
+  color: #2a1a02;
+  font-family: var(--f-display);
+  font-size: 18px;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  translate: -50% 0;
+  rotate: -4deg;
+  box-shadow:
+    0 3px 0 #a8730a,
+    0 0 18px rgba(255, 210, 90, 0.7);
+  animation: mv-tag 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.5) both;
+}
+.mv[data-outcome="lose"] .mv-tag {
+  background: #aab8cc;
+  color: #172235;
+  box-shadow: 0 3px 0 #53647b;
+}
+.mv-fail-ball {
+  transform: translate(68px, 98px);
+}
+.mv-result-face {
+  opacity: 0;
+}
+.cl-res[data-revealed] .mv-result-face {
+  opacity: 1;
+}
+.mv-fail-dunker {
+  animation: mv-dunker 1.25s ease-out both;
+}
+.mv-fail-dunk-ball {
+  animation: mv-fail-dunk 1.25s linear both;
+}
+.mv-fail-pass-ball {
+  animation: mv-fail-pass 1.25s linear both;
+}
+.mv-fail-driver {
+  animation: mv-fail-driver 1.25s ease-out both;
+}
+.mv-fail-drive-ball {
+  animation: mv-fail-drive-ball 1.25s linear both;
+}
+.mv-fail-face {
+  opacity: 0;
+  animation: mv-fail-face 1.25s steps(1, end) both;
+}
+.mv[data-outcome="lose"][data-move="lockdown"] .mv-ball-clank,
+.mv[data-outcome="lose"][data-move="block"] .mv-ball-block {
+  animation: mv-fail-score 1.25s linear both;
+}
+.mv[data-outcome="lose"][data-move="steal"] .mv-ball-steal {
+  animation: mv-fail-steal 1.25s linear both;
+}
+.mv[data-outcome="lose"][data-move="steal"] .mv-x,
+.mv[data-outcome="lose"][data-move="block"] .mv-burst,
+.mv[data-outcome="lose"][data-move="steal"] .mv-burst {
+  animation: none;
+  opacity: 0;
+}
+.mv[data-outcome="lose"][data-move="charge"] .mv-ref-watch,
+.mv[data-outcome="lose"][data-move="charge"] .mv-run {
+  animation: none;
+  opacity: 1;
+}
+.mv[data-outcome="lose"][data-move="charge"] .mv-ref-call,
+.mv[data-outcome="lose"][data-move="charge"] .mv-protest,
+.mv[data-outcome="lose"][data-move="charge"] .mv-whistle-b,
+.mv[data-outcome="lose"][data-move="charge"] .mv-whistle-h,
+.mv[data-outcome="lose"][data-move="charge"] .mv-wave {
+  animation: none;
+  opacity: 0;
+}
+.mv[data-outcome="lose"][data-move="charge"] .mv-charger {
+  animation: mv-fail-charge-run 1.25s ease-out both;
+}
+.mv[data-outcome="lose"][data-move="charge"] .mv-ball-loose {
+  animation: mv-fail-charge-ball 1.25s linear both;
+}
+@keyframes mv-fail-face {
+  0%, 59% { opacity: 0; }
+  60%, 100% { opacity: 1; }
+}
+@keyframes mv-fail-driver {
+  0% { transform: translate(35px, 192px); }
+  55% { transform: translate(112px, 192px); }
+  70%, 100% { transform: translate(119px, 192px); }
+}
+@keyframes mv-fail-drive-ball {
+  0% { transform: translate(56px, 158px); }
+  24% { transform: translate(80px, 182px); }
+  40% { transform: translate(105px, 153px); }
+  57% { transform: translate(142px, 147px); }
+  100% { transform: translate(166px, 155px); }
+}
+@keyframes mv-fail-score {
+  0% { translate: 70px 98px; }
+  32% { translate: 135px 20px; }
+  60% { translate: 196px 52px; }
+  100% { translate: 196px 96px; }
+}
+@keyframes mv-fail-steal {
+  0% { translate: 66px 132px; }
+  48% { translate: 140px 128px; }
+  100% { translate: 212px 132px; }
+}
+@keyframes mv-fail-charge-run {
+  0% { translate: 84px 0; }
+  44% { translate: 0 0; }
+  100% { translate: -34px 0; }
+}
+@keyframes mv-fail-charge-ball {
+  0% { translate: 246px 160px; }
+  44% { translate: 162px 160px; }
+  100% { translate: 132px 154px; }
+}
+@keyframes mv-fail-dunk {
+  0% { transform: translate(124px, 95px); }
+  50% { transform: translate(164px, 43px); }
+  72% { transform: translate(148px, 72px); }
+  100% { transform: translate(116px, 141px); }
+}
+@keyframes mv-fail-pass {
+  0% { transform: translate(88px, 128px); }
+  65% { transform: translate(139px, 120px); }
+  100% { transform: translate(151px, 155px); }
+}
+.mv[data-move="lockdown"] .mv-tag,
+.mv[data-move="block"] .mv-tag,
+.mv[data-move="steal"] .mv-tag,
+.mv[data-move="charge"] .mv-tag {
+  background: #7fd3ff;
+  color: #04203a;
+  box-shadow:
+    0 3px 0 #2a7fb0,
+    0 0 18px rgba(127, 211, 255, 0.7);
+}
+.mv-floor {
+  stroke: rgba(255, 226, 140, 0.28);
+  stroke-width: 1;
+}
+.mv-arc3 {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.55);
+  stroke-width: 1.2;
+  stroke-dasharray: 3 3;
+}
+.mv-ball-b {
+  fill: #e8772e;
+}
+.mv-ball-l {
+  fill: none;
+  stroke: #4a2410;
+  stroke-width: 0.7;
+}
+.mv-glass {
+  fill: rgba(255, 255, 255, 0.1);
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 1.3;
+}
+.mv-glass-sq {
+  fill: none;
+  stroke: #ff7a4d;
+  stroke-width: 1.1;
+}
+.mv-rim {
+  fill: none;
+  stroke: #ff5a1f;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+.mv-net {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 0.7;
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+}
+.mv-trail {
+  fill: none;
+  stroke: #ffd25a;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  opacity: 0.3;
+  filter: drop-shadow(0 0 3px rgba(255, 210, 90, 0.9));
+  animation: mv-draw 0.95s linear both;
+}
+.mv-trail-drive {
+  animation-duration: 1.05s;
+}
+.mv-burst,
+.mv-spark {
+  fill: none;
+  stroke: #fff6c8;
+  stroke-width: 2;
+  stroke-linecap: round;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: mv-pop 0.55s calc(var(--hit) - 0.05s) ease-out both;
+}
+.mv-q {
+  fill: #ffd25a;
+  font: 700 16px var(--f-body);
+}
+.mv-gaze {
+  fill: none;
+  stroke: #9fd4ff;
+  stroke-width: 1.4;
+  stroke-dasharray: 3 3;
+  stroke-linecap: round;
+  animation: mv-march 0.5s linear infinite;
+}
+.mv-catch {
+  fill: none;
+  stroke: #ffd25a;
+  stroke-width: 1.8;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: mv-pop 0.55s calc(var(--hit) - 0.05s) ease-out both;
+}
+.mv-whoosh,
+.mv-speed {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.8);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+.mv-lane {
+  stroke: rgba(255, 255, 255, 0.5);
+  stroke-width: 1.4;
+  stroke-dasharray: 4 4;
+}
+.mv-x {
+  fill: none;
+  stroke: #ff5a4a;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: mv-tag 0.35s var(--hit) cubic-bezier(0.2, 0.9, 0.3, 1.5) both;
+}
+.mv-whistle-b {
+  fill: #d9dee6;
+}
+.mv-whistle-h {
+  fill: #2a3649;
+}
+.mv-wave {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  animation:
+    mv-in 0.01s calc(var(--hit) + 0.05s) both,
+    mv-blink 0.25s steps(1) calc(var(--hit) + 0.1s) infinite;
+}
+.mv-fall,
+.mv-bite,
+.mv-flop,
+.mv-charger {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+/* 슛·3점슛: 결과 전까지 같은 금빛 궤적을 따라 림으로 날아가고, 공개 순간 성공·실패로 갈라져요. */
+.mv-shooter {
+  animation: mv-shooter 1.25s ease-in both;
+}
+.mv-ball-shot {
+  translate: 196px 66px;
+  animation: mv-shot 0.8s linear both;
+}
+.mv[data-move="three"] .mv-ball-shot {
+  animation-name: mv-three;
+}
+.mv[data-move="shot"] .mv-shooter,
+.mv[data-move="three"] .mv-shooter {
+  animation-duration: 0.8s;
+}
+.mv[data-move="shot"] .mv-trail,
+.mv[data-move="three"] .mv-trail {
+  animation-duration: 0.8s;
+}
+.mv[data-move="shot"] .mv-spark,
+.mv[data-move="three"] .mv-spark {
+  animation-delay: 0.7s;
+}
+.cl-res[data-revealed] .mv[data-move="shot"] .mv-ball-shot,
+.cl-res[data-revealed] .mv[data-move="three"] .mv-ball-shot {
+  animation: mv-shot-make 0.45s ease-in both;
+}
+.cl-res[data-revealed] .mv[data-outcome="lose"][data-move="shot"] .mv-ball-shot,
+.cl-res[data-revealed] .mv[data-outcome="lose"][data-move="three"] .mv-ball-shot {
+  animation-name: mv-shot-miss;
+}
+.cl-res[data-revealed] .mv[data-outcome="win"][data-move="shot"] .mv-net,
+.cl-res[data-revealed] .mv[data-outcome="win"][data-move="three"] .mv-net {
+  animation: mv-swish 0.45s ease-out both;
+}
+.mv[data-move="drive"] .mv-net {
+  animation: mv-swish 1.25s ease-out both;
+  animation-delay: 0.25s;
+}
+@keyframes mv-shot-make {
+  0% { translate: 196px 52px; opacity: 1; }
+  75% { translate: 196px 84px; opacity: 1; }
+  100% { translate: 196px 96px; opacity: 0; }
+}
+@keyframes mv-shot-miss {
+  0% { translate: 196px 52px; opacity: 1; }
+  25% { translate: 181px 49px; }
+  100% { translate: 145px 124px; opacity: 1; }
+}
+
+/* 덩크: 달려와 뛰어올라 한 손으로 내리꽂고 림에 매달려요. 림이 휘청이고 백보드가 떨려요. */
+.mv-dunker {
+  translate: 155px 127px;
+  animation: mv-dunker 1.25s cubic-bezier(0.4, 0, 0.6, 1) both;
+}
+.mv-ball-dunk {
+  translate: 170px 66px;
+  animation: mv-dunk 1.25s cubic-bezier(0.4, 0, 0.6, 1) both;
+}
+.mv[data-move="dunk"] .mv-rimfx {
+  animation: mv-rimshake 1.25s linear both;
+}
+.mv[data-move="dunk"] .mv-board {
+  animation: mv-boardshake 1.25s linear both;
+}
+.mv[data-move="dunk"] .mv-net {
+  animation: mv-netpull 1.25s ease-out both;
+}
+
+/* 돌파: 낮게 드리블하며 수비 둘 사이를 파고들어 골밑에서 뛰어올라 넣어요. 지나칠 때마다 수비가 휘청 넘어져요. */
+.mv-driver {
+  translate: 174px -42px;
+  animation: mv-driver 1.25s linear both;
+}
+.mv-dribble {
+  opacity: 0;
+  animation: mv-dribble 1.25s both;
+}
+.mv-layup {
+  animation: mv-layup 1.25s both;
+}
+.mv-ball-drive {
+  translate: 192px 40px;
+  animation: mv-drive 1.25s linear both;
+}
+.mv-fall-1 {
+  rotate: -24deg;
+  animation: mv-fall-1 1.25s ease-out both;
+}
+.mv-fall-2 {
+  rotate: 22deg;
+  animation: mv-fall-2 1.25s ease-out both;
+}
+.mv-fall .mv-q {
+  animation: mv-in 0.2s 0.5s both;
+}
+.mv-fall-2 .mv-q {
+  animation-delay: 0.72s;
+}
+.mv[data-move="drive"] .mv-speed {
+  animation: mv-speed 0.6s ease-out both;
+}
+
+/* 노룩 패스: 왼쪽 동료를 보며 왼손으로 패스하는 척(펌프 두 번) → 오른쪽 길목을 막던 수비가 끊으러 왼쪽으로 몸을 던짐
+   → 고개는 왼쪽에 둔 채 비워진 오른쪽으로 찔러 줌. 자세 그림은 40%에 바꿔 끼워요. */
+.mv-fake {
+  opacity: 0;
+  animation: mv-fake 1.25s both;
+}
+.mv-real {
+  animation: mv-real 1.25s both;
+}
+.mv-feint {
+  fill: none;
+  stroke: #9fd4ff;
+  stroke-width: 1.6;
+  stroke-dasharray: 4 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  animation: mv-feint 1.25s both;
+}
+.mv-bite {
+  translate: -96px 0;
+  rotate: -12deg;
+  animation: mv-bite 1.25s ease-out both;
+}
+.mv-bite .mv-q {
+  animation: mv-in 0.2s 0.8s both;
+}
+.mv-ball-pass {
+  translate: 214px 114px;
+  animation: mv-pass 1.25s linear both;
+}
+.mv-whoosh {
+  animation: mv-whoosh 1.25s linear both;
+}
+
+/* 끝까지 막기: 붙어서 손을 뻗은 수비에 상대 슛이 짧아져 림 앞쪽을 맞고 튕겨 나가요. */
+.mv-contest {
+  animation: mv-contest 1.25s ease-out both;
+}
+.mv-ball-clank {
+  translate: 184px 45px;
+  animation: mv-clank 1.25s linear both;
+}
+.mv[data-move="lockdown"] .mv-rimfx {
+  animation: mv-rimhit 1.25s linear both;
+}
+
+/* 블록슛: 슛을 쏘는 순간 붙어서 뛰어오른 손바닥이 공을 쳐 내요. 공이 돌며 화면 밖으로 날아가요. */
+.mv-jump {
+  translate: 0 -40px;
+  animation: mv-jump 1.25s ease-out both;
+}
+.mv-ball-block {
+  translate: 104px 72px;
+  animation: mv-block 1.25s linear both;
+}
+
+/* 가로채기: 패스 길목에 몸을 던져 공을 낚아채요. 끊긴 길목에 X가 그어져요. */
+.mv-lunge {
+  translate: 2px -4px;
+  animation: mv-lunge 1.25s ease-out both;
+}
+.mv-lunge .mv-speed {
+  animation: mv-in 0.25s 0.5s both;
+}
+.mv-ball-steal {
+  translate: 146px 110px;
+  animation: mv-steal 1.25s linear both;
+}
+
+/* 차징 유도: 팔짱 끼고 버틴 내게 상대가 오른쪽에서 돌진해 부딪히면(44%) 나는 뒤로 벌러덩 넘어지고(46%에 넘어지는 자세로 바꿔요),
+   상대는 공을 놓친 채 두 팔을 들고 억울해해요. 심판은 지켜보다 휘슬을 불고, 60%에 한 손을 뒷머리에 얹고 다른 손으로 방향을 가리키는 공격자 파울 신호를 줘요. */
+.mv-flop {
+  translate: -12px 0;
+  rotate: -82deg;
+  animation: mv-flop 1.25s linear both;
+}
+.mv-stand,
+.mv-run,
+.mv-ref-watch {
+  opacity: 0;
+}
+.mv-stand,
+.mv-run {
+  animation: mv-stand 1.25s both;
+}
+.mv-down,
+.mv-protest {
+  animation: mv-down 1.25s both;
+}
+.mv-charger {
+  translate: 4px 0;
+  animation: mv-charger 1.25s ease-out both;
+}
+.mv-ball-loose {
+  translate: 226px 183.5px;
+  animation: mv-loose 1.25s linear both;
+}
+.mv-ref-watch {
+  animation: mv-ref-watch 1.25s both;
+}
+.mv-ref-call {
+  animation: mv-ref-call 1.25s both;
+}
+
+@keyframes mv-shot {
+  0% {
+    translate: 68px 98px;
+  }
+  17% {
+    translate: 89.3px 56.5px;
+  }
+  33% {
+    translate: 110.7px 28.6px;
+  }
+  50% {
+    translate: 132px 14.2px;
+  }
+  67% {
+    translate: 153.3px 13.3px;
+  }
+  83% {
+    translate: 174.7px 25.9px;
+  }
+  92% {
+    translate: 185.8px 37.8px;
+  }
+  100% {
+    translate: 196px 52px;
+  }
+}
+@keyframes mv-three {
+  0% {
+    translate: 42px 98px;
+  }
+  17% {
+    translate: 67.7px 55.4px;
+  }
+  33% {
+    translate: 93.3px 26.8px;
+  }
+  50% {
+    translate: 119px 12.1px;
+  }
+  67% {
+    translate: 144.7px 11.4px;
+  }
+  83% {
+    translate: 170.3px 24.7px;
+  }
+  92% {
+    translate: 183.7px 37.2px;
+  }
+  100% {
+    translate: 196px 52px;
+  }
+}
+@keyframes mv-shooter {
+  0% {
+    translate: 0 -14px;
+  }
+  30%, 100% {
+    translate: 0 0;
+  }
+}
+@keyframes mv-swish {
+  0%, 60% {
+    scale: 1 1;
+  }
+  68% {
+    scale: 1.12 1.3;
+  }
+  76% {
+    scale: 0.94 0.88;
+  }
+  84% {
+    scale: 1.03 1.08;
+  }
+  92%, 100% {
+    scale: 1 1;
+  }
+}
+@keyframes mv-dunker {
+  0% {
+    translate: 232px 192px;
+  }
+  18% {
+    translate: 212px 192px;
+  }
+  34% {
+    translate: 176px 128px;
+  }
+  40% {
+    translate: 162px 116px;
+  }
+  48% {
+    translate: 155px 126px;
+  }
+  54% {
+    translate: 155px 132px;
+  }
+  62% {
+    translate: 155px 124px;
+  }
+  70% {
+    translate: 155px 128px;
+  }
+  100% {
+    translate: 155px 127px;
+  }
+}
+@keyframes mv-dunk {
+  0% {
+    translate: 248px 112px;
+  }
+  18% {
+    translate: 228px 112px;
+  }
+  34% {
+    translate: 192px 48px;
+  }
+  40% {
+    translate: 178px 36px;
+  }
+  48% {
+    translate: 171px 46px;
+  }
+  56% {
+    translate: 170px 62px;
+  }
+  64% {
+    translate: 170px 76px;
+  }
+  76% {
+    translate: 170px 110px;
+  }
+  88% {
+    translate: 172px 183.5px;
+  }
+  94% {
+    translate: 174px 174px;
+  }
+  100% {
+    translate: 176px 183.5px;
+  }
+}
+@keyframes mv-rimshake {
+  0%, 46% {
+    translate: 0 0;
+  }
+  52% {
+    translate: 0 4px;
+  }
+  58% {
+    translate: 0 -2px;
+  }
+  64% {
+    translate: 0 2px;
+  }
+  72% {
+    translate: 0 -1px;
+  }
+  80%, 100% {
+    translate: 0 0;
+  }
+}
+@keyframes mv-boardshake {
+  0%, 46% {
+    translate: 0 0;
+  }
+  50% {
+    translate: -2px 0;
+  }
+  55% {
+    translate: 2px 0;
+  }
+  60% {
+    translate: -1.2px 0;
+  }
+  66% {
+    translate: 0.8px 0;
+  }
+  72%, 100% {
+    translate: 0 0;
+  }
+}
+@keyframes mv-netpull {
+  0%, 48% {
+    scale: 1 1;
+  }
+  56% {
+    scale: 0.9 1.35;
+  }
+  66% {
+    scale: 1.04 0.9;
+  }
+  76% {
+    scale: 1 1.06;
+  }
+  86%, 100% {
+    scale: 1 1;
+  }
+}
+@keyframes mv-driver {
+  0% {
+    translate: 4px 0px;
+  }
+  12% {
+    translate: 30px 0px;
+  }
+  24% {
+    translate: 58px 0px;
+  }
+  36% {
+    translate: 88px 0px;
+  }
+  48% {
+    translate: 118px 0px;
+  }
+  58% {
+    translate: 146px 0px;
+  }
+  64% {
+    translate: 160px -16px;
+  }
+  72% {
+    translate: 170px -40px;
+  }
+  78% {
+    translate: 174px -42px;
+  }
+  86% {
+    translate: 178px -24px;
+  }
+  100% {
+    translate: 182px 0px;
+  }
+}
+@keyframes mv-drive {
+  0% {
+    translate: 22px 166px;
+  }
+  6% {
+    translate: 35px 183.5px;
+  }
+  12% {
+    translate: 48px 166px;
+  }
+  18% {
+    translate: 62px 183.5px;
+  }
+  24% {
+    translate: 76px 166px;
+  }
+  30% {
+    translate: 91px 183.5px;
+  }
+  36% {
+    translate: 106px 166px;
+  }
+  42% {
+    translate: 121px 183.5px;
+  }
+  48% {
+    translate: 136px 166px;
+  }
+  53% {
+    translate: 150px 183.5px;
+  }
+  58% {
+    translate: 164px 168px;
+  }
+  64% {
+    translate: 176px 96px;
+  }
+  72% {
+    translate: 186px 72px;
+  }
+  78% {
+    translate: 192px 40px;
+  }
+  84% {
+    translate: 196px 50px;
+  }
+  90% {
+    translate: 196px 68px;
+    opacity: 1;
+  }
+  100% {
+    translate: 196px 86px;
+    opacity: 0;
+  }
+}
+@keyframes mv-dribble {
+  0%, 61% {
+    opacity: 1;
+  }
+  62%, 100% {
+    opacity: 0;
+  }
+}
+@keyframes mv-layup {
+  0%, 61% {
+    opacity: 0;
+  }
+  62%, 100% {
+    opacity: 1;
+  }
+}
+@keyframes mv-fall-1 {
+  0%, 30% {
+    rotate: 0deg;
+  }
+  42% {
+    rotate: -20deg;
+  }
+  100% {
+    rotate: -24deg;
+  }
+}
+@keyframes mv-fall-2 {
+  0%, 46% {
+    rotate: 0deg;
+  }
+  58% {
+    rotate: 18deg;
+  }
+  100% {
+    rotate: 22deg;
+  }
+}
+@keyframes mv-speed {
+  from {
+    opacity: 1;
+    translate: 10px 0;
+  }
+  to {
+    opacity: 0;
+    translate: -8px 0;
+  }
+}
+@keyframes mv-pass {
+  0% {
+    translate: 104px 142px;
+  }
+  12% {
+    translate: 95px 140px;
+  }
+  20% {
+    translate: 102px 142px;
+  }
+  28% {
+    translate: 95px 140px;
+  }
+  36% {
+    translate: 98px 141px;
+  }
+  42% {
+    translate: 140px 146px;
+  }
+  46% {
+    translate: 158px 144px;
+  }
+  58%, 100% {
+    translate: 214px 114px;
+  }
+}
+@keyframes mv-whoosh {
+  0%, 44% {
+    opacity: 0;
+  }
+  47%, 56% {
+    opacity: 1;
+  }
+  62%, 100% {
+    opacity: 0;
+  }
+}
+@keyframes mv-fake {
+  0%, 39% {
+    opacity: 1;
+  }
+  40%, 100% {
+    opacity: 0;
+  }
+}
+@keyframes mv-real {
+  0%, 39% {
+    opacity: 0;
+  }
+  40%, 100% {
+    opacity: 1;
+  }
+}
+@keyframes mv-feint {
+  0% {
+    opacity: 0;
+  }
+  6%, 34% {
+    opacity: 1;
+  }
+  44%, 100% {
+    opacity: 0;
+  }
+}
+@keyframes mv-bite {
+  0%, 22% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  36% {
+    translate: -92px -4px;
+    rotate: -16deg;
+  }
+  42%, 100% {
+    translate: -96px 0;
+    rotate: -12deg;
+  }
+}
+@keyframes mv-clank {
+  0% {
+    translate: 76px 98px;
+  }
+  10% {
+    translate: 94px 60.2px;
+  }
+  20% {
+    translate: 112px 34px;
+  }
+  30% {
+    translate: 130px 19.4px;
+  }
+  40% {
+    translate: 148px 16.3px;
+  }
+  50% {
+    translate: 166px 24.9px;
+  }
+  55% {
+    translate: 175.4px 33.9px;
+  }
+  60% {
+    translate: 184px 45px;
+  }
+  68% {
+    translate: 172px 26px;
+  }
+  78% {
+    translate: 160px 18px;
+  }
+  88% {
+    translate: 150px 34px;
+    opacity: 1;
+  }
+  100% {
+    translate: 142px 80px;
+    opacity: 0;
+  }
+}
+@keyframes mv-contest {
+  0% {
+    translate: 0 0;
+  }
+  22% {
+    translate: 0 -14px;
+  }
+  50%, 100% {
+    translate: 0 0;
+  }
+}
+@keyframes mv-rimhit {
+  0%, 58% {
+    translate: 0 0;
+  }
+  62% {
+    translate: 0 2px;
+  }
+  68% {
+    translate: 0 -1.5px;
+  }
+  74% {
+    translate: 0 0.8px;
+  }
+  80%, 100% {
+    translate: 0 0;
+  }
+}
+@keyframes mv-jump {
+  0% {
+    translate: 0 0;
+  }
+  40%, 55% {
+    translate: 0 -40px;
+  }
+  100% {
+    translate: 0 -8px;
+  }
+}
+@keyframes mv-block {
+  0% {
+    translate: 62px 98px;
+    rotate: 0deg;
+  }
+  20% {
+    translate: 80px 84px;
+  }
+  45% {
+    translate: 104px 72px;
+    rotate: 0deg;
+  }
+  55% {
+    translate: 86px 50px;
+  }
+  70% {
+    translate: 56px 48px;
+  }
+  85% {
+    translate: 26px 80px;
+  }
+  100% {
+    translate: -10px 140px;
+    rotate: -900deg;
+  }
+}
+@keyframes mv-lunge {
+  0% {
+    translate: -34px 8px;
+  }
+  40% {
+    translate: 0 0;
+  }
+  50%, 100% {
+    translate: 2px -4px;
+  }
+}
+@keyframes mv-steal {
+  0% {
+    translate: 66px 132px;
+  }
+  42% {
+    translate: 128px 132px;
+  }
+  48% {
+    translate: 140px 124px;
+  }
+  56%, 100% {
+    translate: 146px 110px;
+  }
+}
+@keyframes mv-flop {
+  0%, 40% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  44% {
+    translate: 0 0;
+    rotate: -3deg;
+  }
+  50% {
+    translate: -4px -6px;
+    rotate: -18deg;
+  }
+  58% {
+    translate: -10px 0;
+    rotate: -70deg;
+  }
+  62% {
+    translate: -11px 0;
+    rotate: -86deg;
+  }
+  66% {
+    translate: -11px -3px;
+    rotate: -76deg;
+  }
+  72%, 100% {
+    translate: -12px 0;
+    rotate: -82deg;
+  }
+}
+@keyframes mv-stand {
+  0%, 45% {
+    opacity: 1;
+  }
+  46%, 100% {
+    opacity: 0;
+  }
+}
+@keyframes mv-down {
+  0%, 45% {
+    opacity: 0;
+  }
+  46%, 100% {
+    opacity: 1;
+  }
+}
+@keyframes mv-charger {
+  0% {
+    translate: 84px 0;
+  }
+  44% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 8px 0;
+  }
+  62%, 100% {
+    translate: 4px 0;
+  }
+}
+@keyframes mv-loose {
+  0% {
+    translate: 246px 160px;
+  }
+  44% {
+    translate: 162px 160px;
+  }
+  50% {
+    translate: 170px 128px;
+  }
+  58% {
+    translate: 186px 116px;
+  }
+  66% {
+    translate: 200px 183.5px;
+  }
+  76% {
+    translate: 210px 162px;
+  }
+  86% {
+    translate: 218px 183.5px;
+  }
+  92% {
+    translate: 222px 176px;
+  }
+  100% {
+    translate: 226px 183.5px;
+  }
+}
+@keyframes mv-ref-watch {
+  0%, 59% {
+    opacity: 1;
+  }
+  60%, 100% {
+    opacity: 0;
+  }
+}
+@keyframes mv-ref-call {
+  0%, 59% {
+    opacity: 0;
+  }
+  60%, 100% {
+    opacity: 1;
+  }
+}
+
+/* 공통 */
+@keyframes mv-draw {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0.9;
+  }
+  70% {
+    stroke-dashoffset: 0;
+    opacity: 0.9;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.3;
+  }
+}
+@keyframes mv-pop {
+  0% {
+    opacity: 0;
+    scale: 0.4;
+  }
+  30% {
+    opacity: 1;
+    scale: 1.15;
+  }
+  60% {
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.1;
+  }
+}
+@keyframes mv-tag {
+  from {
+    opacity: 0;
+    scale: 1.9;
+  }
+}
+@keyframes mv-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes mv-flash {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes mv-march {
+  to {
+    stroke-dashoffset: 12;
+  }
+}
+@keyframes mv-blink {
+  50% {
+    opacity: 0.2;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mv *,
+  .mv-tag,
+  .cl-res[data-move] .cl-res-t,
+  .cl-res[data-move] .cl-res-s,
+  .cl-res[data-move] .cl-rays {
+    animation: none;
+  }
+  .cl-res[data-revealed] .mv[data-move="shot"] .mv-ball-shot,
+  .cl-res[data-revealed] .mv[data-move="three"] .mv-ball-shot,
+  .cl-res[data-revealed] .mv[data-move="shot"] .mv-net,
+  .cl-res[data-revealed] .mv[data-move="three"] .mv-net {
+    animation: none;
+  }
+  .cl-res[data-revealed] .mv-fail-face {
+    opacity: 1;
+  }
 }
 @keyframes cl-spin {
   to {

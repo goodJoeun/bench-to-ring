@@ -1,4 +1,4 @@
-import { ATTRS, POS, evalOvr, isCoreAttr, money, ovr, specialtiesOf, type Career } from "@/game";
+import { ATTRS, POS, STAR_UNLOCKS, evalOvr, isCoreAttr, money, ovr, specialtiesOf, starTier, type Career } from "@/game";
 import { Radar } from "./Radar";
 
 /**
@@ -27,6 +27,49 @@ function Specialties({ career: c }: { career: Career }) {
           </span>
         ))}
       </div>
+    </div>
+  );
+}
+
+/**
+ * 스타성: 수치와 단계, 시그니처 세리머니, 스타성이 있어야 오는 제안(예능·광고·유니폼 수익·시그니처 농구화).
+ * 막대 위 눈금이 제안이 열리는 수치예요. 넘은 제안은 밝게, 아직이면 필요한 수치를 보여줘요.
+ */
+function Stardom({ career: c }: { career: Career }) {
+  const v = Math.round(c.star);
+  // NIL 후원은 미국 대학 선수만 받아서, 고교·대학 시절에만 보여요.
+  const unlocks = STAR_UNLOCKS.filter((u) => u.key !== "nil" || c.stage === "hs" || c.stage === "college");
+  return (
+    <div className="star">
+      <div className="star-head">
+        <span className="label">스타성</span>
+        <span className="star-tier">{starTier(c.star)}</span>
+        {c.perks.celebration && (
+          <span className="star-cele">
+            세리머니 <b>{c.perks.celebration}</b>
+          </span>
+        )}
+      </div>
+      <div className="star-row">
+        <div className="track star-track">
+          <div className="fill star-fill" style={{ width: `${v}%` }} />
+          {unlocks.map((u) => (
+            <i key={u.key} className="star-tick" style={{ left: `${u.min}%` }} data-on={c.star >= u.min || undefined} aria-hidden="true" />
+          ))}
+        </div>
+        <span className="v">{v}</span>
+      </div>
+      <ul className="star-unlocks" aria-label="스타성이 있어야 오는 제안">
+        {unlocks.map((u) => {
+          const on = c.star >= u.min;
+          return (
+            <li key={u.key} data-on={on || undefined} title={u.desc}>
+              <span>{u.name}</span>
+              <b>{on ? "제안 가능" : `${u.min}부터`}</b>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -68,6 +111,7 @@ export function AttributesPanel({ career: c }: { career: Career }) {
         </div>
       </div>
       <Specialties career={c} />
+      <Stardom career={c} />
       <div className="phys">
         <span>
           키 <b>{p.h}cm</b>
