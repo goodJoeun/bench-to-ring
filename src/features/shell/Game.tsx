@@ -17,15 +17,15 @@ import { NOTICES, useReadNotices } from "@/features/notice/notices";
 import { SUPPORT_ACCOUNT } from "@/shared/lib/site";
 import { CoffeeDialog } from "@/features/support/CoffeeDialog";
 import { RetiredScreen } from "@/features/retired/RetiredScreen";
+import { SeasonEndScreen } from "@/features/season-end/SeasonEndScreen";
 import { SettingsDialog } from "@/features/settings/SettingsDialog";
 import { LiveGameView } from "@/features/progress/LiveGameView";
 import { Popup } from "@/features/progress/Popup";
-import { StandingsPopup } from "@/features/progress/StandingsPopup";
 import { Toast } from "@/shared/ui/Toast";
 import { TournamentLoading } from "@/features/progress/TournamentLoading";
 
 export function Game() {
-  const { ready, career, draft, hall, endings, ending, playing, speed, final, standings, farewell, farewellReplay, tournament, drafting, toast, outcome } = useGame();
+  const { ready, career, draft, hall, endings, ending, playing, speed, final, seasonEnd, farewell, farewellReplay, tournament, drafting, toast, outcome } = useGame();
   // 탭은 커리어마다 홈에서 시작해요.
   const [view, setView] = useState<{ id: string | null; tab: TabKey }>({ id: null, tab: "season" });
   const tab = career && view.id === career.id ? view.tab : "season";
@@ -35,10 +35,10 @@ export function Game() {
   const retiredShown = ending ?? (career?.stage === "retired" ? career : null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [achvOpen, setAchvOpen] = useState(false);
-  // 시즌이 끝나면 순위표부터 보여줘요. 진행 중인 시즌이 없고 지난 시즌이 팀 시즌일 때만이에요.
-  const standingsRec = inGame && standings && !career.run && career.last?.lg ? career.last : null;
-  // 축하 팝업은 다른 진행 화면(시즌 진행·결승 중계·순위표·대회·드래프트·회고)이 다 끝난 뒤에 한 장씩 띄워요.
-  const cheer = inGame && !playing && !final && !standingsRec && !tournament && !drafting && !farewell ? career.cheers[0] : undefined;
+  // 시즌이 끝나면 오프시즌 전에 시즌 결산 화면을 보여줘요. 진행 중인 시즌이 없고 지난 시즌이 팀 시즌일 때만이에요.
+  const seasonEndRec = inGame && seasonEnd && !career.run && career.last?.lg ? career.last : null;
+  // 축하 팝업은 다른 진행 화면(시즌 진행·결승 중계·시즌 결산·대회·드래프트·회고)이 다 끝난 뒤에 한 장씩 띄워요.
+  const cheer = inGame && !playing && !final && !seasonEndRec && !tournament && !drafting && !farewell ? career.cheers[0] : undefined;
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [noticeOpen, setNoticeOpen] = useState(false);
@@ -71,6 +71,8 @@ export function Game() {
   // 은퇴 직후에는 회고 팝업 뒤에 엔딩이 미리 보이지 않게 비워 둬요. 은퇴 화면에서 다시 연 회고 뒤에는 엔딩을 그대로 둬요.
   else if (career.stage === "retired")
     body = farewell && !farewellReplay ? null : <RetiredScreen career={career} hall={hall} />;
+  // 시즌 → 시즌 결산 → 오프시즌: 결산 화면을 닫아야 오프시즌 홈으로 가요.
+  else if (seasonEndRec) body = <SeasonEndScreen career={career} rec={seasonEndRec} hall={hall} />;
   else
     body = (
       <GameScreen
@@ -80,8 +82,8 @@ export function Game() {
         onTab={openTab}
         playing={playing}
         speed={speed}
-        // 순위표와 축하 팝업을 다 닫아야 오프시즌 결정 시트가 올라와요.
-        busy={final || !!standingsRec || tournament || drafting || !!cheer}
+        // 축하 팝업을 다 닫아야 오프시즌 결정 시트가 올라와요.
+        busy={final || tournament || drafting || !!cheer}
         outcome={outcome}
       />
     );
@@ -184,7 +186,6 @@ export function Game() {
           <LiveGameView game={career.live} onDone={() => gameActions.finishFinal()} />
         </Popup>
       )}
-      {standingsRec && career && <StandingsPopup career={career} rec={standingsRec} hall={hall} />}
       {tournament && career && <TournamentLoading career={career} />}
       {drafting && career?.draftShow && <DraftLoading career={career} show={career.draftShow} />}
       {farewell && retiredShown && <FarewellLoading career={retiredShown} />}

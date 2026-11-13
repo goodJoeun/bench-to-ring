@@ -79,7 +79,7 @@ function ResultCard({ r }: { r: SeasonRecord }) {
       )}
       {r.lg && (
         <div className="row-btns">
-          <button type="button" className="btn" aria-haspopup="dialog" onClick={() => gameActions.openStandings()}>
+          <button type="button" className="btn" onClick={() => gameActions.openSeasonEnd()}>
             {r.year} 시즌 결산 보기
           </button>
         </div>

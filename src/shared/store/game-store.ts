@@ -93,8 +93,8 @@ export interface GameSnapshot {
   speed: Speed;
   /** 결승전 중계를 보여주는 중인지 (c.live) */
   final: boolean;
-  /** 방금 끝난 시즌(c.last)의 리그 순위표를 보여주는 중인지. 시즌이 끝나면 저절로 뜨고, 홈의 시즌 결과에서 다시 열어요. */
-  standings: boolean;
+  /** 방금 끝난 시즌(c.last)의 시즌 결산 화면을 보여주는 중인지. 시즌이 끝나면 저절로 넘어가고, 홈의 시즌 결과에서 다시 열어요. */
+  seasonEnd: boolean;
   /** 커리어 회고를 보여주는 중인지. 방금 은퇴했거나, 은퇴 화면(지난 엔딩 포함)에서 다시 열었을 때예요. */
   farewell: boolean;
   /** 은퇴 화면에서 회고를 다시 연 것인지. 이때는 뒤에 엔딩을 그대로 둬요. */
@@ -173,7 +173,7 @@ const emptyDraft = (): CreationDraft => ({
   rerolls: REROLLS,
 });
 
-const SERVER_SNAPSHOT: GameSnapshot = { ready: false, career: null, draft: emptyDraft(), hall: [], endings: [], ending: null, playing: false, speed: 1, final: false, standings: false, farewell: false, farewellReplay: false, tournament: false, drafting: false, toast: null, outcome: null };
+const SERVER_SNAPSHOT: GameSnapshot = { ready: false, career: null, draft: emptyDraft(), hall: [], endings: [], ending: null, playing: false, speed: 1, final: false, seasonEnd: false, farewell: false, farewellReplay: false, tournament: false, drafting: false, toast: null, outcome: null };
 
 let snapshot: GameSnapshot = SERVER_SNAPSHOT;
 const listeners = new Set<() => void>();
@@ -223,8 +223,8 @@ function set(patch: Partial<GameSnapshot>): void {
 }
 
 let toastId = 0;
-/** 순위표 뒤로 미뤄 둔 시즌 종료 알림. 순위표를 닫으면 띄워요. 순위표 제목줄과 같은 내용이 아래 목록을 가리지 않게요. */
-let afterStandings: string | null = null;
+/** 시즌 결산 화면 뒤로 미뤄 둔 시즌 종료 알림. 결산 화면을 닫으면 띄워요. 결산 화면 제목줄과 같은 내용이 겹치지 않게요. */
+let afterSeasonEnd: string | null = null;
 const toast = (msg: string): Toast => ({ id: ++toastId, msg });
 
 /** 진행 화면을 닫으며 결과를 알림으로 띄워요. 알릴 말이 없으면 지금 알림을 그대로 둬요. */
@@ -266,8 +266,8 @@ function afterStep(res: SeasonStep | null, before: NewsItem | undefined): void {
     const awards = r?.awards.length ? ` · ${r.awards[0]}${r.awards.length > 1 ? ` 외 ${r.awards.length - 1}개` : ""}` : "";
     const msg = r && `${r.year} 시즌 종료 · ${r.lg ? `${r.w}승 ${r.l}패 · ` : ""}${r.result}${awards}`;
     if (r?.lg) {
-      afterStandings = msg;
-      return set({ playing: false, standings: true, toast: null });
+      afterSeasonEnd = msg;
+      return set({ playing: false, seasonEnd: true, toast: null });
     }
     return closeWithToast({ playing: false }, msg);
   }
@@ -401,7 +401,7 @@ export const gameActions = {
   startSeason() {
     if (!snapshot.career || snapshot.career.queue.length || snapshot.career.run) return;
     mutate(startSeason);
-    set({ playing: true, outcome: null, standings: false });
+    set({ playing: true, outcome: null, seasonEnd: false });
   },
   /** 시즌을 한 칸(경기·라운드·일정) 진행해요. 시계가 부르고, 결정이 남았으면 아무것도 하지 않아요. */
   step() {
@@ -438,14 +438,14 @@ export const gameActions = {
     const got = list.flatMap((m) => rankUnlock(m.careerId, m));
     if (got.length) set({ toast: toast(`업적 달성 · ${got.join(", ")}!`) });
   },
-  /** 지난 시즌 순위표를 다시 열어요. 팀 경기가 없던 시즌(무소속·군 복무)은 순위표가 없어요. */
-  openStandings() {
-    if (snapshot.career?.last?.lg && !snapshot.career.run) set({ standings: true });
+  /** 지난 시즌 결산 화면을 다시 열어요. 팀 경기가 없던 시즌(무소속·군 복무)은 결산 화면이 없어요. */
+  openSeasonEnd() {
+    if (snapshot.career?.last?.lg && !snapshot.career.run) set({ seasonEnd: true });
   },
-  /** 순위표를 닫아요. 시즌이 끝난 직후라면 이어서 축하 팝업과 오프시즌 결정이 나와요. */
-  closeStandings() {
-    closeWithToast({ standings: false }, afterStandings);
-    afterStandings = null;
+  /** 시즌 결산 화면을 닫고 오프시즌으로 가요. 시즌이 끝난 직후라면 이어서 축하 팝업과 오프시즌 결정이 나와요. */
+  closeSeasonEnd() {
+    closeWithToast({ seasonEnd: false }, afterSeasonEnd);
+    afterSeasonEnd = null;
   },
   /** 결승전 중계를 닫고 시즌을 이어 가요. */
   finishFinal() {
@@ -571,7 +571,7 @@ export const gameActions = {
   openEnding(id: string) {
     const ending = loadEnding(id);
     if (!ending) return set({ endings: loadEndingIds(), toast: toast("이 선수의 엔딩을 불러오지 못했어요") });
-    set({ ending, playing: false, standings: false, farewell: false, farewellReplay: false });
+    set({ ending, playing: false, seasonEnd: false, farewell: false, farewellReplay: false });
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   },
   /** 지난 엔딩을 닫고 원래 화면(진행 중인 커리어나 새 선수 만들기)으로 돌아가요. */
@@ -581,6 +581,6 @@ export const gameActions = {
   },
   newCareer() {
     saveCareer(null);
-    set({ career: null, draft: freshDraft(snapshot.draft), playing: false, final: false, standings: false, outcome: null });
+    set({ career: null, draft: freshDraft(snapshot.draft), playing: false, final: false, seasonEnd: false, outcome: null });
   },
 };

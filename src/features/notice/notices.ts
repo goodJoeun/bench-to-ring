@@ -25,6 +25,19 @@ export interface Notice {
 
 const LIST: Notice[] = [
   {
+    id: "2026-11-13-season-end-screen",
+    kind: "patch",
+    date: "2026.11.13",
+    icon: "📋",
+    title: "시즌 결산 화면",
+    sections: [
+      {
+        title: "시즌 결산",
+        items: ["시즌이 끝나면 팝업 대신 시즌 결산 화면으로 넘어가요. 리포트·순위표·커뮤니티를 넓게 보고, '오프시즌으로'를 누르면 오프시즌이 시작돼요."],
+      },
+    ],
+  },
+  {
     id: "2026-11-13-event-balance",
     kind: "patch",
     date: "2026.11.13",

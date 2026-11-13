@@ -787,7 +787,7 @@ main.grid {
   overflow: hidden;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
 }
-.sim .badge.flag {
+:is(.sim, .se) .badge.flag {
   box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.7);
 }
 .badge.logo {
@@ -797,7 +797,8 @@ main.grid {
   background: var(--logo-tile, transparent);
   padding: var(--logo-pad, 0);
 }
-.sim {
+.sim,
+.se {
   --logo-tile: rgba(255, 255, 255, 0.94);
   --logo-pad: 2px;
 }
@@ -5622,10 +5623,61 @@ select {
     background: rgba(255, 214, 107, 0.34);
   }
 }
-/* 시즌 순위표: 시즌이 끝나면 뜨는 리그(NBA는 컨퍼런스) 정규시즌 순위. 내 팀은 드래프트의 내 이름처럼 금색이에요. */
-.standings {
+/* 시즌 결산 화면: 시즌과 오프시즌 사이의 화면. 진행 팝업과 같은 파란 판 위에 리포트·순위표·커뮤니티를 보여줘요.
+   헤더 아래 페이지 흐름에 놓여서, 긴 내용은 안쪽 상자가 아니라 화면 전체가 스크롤돼요. */
+main.se {
+  --sim-bg: #263796;
+  --sim-soft: #d5def7;
+  --sim-lbl: #c6d2fa;
+  --sim-bar: #a9c7ff;
+  max-width: var(--t-max);
+  margin: 0 auto;
+  padding: 4px 0 calc(24px + var(--safe-b));
+}
+.se-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 16px 22px;
+  border-radius: 20px;
+  background: var(--sim-bg);
+  color: #fff;
+  animation: fade 0.2s ease-out;
+}
+/* 넓은 화면에서도 읽기 좋은 폭으로 가운데에 모아요. */
+.se-card > :not(.se-go) {
+  width: min(560px, 100%);
+}
+.se-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+.se-head .badge {
+  margin-bottom: 6px;
+}
+.se-head h2 {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: clamp(27px, 8vw, 36px);
+  line-height: 1.15;
+}
+.se-head h2:focus {
+  outline: none;
+}
+.se-panel {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
 }
+.se-go {
+  margin-top: 4px;
+}
+/* 시즌 순위표: 리그(NBA는 컨퍼런스) 정규시즌 순위. 내 팀은 드래프트의 내 이름처럼 금색이에요. */
 .st-tabs {
   display: flex;
   gap: 6px;
@@ -5649,17 +5701,6 @@ select {
 .st-tabs button:focus-visible {
   outline-color: #ffd66b;
 }
-.st-wrap {
-  max-height: max(176px, calc(100dvh - 380px));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  border-radius: 10px;
-}
-@media (min-width: 481px) {
-  .st-wrap {
-    max-height: max(176px, calc(min(900px, 100dvh) - 380px));
-  }
-}
 .st-table {
   min-width: 0;
   border-collapse: separate;
@@ -5675,9 +5716,6 @@ select {
   background: rgba(255, 255, 255, 0.08);
 }
 .st-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
   padding-block: 5px;
   background: var(--sim-bg);
   color: var(--sim-lbl);
@@ -5960,11 +5998,7 @@ select {
   gap: 10px;
 }
 .cm-tabs {
-  position: sticky;
-  top: 0;
-  z-index: 1;
   padding-bottom: 4px;
-  background: var(--sim-bg);
 }
 .cm-post {
   padding: 12px;
