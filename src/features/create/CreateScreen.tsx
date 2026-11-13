@@ -1,7 +1,9 @@
 "use client";
 
-import { addTransitionType, startTransition, useRef, useState, ViewTransition } from "react";
-import { NAME_MAX, POS, type CareerSummary } from "@/game";
+import { addTransitionType, startTransition, useMemo, useRef, useState, ViewTransition } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { NAME_MAX, POS, fmtNum, type CareerSummary } from "@/game";
+import { boardDaysQuery } from "@/shared/leaderboard/queries";
 import { gameActions, type CreationDraft } from "@/shared/store/game-store";
 import { HallOfFame } from "@/features/hall-of-fame/HallOfFame";
 import { Segmented } from "@/shared/ui/ui";
@@ -48,6 +50,12 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
   const [sheet, setSheet] = useState<"confirm" | "name" | null>(null);
   const nameRef = useRef<HTMLInputElement>(null);
   const hasName = draft.name.trim().length > 0;
+  // 포지션마다 온라인 랭킹에 오른 은퇴 선수 수. 불러오기 전이나 실패하면 수를 빼고 보여줘요.
+  const byPos = useQuery(boardDaysQuery()).data?.byPos;
+  const positions = useMemo(
+    () => (byPos ? POSITIONS.map((o) => ({ ...o, note: `은퇴 ${fmtNum(byPos[o.key] ?? 0)}명` })) : POSITIONS),
+    [byPos],
+  );
 
   const go = (to: number) => {
     if (to === step) return;
@@ -138,11 +146,14 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
                   <Segmented
                     className="pos-seg"
                     label="포지션"
-                    options={POSITIONS}
+                    options={positions}
                     value={draft.pos}
                     onChange={gameActions.choosePosition}
                   />
-                  <p className="hint">{posHint(draft.pos)}</p>
+                  <p className="hint">
+                    {posHint(draft.pos)}
+                    {byPos && " · 은퇴 수는 온라인 랭킹에 오른 모든 선수 기준이에요."}
+                  </p>
                 </div>
               )}
 

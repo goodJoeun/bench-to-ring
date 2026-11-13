@@ -152,7 +152,7 @@ create table replays (
 | `POST /api/players` | 익명 플레이어 만들기. 토큰을 돌려주고 브라우저에 저장해요. |
 | `POST /api/careers` | 은퇴 기록 제출. 엔딩에 도달하면 자동으로 불러요. 선수 이름 욕설 필터. 응답에 전체 순위와 포지션 순위를 담아요. |
 | `GET /api/boards?ruleset=&pos=&scope=current\|all` | 순위표. 기본은 현재 룰셋 전체 Top 100, `pos`를 주면 그 포지션 Top 50이에요. 화면은 `scope=all`(역대 전체)로 불러요. 역대 Best 5와 전체 통계(커리어 수, NBA 진출, NBA MVP)를 함께 담아요. 캐시해요. |
-| `GET /api/boards/days` | 날짜별 등록 수. 최근 7일(한국 시간)마다, 그리고 올타임으로 기록 수와 그 기록을 올린 플레이어(기기) 수예요. 역대 전체 범위이고, 순위표와 같은 태그로 캐시해요. |
+| `GET /api/boards/days` | 날짜별 등록 수. 최근 7일(한국 시간)마다, 그리고 올타임으로 기록 수와 그 기록을 올린 플레이어(기기) 수, 올타임 포지션별 기록 수예요. 역대 전체 범위이고, 순위표와 같은 태그로 캐시해요. |
 | `GET /api/careers/mine` | 내 플레이어(토큰)가 올린 기록의 지금 전체·포지션 순위. 랭킹 페이지 '나의 기록'에서 써요. |
 | `GET /api/careers/:id` | 기록 상세 (요약 전체) |
 | `POST /api/careers/:id/report` | 신고 (2단계) |

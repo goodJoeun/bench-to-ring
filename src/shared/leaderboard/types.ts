@@ -103,6 +103,8 @@ export interface BoardCount {
 export interface BoardDays {
   days: ({ day: string } & BoardCount)[];
   all: BoardCount;
+  /** 올타임 포지션별 기록(은퇴 선수) 수. 선수 만들기의 포지션 버튼에 보여요. */
+  byPos: Record<PosKey, number>;
 }
 
 /** 스탯 랭킹 종류: 프로 통산 득점·리바운드·어시스트·스틸·블록·3점슛, 커리어 누적 기부금(억) */

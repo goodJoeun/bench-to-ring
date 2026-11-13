@@ -177,6 +177,8 @@ describe("순위표", () => {
     );
     expect(days.days).toEqual(rows);
     expect(days.all).toEqual(await one(`select count(*)::int careers, count(distinct player_id)::int players from careers`));
+    const { rows: byPos } = await pg.query<{ pos: string; n: number }>(`select pos, count(*)::int n from careers group by pos`);
+    expect(days.byPos).toEqual(Object.fromEntries(POS_KEYS.map((p) => [p, byPos.find((r) => r.pos === p)?.n ?? 0])));
   });
 });
 

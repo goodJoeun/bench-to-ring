@@ -371,7 +371,7 @@ src/
 | `POST /api/players` | 익명 플레이어를 만들고 토큰을 돌려줘요 |
 | `POST /api/careers` | 은퇴 기록 제출 (`Authorization: Bearer <토큰>`). 응답에 전체·포지션 순위를 담아요 |
 | `GET /api/boards?scope=current\|all&pos=&day=YYYY-MM-DD` | 순위표: 전체 Top 100(포지션을 고르면 Top 50), 베스트 5, 전체 통계. `day`를 주면 그날(한국 시간) 올라온 기록끼리 매긴 순위예요 |
-| `GET /api/boards/days` | 날짜별 랭킹 등록 수: 최근 7일(한국 시간) 날짜마다, 그리고 올타임으로 올라온 기록(선수) 수와 그 기록을 올린 플레이어 수. 랭킹 화면의 날짜 칩에 보여요 |
+| `GET /api/boards/days` | 날짜별 랭킹 등록 수: 최근 7일(한국 시간) 날짜마다, 그리고 올타임으로 올라온 기록(선수) 수와 그 기록을 올린 플레이어 수, 올타임 포지션별 기록 수. 랭킹 화면의 날짜 칩과 선수 만들기의 포지션 버튼에 보여요 |
 | `GET /api/stats?stat=pts\|reb\|ast\|stl\|blk\|tpm\|don&day=YYYY-MM-DD` | 스탯 랭킹: 프로 통산 상위 50명(`don`은 커리어 누적 기부금, 기부한 커리어만). `day`는 순위표와 같아요 |
 | `GET /api/careers/mine` | 내 토큰으로 올린 기록의 지금 순위 (랭킹 페이지 '나의 기록') |
 

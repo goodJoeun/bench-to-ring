@@ -145,7 +145,7 @@ export async function getBoard(scope: BoardScope, pos: PosKey | null, day: Board
   };
 }
 
-/** 최근 DAY_COUNT일(한국 시간)의 날짜별 등록 수와 올타임 등록 수 (역대 전체). 순위표처럼 캐시하고 제출 때 비워요. */
+/** 최근 DAY_COUNT일(한국 시간)의 날짜별 등록 수와 올타임 등록 수·포지션별 기록 수 (역대 전체). 순위표처럼 캐시하고 제출 때 비워요. */
 export async function getBoardDays(): Promise<BoardDays> {
   "use cache";
   cacheTag(BOARDS_TAG);
@@ -154,7 +154,7 @@ export async function getBoardDays(): Promise<BoardDays> {
   const day = sql<string>`to_char(${careers.createdAt} at time zone 'Asia/Seoul', 'YYYY-MM-DD')`;
   // 한국 시간으로 (DAY_COUNT - 1)일 전 0시부터예요. 캐시가 자정을 넘겨도 화면은 자기 날짜만 골라 써요.
   const since = sql`(date_trunc('day', now() at time zone 'Asia/Seoul') - ${DAY_COUNT - 1}::int * interval '1 day') at time zone 'Asia/Seoul'`;
-  const [days, { stats }, [totals]] = await Promise.all([
+  const [days, { stats, byPos }, [totals]] = await Promise.all([
     db()
       .select({ day: day.as("day"), careers: count(), players: countDistinct(careers.playerId) })
       .from(careers)
@@ -164,7 +164,11 @@ export async function getBoardDays(): Promise<BoardDays> {
     allTimeCounts("all"),
     db().select({ players: careerTotals.players }).from(careerTotals),
   ]);
-  return { days, all: { careers: stats.careers, players: totals?.players ?? 0 } };
+  return {
+    days,
+    all: { careers: stats.careers, players: totals?.players ?? 0 },
+    byPos: Object.fromEntries(POS_KEYS.map((p) => [p, byPos(p)])) as Record<PosKey, number>,
+  };
 }
 
 /** 한 플레이어가 올린 기록의 지금 순위 (역대 전체). 플레이어마다 달라서 캐시하지 않아요. */

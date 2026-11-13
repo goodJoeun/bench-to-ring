@@ -124,6 +124,8 @@ export interface SegmentOption<K extends string> {
   big: React.ReactNode;
   /** 아래 작은 글씨 */
   sm: React.ReactNode;
+  /** 맨 아래 덧붙임 (예: 포지션별 은퇴 선수 수). 없으면 줄을 만들지 않아요. */
+  note?: React.ReactNode;
 }
 
 interface SegmentedProps<K extends string> {
@@ -143,6 +145,7 @@ export function Segmented<K extends string>({ label, options, value, onChange, c
         <button type="button" key={o.key} aria-pressed={value === o.key} onClick={() => onChange(o.key)}>
           <span className="big">{o.big}</span>
           <span className="sm">{o.sm}</span>
+          {o.note != null && <span className="note">{o.note}</span>}
         </button>
       ))}
     </div>
