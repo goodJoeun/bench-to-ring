@@ -27,6 +27,7 @@
     "@neondatabase/serverless": "^1.2.0",
     "@tanstack/react-query": "^5.107.1",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.1.0",
     "drizzle-orm": "^0.45.4",
     "next": "16.4.2",
     "react": "19.3.1",

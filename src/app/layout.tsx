@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "@fontsource/black-han-sans/400.css";
 import "@fontsource/ibm-plex-sans-kr/400.css";
 import "@fontsource/ibm-plex-sans-kr/500.css";
@@ -56,6 +57,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <Script id="theme-boot" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
         {/* Vercel 웹 분석: 페이지 방문 수를 세요. Vercel에 배포된 사이트에서만 데이터를 보내요. */}
         <Analytics />
+        {/* Vercel Speed Insights: 실제 방문자 기기에서 잰 페이지 성능(LCP·INP·CLS 등)을 모아요. 마찬가지로 Vercel 배포에서만 보내요. */}
+        <SpeedInsights />
       </body>
     </html>
   );
