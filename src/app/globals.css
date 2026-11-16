@@ -8048,6 +8048,60 @@ html:has(.sheet) .toast-zone {
   text-align: center;
   min-width: 0;
 }
+/* 시상대 툴팁: 마우스를 올리거나 눌러서(초점) 누적 기록을 봐요. 양옆 칸은 화면 밖으로 나가지 않게 바깥쪽 모서리에 맞춰요. */
+.rk-pod {
+  position: relative;
+  border-radius: 10px;
+  cursor: default;
+}
+.rk-tip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  width: max-content;
+  max-width: min(240px, 80vw);
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(8, 12, 20, 0.96);
+  color: #fff;
+  font-size: 12.5px;
+  line-height: 1.4;
+  text-align: left;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+.rk-tip > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+.rk-tip b {
+  font-family: var(--f-num);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.rk-pod[data-place="2"] .rk-tip {
+  left: 0;
+  transform: none;
+}
+.rk-pod[data-place="3"] .rk-tip {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.rk-pod:focus .rk-tip {
+  display: flex;
+}
+@media (hover: hover) {
+  .rk-pod:hover .rk-tip {
+    display: flex;
+  }
+}
 .rk-pod .nm {
   font-size: 14.5px;
   max-width: 100%;

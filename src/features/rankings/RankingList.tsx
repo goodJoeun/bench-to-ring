@@ -15,6 +15,21 @@ function line(e: BoardEntry): string {
   return parts.join(" · ");
 }
 
+/** 시상대 툴팁에 보여줄 누적 기록. 상은 받은 것만 넣어요. */
+function totals(e: BoardEntry): [string, string][] {
+  const rows: [string, string][] = [
+    ["통산 득점", fmtNum(e.pts)],
+    ["통산 리바운드", fmtNum(e.reb)],
+    ["통산 어시스트", fmtNum(e.ast)],
+    ["시즌", `${e.seasons}시즌`],
+  ];
+  if (e.rings) rows.push(["우승 반지", `${e.rings}개`]);
+  if (e.mvp) rows.push(["NBA MVP", `${e.mvp}회`]);
+  if (e.fmvp) rows.push(["파이널 MVP", `${e.fmvp}회`]);
+  if (e.leagueMvp) rows.push(["리그 MVP", `${e.leagueMvp}회`]);
+  return rows;
+}
+
 /** 순위 숫자. 1~3위는 금·은·동 메달로 보여줘요. */
 export function RankMark({ rank }: { rank: number }) {
   return (
@@ -24,11 +39,22 @@ export function RankMark({ rank }: { rank: number }) {
   );
 }
 
-/** 시상대 한 칸: 선수가 위에 서고, 아래 단에 메달과 순위가 있어요. 1위 단이 가장 높아요. */
+/**
+ * 시상대 한 칸: 선수가 위에 서고, 아래 단에 메달과 순위가 있어요. 1위 단이 가장 높아요.
+ * 자리가 좁아 기록을 적지 못하니, 마우스를 올리거나 눌러서(초점) 누적 기록 툴팁을 봐요.
+ */
 function Podium({ e, place, rank, mine }: { e: BoardEntry; place: 1 | 2 | 3; rank: number; mine: boolean }) {
   const medal = medalOf(rank) ?? "bronze";
+  const tipId = `rk-tip-${e.id}`;
   return (
-    <div className="rk-pod" data-place={place} data-mine={mine || undefined}>
+    <div className="rk-pod" data-place={place} data-mine={mine || undefined} tabIndex={0} aria-describedby={tipId}>
+      <span className="rk-tip" id={tipId} role="tooltip">
+        {totals(e).map(([k, v]) => (
+          <span key={k}>
+            {k} <b>{v}</b>
+          </span>
+        ))}
+      </span>
       <Sprite look={lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={3} className="rk-sprite" label={`${e.name} 캐릭터`} />
       <b className="nm" style={nameFit(e.name)}>
         {e.name}
