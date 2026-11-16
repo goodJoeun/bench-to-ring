@@ -390,6 +390,9 @@ h2.sec {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
 }
+.theme-seg[data-cols="2"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 .theme-seg button {
   display: flex;
   flex-direction: column;
@@ -8320,4 +8323,112 @@ a.btn {
 .sim-team {
   font-size: clamp(11.5px, 176vw / var(--nw, 1), 13px);
   text-wrap: balance;
+}
+
+/* 텍스트만 보기 (설정 → 화면 표시, <html data-text-only>).
+   캐릭터·엠블럼·장면 그림은 컴포넌트가 아예 그리지 않아요(shared/lib/text-only.ts). 여기서는 남은 꾸밈을 감추고,
+   그림이 빠진 자리를 글자에 맞게 다시 잡고, 애니메이션과 전환을 꺼요. 버튼 안 아이콘은 버튼 이름 구실을 해서 남겨요. */
+/* 저장된 설정으로 열면 컴포넌트가 다시 그려지기 전 한순간 그림이 보일 수 있어서 같이 감춰요. */
+:root[data-text-only] :is(canvas, .badge) {
+  display: none !important;
+}
+:root[data-text-only]
+  :is(
+    .ball,
+    .court > .key,
+    .floor > .key,
+    .radar,
+    .evo-stage,
+    .sim-court,
+    .fw-road,
+    .cheer-confetti,
+    .cheer-trophy,
+    .achv-flash,
+    .achv-medal-wrap,
+    .cl-banner-icon,
+    .rk-lines
+  ) {
+  display: none;
+}
+/* 결과 카드의 남은 시간 막대는 끝나야 다음으로 넘어가고, 불러오는 표시는 기다리는 중임을 알려서 둘은 그대로 둬요. */
+:root[data-text-only] *:not(.outcome-timer, .spinner),
+:root[data-text-only] *::before,
+:root[data-text-only] *::after {
+  animation: none !important;
+  transition: none !important;
+}
+:root[data-text-only]::view-transition-old(*),
+:root[data-text-only]::view-transition-new(*),
+:root[data-text-only]::view-transition-group(*) {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+}
+/* 움직이던 점 세 개는 말줄임표로 */
+:root[data-text-only] .sim-phase .dots::after {
+  content: "…";
+  width: auto;
+}
+/* 코트 카드: 캐릭터와 코트 없이 이름판만 */
+:root[data-text-only] .court {
+  display: block;
+  min-height: 0;
+  background: var(--panel);
+}
+:root[data-text-only] .plate {
+  margin: 0;
+  border-radius: 0;
+}
+/* 선수 만들기: 캐릭터는 생김새 설명으로, 후보 카드는 코트 없이 */
+:root[data-text-only] .look-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 620px) {
+  :root[data-text-only] .look-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+:root[data-text-only] .look-grid button {
+  align-items: center;
+  min-height: 52px;
+  padding: 8px 10px;
+  background: var(--panel2);
+}
+.look-text {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+}
+:root[data-text-only] .floor {
+  height: auto;
+  padding: 10px 14px 0;
+  background: none;
+}
+:root[data-text-only] .floor .pick {
+  position: static;
+}
+/* 딴 업적: 훈장 자리 없이 금테와 금색 제목으로만 */
+:root[data-text-only] .achv-list li[data-done] {
+  padding-right: 12px;
+}
+:root[data-text-only] .achv-badge::after {
+  display: none;
+}
+/* 베스트 5: 코트 위 자리 대신 이름판을 차례로 */
+:root[data-text-only] .rk-court {
+  aspect-ratio: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  padding: 10px;
+  background: var(--panel);
+}
+:root[data-text-only] .rk-spot {
+  position: static;
+  transform: none;
+  width: auto;
+  max-width: none;
+}
+:root[data-text-only] .rk-plate {
+  width: 100%;
 }

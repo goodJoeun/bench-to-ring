@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { useTextOnly } from "@/shared/lib/text-only";
 import { emblemOf, type Emblem, type EmblemKind } from "./emblem";
 import { FLAGS } from "./flags.generated";
 import { LOGOS } from "./logos.generated";
@@ -53,11 +54,12 @@ interface TeamBadgeProps {
 
 /**
  * 구단·학교·국가 엠블럼. 나라(또는 'OO 대표팀')면 국기를 원형으로, public/logos/에 로고가 있으면 로고를,
- * 없으면 이름과 대표색으로 만든 엠블럼을 보여줘요. 모르는 이름이면 아무것도 그리지 않아요.
+ * 없으면 이름과 대표색으로 만든 엠블럼을 보여줘요. 모르는 이름이거나 '텍스트만 보기'면 아무것도 그리지 않아요.
  */
 export function TeamBadge({ name, kind, color, size = 28, className, decorative = true }: TeamBadgeProps) {
   // clipPath id에 쓸 수 없는 글자를 빼요.
   const id = `badge${useId().replace(/[^A-Za-z0-9_-]/g, "")}`;
+  if (useTextOnly()) return null;
   const nation = name.replace(/ 대표팀$/, "");
   const flag = FLAGS[nation];
   if (flag)

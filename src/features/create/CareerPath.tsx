@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { reducedMotion } from "@/shared/lib/hooks";
+import { useTextOnly } from "@/shared/lib/text-only";
 import { drawStage, STAGE_SEC, VIEW, type StageKey } from "../../shared/ui/sprite/coverArt";
 
 /*
@@ -37,10 +38,11 @@ export function CareerPath() {
   const [focus, setFocus] = useState(0);
   /** 1번 단계가 시작된 시각. 단계 이름을 누르면 그 단계가 지금 시작되도록 옮겨요. */
   const start = useRef(0);
+  const still = useTextOnly();
 
   useEffect(() => {
-    // 움직임을 줄인 설정에서는 모든 단계를 마지막 장면으로 멈춰 그려요.
-    if (reducedMotion()) {
+    // 움직임을 줄인 설정에서는 모든 단계를 마지막 장면으로 멈춰 그려요. '텍스트만 보기'는 그림을 감추니 움직일 것도 없어요.
+    if (reducedMotion() || still) {
       STAGES.forEach((s, i) => paint(canvases.current[i], s.key, STAGE_SEC));
       return;
     }
@@ -70,7 +72,7 @@ export function CareerPath() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [still]);
 
   /** 이벤트 시각(timeStamp)은 performance.now()와 같은 시계예요. */
   const jump = (i: number, now: number) => {

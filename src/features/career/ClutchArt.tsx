@@ -3,6 +3,7 @@
 import { useEffect, useEffectEvent, useState } from "react";
 import { CLUTCH_SCENES, boardScore, clutchScene, finalsPrize, type ClutchBoard, type ClutchMove } from "@/game";
 import { reducedMotion } from "@/shared/lib/hooks";
+import { useTextOnly } from "@/shared/lib/text-only";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 import { ClutchMoveArt, MOVE_INFO, type ClutchCast } from "./ClutchMoveArt";
 
@@ -17,16 +18,14 @@ export function ClutchArt({ board }: { board?: ClutchBoard }) {
   const secs = Number(scene.clock.split(":")[1]);
   const finals = board?.finals;
   const gold = board?.lg === "nat";
+  const textOnly = useTextOnly();
+  const summary =
+    (finals ? `${finals}, ${finalsPrize(board)[0]} 결정전. ` : "") +
+    (board ? `4쿼터 ${secs}초 남기고 ${board.team} ${us} 대 ${board.opp} ${them} ${scene.state}` : `4쿼터 ${secs}초 남기고 ${scene.state}`);
+  // '텍스트만 보기'에서는 전광판 대신 같은 내용을 한 줄 글로 보여줘요.
+  if (textOnly) return <p className="hint">{summary}</p>;
   return (
-    <div
-      className="cl-art"
-      data-finals={finals ? "" : undefined}
-      aria-label={
-        (finals ? `${finals}, ${finalsPrize(board)[0]} 결정전. ` : "") +
-        (board ? `4쿼터 ${secs}초 남기고 ${board.team} ${us} 대 ${board.opp} ${them} ${scene.state}` : `4쿼터 ${secs}초 남기고 ${scene.state}`)
-      }
-      role="img"
-    >
+    <div className="cl-art" data-finals={finals ? "" : undefined} aria-label={summary} role="img">
       {finals && (
         <div className="cl-banner">
           {gold ? <MedalIcon className="cl-banner-icon" /> : <TrophyIcon className="cl-banner-icon" />}
@@ -100,10 +99,13 @@ export function ClutchFlash({ board, onDone }: { board?: ClutchBoard; onDone: ()
   // 다시 그려져도 타이머가 처음부터 다시 돌지 않게, 끝낼 때의 onDone만 불러요.
   const done = useEffectEvent(onDone);
   const finals = board?.finals;
+  // '텍스트만 보기'에서는 이펙트 없이 바로 결정 시트로 넘어가요.
+  const skip = useTextOnly();
   useEffect(() => {
-    const timer = setTimeout(() => done(), reducedMotion() ? 500 : finals ? FINALS_FLASH_MS : FLASH_MS);
+    const timer = setTimeout(() => done(), skip ? 0 : reducedMotion() ? 500 : finals ? FINALS_FLASH_MS : FLASH_MS);
     return () => clearTimeout(timer);
-  }, [finals]);
+  }, [finals, skip]);
+  if (skip) return null;
   if (finals)
     return (
       <div className="cl-flash cl-flash-finals" role="status" aria-live="assertive">
@@ -185,13 +187,20 @@ export function ClutchResult({ result, cast, onDone }: { result: ClutchResultInf
   const [revealed, setRevealed] = useState(false);
   const { win, us, them, opp, ot, finals, gold, play } = result;
   const move = cast ? result.move : undefined;
+  // '텍스트만 보기'에서는 장면과 이펙트 없이 바로 넘어가요. 결과는 이어지는 결과 카드·대회 결과가 글로 알려줘요.
+  const skip = useTextOnly();
   useEffect(() => {
+    if (skip) {
+      const timer = setTimeout(() => done(), 0);
+      return () => clearTimeout(timer);
+    }
     const reduced = reducedMotion();
     const shot = move === "shot" || move === "three";
     const revealTimer = setTimeout(() => setRevealed(true), move ? (reduced ? 400 : shot ? SHOT_SCENE_MS : MOVE_SCENE_MS) : 0);
     const doneTimer = setTimeout(() => done(), reduced ? 1100 : finals ? FINALS_RESULT_MS : move ? MOVE_RESULT_MS : RESULT_MS);
     return () => { clearTimeout(revealTimer); clearTimeout(doneTimer); };
-  }, [finals, move]);
+  }, [finals, move, skip]);
+  if (skip) return null;
   const score = us !== undefined && them !== undefined ? `${us} : ${them}` : null;
   const prize = gold ? ["금메달", "은메달"] : ["우승", "준우승"];
   const title = finals ? (win ? (gold ? "GOLD!" : "CHAMPIONS!") : prize[1]) : win ? "CLUTCH!" : ot ? "아쉬운 연장" : "아쉬운 실패";

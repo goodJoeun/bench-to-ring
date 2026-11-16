@@ -4,12 +4,19 @@ import { useState } from "react";
 import { LEAGUES, TEAMS, type LeagueKey } from "@/game";
 import { Sheet } from "@/shared/ui/Sheet";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
+import { applyTextOnly, useTextOnly } from "@/shared/lib/text-only";
 import { applyTheme, readTheme, type Theme } from "@/shared/lib/theme";
 
 const THEMES: { key: Theme; name: string; sub: string }[] = [
   { key: "system", name: "시스템", sub: "기기 설정 따라" },
   { key: "light", name: "라이트", sub: "밝은 화면" },
   { key: "dark", name: "다크", sub: "어두운 화면" },
+];
+
+/** 화면 표시: 그림·이펙트를 함께 볼지, 글자만 볼지 */
+const DISPLAYS: { textOnly: boolean; name: string; sub: string }[] = [
+  { textOnly: false, name: "기본", sub: "그림과 이펙트 함께" },
+  { textOnly: true, name: "텍스트만", sub: "그림·이펙트 없이" },
 ];
 
 /** 수준이 낮은 리그부터 */
@@ -23,9 +30,10 @@ interface SettingsDialogProps {
   onCareerSettings?: () => void;
 }
 
-/** 상단 톱니 버튼으로 여는 설정: 화면 테마, 플레이 가이드, 리그별 구단 목록 */
+/** 상단 톱니 버튼으로 여는 설정: 화면 테마, 화면 표시(텍스트만 보기), 플레이 가이드, 리그별 구단 목록 */
 export function SettingsDialog({ onClose, onGuide, onCareerSettings }: SettingsDialogProps) {
   const [theme, setTheme] = useState<Theme>(readTheme);
+  const textOnly = useTextOnly();
   const [league, setLeague] = useState<LeagueKey>("kbl");
   const teams = TEAMS[league];
 
@@ -45,6 +53,18 @@ export function SettingsDialog({ onClose, onGuide, onCareerSettings }: SettingsD
             <button type="button" key={t.key} aria-pressed={theme === t.key} onClick={() => pickTheme(t.key)}>
               <b>{t.name}</b>
               <span>{t.sub}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="set-sec" aria-labelledby="set-display">
+        <h3 id="set-display">화면 표시</h3>
+        <div className="theme-seg" data-cols="2" role="group" aria-labelledby="set-display">
+          {DISPLAYS.map((d) => (
+            <button type="button" key={d.name} aria-pressed={textOnly === d.textOnly} onClick={() => applyTextOnly(d.textOnly)}>
+              <b>{d.name}</b>
+              <span>{d.sub}</span>
             </button>
           ))}
         </div>

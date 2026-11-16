@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { Look, LookKey } from "@/game";
+import { useTextOnly } from "@/shared/lib/text-only";
 
 /*
  * 선수 캐릭터. 예전 16x24 도트 크기(scale 한 칸)를 그대로 쓰되, 안은 160x240 단위 판에 매끈한 도형으로 그려요.
@@ -695,8 +696,13 @@ interface SpriteProps {
 /** 캔버스는 화면 크기보다 3배 크게 그려 고해상도 화면에서도 매끈하게 보여요. */
 const DENSITY = 3;
 
-/** 선수 캐릭터. 유니폼은 소속팀 색을 따라가요. */
-export function Sprite({ look, color, scale = 6, label, className = "sprite" }: SpriteProps) {
+/** 선수 캐릭터. 유니폼은 소속팀 색을 따라가요. '텍스트만 보기'에서는 그리지 않아요. */
+export function Sprite(props: SpriteProps) {
+  if (useTextOnly()) return null;
+  return <SpriteCanvas {...props} />;
+}
+
+function SpriteCanvas({ look, color, scale = 6, label, className = "sprite" }: SpriteProps) {
   const ref = useRef<HTMLCanvasElement>(null);
   // 캐릭터 객체가 새로 만들어져도 생김새가 같으면 다시 그리지 않아요.
   const key = JSON.stringify(look);

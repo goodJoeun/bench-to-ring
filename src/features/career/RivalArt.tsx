@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { playerLook, type Career, type Look } from "@/game";
+import { useTextOnly } from "@/shared/lib/text-only";
 import type { Mood } from "@/shared/ui/sprite/Sprite";
 import { drawPosed } from "@/shared/ui/sprite/coverArt";
 import { rivalOf } from "./rival";
@@ -30,6 +31,8 @@ function Figure({ look, color, lh, rh, mood, className }: { look: Look; color: s
  * 왼쪽의 나는 눈썹을 세우고 노려봐요.
  */
 export function RivalArt({ career: c }: { career: Career }) {
+  // '텍스트만 보기'에서는 삽화 없이 결정 글만 보여줘요.
+  if (useTextOnly()) return null;
   const mine = c.team?.color ?? "#2F5DB0";
   const { look, color: rivalColor } = rivalOf(c, mine);
   return (

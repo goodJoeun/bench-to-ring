@@ -1,5 +1,8 @@
-/** 업적 메달: 빨강·파랑 리본에 걸린 금메달과 별. 업적 달성 축하 팝업과 딴 업적 카드의 훈장이 같이 써요. */
+import { useTextOnly } from "@/shared/lib/text-only";
+
+/** 업적 메달: 빨강·파랑 리본에 걸린 금메달과 별. 업적 달성 축하 팝업과 딴 업적 카드의 훈장이 같이 써요. '텍스트만 보기'에서는 그리지 않아요. */
 export function Medal({ className }: { className?: string }) {
+  if (useTextOnly()) return null;
   return (
     <svg className={className} viewBox="0 0 64 64" aria-hidden="true" focusable="false">
       <polygon points="18,2 30,2 36,24 26,28" fill="#E0503A" />

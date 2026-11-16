@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { playerLook, type Career, type SceneKey } from "@/game";
+import { useTextOnly } from "@/shared/lib/text-only";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 import { rivalOf } from "./rival";
 import { SCENE_H, drawScene, type Paint } from "./sceneDraw";
@@ -20,8 +21,14 @@ function seedOf(c: Career, scene: SceneKey): number {
  * 결정 시트 위에 띄우는 장면 그림: 상황에 맞는 배경과 소품 속에 내 캐릭터가 서 있어요.
  * 캔버스 너비는 시트 너비를 따라가고(ResizeObserver), 그림은 가운데를 기준으로 그려요.
  * 국가대표 장면은 깃대 위에 내 나라 국기를 올려요. 라이벌전 장면에는 라이벌 도발 삽화와 같은 라이벌이 나와요.
+ * '텍스트만 보기'에서는 그리지 않아요.
  */
-export function SceneArt({ career: c, scene }: { career: Career; scene: SceneKey }) {
+export function SceneArt(props: { career: Career; scene: SceneKey }) {
+  if (useTextOnly()) return null;
+  return <SceneCanvas {...props} />;
+}
+
+function SceneCanvas({ career: c, scene }: { career: Career; scene: SceneKey }) {
   const box = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLCanvasElement>(null);
   const [w, setW] = useState(0);

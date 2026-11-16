@@ -25,6 +25,22 @@ export interface Notice {
 
 const LIST: Notice[] = [
   {
+    id: "2026-11-16-text-only",
+    kind: "patch",
+    date: "2026.11.16",
+    icon: "🔤",
+    title: "텍스트만 보기",
+    sections: [
+      {
+        title: "텍스트만 보기",
+        items: [
+          "설정의 '화면 표시'에서 '텍스트만'을 고르면 캐릭터·로고·장면 그림과 이펙트 없이 글자만 보여줘요.",
+          "클러치 연출은 건너뛰고 바로 결과로 넘어가요. 고른 값은 이 브라우저에 저장돼요.",
+        ],
+      },
+    ],
+  },
+  {
     id: "2026-11-13-season-end-screen",
     kind: "patch",
     date: "2026.11.13",

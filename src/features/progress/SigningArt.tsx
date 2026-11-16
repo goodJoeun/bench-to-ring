@@ -5,6 +5,7 @@ import { playerLook, type Career, type Cheer } from "@/game";
 import { SIGNING_H, drawSigning } from "@/features/career/sceneDraw";
 import { reducedMotion } from "@/shared/lib/hooks";
 import { NO_TEAM_COLOR } from "@/shared/lib/format";
+import { useTextOnly } from "@/shared/lib/text-only";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 
 /** 배경판에 늘어놓는 로고 수 (가로 × 세로) */
@@ -14,9 +15,14 @@ const WALL_ROWS = 3;
 /**
  * 입단 기자회견 그림: 새 팀 로고가 반복된 배경판 앞에서 새 유니폼을 입은 내 선수와 구단 관계자가 악수하며 사진을 찍어요.
  * 로고는 실제 로고(TeamBadge)를 캔버스 뒤에 깔고, 캔버스에는 두 사람과 카메라 플래시를 그려요. 플래시는 계속 터지고,
- * 움직임 줄이기 설정이면 한 장면으로 멈춰 그려요.
+ * 움직임 줄이기 설정이면 한 장면으로 멈춰 그려요. '텍스트만 보기'에서는 그리지 않아요.
  */
-export function SigningArt({ career: c, cheer }: { career: Career; cheer: Cheer }) {
+export function SigningArt(props: { career: Career; cheer: Cheer }) {
+  if (useTextOnly()) return null;
+  return <SigningCanvas {...props} />;
+}
+
+function SigningCanvas({ career: c, cheer }: { career: Career; cheer: Cheer }) {
   const box = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLCanvasElement>(null);
   const [w, setW] = useState(0);
