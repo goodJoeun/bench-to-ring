@@ -2,6 +2,7 @@ import { ATTR_KEYS, SHORT } from "../core/data";
 import { addAttr, addHealth, randomGrowable } from "../player/condition";
 import { addNews } from "../career/log";
 import { chance, seededPick } from "../core/random";
+import { DECLINE_START_AGE, ovr } from "../player/ratings";
 import type { AttrKey, Career, ShopKey } from "../core/types";
 import { money, round2 } from "../core/util";
 
@@ -67,6 +68,7 @@ const ICONS: Record<ShopKey, string> = {
   chef: "👨‍🍳",
   physio: "🩺",
   recovery: "🏥",
+  antiaging: "🧬",
   penthouse: "🌆",
   jet: "✈️",
   sneakers: "🛍️",
@@ -111,6 +113,7 @@ export const SHOP: ReadonlyArray<ShopItem> = [
   item("home", "내 집 마련", "회복·생활", 5, "시즌이 끝날 때마다 건강 +4", { heal: 4 }),
   item("hypoxic", "고지대 훈련 텐트", "회복·생활", 8, "경기 중 체력 소모 -6%", { fatigue: 0.94 }),
   item("chef", "전담 셰프·영양팀", "회복·생활", 12, "경기 중 체력 소모 -12%", { fatigue: 0.88 }),
+  item("antiaging", "안티에이징 클리닉 평생 회원권", "회복·생활", 15, "나이로 떨어지는 폭 -10%", { decline: 0.9 }),
   item("physio", "전담 물리치료사 평생 계약", "회복·생활", 20, "부상 위험 -10%, 부상 복귀가 빨라져요", { injury: 0.9, rehab: 0.9 }),
   item("recovery", "개인 회복 센터", "회복·생활", 30, "부상 위험 -15%, 부상 복귀가 빨라져요", { injury: 0.85, rehab: 0.85 }),
   item("penthouse", "한강 펜트하우스", "회복·생활", 40, "지금 건강 +5, 시즌이 끝날 때마다 건강 +3", { health: 5, heal: 3 }),
@@ -141,8 +144,25 @@ export const SHOP_SIZE = 6;
 /** 기부 금액 (억). 가진 돈 안에서, 금액마다 한 시즌에 한 번씩 할 수 있어요. */
 export const DONATIONS = [0.1, 1, 10, 100] as const;
 
-/** 기부할 때마다 이 확률로 금액에 맞는 보답(좋은 일)이 와요. */
-export const DONATION_LUCK = 0.333;
+/**
+ * 기부 보답 확률표: 오버롤 구간마다 1,000만·1억·10억·100억 순서예요.
+ * 오버롤이 높을수록 낮아지고, 보답이 큰 금액일수록 잘 오지 않아요.
+ * 91 이상은 능력치를 올리는 금액(1억부터)이 거의 오지 않아서, 기부로 최정상 능력치를 지키기 어려워요.
+ */
+const DONATION_LUCK_TABLE: ReadonlyArray<{ upTo: number; luck: readonly [number, number, number, number] }> = [
+  { upTo: 70, luck: [0.7, 0.5, 0.5, 0.5] },
+  { upTo: 80, luck: [0.6, 0.4, 0.4, 0.333] },
+  { upTo: 90, luck: [0.5, 0.33, 0.33, 0.25] },
+  { upTo: Infinity, luck: [0.4, 0.1, 0.08, 0.05] },
+];
+
+/** 기부 보답이 올 확률. 지금 오버롤(70 이하·80 이하·90 이하·그 위)과 금액으로 확률표에서 골라요. */
+export function donationLuck(c: Career, amount: number): number {
+  const i = DONATIONS.indexOf(amount as (typeof DONATIONS)[number]);
+  if (i < 0) return 0;
+  const o = ovr(c.p);
+  return DONATION_LUCK_TABLE.find((row) => o <= row.upTo)!.luck[i];
+}
 
 /** 기부 보답: 금액이 클수록 커요. form은 이번 시즌을 시작할 때 경기력이에요. */
 interface DonationReward {
@@ -159,9 +179,20 @@ export const DONATION_REWARDS: Record<(typeof DONATIONS)[number], DonationReward
   100: { rand: 3, health: 10 },
 };
 
-/** 기부 보답을 한 줄로: "건강 +5 · 시즌 시작 경기력 상승" */
-export function describeDonationReward(amount: number): string {
+/** 이 나이까지만 기부 보답으로 능력치가 올라요(능력치가 떨어지기 시작하기 전까지). 그 뒤로는 능력치 +1 하나가 건강 DONATION_HEALTH_PER_STAT으로 바뀌어요. */
+export const DONATION_STAT_AGE = DECLINE_START_AGE - 1;
+const DONATION_HEALTH_PER_STAT = 3;
+
+/** 이 선수가 받을 기부 보답. 33세부터는 무작위 능력치 대신 건강이 와요. */
+export function donationReward(c: Career, amount: number): DonationReward | undefined {
   const r = DONATION_REWARDS[amount as (typeof DONATIONS)[number]];
+  if (!r || !r.rand || c.age <= DONATION_STAT_AGE) return r;
+  return { health: (r.health ?? 0) + r.rand * DONATION_HEALTH_PER_STAT, form: r.form };
+}
+
+/** 이 선수가 받을 기부 보답을 한 줄로: "건강 +5 · 시즌 시작 경기력 상승" */
+export function describeDonationReward(c: Career, amount: number): string {
+  const r = donationReward(c, amount);
   if (!r) return "";
   const parts: string[] = [];
   if (r.rand) parts.push(`무작위 능력치 ${r.rand}개 +1`);
@@ -264,7 +295,7 @@ export function canDonate(c: Career, amount: number): boolean {
   return c.stage !== "retired" && !c.run && c.shop?.year === c.year && !donatedThisSeason(c, amount) && c.earnings + 1e-9 >= amount;
 }
 
-/** 기부해요. DONATION_LUCK 확률로 금액에 맞는 보답이 와서, 같은 소식에 함께 적어요. */
+/** 기부해요. donationLuck 확률로 금액에 맞는 보답이 와서, 같은 소식에 함께 적어요. */
 export function donate(c: Career, amount: number): boolean {
   if (!canDonate(c, amount)) return false;
   const shop = c.shop!;
@@ -273,8 +304,9 @@ export function donate(c: Career, amount: number): boolean {
   c.donated = round2(c.donated + amount);
   shop.gave = [...(shop.gave ?? []), amount];
   let luck = "";
-  const r = DONATION_REWARDS[amount as (typeof DONATIONS)[number]];
-  if (r && chance(DONATION_LUCK)) {
+  const r = donationReward(c, amount);
+  // 확률은 기부하기 전 오버롤로 정해요.
+  if (r && chance(donationLuck(c, amount))) {
     const parts: string[] = [];
     if (r.rand) {
       // 이미 최대(99)를 채운 능력치는 빼고 골라요.

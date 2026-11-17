@@ -15,9 +15,9 @@ import { serviceSeason } from "../world/military";
 import { nationalCallUp } from "../world/national";
 import { runOffseason } from "./offseason";
 import { chance, pick, random, ri, rnd, seededPick, shuffle } from "../core/random";
-import { shopPerks } from "../economy/shop";
+import { shopPerks, type ShopPerks } from "../economy/shop";
 import { BONUS_CAP, SPECIALTIES, combinedEffect, specialtiesOf } from "../player/specialty";
-import { ageBase, ovr, ovrOf, roleOf } from "../player/ratings";
+import { DECLINE_START_AGE, ageBase, ovr, ovrOf, roleOf } from "../player/ratings";
 import type { AttrKey, AwardKey, Career, ClutchBoard, GameLine, InvestKey, LeagueKey, SceneKey, SeasonRecord, SeasonRun } from "../core/types";
 import { clamp, fmtNum, josa, r1, round2, sigmoid } from "../core/util";
 
@@ -834,6 +834,17 @@ const TRAIT_GROWTH = {
   genius: { grow: 1.35, decline: 0.5 },
 };
 
+/**
+ * 전담 트레이너·시즌 투자·산 장비로 나이로 떨어지는 폭을 줄여도 이 배수 밑으로는 내려가지 않아요(특성 효과는 따로예요).
+ * 이것저것 겹쳐 사서 30대 중반까지 능력치를 그대로 지키지 못하게 해요. 웨이트·피지컬 투자 하나(운동능력 0.75배)가 이미 바닥이에요.
+ */
+export const DECLINE_FLOOR = 0.75;
+
+/** 나이로 떨어질 때 곱하는 배수: 전담 트레이너(맡은 능력치 0.8배) × 시즌 투자 × 산 장비, DECLINE_FLOOR 밑으로는 안 내려가요. */
+export function declineFactor(c: Career, k: AttrKey, inv: InvestPerks, gear: ShopPerks = shopPerks(c)): number {
+  return Math.max(DECLINE_FLOOR, (c.perks.trainer === k ? 0.8 : 1) * inv.decline[k] * gear.decline);
+}
+
 function grow(c: Career, min: number, rating: number, tag: string, inv: InvestPerks): void {
   const p = c.p;
   const age = c.age;
@@ -848,7 +859,8 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: InvestPe
     if (t === "대기만성") tf = age < 20 ? G.bloomer.youth : blooming ? G.bloomer.peak : 1;
     if (t === "꾸준함") tf = G.steady;
   } else {
-    if (t === "대기만성" && age <= 32) tf = 0.5;
+    // 대기만성은 떨어지기 시작한 첫 두 해(33·34세)에 덜 떨어져요.
+    if (t === "대기만성" && age <= DECLINE_START_AGE + 1) tf = 0.5;
     if (t === "강철몸") tf = 0.7;
   }
   // 잠재력까지 남은 여유가 클수록 빨리 커요. 잠재력에 가까워져도 0.3배는 남겨요.
@@ -878,12 +890,11 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: InvestPe
       g = base * tf * decline[k] * rnd(0.6, 1.4);
       if (c.focus === k) g *= 0.6;
     }
-    // 전담 트레이너: 맡은 능력치는 조금 더 크고, 노화로 떨어질 때는 덜 떨어져요.
-    if (c.perks.trainer === k) g *= g > 0 ? 1.15 : 0.8;
+    // 전담 트레이너(맡은 능력치는 조금 더 크고 덜 떨어져요), 시즌 투자, 산 장비.
+    // 떨어질 때 줄여 주는 몫은 모두 곱해도 DECLINE_FLOOR까지예요.
+    g *= g > 0 ? (c.perks.trainer === k ? 1.15 : 1) * inv.growth[k] * gear.growth[k] : declineFactor(c, k, inv, gear);
     // 천재형: BQ가 더 크고, 떨어질 때는 덜 떨어져요.
     if (k === "iq" && t === "천재형") g *= g > 0 ? G.genius.grow : G.genius.decline;
-    // 시즌 투자와 산 장비
-    g *= g > 0 ? inv.growth[k] * gear.growth[k] : inv.decline[k] * gear.decline;
     if (k === "iq" && age >= 24 && age <= 33) g += 0.5;
     delta[k] = addAttr(p.attrs, k, g);
   }

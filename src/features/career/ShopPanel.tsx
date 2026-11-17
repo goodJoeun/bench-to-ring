@@ -3,10 +3,13 @@
 import { useState } from "react";
 import {
   DONATIONS,
+  DONATION_STAT_AGE,
   boughtThisSeason,
   canBuy,
   canDonate,
+  describeDonationReward,
   donatedThisSeason,
+  donationLuck,
   money,
   ownedItems,
   owns,
@@ -141,7 +144,10 @@ export function ShopPanel({ career: c }: { career: Career }) {
                 );
               })}
             </div>
-            <p className="hint">금액마다 한 시즌에 한 번 기부할 수 있어요. 가끔 아이들의 응원에 힘이 나는 좋은 일이 생겨요.</p>
+            <p className="hint">
+              금액마다 한 시즌에 한 번 기부할 수 있어요. 가끔 아이들의 응원에 힘이 나는 좋은 일이 생겨요. 오버롤이 높을수록, 보답이 큰
+              금액일수록 확률이 낮아요. {DONATION_STAT_AGE + 1}세부터는 능력치 대신 건강이 올라요.
+            </p>
           </div>
         </>
       )}
@@ -157,7 +163,7 @@ export function ShopPanel({ career: c }: { career: Career }) {
           <p className="sheet-desc">
             {item
               ? `${item.cat} · ${item.effect}`
-              : `기부한 돈은 은퇴 기록에 남아요. 일정 확률로 좋은 일이 생겨요`}
+              : `기부한 돈은 은퇴 기록에 남아요. ${+(donationLuck(c, price) * 100).toFixed(1)}% 확률로 좋은 일이 생겨요: ${describeDonationReward(c, price)}`}
           </p>
           <button
             type="button"

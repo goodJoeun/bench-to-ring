@@ -45,7 +45,7 @@ export {
 export { buyoutCost, canRequestTransfer, currentDecision, leverage, negotiable, requestTransfer, resolveQueue } from "./season/decisions";
 export {
   DONATIONS,
-  DONATION_LUCK,
+  DONATION_STAT_AGE,
   SHOP,
   SHOP_SIZE,
   boughtThisSeason,
@@ -53,6 +53,8 @@ export {
   canBuy,
   canDonate,
   describeDonationReward,
+  donationLuck,
+  donationReward,
   donate,
   donatedThisSeason,
   ownedItems,

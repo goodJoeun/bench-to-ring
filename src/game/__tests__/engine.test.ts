@@ -122,7 +122,8 @@ import { runOffseason } from "@/game/season/offseason";
 import { leverage } from "@/game/season/decisions";
 import { nationalCallUp, runNationalTeam } from "@/game/world/national";
 import { browserRecord, loadAchievements, loadLifeView, parseCareer, saveCareer, saveHall, startLifetime } from "@/game/career/storage";
-import { canDonate, donatedThisSeason, refreshShop, shopPerks } from "@/game/economy/shop";
+import { DONATION_STAT_AGE, canDonate, donatedThisSeason, donationLuck, donationReward, refreshShop, shopPerks } from "@/game/economy/shop";
+import { DECLINE_FLOOR, declineFactor } from "@/game/season/season";
 
 afterEach(() => resetRandom());
 
@@ -1567,6 +1568,65 @@ describe("자금 쓰기", () => {
     c.year += 1;
     refreshShop(c);
     expect(canDonate(c, 1)).toBe(true);
+  });
+
+  it("기부 보답 확률은 오버롤 구간과 금액으로 확률표에서 정해요", () => {
+    const c = rich("luck");
+    const at = (level: number) => {
+      for (const k of Object.keys(c.p.attrs) as (keyof typeof c.p.attrs)[]) c.p.attrs[k] = level;
+      return [0.1, 1, 10, 100].map((d) => donationLuck(c, d));
+    };
+    expect(at(65)).toEqual([0.7, 0.5, 0.5, 0.5]);
+    expect(at(75)).toEqual([0.6, 0.4, 0.4, 0.333]);
+    expect(at(85)).toEqual([0.5, 0.33, 0.33, 0.25]);
+    expect(at(95)).toEqual([0.4, 0.1, 0.08, 0.05]);
+    expect(donationLuck(c, 5)).toBe(0);
+
+    // 확률보다 조금 큰 난수면 보답이 오지 않고, 조금 작으면 와요.
+    at(70);
+    const p = donationLuck(c, 1);
+    setRandom(() => p + 0.01);
+    expect(donate(c, 1)).toBe(true);
+    expect(c.news[0].m).not.toContain("힘이 났어요");
+    setRandom(() => p - 0.01);
+    expect(donate(c, 10)).toBe(true);
+    expect(c.news[0].m).toContain("힘이 났어요");
+  });
+
+  it("능력치가 떨어지기 시작하는 33세부터는 기부 보답으로 능력치 대신 건강이 올라요", () => {
+    const c = rich("old");
+    expect(DONATION_STAT_AGE).toBe(32);
+    c.age = 32;
+    expect(donationReward(c, 10)).toEqual({ rand: 2, form: 0.5 });
+    c.age = 33;
+    expect(donationReward(c, 10)).toEqual({ health: 6, form: 0.5 });
+    expect(donationReward(c, 100)).toEqual({ health: 19, form: undefined });
+    expect(donationReward(c, 0.1)).toEqual({ health: 5, form: 0.3 });
+
+    setRandom(() => 0);
+    const attrs = { ...c.p.attrs };
+    c.health = 50;
+    expect(donate(c, 1)).toBe(true);
+    expect(c.p.attrs).toEqual(attrs);
+    expect(c.health).toBe(53);
+    expect(c.news[0].m).toContain("건강 +3");
+  });
+
+  it("안티에이징 클리닉은 나이로 떨어지는 폭을 줄이지만, 겹쳐 써도 바닥(0.75배) 밑으로는 안 내려가요", () => {
+    const c = rich("aging");
+    stock(c, ["antiaging", "court"]);
+    expect(buy(c, "antiaging")).toBe(true);
+    expect(shopPerks(c).decline).toBeCloseTo(0.9, 5);
+    const none = investPerks([]);
+    expect(declineFactor(c, "sht", none)).toBeCloseTo(0.9, 5);
+    expect(buy(c, "court")).toBe(true);
+    // 0.9 × 0.9 = 0.81
+    expect(declineFactor(c, "sht", none)).toBeCloseTo(0.81, 5);
+    // 영양·수면 관리(0.9)까지 겹치면 0.729 → 바닥
+    expect(declineFactor(c, "sht", investPerks(["diet"]))).toBe(DECLINE_FLOOR);
+    // 웨이트·피지컬(운동능력 0.75)에 전담 트레이너까지 붙여도 바닥
+    c.perks.trainer = "ath";
+    expect(declineFactor(c, "ath", investPerks(["gym", "pilates"]))).toBe(DECLINE_FLOOR);
   });
 });
 
