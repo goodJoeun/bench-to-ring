@@ -123,7 +123,7 @@ import { leverage } from "@/game/season/decisions";
 import { nationalCallUp, runNationalTeam } from "@/game/world/national";
 import { browserRecord, loadAchievements, loadLifeView, parseCareer, saveCareer, saveHall, startLifetime } from "@/game/career/storage";
 import { DONATION_STAT_AGE, canDonate, donatedThisSeason, donationLuck, donationReward, refreshShop, shopPerks } from "@/game/economy/shop";
-import { DECLINE_FLOOR, declineFactor } from "@/game/season/season";
+import { DECLINE_FLOOR, declineFactor, finalsMvpOdds } from "@/game/season/season";
 
 afterEach(() => resetRandom());
 
@@ -2440,6 +2440,150 @@ describe("결승 클러치", () => {
     expect(ace.rate).toBeLessThan(0.9);
     const bench = count(-14);
     expect(bench.rate).toBe(0);
+  });
+
+  /** 우승할 결승 바로 앞(출전 결정을 따지기 전)까지 돌려요. 정규시즌 결정은 쉬는 쪽을 골라요. */
+  function beforeWinningFinal(id: string): Career | null {
+    const c = kblAce(id);
+    startSeason(c);
+    while (c.run) {
+      const run = c.run;
+      if (run.final && run.champ && run.shown === run.post.length - 1 && !run.clutch && run.out === 0 && run.tot.gp > 0 && !c.queue.length) return c;
+      const d = currentDecision(c);
+      if (d) chooseOption(c, d.opts.length - 1);
+      else stepSeason(c);
+    }
+    return null;
+  }
+  const finishRun = (c: Career) => {
+    while (c.run) {
+      const d = currentDecision(c);
+      if (d) chooseOption(c, 0);
+      else stepSeason(c);
+    }
+  };
+
+  it("결승 직전 건강이 60을 넘으면 출전 결정을 묻지 않고, 60 이하면 선택지마다 MVP 수상 가능성이 어떻게 바뀌는지 알려 줘요", () => {
+    setRandom(seeded(304));
+    let checked = 0;
+    for (let i = 0; i < 80 && checked < 3; i++) {
+      const c = beforeWinningFinal(`ask${i}`);
+      if (!c) continue;
+      checked++;
+      const healthy = structuredClone(c);
+      healthy.health = 60.6;
+      stepSeason(healthy);
+      expect(currentDecision(healthy)?.title).not.toBe("결승 출전");
+      const edge = structuredClone(c);
+      edge.health = 60;
+      stepSeason(edge);
+      expect(currentDecision(edge)?.title).toBe("결승 출전");
+      c.health = 40;
+      stepSeason(c);
+      const d = currentDecision(c)!;
+      expect(d.title).toBe("결승 출전");
+      expect(d.opts.map((o) => o.label)).toEqual(["풀타임 출전을 강행한다", "출전 시간을 조절하며 뛴다"]);
+      expect(d.opts[0].act.k).toBe("gamble");
+      expect(d.opts[0].sub).toBe("성공하면 경기력 상승 · MVP 수상 가능성 상승, 실패하면 부상으로 도중 결장 · MVP 수상 가능성 하락");
+      expect(d.opts[1].sub).toBe("부상 위험 없음 · MVP 수상 가능성 동일");
+    }
+    expect(checked).toBe(3);
+  });
+
+  it("풀타임 강행을 버텨 내면 결승 MVP 수상 가능성이 오르고, 도중 다치면 일찍 빠져 내려가고, 조절하면 그대로예요", () => {
+    setRandom(seeded(305));
+    const fmvp = (c: Career) => c.awardLog.some((a) => a.y === c.last!.year && a.k === "fmvp");
+    const won = { up: 0, rest: 0, hurt: 0 };
+    const mvp = { up: 0, rest: 0, hurt: 0 };
+    let n = 0;
+    for (let i = 0; i < 400 && n < 40; i++) {
+      const base = beforeWinningFinal(`fmvp${i}`);
+      if (!base) continue;
+      base.health = 40;
+      stepSeason(base);
+      const act = currentDecision(base)!.opts[0].act;
+      if (act.k !== "gamble") throw new Error("강행은 운에 달린 선택지예요");
+      n++;
+      for (const k of ["up", "rest", "hurt"] as const) {
+        const c = structuredClone(base);
+        const rings = c.awards.ring ?? 0;
+        // 같은 운으로 이어지게 세 갈래 모두 한 번씩 굴려요. 조절은 효과가 같은 두 결과를 굴려요.
+        setRandom(seeded(5000 + i));
+        const rest = currentDecision(c)!.opts[1].act;
+        const boost = rest.k === "boost" ? rest : act.win;
+        applyAction(c, k === "rest" ? { k: "gamble", p: 1, win: boost, lose: boost } : { ...act, p: k === "up" ? 1 : 0 });
+        c.queue.shift();
+        expect(c.run!.out).toBe(0);
+        expect(c.run!.finalPush).toBe(k === "rest" ? undefined : k);
+        if (k === "hurt") {
+          // 결승에는 나서지만 도중에 다쳐 빠지고, 마지막 플레이(결승 클러치)는 맡지 못해요.
+          const steps: (string | null)[] = [];
+          while (c.run) steps.push(currentDecision(c) ? (chooseOption(c, 0), null) : stepSeason(c));
+          expect(steps).toContain("final");
+          expect(c.news.some((n) => n.m.includes("KBL 챔피언결정전 도중 다쳐 일찍 코트를 떠났어요"))).toBe(true);
+          expect(c.awards.ring).toBe(rings + 1);
+        } else finishRun(c);
+        if (c.last!.result !== "리그 우승") continue;
+        won[k]++;
+        if (fmvp(c)) mvp[k]++;
+      }
+    }
+    expect(n).toBe(40);
+    const rate = (k: keyof typeof won) => mvp[k] / Math.max(1, won[k]);
+    expect(won.hurt).toBe(40);
+    expect(rate("rest")).toBeGreaterThan(0.3);
+    expect(rate("up")).toBeGreaterThan(rate("rest"));
+    expect(rate("hurt")).toBeLessThan(rate("rest"));
+  });
+
+  it("결승 직전 풀타임 강행을 버텨 낼 확률은 건강과 같고, 건강할수록 강행의 기댓값이 커요", () => {
+    const c = kblAce("push-ev");
+    const push = (health: number, trait: Career["p"]["trait"]) => {
+      c.health = health;
+      c.p.trait = trait;
+      const d = bigGameDecision(c, "결승을 앞두고", true);
+      const act = d.opts[0].act;
+      if (act.k !== "gamble") throw new Error("강행은 운에 달린 선택지예요");
+      return { d, p: act.p };
+    };
+    /** 강행했을 때 파이널 MVP 확률의 기댓값을 조절할 때 확률로 나눈 값 */
+    const ev = (health: number, trait: Career["p"]["trait"]) => {
+      const { p } = push(health, trait);
+      return (p * finalsMvpOdds(trait, "up") + (1 - p) * finalsMvpOdds(trait, "hurt")) / finalsMvpOdds(trait);
+    };
+    for (const trait of ["승부사", "새가슴", "꾸준함"] as const)
+      for (const h of [0, 12, 25, 40, 49, 60]) expect(push(h, trait).p).toBeCloseTo(h / 100);
+    // 소수 건강은 화면에 보이는 반올림 값과 같은 확률이에요.
+    expect(push(37.6, "꾸준함").p).toBeCloseTo(0.38);
+    expect(push(37.6, "꾸준함").d.body).toContain("버텨 낼 확률은 지금 건강과 같은 38%예요");
+    expect(finalsMvpOdds("승부사", "up")).toBeGreaterThan(finalsMvpOdds("승부사"));
+    expect(finalsMvpOdds("승부사", "hurt")).toBeLessThan(finalsMvpOdds("승부사"));
+    // 보통 선수는 건강 40대 중반부터 강행이 이득이고, 지쳐 있을수록 크게 손해예요.
+    expect(ev(48, "꾸준함")).toBeGreaterThan(1);
+    expect(ev(40, "꾸준함")).toBeLessThan(1);
+    expect(ev(0, "꾸준함")).toBeCloseTo(0.6);
+    for (const trait of ["승부사", "새가슴", "꾸준함"] as const) {
+      expect(ev(45, trait)).toBeGreaterThan(ev(25, trait));
+      expect(ev(25, trait)).toBeGreaterThan(ev(5, trait));
+    }
+  });
+
+  it("부상으로 결승에 결장하면 팀이 우승해도 결승 MVP를 받지 못해요", () => {
+    setRandom(seeded(306));
+    let n = 0;
+    for (let i = 0; i < 400 && n < 15; i++) {
+      const c = beforeWinningFinal(`out${i}`);
+      if (!c) continue;
+      n++;
+      const rings = c.awards.ring ?? 0;
+      c.run!.out = 3;
+      c.run!.outWhy = "부상";
+      finishRun(c);
+      expect(c.news.some((n) => n.m.includes("부상으로 KBL 챔피언결정전에 나서지 못했어요"))).toBe(true);
+      expect(c.awards.ring).toBe(rings + 1);
+      expect(c.awardLog.some((a) => a.y === c.last!.year && a.k === "fmvp")).toBe(false);
+    }
+    expect(n).toBe(15);
   });
 
   it("국가대표 결승 클러치: 결승 전까지만 치르고 기다렸다가, 고르면 메달·결승 중계·병역 특례를 정해요", () => {

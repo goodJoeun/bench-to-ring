@@ -4,7 +4,7 @@ import { careerTotals, newlyRanked } from "../legacy/records";
 import { HEALTH_RANGE, addAttr, addHealth, clampTrust } from "../player/condition";
 import { ATTRS, POS, ROLE_RANK } from "../core/data";
 import { currentDecision } from "./decisions";
-import { FINAL_CLUTCH_CHANCE, bigGameDecision, clutchDecision, drawClutchLead, injuryDecision, seasonEvent } from "./events";
+import { FINAL_ASK_HEALTH, FINAL_CLUTCH_CHANCE, bigGameDecision, clutchDecision, drawClutchLead, injuryDecision, seasonEvent } from "./events";
 import { addStar, seasonStar } from "../player/star";
 import { LEAGUES, SCORING_TITLE, leagueTeams } from "../world/leagues";
 import { FINAL_SCORE, finalScore, gameScore, makeLiveGame } from "./live";
@@ -18,7 +18,7 @@ import { chance, pick, random, ri, rnd, seededPick, shuffle } from "../core/rand
 import { shopPerks, type ShopPerks } from "../economy/shop";
 import { BONUS_CAP, SPECIALTIES, combinedEffect, specialtiesOf } from "../player/specialty";
 import { DECLINE_START_AGE, ageBase, ovr, ovrOf, roleOf } from "../player/ratings";
-import type { AttrKey, AwardKey, Career, ClutchBoard, GameLine, InvestKey, LeagueKey, SceneKey, SeasonRecord, SeasonRun } from "../core/types";
+import type { AttrKey, AwardKey, Career, ClutchBoard, GameLine, InvestKey, LeagueKey, SceneKey, SeasonRecord, SeasonRun, Trait } from "../core/types";
 import { clamp, fmtNum, josa, r1, round2, sigmoid } from "../core/util";
 
 /*
@@ -49,6 +49,28 @@ const NBA_ACE_CAP = 0.3;
  * 파이널·컨퍼런스 파이널 MVP는 서드팀과 같은 문턱이에요.
  */
 const NBA_STAT_FLOOR = { mvp: [20, 32], first: [20, 32], second: [19, 31], third: [17, 29], allstar: [15, 26] } as const;
+
+/** 결승 직전 풀타임 강행 결과에 따른 결승 중계 기록 배율 */
+const FINAL_PUSH_STATS = { up: 1.15, hurt: 0.45 } as const;
+/** 풀타임 강행을 버텨 내면 파이널 MVP를 놓칠 확률이 이만큼으로 줄어요. */
+const FINAL_PUSH_UP_MISS = 0.2;
+/** 결승 도중 다치면 파이널 MVP 확률이 이 배율이 돼요. 승부사는 큰 경기에 강해서 덜 깎여요. */
+const FINAL_PUSH_HURT = { base: 0.6, clutch: 0.8 } as const;
+
+/**
+ * 우승한 시즌에 파이널 MVP를 받을 확률 (출전 시간·영향력·기록 문턱을 넘었을 때).
+ * 기본은 60%(승부사 85%). 결승 직전 풀타임 강행을 버텨 내면(up) 보통 92%·승부사 97%로 오르고,
+ * 결승 도중 다치면(hurt) 보통 36%·승부사 68%로 내려가요.
+ * 강행을 버텨 낼 확률은 건강과 같아서(events.ts finalPushOdds), 평균으로 따지면 보통 선수는 건강 약 43 이상에서
+ * 강행이 이득이고, 지쳐 있을수록 손해가 커져요(건강 0이면 0.6배). 승부사는 원래 확률이 높아 건강 약 59 이상에서만 겨우 본전이에요.
+ */
+export function finalsMvpOdds(trait: Trait, push?: "up" | "hurt"): number {
+  const clutch = trait === "승부사";
+  const base = clutch ? 0.85 : 0.6;
+  if (push === "up") return 1 - (1 - base) * FINAL_PUSH_UP_MISS;
+  if (push === "hurt") return base * FINAL_PUSH_HURT[clutch ? "clutch" : "base"];
+  return base;
+}
 
 /** 최근 경기 기록을 이만큼 남겨요. */
 const LOG_LIMIT = 12;
@@ -330,14 +352,17 @@ export function stepSeason(c: Career): SeasonStep | null {
   }
   // 플레이오프: 한 라운드씩 공개해요. 결승은 문자 중계로 보여줘요.
   const finalNext = !!run.final && run.shown === run.post.length - 1;
-  // 결승 직전에는 몸 상태를 보고 출전을 강행할지 물어요. 고르고 나면 같은 칸을 다시 진행해요.
+  // 결승 직전에 몸이 지쳐 있으면(건강 60 이하) 풀타임 출전을 강행할지 물어요. 고르고 나면 같은 칸을 다시 진행해요.
   if (finalNext && !run.clutch && run.tot.gp > 0 && run.out === 0) {
     run.clutch = true;
-    c.queue.push(bigGameDecision(c, `${FINAL_NAME[c.team!.lg]}을 앞두고`, true));
-    return "step";
+    if (Math.round(c.health) <= FINAL_ASK_HEALTH) {
+      c.queue.push(bigGameDecision(c, `${FINAL_NAME[c.team!.lg]}을 앞두고`, true));
+      return "step";
+    }
   }
   // 그다음, 주전·에이스면 우승이 걸린 결승 클러치가 걸릴 수 있어요. 고르고 나면 같은 칸을 다시 진행해 결승 중계를 보여줘요.
-  if (finalNext && run.finalClutch === undefined && run.tot.gp > 0 && run.out === 0) {
+  // 풀타임 강행에 실패해 결승 도중 다쳐 빠지면 마지막 플레이는 맡지 못해요.
+  if (finalNext && run.finalClutch === undefined && run.tot.gp > 0 && run.out === 0 && run.finalPush !== "hurt") {
     run.finalClutch = chance(FINAL_CLUTCH_CHANCE[roleOf(run.min)] ?? 0);
     if (run.finalClutch) {
       askFinalClutch(c, run, tag);
@@ -354,7 +379,10 @@ export function stepSeason(c: Career): SeasonStep | null {
       playFinal(c, run);
       return "final";
     }
-    if (run.out > 0) addNews(c, tag, "bad", `${run.outWhy === "부상" ? "부상으로" : "몸 상태 때문에"} ${round.name}에 나서지 못했어요.`);
+    if (run.out > 0) {
+      run.missedFinal = true;
+      addNews(c, tag, "bad", `${run.outWhy === "부상" ? "부상으로" : "몸 상태 때문에"} ${round.name}에 나서지 못했어요.`);
+    }
   }
   // 라운드 하나는 여러 경기라 결장도 몇 경기씩 지나가요.
   if (run.out > 0) run.out = Math.max(0, run.out - 3);
@@ -587,7 +615,10 @@ function playFinal(c: Career, run: SeasonRun): void {
   const f = run.final!;
   const games = f.series ? f.series.split("-").map(Number).reduce((a, b) => a + b, 0) : 0;
   const t = run.tot;
-  const vary = (v: number) => Math.max(0, Math.round((v / t.gp) * rnd(0.75, 1.35)));
+  // 풀타임 강행을 버텨 내면 기록이 오르고, 결승 도중 다쳐 일찍 빠지면 기록이 줄어요.
+  const push = run.finalPush ? FINAL_PUSH_STATS[run.finalPush] : 1;
+  const vary = (v: number) => Math.max(0, Math.round((v / t.gp) * rnd(0.75, 1.35) * push));
+  if (run.finalPush === "hurt") addNews(c, seasonTag(run), "bad", `${FINAL_NAME[lg]} 도중 다쳐 일찍 코트를 떠났어요.`);
   c.live = makeLiveGame({
     title: `${run.year} ${FINAL_NAME[lg]}${games ? ` ${games}차전` : ""}`,
     key: `league-${run.year}`,
@@ -767,7 +798,9 @@ function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord 
     giveAward(c, "cfmvp", conferenceFinalsMvpName(team.name), rec);
   if (champ) {
     giveAward(c, L.pro ? "ring" : "title", L.pro ? `${sh} 우승` : `${sh} 전국대회 우승`, rec);
-    if (min >= 26 && impact >= 5 && statsOk("third") && chance(p.trait === "승부사" ? 0.85 : 0.6)) give("fmvp");
+    // 결승에 결장했으면 팀이 우승해도 파이널 MVP는 받지 못해요.
+    // 결승 직전 풀타임을 강행해 버텨 냈으면 확률이 오르고, 결승 도중 다쳐 빠졌으면 확률이 내려가요.
+    if (!run.missedFinal && min >= 26 && impact >= 5 && statsOk("third") && chance(finalsMvpOdds(p.trait, run.finalPush))) give("fmvp");
   }
   const prev = c.hist.length ? c.hist[c.hist.length - 1] : null;
   // 기량발전상은 프로 2년차부터예요. 데뷔 시즌의 지난 기록은 고교·대학 시절이라 비교하지 않아요.

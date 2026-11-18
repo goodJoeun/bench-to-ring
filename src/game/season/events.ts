@@ -1488,29 +1488,53 @@ export function injuryDecision(out: number): Decision {
 /** 큰 경기(빅매치·클러치) 성공 확률 보정: 승부사는 오르고 새가슴은 내려가요. */
 const bigGameEdge = (c: Career, x = 0.1) => (c.p.trait === "승부사" ? x : c.p.trait === "새가슴" ? -x * 0.8 : 0);
 
+/** 결승 직전 건강(화면에 보이는 반올림 값)이 이 값 이하일 때만 풀타임 출전을 강행할지 물어요. */
+export const FINAL_ASK_HEALTH = 60;
+
+/** 결승 풀타임 강행을 버텨 낼 확률은 지금 건강과 같아요(건강 40이면 40%). 특성은 따지지 않아요. */
+export const finalPushOdds = (c: Career) => clamp(Math.round(c.health) / 100, 0, 1);
+
 /**
  * 빅매치나 결승을 앞두고 몸을 던질지 고르는 결정. 건강할수록 강행이 성공하기 쉬워요.
- * 성공하면 경기력이 오르고, 실패하면 다쳐서 다음 경기(결승이면 결승)에 나서지 못해요.
+ * 빅매치는 성공하면 경기력이 오르고, 실패하면 다쳐서 다음 경기에 나서지 못해요.
+ * 결승은 성공하면 결승 경기력과 파이널 MVP 수상 가능성이 오르고, 실패하면 결승 도중 다쳐 일찍 빠지고
+ * 파이널 MVP 수상 가능성이 내려가요(run.finalPush, season.ts의 finalsMvpOdds).
  */
 export function bigGameDecision(c: Career, label: string, final: boolean, scene: SceneKey = "bigmatch"): Decision {
   const h = Math.round(c.health);
   const p = clamp(0.3 + c.health / 140 + bigGameEdge(c), 0.3, 0.92);
-  const hurt = final ? 3 : ri(1, 3);
   const body = h >= 75 ? "몸 상태는 괜찮아요" : h >= 50 ? "다리가 조금 무거워요" : "몸이 많이 지쳐 있어요";
+  if (final) {
+    const tired = h >= 50 ? "다리가 조금 무거워요" : h >= 40 ? "다리가 무겁지만 버틸 만해요" : h >= 25 ? "몸이 많이 지쳐 있어요" : "몸이 한계에 가까워요";
+    const push = risky(
+      "풀타임 출전을 강행한다",
+      finalPushOdds(c),
+      { form: 1.2, finalPush: "up", msg: "지친 몸을 이끌고 결승 풀타임 출전을 준비했어요. 결승 MVP 수상 가능성이 올랐어요." },
+      { health: -8, finalPush: "hurt", msg: "몸이 버티지 못했어요. 결승 도중 다쳐 일찍 코트를 떠나요. 결승 MVP 수상 가능성이 낮아졌어요.", t: "bad" },
+    );
+    return {
+      scene: "finalGame",
+      title: "결승 출전",
+      body: `${label}. ${tired}(건강 ${h}). 풀타임을 버텨 낼 확률은 지금 건강과 같은 ${h}%예요. 풀타임 출전을 강행해 버티면 결승 MVP에 가까워지지만, 버티지 못하면 결승 도중 다쳐 빠지고 결승 MVP에서 멀어져요.`,
+      opts: [
+        { ...push, sub: "성공하면 경기력 상승 · MVP 수상 가능성 상승, 실패하면 부상으로 도중 결장 · MVP 수상 가능성 하락" },
+        { ...pass("출전 시간을 조절하며 뛴다", "무리하지 않고 출전 시간을 나눠 뛰기로 했어요."), sub: "부상 위험 없음 · MVP 수상 가능성 동일" },
+      ],
+    };
+  }
+  const hurt = ri(1, 3);
   return {
-    scene: final ? "finalGame" : scene,
-    title: final ? "결승 출전" : `빅매치 · ${label}`,
-    body: `${final ? label : `${josa(label, "이", "가")} 다가와요`}. ${body}(건강 ${h}). 몸을 던지면 경기력이 오르지만, 버티지 못하면 다쳐서 ${final ? "결승에" : "다음 경기에"} 나서지 못해요.`,
+    scene,
+    title: `빅매치 · ${label}`,
+    body: `${josa(label, "이", "가")} 다가와요. ${body}(건강 ${h}). 몸을 던지면 경기력이 오르지만, 버티지 못하면 다쳐서 다음 경기에 나서지 못해요.`,
     opts: [
       risky(
-        final ? "모든 걸 쏟아붓는다" : "출전을 강행한다",
+        "출전을 강행한다",
         p,
-        { form: 1.2, health: -3, msg: final ? "결승을 앞두고 컨디션을 끌어올렸어요." : `${label}에서 몸을 던져 흐름을 가져왔어요.` },
+        { form: 1.2, health: -3, msg: `${label}에서 몸을 던져 흐름을 가져왔어요.` },
         { injure: hurt, health: -8, msg: `무리하다 다쳤어요. ${hurt}경기는 쉬어야 해요.`, t: "bad" },
       ),
-      final
-        ? pass("출전 시간을 조절하며 뛴다", "무리하지 않고 평소처럼 결승을 준비했어요.")
-        : opt("이번 경기는 쉰다", { sit: 1, health: 5, msg: `${label}에 나서지 않고 몸을 추슬렀어요.`, t: "info" }),
+      opt("이번 경기는 쉰다", { sit: 1, health: 5, msg: `${label}에 나서지 않고 몸을 추슬렀어요.`, t: "info" }),
     ],
   };
 }

@@ -318,8 +318,15 @@ export interface SeasonRun {
   checks: number[];
   /** 빅매치(뛸지 말지 고르는 경기)를 확인할 경기 번호 */
   bigs: number[];
-  /** 결승 전에 출전 여부를 이미 물었는지 */
+  /** 결승 전에 출전 여부를 이미 따져 봤는지 (건강이 낮을 때만 물어요) */
   clutch: boolean;
+  /** 부상·결장으로 결승에 나서지 못했는지. 그러면 팀이 우승해도 파이널 MVP를 받지 못해요. */
+  missedFinal?: boolean;
+  /**
+   * 결승 직전 풀타임 출전 강행 결과. up이면 결승 기록과 파이널 MVP 수상 가능성이 오르고,
+   * hurt면 결승 도중 다쳐 일찍 빠져서 결승 기록과 수상 가능성이 내려가요. 조절하며 뛰거나 묻지 않았으면 없어요.
+   */
+  finalPush?: "up" | "hurt";
   /** 결승 클러치를 따져 봤는지 (걸렸으면 true, 안 걸렸으면 false). 따져 보기 전에는 없어요. */
   finalClutch?: boolean;
   /** 클러치가 남은 경기 번호 (주전 이상일 때만, 시즌마다 한두 번). 걸리면 앞에서부터 지워요. */
@@ -518,6 +525,8 @@ export interface Boost {
   sit?: number;
   /** 시즌 중에만: 다쳐서 빠지는 경기 수 */
   injure?: number;
+  /** 결승 직전 풀타임 강행 결과 (SeasonRun.finalPush) */
+  finalPush?: "up" | "hurt";
   /** 업적에 쓰는 순간을 c.milestones에 남겨요 (예: "captain" 주장 완장) */
   mark?: string;
   /** 스타성 변화 (player/star.ts) */

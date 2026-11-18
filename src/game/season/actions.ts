@@ -45,6 +45,7 @@ function applyBoost(c: Career, b: Boost, tag: string): void {
     run.out += b.injure;
     run.outWhy = "부상";
   }
+  if (run && b.finalPush) run.finalPush = b.finalPush;
   // 최고 오버롤은 시즌을 마칠 때만 기록해요(시즌 기록의 오버롤과 맞추려고요).
   if (msg) addNews(c, tag, b.t ?? "good", msg.trim());
   if (starUp) addNews(c, tag, "big", starUp);
