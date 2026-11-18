@@ -125,8 +125,8 @@ function entries(scope: BoardScope, day: BoardDay, pos: PosKey | null, limit: nu
 export async function getBoard(scope: BoardScope, pos: PosKey | null, day: BoardDay): Promise<Board> {
   "use cache";
   cacheTag(BOARDS_TAG);
-  // 제출 때 태그를 비우니 시간은 DB를 직접 고쳤을 때를 위한 안전장치예요.
-  cacheLife("hours");
+  // 제출 때 태그를 비우니 시간은 DB를 직접 고쳤을 때를 위한 안전장치예요. 짧으면 보기만 해도 DB를 깨워서 길게 둬요.
+  cacheLife("days");
 
   const [top, firsts, stats] = await Promise.all([
     entries(scope, day, pos, pos ? POS_TOP : TOP),
@@ -149,7 +149,7 @@ export async function getBoard(scope: BoardScope, pos: PosKey | null, day: Board
 export async function getBoardDays(): Promise<BoardDays> {
   "use cache";
   cacheTag(BOARDS_TAG);
-  cacheLife("hours");
+  cacheLife("days");
 
   const day = sql<string>`to_char(${careers.createdAt} at time zone 'Asia/Seoul', 'YYYY-MM-DD')`;
   // 한국 시간으로 (DAY_COUNT - 1)일 전 0시부터예요. 캐시가 자정을 넘겨도 화면은 자기 날짜만 골라 써요.

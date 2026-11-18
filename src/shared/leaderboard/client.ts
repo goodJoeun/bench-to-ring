@@ -1,5 +1,6 @@
 import type { CareerSummary, PosKey } from "@/game";
 import { getQueryClient } from "@/shared/query/query-client";
+import { FRESH_BYPASS_MS, FRESH_PARAM } from "./cdn";
 import { LEADERBOARD } from "./keys";
 import type { Board, BoardDay, BoardDays, BoardScope, MyRanks, PlayerCreated, StatBoard, StatKey, SubmitResult } from "./types";
 
@@ -7,6 +8,8 @@ import type { Board, BoardDay, BoardDays, BoardScope, MyRanks, PlayerCreated, St
 
 const TOKEN_KEY = "b2r-player-v1";
 const PENDING_KEY = "b2r-pending-v1";
+/** 마지막으로 기록을 올린 때(ms). 새로 고쳐도 CDN의 묵은 순위표를 건너뛸 수 있게 남겨 둬요. */
+const SUBMITTED_KEY = "b2r-submitted-v1";
 /** 보내지 못한 기록은 최근 것만 이만큼 남겨요. */
 const PENDING_LIMIT = 20;
 
@@ -88,7 +91,11 @@ export function flushPending(): Promise<Map<string, SubmitResult>> {
       // 네트워크 오류: 남은 기록은 다음에 보내요.
     }
     // 순위가 바뀌었으니 불러온 순위표는 낡은 것으로 쳐요. 떠 있는 화면(명예의 전당, 랭킹)은 바로 새로 불러와 내 순위가 보여요.
-    if (results.size) void getQueryClient().invalidateQueries({ queryKey: LEADERBOARD });
+    // CDN이 들고 있는 순위표에는 아직 내 기록이 없으니, 한동안은 CDN을 건너뛰어 불러요(withFresh).
+    if (results.size) {
+      write(SUBMITTED_KEY, String(Date.now()));
+      void getQueryClient().invalidateQueries({ queryKey: LEADERBOARD });
+    }
     return results;
   })().finally(() => (flushing = null));
   return flushing;
@@ -104,23 +111,33 @@ async function getJson<T>(url: string, headers?: HeadersInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+/** 기록을 올린 지 FRESH_BYPASS_MS가 안 됐으면 CDN 캐시 키가 달라지게 올린 때를 붙여요. 다른 사람은 늘 CDN이 들고 있는 것을 받아요. */
+function withFresh(q: URLSearchParams): URLSearchParams {
+  const at = Number(read(SUBMITTED_KEY));
+  if (at > 0 && Date.now() - at < FRESH_BYPASS_MS) q.set(FRESH_PARAM, String(at));
+  return q;
+}
+
 /** 순위표를 가져와요. 기본은 룰셋과 날짜를 가리지 않는 역대 전체예요. 날짜를 주면 그날 올라온 기록끼리의 순위예요. */
 export function fetchBoard(scope: BoardScope = "all", pos: PosKey | null = null, day: BoardDay = null): Promise<Board> {
   const q = new URLSearchParams(scope === "all" ? { scope: "all" } : { ruleset: String(scope.ruleset) });
   if (pos) q.set("pos", pos);
   if (day) q.set("day", day);
-  return getJson(`/api/boards?${q}`);
+  return getJson(`/api/boards?${withFresh(q)}`);
 }
 
 /** 스탯 랭킹(프로 통산 상위 50명)을 가져와요. 날짜는 순위표와 같아요. */
 export function fetchStatBoard(stat: StatKey, scope: BoardScope = "all", day: BoardDay = null): Promise<StatBoard> {
   const q = new URLSearchParams(scope === "all" ? { scope: "all", stat } : { ruleset: String(scope.ruleset), stat });
   if (day) q.set("day", day);
-  return getJson(`/api/stats?${q}`);
+  return getJson(`/api/stats?${withFresh(q)}`);
 }
 
 /** 날짜별 랭킹 등록 수를 가져와요. */
-export const fetchBoardDays = (): Promise<BoardDays> => getJson("/api/boards/days");
+export const fetchBoardDays = (): Promise<BoardDays> => {
+  const q = withFresh(new URLSearchParams()).toString();
+  return getJson(q ? `/api/boards/days?${q}` : "/api/boards/days");
+};
 
 /** 이 브라우저(플레이어)가 올린 기록의 지금 순위. 아직 올린 적이 없으면 null이에요. */
 export async function fetchMine(): Promise<MyRanks | null> {

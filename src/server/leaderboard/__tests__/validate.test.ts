@@ -16,6 +16,7 @@ import {
   type CareerSummary,
 } from "@/game";
 import { HIDDEN_NAME, checkSummary, cleanName, parseBoardQuery, parseStatQuery } from "@/server/leaderboard/validate";
+import { FRESH_PARAM } from "@/shared/leaderboard/cdn";
 
 afterEach(() => resetRandom());
 
@@ -120,6 +121,11 @@ describe("순위표 조건", () => {
     expect(sq("stat=pts&scope=all")).toEqual({ ok: true, scope: "all", stat: "pts", day: null });
     expect(sq("stat=don")).toEqual({ ok: true, scope: { ruleset: RULESET_VERSION }, stat: "don", day: null });
     for (const s of ["", "stat=dunk", "stat=pts&pos=C", "stat=pts&scope=week"]) expect(sq(s), s).toMatchObject({ ok: false });
+  });
+
+  it("기록을 올린 브라우저가 CDN을 건너뛰려고 붙이는 fresh는 조건에 들지 않아요", () => {
+    expect(q(`scope=all&pos=PG&day=2026-10-28&${FRESH_PARAM}=1763450000000`)).toEqual(q("scope=all&pos=PG&day=2026-10-28"));
+    expect(parseStatQuery(new URLSearchParams(`stat=pts&scope=all&${FRESH_PARAM}=1`))).toEqual({ ok: true, scope: "all", stat: "pts", day: null });
   });
 
   it("모르는 값이나 맞지 않는 조합은 거절해요", () => {

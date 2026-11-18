@@ -22,7 +22,7 @@ const STAT_COLUMN = { pts: "pts", reb: "reb", ast: "ast", stl: "stl", blk: "blk"
 export async function getStatBoard(scope: BoardScope, stat: StatKey, day: BoardDay): Promise<StatBoard> {
   "use cache";
   cacheTag(BOARDS_TAG);
-  cacheLife("hours");
+  cacheLife("days");
 
   const col = STAT_COLUMN[stat];
   const value = careers[col];
