@@ -59,7 +59,7 @@ app ──▶ features ──▶ shared ──▶ game
 |---|---|---|
 | `shell` | 모든 화면과 창 | 화면 전환 루트예요 |
 | `create`, `career`, `retired` | `hall-of-fame/HallOfFame` | 명예의 전당을 세 화면에 끼워 넣어요 |
-| `retired` | `career/tabs/RecordTab`의 `SeasonTable` | 은퇴 화면에도 시즌별 기록 표를 보여줘요 |
+| `retired` | `career/tabs/RecordTab`의 `SeasonTable`, `PlayoffPanel` | 은퇴 화면에도 시즌별 기록 표와 플레이오프 기록을 보여줘요 |
 
 화면이 아닌 도우미(함수, 상수, 그림 그리기)를 두 기능 이상이 쓰게 되면 `shared`로 옮겨요. 그래서 표지 그림(`coverArt.ts`)과 기록 캐릭터(`look.ts`)는 `shared/ui/sprite/`에 있어요.
 
@@ -96,7 +96,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 
 | 폴더 | 내용 |
 |---|---|
-| `ui/` | `ui.tsx`(Panel, StatTiles, Choice…), `Sheet.tsx`, `Toast.tsx` |
+| `ui/` | `ui.tsx`(Panel, StatTiles, Choice…), `Sheet.tsx`, `Toast.tsx`, `DeleteRecordSheet.tsx`(첫 화면 '내 은퇴 선수'와 랭킹 '나의 기록'이 함께 쓰는 기록 지우기 단추·확인 창) |
 | `ui/sprite/` | Canvas 선수 캐릭터 `Sprite.tsx`, 표지 그림 `coverArt.ts`, 기록의 캐릭터·유니폼 `look.ts` |
 | `ui/badge/` | `TeamBadge.tsx`(국기·로고·엠블럼), `Medal.tsx`(업적 메달과 딴 업적 카드의 훈장), `emblem.ts`, 만든 파일 `logos.generated.ts`·`flags.generated.ts` |
 | `lib/` | 공통 문구와 색 `format.ts`, 훅 `hooks.ts`, 사이트 정보 `site.ts`, 테마 `theme.ts`, 텍스트만 보기 `text-only.ts`(그림 컴포넌트는 `useTextOnly()`로 안 그리고, 남은 꾸밈·애니메이션은 `globals.css` 맨 아래 `[data-text-only]` 규칙이 꺼요) |
@@ -119,7 +119,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 | `world/` | 리그와 제도 | `leagues` 리그·구단·학교, `awards` 리그별 상 이름, `draft` 드래프트, `national` 국가대표, `military` 병역, `standings` 시즌 순위표 |
 | `season/` | 시즌 흐름과 결정 | `season` 시즌 진행·성장·시상, `live` 결승 중계, `offseason` 오프시즌과 결정 대기열, `events` 이벤트, `decisions` 진로·계약 결정, `actions` 결정 처리 |
 | `economy/` | 돈 쓰기 | `invest` 시즌 투자, `shop` 상점·기부 |
-| `career/` | 커리어 기록과 저장 | `career` 은퇴·요약·레거시, `log` 소식·수상·입단 기록, `storage` localStorage 저장·마이그레이션, 브라우저 업적과 누적 기록 |
+| `career/` | 커리어 기록과 저장 | `career` 은퇴·요약·레거시, `playoffs` 플레이오프 통산(정규시즌 통산과 따로), `log` 소식·수상·입단 기록, `storage` localStorage 저장·마이그레이션·은퇴 기록 지우기, 브라우저 업적과 누적 기록 |
 | `legacy/` | 평가와 업적 | `hall` 랭킹 점수, `records` 역대 기록 순위표, `comps` 닮은 꼴 선수, `namu` 나무위키 링크, `achievements` 업적 (브라우저마다 한 번만, `setBrowserRecord`로 저장소와 이어요. 역대 랭킹 업적은 온라인 순위로 `rankAchievements`), `lifetime` 모든 커리어 누적 기록, `report` 시즌 결산 리포트(커리어 하이·통산 이정표·넘은 선수), `community` 시즌 커뮤니티 반응(국내·해외 댓글) |
 
 밸런스 수치는 대부분 `world/leagues.ts`, `core/data.ts`, `player/ratings.ts`, `season/season.ts`에 있어요.

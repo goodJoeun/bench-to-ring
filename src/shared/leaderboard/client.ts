@@ -2,12 +2,14 @@ import type { CareerSummary, PosKey } from "@/game";
 import { getQueryClient } from "@/shared/query/query-client";
 import { FRESH_BYPASS_MS, FRESH_PARAM } from "./cdn";
 import { LEADERBOARD } from "./keys";
-import type { Board, BoardDay, BoardDays, BoardScope, MyRanks, PlayerCreated, StatBoard, StatKey, SubmitResult } from "./types";
+import type { Board, BoardDay, BoardDays, BoardScope, DeleteResult, MyRanks, PlayerCreated, StatBoard, StatKey, SubmitResult } from "./types";
 
-// 온라인 랭킹에 은퇴 기록을 올려요. 서버가 안 되면 조용히 실패하고, 보내지 못한 기록은 다음에 다시 보내요.
+// 온라인 랭킹에 은퇴 기록을 올리고 지워요. 서버가 안 되면 조용히 실패하고, 보내지 못한 기록과 지우지 못한 기록은 다음에 다시 해요.
 
 const TOKEN_KEY = "b2r-player-v1";
 const PENDING_KEY = "b2r-pending-v1";
+/** 온라인 랭킹에서 지울 커리어 id. 서버가 안 돼 지우지 못했으면 남겨 두고 다음에 다시 지워요. */
+const DELETE_KEY = "b2r-delete-v1";
 /** 마지막으로 기록을 올린 때(ms). 새로 고쳐도 CDN의 묵은 순위표를 건너뛸 수 있게 남겨 둬요. */
 const SUBMITTED_KEY = "b2r-submitted-v1";
 /** 보내지 못한 기록은 최근 것만 이만큼 남겨요. */
@@ -43,6 +45,19 @@ function savePending(list: CareerSummary[]): void {
   write(PENDING_KEY, list.length ? JSON.stringify(list.slice(-PENDING_LIMIT)) : null);
 }
 
+function loadDeletes(): string[] {
+  try {
+    const o: unknown = JSON.parse(read(DELETE_KEY) ?? "[]");
+    return Array.isArray(o) ? o.filter((id): id is string => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveDeletes(ids: string[]): void {
+  write(DELETE_KEY, ids.length ? JSON.stringify(ids) : null);
+}
+
 async function token(): Promise<string | null> {
   const saved = read(TOKEN_KEY);
   if (saved) return saved;
@@ -74,12 +89,39 @@ async function send(s: CareerSummary, retried = false): Promise<Sent> {
   return { done: false };
 }
 
+/**
+ * 올린 기록 하나를 지워요. 토큰이 없으면 올린 적이 없어 지울 것도 없어요.
+ * 다시 해도 소용없는 실패(형식 오류, 서버가 모르는 토큰)는 끝난 것으로 쳐요. 서버가 모르는 토큰이면 그 기록도 없어요.
+ */
+async function sendDelete(id: string): Promise<{ done: true; deleted: boolean } | { done: false }> {
+  const t = read(TOKEN_KEY);
+  if (!t) return { done: true, deleted: false };
+  const res = await fetch(`/api/careers/mine?career=${encodeURIComponent(id)}`, { method: "DELETE", headers: { authorization: `Bearer ${t}` } });
+  if (res.ok) return { done: true, deleted: ((await res.json()) as DeleteResult).deleted };
+  if (res.status === 400 || res.status === 401) return { done: true, deleted: false };
+  return { done: false };
+}
+
 let flushing: Promise<Map<string, SubmitResult>> | null = null;
 
-/** 쌓인 기록을 오래된 것부터 보내요. 하나라도 실패하면 거기서 멈추고 다음에 이어 보내요. */
+/**
+ * 지울 기록을 먼저 지우고, 쌓인 기록을 오래된 것부터 보내요. 하나라도 실패하면 거기서 멈추고 다음에 이어서 해요.
+ * 앱을 처음 불러올 때와 기록을 올리거나 지울 때 불러요.
+ */
 export function flushPending(): Promise<Map<string, SubmitResult>> {
   flushing ??= (async () => {
     const results = new Map<string, SubmitResult>();
+    let removed = false;
+    try {
+      for (const id of loadDeletes()) {
+        const sent = await sendDelete(id);
+        if (!sent.done) break;
+        removed ||= sent.deleted;
+        saveDeletes(loadDeletes().filter((x) => x !== id));
+      }
+    } catch {
+      // 네트워크 오류: 남은 기록은 다음에 지워요.
+    }
     try {
       for (const s of loadPending()) {
         const sent = await send(s);
@@ -91,8 +133,8 @@ export function flushPending(): Promise<Map<string, SubmitResult>> {
       // 네트워크 오류: 남은 기록은 다음에 보내요.
     }
     // 순위가 바뀌었으니 불러온 순위표는 낡은 것으로 쳐요. 떠 있는 화면(명예의 전당, 랭킹)은 바로 새로 불러와 내 순위가 보여요.
-    // CDN이 들고 있는 순위표에는 아직 내 기록이 없으니, 한동안은 CDN을 건너뛰어 불러요(withFresh).
-    if (results.size) {
+    // CDN이 들고 있는 순위표에는 아직 내 기록이 없으니(지운 기록은 아직 있으니), 한동안은 CDN을 건너뛰어 불러요(withFresh).
+    if (results.size || removed) {
       write(SUBMITTED_KEY, String(Date.now()));
       void getQueryClient().invalidateQueries({ queryKey: LEADERBOARD });
     }
@@ -153,4 +195,18 @@ export async function submitCareer(s: CareerSummary): Promise<SubmitResult | nul
   savePending([...loadPending().filter((p) => p.id !== s.id), s]);
   await flushing;
   return (await flushPending()).get(s.id) ?? null;
+}
+
+/**
+ * 은퇴 기록을 온라인 랭킹에서 지워요. 아직 올리지 못한 기록이면 대기열에서 빼요.
+ * 보내는 중이던 기록이 있으면 그게 끝난 뒤에 지워요. 서버가 안 되면 지울 id를 남겨 두고 다음에 접속할 때 다시 지워요.
+ * 지웠거나 지울 게 없으면 true, 다음으로 미뤘으면 false예요.
+ */
+export async function deleteOnline(id: string): Promise<boolean> {
+  savePending(loadPending().filter((p) => p.id !== id));
+  if (!read(TOKEN_KEY)) return true;
+  saveDeletes([...loadDeletes().filter((x) => x !== id), id]);
+  await flushing;
+  await flushPending();
+  return !loadDeletes().includes(id);
 }

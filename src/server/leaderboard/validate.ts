@@ -12,8 +12,14 @@ const LEAGUE_KEYS = Object.keys(LEAGUES) as [LeagueKey, ...LeagueKey[]];
 const count = z.int().min(0);
 const hexColor = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
 
+/** 브라우저의 커리어 id (Career.id) */
+const careerIdSchema = z.string().min(1).max(64);
+
+/** DELETE /api/careers/mine의 `?career=`가 커리어 id 모양인지 봐요. */
+export const isCareerId = (v: unknown): v is string => careerIdSchema.safeParse(v).success;
+
 const summarySchema = z.object({
-  id: z.string().min(1).max(64),
+  id: careerIdSchema,
   name: z.string().trim().min(1).max(NAME_MAX),
   num: z.int().min(0).max(99),
   pos: z.enum(POS_KEYS as [PosKey, ...PosKey[]]),

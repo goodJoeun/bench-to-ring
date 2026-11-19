@@ -58,6 +58,11 @@ export interface BoardEntry {
   verified: boolean;
 }
 
+/** DELETE /api/careers/mine?career=: 지웠는지. 이미 없던 기록이면 false예요. */
+export interface DeleteResult {
+  deleted: boolean;
+}
+
 /** GET /api/careers/mine: 이 플레이어가 올린 기록의 지금 순위 (역대 전체) */
 export interface MyRanks {
   /** 올라온 전체 기록 수 (역대 전체) */

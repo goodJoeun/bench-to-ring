@@ -1,4 +1,16 @@
-import { LEAGUES, currentExpectedMinutes, militaryUnit, r1, roleOf, seasonProgress, type Career, type SeasonRecord, type SeasonRun } from "@/game";
+import {
+  LEAGUES,
+  currentExpectedMinutes,
+  militaryUnit,
+  r1,
+  roleOf,
+  roundLine,
+  seasonProgress,
+  type Career,
+  type PostRound,
+  type SeasonRecord,
+  type SeasonRun,
+} from "@/game";
 import { keepTogether } from "@/shared/lib/format";
 import { gameActions } from "@/shared/store/game-store";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
@@ -71,6 +83,15 @@ function ResultCard({ r }: { r: SeasonRecord }) {
           </b>
         </span>
       </div>
+      {r.po && (
+        <p className="hint">
+          {r.pro ? "플레이오프" : "전국대회 본선"}{" "}
+          {r.po.gp
+            ? `${r.po.gp}경기 평균 ${r.po.pts}점 ${r.po.reb}리바 ${r.po.ast}어시 ${r.po.stl}스틸 ${r.po.blk}블록`
+            : "결장"}{" "}
+          · 팀 {r.po.w}승 {r.po.l}패
+        </p>
+      )}
       {r.final && (
         <p className="hint">
           결승 상대 {r.final.opp} · {r.final.series ? `시리즈 ${r.final.series} · ` : ""}마지막 경기 {r.final.us}-{r.final.them}{" "}
@@ -134,6 +155,19 @@ function RunPlan({ career: c, run }: { career: Career; run: SeasonRun }) {
 
 const formLabel = (f: number) => (f >= 0.3 ? "상승세" : f <= -0.3 ? "하락세" : null);
 
+/** 지금까지 치른 플레이오프 라운드의 내 기록 평균. 뛴 경기가 없으면 그리지 않아요. */
+function PlayoffLine({ rounds }: { rounds: PostRound[] }) {
+  const t = { gp: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0 };
+  for (const r of rounds) if (r.me) for (const k of Object.keys(t) as (keyof typeof t)[]) t[k] += r.me[k];
+  if (!t.gp) return null;
+  const avg = (v: number) => r1(v / t.gp);
+  return (
+    <p className="po-line">
+      플레이오프 <b>{t.gp}경기</b> 평균 {avg(t.pts)}점 · {avg(t.reb)}리바 · {avg(t.ast)}어시 · {avg(t.stl)}스틸 · {avg(t.blk)}블록
+    </p>
+  );
+}
+
 /** 진행 중인 팀 시즌: 지금까지의 평균 기록, 팀 성적, 플레이오프 라운드, 최근 경기 */
 function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
   const t = run.tot;
@@ -194,6 +228,7 @@ function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
           </span>
         )}
       </div>
+      {run.shown > 0 && <PlayoffLine rounds={run.post.slice(0, run.shown)} />}
       {run.shown > 0 && (
         <ul className="rounds">
           {run.post.slice(0, run.shown).map((r) => (
@@ -206,6 +241,7 @@ function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
               <b>
                 {r.score} {r.win ? "승" : "패"}
               </b>
+              {r.me && <span className="rme">{r.me.gp ? `내 기록 · ${roundLine(r.me)}` : "결장"}</span>}
             </li>
           ))}
         </ul>

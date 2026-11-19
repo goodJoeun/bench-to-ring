@@ -1467,6 +1467,29 @@ main.grid {
   line-height: 1.05;
   font-variant-numeric: tabular-nums;
 }
+/* 플레이오프 기록: 통산 평균 제목, 경기당 기록 여섯 칸(좁은 화면은 세 칸씩 두 줄) */
+.po-sum {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.po-sum h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+.po-sum h3 b {
+  font-family: var(--f-num);
+  color: var(--accent);
+}
+.tiles.po-tiles {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+@media (max-width: 560px) {
+  .tiles.po-tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
 .tbl-wrap {
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -5932,6 +5955,10 @@ main.se {
   font-size: 13px;
   color: var(--sim-soft);
 }
+/* 플레이오프 스탯 타일 아래 통산 평균 */
+.rp-tiles + .rp-total {
+  margin-top: 8px;
+}
 .rp-total span {
   margin-left: 6px;
   color: #9fe3b5;
@@ -7324,6 +7351,21 @@ main.grid:not([data-tab="season"]) .col-l {
 .rounds li + li {
   margin-top: 6px;
 }
+/* 라운드마다 내 기록 한 줄 */
+.rounds .rme {
+  grid-column: 1 / -1;
+  margin-top: -4px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.po-line {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.po-line b {
+  color: var(--ink);
+}
 .rounds b {
   color: var(--bad);
 }
@@ -8233,18 +8275,50 @@ html:has(.sheet) .toast-zone {
 .rk-stat li {
   grid-template-columns: 30px 24px minmax(0, 1fr) auto;
 }
-/* 나의 기록: 엔딩을 다시 볼 수 있는 선수는 오른쪽에 단추 */
-.rk-list li[data-ending] {
+/* 나의 기록: 오른쪽에 엔딩 보기(엔딩이 남은 선수만)와 기록 지우기 단추 */
+.rk-list.mine li {
   grid-template-columns: 30px 24px minmax(0, 1fr) auto;
 }
-/* 첫 화면 '내 은퇴 선수': 순위 칸 없이 캐릭터 · 이름 · 엔딩 보기 */
+/* 첫 화면 '내 은퇴 선수': 순위 칸 없이 캐릭터 · 이름 · 엔딩 보기 · 지우기 */
 .my-end li {
   grid-template-columns: 24px minmax(0, 1fr) auto;
+}
+.rk-acts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .rk-end {
   padding: 7px 10px;
   font-size: 13px;
   white-space: nowrap;
+}
+.rk-del {
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  color: var(--muted);
+}
+.rk-del svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+}
+.rk-del:hover,
+.rk-del:focus-visible {
+  color: var(--bad);
+  border-color: var(--bad);
+}
+.sheet-go.danger {
+  background: var(--bad);
+  color: var(--accent-ink);
+}
+.del-who {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
 }
 .rk-val {
   font-family: var(--f-num);

@@ -154,6 +154,7 @@ create table replays (
 | `GET /api/boards?ruleset=&pos=&scope=current\|all` | 순위표. 기본은 현재 룰셋 전체 Top 100, `pos`를 주면 그 포지션 Top 50이에요. 화면은 `scope=all`(역대 전체)로 불러요. 역대 Best 5와 전체 통계(커리어 수, NBA 진출, NBA MVP)를 함께 담아요. 캐시해요. |
 | `GET /api/boards/days` | 날짜별 등록 수. 최근 7일(한국 시간)마다, 그리고 올타임으로 기록 수와 그 기록을 올린 플레이어(기기) 수, 올타임 포지션별 기록 수예요. 역대 전체 범위이고, 순위표와 같은 태그로 캐시해요. |
 | `GET /api/careers/mine` | 내 플레이어(토큰)가 올린 기록의 지금 전체·포지션 순위. 랭킹 페이지 '나의 기록'에서 써요. |
+| `DELETE /api/careers/mine?career=<커리어 id>` | 내 플레이어(토큰)가 올린 기록 하나를 지워요. '나의 기록'·'내 은퇴 선수'에서 기록을 지울 때 불러요. 다른 플레이어의 기록은 지우지 않고, 지웠으면 순위표 캐시(`boards` 태그)를 비워요. 집계는 `careers` 트리거가 맞춰요. 브라우저는 서버가 안 되면 지울 id를 `b2r-delete-v1`에 남겨 두고 다음 접속 때 다시 지워요. |
 | `GET /api/careers/:id` | 기록 상세 (요약 전체) |
 | `POST /api/careers/:id/report` | 신고 (2단계) |
 

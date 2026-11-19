@@ -18,7 +18,22 @@ import { chance, pick, random, ri, rnd, seededPick, shuffle } from "../core/rand
 import { shopPerks, type ShopPerks } from "../economy/shop";
 import { BONUS_CAP, SPECIALTIES, combinedEffect, specialtiesOf } from "../player/specialty";
 import { DECLINE_START_AGE, ageBase, ovr, ovrOf, roleOf } from "../player/ratings";
-import type { AttrKey, AwardKey, Career, ClutchBoard, GameLine, InvestKey, LeagueKey, SceneKey, SeasonRecord, SeasonRun, Trait } from "../core/types";
+import type {
+  AttrKey,
+  AwardKey,
+  Career,
+  ClutchBoard,
+  GameLine,
+  InvestKey,
+  LeagueKey,
+  PlayoffRecord,
+  PostRound,
+  SceneKey,
+  SeasonRecord,
+  SeasonRun,
+  SeasonTotals,
+  Trait,
+} from "../core/types";
 import { clamp, fmtNum, josa, r1, round2, sigmoid } from "../core/util";
 
 /*
@@ -83,6 +98,11 @@ const BIG_GAME_CHANCE = 0.6;
 /** 에이스가 시즌에 클러치를 두 번 맞을 확률. 나머지는 한 번이고, 주전은 늘 한 번이에요. 주전(예상 26분) 이상일 때만 와요. */
 const CLUTCH_TWICE = 0.5;
 const STARTER_MIN = 26;
+/** 플레이오프 출전 시간 배율: 주전(STARTER_MIN 이상)은 조금 더 뛰고, 로테이션이 줄어 PLAYOFF_BENCH_BELOW분 아래 선수는 덜 뛰어요. */
+const PLAYOFF_MIN = { starter: 1.08, bench: 0.75 } as const;
+const PLAYOFF_BENCH_BELOW = 15;
+/** 플레이오프 상대는 강팀이라 득점이 정규시즌보다 조금 줄어요. */
+const PLAYOFF_PTS = 0.95;
 /** 결장하는 경기마다 돌아오는 건강 */
 const REST_HEAL = 0.8;
 /** 경기를 뛴 날 사이사이 돌아오는 건강 */
@@ -369,6 +389,7 @@ export function stepSeason(c: Career): SeasonStep | null {
       return "step";
     }
   }
+  const index = run.shown;
   const round = run.post[run.shown++];
   const last = run.shown >= run.post.length;
   if (last) run.phase = "end";
@@ -377,6 +398,7 @@ export function stepSeason(c: Career): SeasonStep | null {
   if (last && run.final && run.tot.gp > 0) {
     if (run.out === 0 && !run.finalClutch) {
       playFinal(c, run);
+      round.me = playoffRound(c, run, round, index);
       return "final";
     }
     if (run.out > 0) {
@@ -384,10 +406,78 @@ export function stepSeason(c: Career): SeasonStep | null {
       addNews(c, tag, "bad", `${run.outWhy === "부상" ? "부상으로" : "몸 상태 때문에"} ${round.name}에 나서지 못했어요.`);
     }
   }
+  round.me = playoffRound(c, run, round, index);
   // 라운드 하나는 여러 경기라 결장도 몇 경기씩 지나가요.
   if (run.out > 0) run.out = Math.max(0, run.out - 3);
-  addNews(c, tag, round.win ? "good" : "info", `${round.name} · ${round.opp} 상대 ${round.score} ${round.win ? "승리" : "패배"}`);
+  const mine = roundLine(round.me);
+  addNews(c, tag, round.win ? "good" : "info", `${round.name} · ${round.opp} 상대 ${round.score} ${round.win ? "승리" : "패배"}${mine ? ` · ${mine}` : ""}`);
   return "step";
+}
+
+/** 플레이오프 라운드의 팀 승패: 7전 4선승제는 시리즈 성적("4-2"), 단판은 한 경기예요. 점수는 4점을 넘어서 시리즈와 헷갈리지 않아요. */
+export function roundRecord(r: PostRound): { w: number; l: number } {
+  const [a, b] = r.score.split("-").map(Number);
+  if (a <= 4 && b <= 4) return { w: a, l: b };
+  return r.win ? { w: 1, l: 0 } : { w: 0, l: 1 };
+}
+
+/** 라운드에서 내가 뛴 기록 한 줄: 한 경기면 그 경기 기록, 여러 경기면 평균. 뛰지 않았으면 빈 문자열이에요. */
+export function roundLine(me: SeasonTotals | undefined): string {
+  if (!me?.gp) return "";
+  const avg = (v: number) => (me.gp > 1 ? r1(v / me.gp) : v);
+  return `${me.gp > 1 ? `${me.gp}경기 평균 ` : ""}${avg(me.pts)}점 ${avg(me.reb)}리바 ${avg(me.ast)}어시`;
+}
+
+/**
+ * 플레이오프 한 라운드에서 내가 뛴 경기 기록 합계. 정규시즌 경기당 기록(run.mean)을 중심으로 흔들리고, 경기력과 지친 몸을 반영해요.
+ * 주전은 조금 더 뛰고 벤치는 덜 뛰며, 강팀을 만나 득점이 조금 줄어요. 라운드를 시작할 때 결장 중이면 그 라운드는 뛰지 못해요(결승 결장과 같은 기준).
+ * 결승 중계를 틀었으면 결승 마지막 경기의 득점·리바운드·어시스트는 중계의 내 기록을 그대로 써요. 결승 직전 풀타임 강행 결과는 그 경기에 반영해요.
+ * 커리어 id·연도·라운드로 정하는 난수를 써서, 시즌 진행의 난수 흐름과 밸런스는 그대로예요.
+ */
+function playoffRound(c: Career, run: SeasonRun, round: PostRound, index: number): SeasonTotals {
+  const t: SeasonTotals = { gp: 0, min: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, rating: 0 };
+  if (run.out > 0 || run.tot.gp === 0) return t;
+  const rand = seededPick(`${c.id}:${run.year}:po${index}`);
+  const between = (a: number, b: number) => a + rand() * (b - a);
+  const { w, l } = roundRecord(round);
+  const games = w + l;
+  const isFinal = !!run.final && index === run.post.length - 1;
+  const live = isFinal && c.live?.key === `league-${run.year}` ? c.live : null;
+  const tired = wornOut(c.health);
+  const base = run.min * (run.min >= STARTER_MIN ? PLAYOFF_MIN.starter : run.min < PLAYOFF_BENCH_BELOW ? PLAYOFF_MIN.bench : 1);
+  for (let g = 0; g < games; g++) {
+    const lastGame = g === games - 1;
+    const push = isFinal && lastGame && run.finalPush ? FINAL_PUSH_STATS[run.finalPush] : 1;
+    const m = clamp(base * between(0.85, 1.15) * push, 1, 46);
+    const k = (m / run.min) * (1 + run.form * 0.08) * (1 - tired * 0.25);
+    const one = (v: number) => Math.floor(v * k * between(0.5, 1.5) + rand());
+    const shown = lastGame && live ? live.mine : { pts: one(run.mean.pts * PLAYOFF_PTS), reb: one(run.mean.reb), ast: one(run.mean.ast) };
+    t.gp++;
+    t.min += m;
+    t.pts += shown.pts;
+    t.reb += shown.reb;
+    t.ast += shown.ast;
+    t.stl += one(run.mean.stl);
+    t.blk += one(run.mean.blk);
+    t.rating += r1(clamp(run.rating + run.form * 0.35 - tired * 1.2 + between(-1.2, 1.2), 1, 10));
+  }
+  return t;
+}
+
+/** 공개한 플레이오프 라운드를 시즌 기록의 플레이오프 기록(경기당 평균과 팀 승패)으로 합쳐요. */
+function playoffRecord(rounds: PostRound[]): PlayoffRecord {
+  let w = 0;
+  let l = 0;
+  const t = { gp: 0, min: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0 };
+  for (const r of rounds) {
+    const s = roundRecord(r);
+    w += s.w;
+    l += s.l;
+    if (!r.me) continue;
+    for (const k of Object.keys(t) as (keyof typeof t)[]) t[k] += r.me[k];
+  }
+  const avg = (v: number) => (t.gp ? r1(v / t.gp) : 0);
+  return { gp: t.gp, min: avg(t.min), pts: avg(t.pts), reb: avg(t.reb), ast: avg(t.ast), stl: avg(t.stl), blk: avg(t.blk), w, l };
 }
 
 /**
@@ -746,7 +836,10 @@ function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord 
     rating: gp ? r1(clamp(t.rating / gp, 3.5, 9.9)) : 5.5, w: W, l: run.l, result: run.result, ovr0: ov0, ovr1: ov0, awards: [],
   };
   if (gp > 0 && run.final) rec.final = run.final;
-  if (run.post.length) rec.opps = run.post.map((r) => r.opp);
+  if (run.post.length) {
+    rec.opps = run.post.map((r) => r.opp);
+    rec.po = playoffRecord(run.post);
+  }
   if (gp > 0) {
     rec.tpm = threesPerGame(rec.pts, p);
     if (rec.tpm >= 0.2) rec.tpp = threePct(c, run.year);

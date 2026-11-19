@@ -88,6 +88,12 @@ import {
   titleHistory,
   stripYear,
   awardGroups,
+  madePlayoffs,
+  missingPlayoffs,
+  r1,
+  roundLine,
+  roundRecord,
+  sumPlayoffs,
   type AttrKey,
   type AwardKey,
   type LeagueKey,
@@ -121,7 +127,20 @@ import { TRAITS, TRAIT_KEYS } from "@/game/player/players";
 import { runOffseason } from "@/game/season/offseason";
 import { leverage } from "@/game/season/decisions";
 import { nationalCallUp, runNationalTeam } from "@/game/world/national";
-import { browserRecord, loadAchievements, loadLifeView, parseCareer, saveCareer, saveHall, startLifetime } from "@/game/career/storage";
+import {
+  browserRecord,
+  deleteRetired,
+  loadAchievements,
+  loadEnding,
+  loadEndingIds,
+  loadHall,
+  loadLifeView,
+  parseCareer,
+  saveCareer,
+  saveEnding,
+  saveHall,
+  startLifetime,
+} from "@/game/career/storage";
 import { DONATION_STAT_AGE, canDonate, donatedThisSeason, donationLuck, donationReward, refreshShop, shopPerks } from "@/game/economy/shop";
 import { DECLINE_FLOOR, declineFactor, finalsMvpOdds } from "@/game/season/season";
 
@@ -1282,6 +1301,195 @@ describe("시즌 진행", () => {
     const steps = stepThrough(c);
     expect(steps.length).toBe(7);
     expect(c.last?.result).toBe("개인 훈련");
+  });
+});
+
+describe("플레이오프 기록", () => {
+  function proCareer(id: string, q = 0.8): Career {
+    const c = createCareer({ name: "봄농구", num: 23, nat: "미국", pos: "SF", path: "abroad" }, generateCandidates("SF")[0], id);
+    c.stage = "pro";
+    c.team = { name: "보스턴 셀틱스", color: "#007A33", q, lg: "nba" };
+    c.contract = { years: 3, salary: 30 };
+    return c;
+  }
+  /** 결정은 첫 선택지로 고르며 플레이오프가 시작될 때까지(또는 시즌이 끝날 때까지) 진행해요. */
+  function toPlayoffs(c: Career): void {
+    startSeason(c);
+    while (c.run && c.run.phase !== "post" && c.run.phase !== "end") {
+      if (c.queue.length) chooseOption(c, 0);
+      else stepSeason(c);
+    }
+  }
+  function finish(c: Career): void {
+    while (c.run) {
+      if (c.queue.length) chooseOption(c, 0);
+      else stepSeason(c);
+    }
+  }
+
+  it("라운드마다 내 기록이 남고, 시즌 기록에 플레이오프 평균·팀 승패가 정규시즌과 따로 남아요", () => {
+    setRandom(seeded(71));
+    let checked = 0;
+    for (let i = 0; i < 40 && checked < 6; i++) {
+      const c = proCareer(`po-rec${i}`);
+      toPlayoffs(c);
+      if (c.run?.phase !== "post") {
+        finish(c);
+        // 플레이오프에 오르지 못한 시즌에는 플레이오프 기록이 없어요.
+        expect(c.last!.po).toBeUndefined();
+        continue;
+      }
+      const run = c.run;
+      const games = run.games;
+      while (c.run && c.run.phase === "post") {
+        if (c.queue.length) chooseOption(c, 0);
+        else stepSeason(c);
+      }
+      const rounds = run.post;
+      for (const r of rounds) {
+        expect(r.me, r.name).toBeDefined();
+        const { w, l } = roundRecord(r);
+        // 7전 4선승제는 시리즈 안의 경기 수만큼, 뛰었으면 그 경기를 모두 뛰어요.
+        expect(w + l).toBeGreaterThanOrEqual(4);
+        expect(w + l).toBeLessThanOrEqual(7);
+        expect([0, w + l]).toContain(r.me!.gp);
+      }
+      finish(c);
+      const rec = c.last!;
+      const po = rec.po!;
+      const sum = (k: "gp" | "pts" | "stl") => rounds.reduce((t, r) => t + r.me![k], 0);
+      expect(po.gp).toBe(sum("gp"));
+      expect(po.w).toBe(rounds.reduce((t, r) => t + roundRecord(r).w, 0));
+      expect(po.l).toBe(rounds.reduce((t, r) => t + roundRecord(r).l, 0));
+      if (po.gp) {
+        expect(po.pts).toBe(r1(sum("pts") / po.gp));
+        expect(po.stl).toBe(r1(sum("stl") / po.gp));
+      }
+      // 정규시즌 기록은 그대로 정규시즌만이에요.
+      expect(rec.w + rec.l).toBe(games);
+      expect(rec.gp).toBeLessThanOrEqual(games);
+      // 우승하면 마지막 시리즈까지 이겼어요.
+      if (rec.result === "리그 우승") expect(po.w).toBe(16);
+      checked++;
+    }
+    expect(checked).toBeGreaterThanOrEqual(3);
+  });
+
+  it("결승 중계를 튼 결승은 마지막 경기 득점에 중계의 내 기록이 들어가요", () => {
+    setRandom(seeded(72));
+    let found = false;
+    for (let i = 0; i < 200 && !found; i++) {
+      const c = proCareer(`po-live${i}`);
+      toPlayoffs(c);
+      if (c.run?.phase !== "post" || !c.run.final) {
+        finish(c);
+        continue;
+      }
+      const run = c.run;
+      let res: SeasonStep | null = null;
+      while (c.run && c.run.phase === "post") {
+        if (c.queue.length) chooseOption(c, 0);
+        else res = stepSeason(c);
+      }
+      if (res !== "final") {
+        finish(c);
+        continue;
+      }
+      found = true;
+      const last = run.post.at(-1)!;
+      expect(c.live?.key).toBe(`league-${run.year}`);
+      expect(last.me!.gp).toBeGreaterThan(0);
+      expect(last.me!.pts).toBeGreaterThanOrEqual(c.live!.mine.pts);
+      expect(last.me!.reb).toBeGreaterThanOrEqual(c.live!.mine.reb);
+    }
+    expect(found).toBe(true);
+  });
+
+  it("결승이 아닌 라운드를 공개해도 게임 난수를 쓰지 않아요 (시즌 진행의 난수 흐름과 밸런스가 그대로예요)", () => {
+    const base = seeded(73);
+    let calls = 0;
+    setRandom(() => {
+      calls++;
+      return base();
+    });
+    let checked = 0;
+    for (let i = 0; i < 40 && checked < 3; i++) {
+      const c = proCareer(`po-rand${i}`);
+      toPlayoffs(c);
+      const run = c.run;
+      if (run?.phase !== "post" || run.post.length < 2 || c.queue.length || run.out > 0) {
+        finish(c);
+        continue;
+      }
+      calls = 0;
+      expect(stepSeason(c)).toBe("step");
+      expect(calls).toBe(0);
+      expect(run.post[0].me?.gp).toBeGreaterThan(0);
+      checked++;
+      finish(c);
+    }
+    expect(checked).toBeGreaterThan(0);
+  });
+
+  it("라운드를 시작할 때 결장 중이면 그 라운드는 뛰지 못해요", () => {
+    setRandom(seeded(74));
+    for (let i = 0; i < 40; i++) {
+      const c = proCareer(`po-out${i}`);
+      toPlayoffs(c);
+      const run = c.run;
+      if (run?.phase !== "post" || run.post.length < 2 || c.queue.length) {
+        finish(c);
+        continue;
+      }
+      run.out = 5;
+      run.outWhy = "부상";
+      stepSeason(c);
+      expect(run.post[0].me).toMatchObject({ gp: 0, pts: 0 });
+      expect(c.news[0].m).not.toContain("평균");
+      finish(c);
+      expect(c.last!.po!.gp).toBe(run.post.reduce((t, r) => t + r.me!.gp, 0));
+      return;
+    }
+    throw new Error("플레이오프에 오른 시즌을 찾지 못했어요");
+  });
+
+  it("라운드 승패와 내 기록 한 줄, 커리어 플레이오프 통산을 계산해요", () => {
+    const round = (score: string, win: boolean) => ({ name: "1R", opp: "x", color: "#000000", win, score });
+    expect(roundRecord(round("4-2", true))).toEqual({ w: 4, l: 2 });
+    expect(roundRecord(round("3-4", false))).toEqual({ w: 3, l: 4 });
+    expect(roundRecord(round("78-71", true))).toEqual({ w: 1, l: 0 });
+    expect(roundRecord(round("65-80", false))).toEqual({ w: 0, l: 1 });
+    const me = { gp: 6, min: 200, pts: 150, reb: 48, ast: 30, stl: 6, blk: 3, rating: 42 };
+    expect(roundLine(me)).toBe("6경기 평균 25점 8리바 5어시");
+    expect(roundLine({ ...me, gp: 1, pts: 31, reb: 9, ast: 4 })).toBe("31점 9리바 4어시");
+    expect(roundLine({ ...me, gp: 0 })).toBe("");
+
+    const row = (year: number, extra: Partial<SeasonRecord>): SeasonRecord => ({
+      year, age: year - 2011, team: "보스턴 셀틱스", lg: "nba", pro: true, role: "주전", gp: 70, min: 32, pts: 20, reb: 6, ast: 4, stl: 1, blk: 1,
+      fg: 46, rating: 7, w: 50, l: 32, result: "플레이오프 1라운드", ovr0: 88, ovr1: 89, awards: [], ...extra,
+    });
+    const rows = [
+      row(2040, { po: { gp: 6, min: 35, pts: 25, reb: 8, ast: 5, stl: 1.5, blk: 0.5, w: 2, l: 4 } }),
+      row(2041, { po: { gp: 15, min: 36, pts: 28.4, reb: 7, ast: 6, stl: 1, blk: 1, w: 12, l: 3 } }),
+      row(2042, { result: "플레이오프 진출 실패" }),
+      // 플레이오프 기록이 생기기 전 시즌: 진출은 알아보지만 통산에는 없어요.
+      row(2043, { result: "컨퍼런스 파이널" }),
+      row(2044, { po: { gp: 0, min: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, w: 1, l: 4 } }),
+    ];
+    expect(sumPlayoffs(rows)).toEqual({ seasons: 3, gp: 21, min: 750, pts: 576, reb: 153, ast: 120, stl: 24, blk: 18, w: 15, l: 11 });
+    expect(rows.map(madePlayoffs)).toEqual([true, true, false, true, true]);
+    expect(missingPlayoffs(rows).map((h) => h.year)).toEqual([2043]);
+    // 군 복무·무소속 시즌은 플레이오프와 상관없어요.
+    expect(madePlayoffs(row(2045, { mil: "sangmu", result: "KBL D리그 우승" }))).toBe(false);
+    expect(madePlayoffs(row(2046, { lg: null, result: "개인 훈련" }))).toBe(false);
+  });
+
+  it("플레이오프 기록이 든 시즌도 저장했다 그대로 불러와요", () => {
+    setRandom(seeded(75));
+    const c = proCareer("po-save");
+    simulateSeason(c);
+    simulateSeason(c);
+    expect(parseCareer(JSON.stringify(c))!.hist).toEqual(c.hist);
   });
 });
 
@@ -3260,5 +3468,33 @@ describe("브라우저 업적과 누적 기록", () => {
     // 한 번 세기 시작하면 다시 불러와도 처음으로 돌아가지 않아요.
     startLifetime(now);
     expect(loadLifeView().t.seasons).toBe(1);
+  });
+
+  it("은퇴 선수 기록을 지우면 명예의 전당과 엔딩에서 빠지고, 딴 업적과 누적 기록은 남아요", () => {
+    const m = fakeStorage();
+    startLifetime(null);
+    const a = played(fresh("del-a"), 11);
+    const b = played(fresh("del-b"), 3);
+    const sa = retire(a);
+    const sb = retire(b);
+    saveCareer(a);
+    saveHall([sa, sb]);
+    saveEnding(a);
+    saveEnding(b);
+    saveCareer(null);
+    const achv = m.get("b2r-achv-v1");
+    const life = loadLifeView();
+    expect(life.t.careers).toBe(1);
+
+    expect(deleteRetired(sa.id)).toEqual({ hall: [sb], endings: [b.id] });
+    expect(loadHall()).toEqual([sb]);
+    expect(loadEndingIds()).toEqual([b.id]);
+    expect(loadEnding(sa.id)).toBeNull();
+    expect(m.get("b2r-achv-v1")).toBe(achv);
+    expect(loadLifeView()).toEqual(life);
+    // 없는 기록을 지워도 괜찮고, 마지막 엔딩까지 지우면 보관함이 비어요.
+    expect(deleteRetired("none").hall).toEqual([sb]);
+    expect(deleteRetired(sb.id)).toEqual({ hall: [], endings: [] });
+    expect(m.has("b2r-endings-v1")).toBe(false);
   });
 });

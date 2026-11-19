@@ -227,8 +227,28 @@ export interface SeasonRecord {
   final?: FinalSummary;
   /** 플레이오프(전국대회 본선)에서 만난 팀, 라운드 순서대로. 시즌 순위표가 이 팀들을 진출선 안에 둬요. 예전 기록에는 없어요. */
   opps?: string[];
+  /**
+   * 플레이오프(전국대회 본선) 기록: 내가 뛴 경기 수와 경기당 기록, 팀의 플레이오프 승패. 위의 경기 수·기록은 정규시즌만이에요.
+   * 팀이 플레이오프에 오른 시즌에만 있어요(다쳐서 한 경기도 못 뛰었으면 gp 0). 이 기능 전의 기록에는 없어요.
+   */
+  po?: PlayoffRecord;
   /** 이 시즌에 비용을 내고 한 투자 */
   invest?: InvestKey[];
+}
+
+/** 한 시즌의 플레이오프 기록. 경기 기록은 경기당 평균(소수 한 자리)이에요. */
+export interface PlayoffRecord {
+  /** 내가 뛴 플레이오프 경기 */
+  gp: number;
+  min: number;
+  pts: number;
+  reb: number;
+  ast: number;
+  stl: number;
+  blk: number;
+  /** 팀의 플레이오프 승패 (7전 4선승제는 시리즈 안의 경기, 단판은 한 경기씩) */
+  w: number;
+  l: number;
 }
 
 /* ---------- 진행 중인 시즌 ---------- */
@@ -263,6 +283,8 @@ export interface PostRound {
   win: boolean;
   /** 시리즈 성적 "4-2" 또는 단판 점수 "78-71" */
   score: string;
+  /** 이 라운드에서 내가 뛴 경기 기록 합계. 라운드를 공개할 때 정해요. 결장했으면 gp 0이에요. 예전 저장에는 없어요. */
+  me?: SeasonTotals;
 }
 
 /** 내가 뛴 경기 기록 합계 */

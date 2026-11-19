@@ -33,7 +33,7 @@ vi.mock("next/cache", () => ({ cacheTag: () => {}, cacheLife: () => {}, revalida
 vi.mock("../../db/db", () => ({ db: () => testDb }));
 
 const { getBoard, getBoardDays, myRanks } = await import("../boards");
-const { insertCareer, ranksOf } = await import("../careers");
+const { deleteCareer, insertCareer, ranksOf } = await import("../careers");
 const { getStatBoard } = await import("../stats");
 
 const PLAYERS = ["00000000-0000-0000-0000-00000000000a", "00000000-0000-0000-0000-00000000000b", "00000000-0000-0000-0000-00000000000c"];
@@ -203,6 +203,23 @@ describe("내 순위와 제출 응답", () => {
       posRank: t.get(id)!.pos_rank,
       posTotal: (await one<{ n: number }>(`select count(*)::int n from careers where pos = '${pos}'`)).n,
     });
+  });
+
+  it("내 기록만 지울 수 있고, 지우면 내 순위와 전체 수에서 빠져요", async () => {
+    const { career_id: careerId } = await one<{ career_id: string }>(
+      `select career_id from careers where player_id = '${PLAYERS[1]}' and career_id not like '%-tie' order by created_at limit 1`,
+    );
+    const before = await myRanks(PLAYERS[1]);
+    // 다른 플레이어는 지우지 못해요.
+    expect(await deleteCareer(PLAYERS[0], careerId)).toBe(false);
+    expect(await deleteCareer(PLAYERS[1], careerId)).toBe(true);
+    // 이미 지운 기록을 다시 지워도 괜찮아요.
+    expect(await deleteCareer(PLAYERS[1], careerId)).toBe(false);
+    const after = await myRanks(PLAYERS[1]);
+    expect(after.careers.map((c) => c.careerId)).not.toContain(careerId);
+    expect(after.careers).toHaveLength(before.careers.length - 1);
+    expect(after.total).toBe(before.total - 1);
+    expect((await getBoard("all", null, null)).stats.careers).toBe(before.total - 1);
   });
 });
 

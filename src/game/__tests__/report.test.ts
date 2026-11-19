@@ -50,6 +50,30 @@ describe("시즌 결산 리포트", () => {
     expect(rp.milestones).toEqual([]);
     expect(rp.next).toBeNull();
   });
+
+  it("이 시즌 플레이오프 기록과, 이 시즌까지 같은 무대의 플레이오프 통산을 함께 보여줘요", () => {
+    const c = fresh("rp5");
+    const po = (gp: number, pts: number, w: number, l: number) => ({ gp, min: 34, pts, reb: 6, ast: 4, stl: 1, blk: 1, w, l });
+    c.hist = [
+      // 고교 전국대회 본선은 프로 통산에 들지 않아요.
+      season(2028, "휘문고", "hs", { result: "전국대회 우승", po: po(3, 30, 3, 0) }),
+      season(2031, "서울 SK 나이츠", "kbl", { po: po(10, 20, 6, 4) }),
+      season(2032, "서울 SK 나이츠", "kbl", { result: "플레이오프 진출 실패" }),
+    ];
+    const missed = seasonReport(c, c.hist[2]);
+    expect(missed.playoffs.season).toBeNull();
+    expect(missed.playoffs.career).toMatchObject({ seasons: 1, gp: 10, pts: 200 });
+
+    const rec = season(2033, "서울 SK 나이츠", "kbl", { po: po(8, 25, 4, 4) });
+    c.hist.push(rec);
+    const rp = seasonReport(c, rec);
+    expect(rp.playoffs.season).toEqual(rec.po);
+    expect(rp.playoffs.career).toMatchObject({ seasons: 2, gp: 18, pts: 400, w: 10, l: 8 });
+    // 지난 시즌을 다시 열면 그 시즌까지만 세요.
+    expect(seasonReport(c, c.hist[1]).playoffs.career).toMatchObject({ seasons: 1, gp: 10 });
+    // 아마추어 시즌은 아마추어 전국대회 본선끼리 세요.
+    expect(seasonReport(c, c.hist[0]).playoffs.career).toMatchObject({ seasons: 1, gp: 3, pts: 90 });
+  });
 });
 
 describe("커뮤니티 반응", () => {

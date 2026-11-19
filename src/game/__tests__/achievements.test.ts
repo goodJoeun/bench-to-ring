@@ -256,3 +256,89 @@ describe("새 업적", () => {
     expect(has(starter, "giving_tree")).toBe(false);
   });
 });
+
+describe("플레이오프 업적", () => {
+  /** 플레이오프 기록 한 시즌: 기본은 6경기 평균 20점, 팀 2승 4패 */
+  const po = (extra: Partial<NonNullable<SeasonRecord["po"]>> = {}): NonNullable<SeasonRecord["po"]> => ({
+    gp: 6, min: 34, pts: 20, reb: 6, ast: 4, stl: 1, blk: 0.5, w: 2, l: 4, ...extra,
+  });
+
+  it("플레이오프 묶음이 생겼고, 업적 창에 팀·우승 다음으로 나와요", () => {
+    expect(Object.keys(ACHIEVEMENT_GROUPS).slice(0, 3)).toEqual(["school", "team", "playoff"]);
+    expect(ACHIEVEMENTS.filter((a) => a.group === "playoff").map((a) => a.name)).toEqual([
+      "봄 농구 단골", "플레이오프 철인", "미스터 플레이오프", "빅게임 헌터", "플레이오프 모드", "통곡의 벽", "무결점 우승",
+    ]);
+  });
+
+  it("봄 농구 단골은 플레이오프에 오른 프로 시즌을 세요. 플레이오프 기록이 생기기 전 시즌도 성적으로 알아봐요", () => {
+    const c = fresh("po-reg");
+    for (let y = 2030; y < 2042; y++) c.hist.push(season(y, "서울 SK 나이츠", "kbl"));
+    c.hist.push(season(2042, "서울 SK 나이츠", "kbl", { result: "플레이오프 진출 실패" }));
+    checkAchievements(c);
+    expect(has(c, "po_regular")).toBe(false);
+    c.hist.push(season(2043, "서울 SK 나이츠", "kbl", { po: po() }));
+    checkAchievements(c);
+    expect(has(c, "po_regular")).toBe(true);
+  });
+
+  it("플레이오프 철인과 미스터 플레이오프는 프로 플레이오프 통산 경기와 득점이에요", () => {
+    const c = fresh("po-total");
+    // 고교 전국대회 본선 기록은 프로 통산에 들지 않아요.
+    c.hist.push(season(2028, "휘문고", "hs", { result: "전국대회 우승", po: po({ gp: 40, pts: 40 }) }));
+    for (let y = 2031; y < 2036; y++) c.hist.push(season(y, "보스턴 셀틱스", "nba", { po: po({ gp: 20, pts: 25 }) }));
+    checkAchievements(c);
+    expect(has(c, "po_ironman")).toBe(false);
+    expect(has(c, "po_mister")).toBe(false);
+    c.hist.push(season(2036, "보스턴 셀틱스", "nba", { po: po({ gp: 20, pts: 25 }) }));
+    checkAchievements(c);
+    // 120경기 · 3,000점
+    expect(has(c, "po_ironman")).toBe(true);
+    expect(has(c, "po_mister")).toBe(true);
+  });
+
+  it("빅게임 헌터는 NBA 플레이오프에서 8경기 이상 평균 30점이에요", () => {
+    const kbl = fresh("po-big-kbl");
+    kbl.hist.push(season(2031, "서울 SK 나이츠", "kbl", { po: po({ gp: 12, pts: 36 }) }));
+    const short = fresh("po-big-short");
+    short.hist.push(season(2031, "보스턴 셀틱스", "nba", { po: po({ gp: 7, pts: 34 }) }));
+    const nba = fresh("po-big");
+    nba.hist.push(season(2031, "보스턴 셀틱스", "nba", { po: po({ gp: 8, pts: 30 }) }));
+    for (const c of [kbl, short, nba]) checkAchievements(c);
+    expect([kbl, short, nba].map((c) => has(c, "po_big_game"))).toEqual([false, false, true]);
+  });
+
+  it("플레이오프 모드는 그 시즌 정규시즌보다 플레이오프 평균 득점이 7점 이상 높아야 해요", () => {
+    const c = fresh("po-mode");
+    c.hist.push(season(2031, "서울 SK 나이츠", "kbl", { pts: 18, po: po({ gp: 8, pts: 24.9 }) }));
+    checkAchievements(c);
+    expect(has(c, "po_mode")).toBe(false);
+    c.hist.push(season(2032, "서울 SK 나이츠", "kbl", { pts: 18, po: po({ gp: 8, pts: 25 }) }));
+    checkAchievements(c);
+    expect(has(c, "po_mode")).toBe(true);
+  });
+
+  it("통곡의 벽은 한 시즌 플레이오프 평균 스틸 3개·블록 3개예요", () => {
+    const c = fresh("po-wall");
+    c.hist.push(season(2031, "서울 SK 나이츠", "kbl", { po: po({ gp: 8, stl: 3, blk: 2.9 }) }));
+    checkAchievements(c);
+    expect(has(c, "po_wall")).toBe(false);
+    c.hist.push(season(2032, "서울 SK 나이츠", "kbl", { po: po({ gp: 8, stl: 3, blk: 3 }) }));
+    checkAchievements(c);
+    expect(has(c, "po_wall")).toBe(true);
+  });
+
+  it("무결점 우승은 NBA·KBL에서 한 경기도 지지 않고, 직접 뛰며 우승해야 해요", () => {
+    const champ = (id: string, lg: LeagueKey, team: string, extra: Partial<NonNullable<SeasonRecord["po"]>>) => {
+      const c = fresh(id);
+      c.hist.push(season(2031, team, lg, { result: "리그 우승", po: po({ gp: 16, w: 16, l: 0, ...extra }) }));
+      checkAchievements(c);
+      return has(c, "po_sweep");
+    };
+    expect(champ("sw-nba", "nba", "보스턴 셀틱스", {})).toBe(true);
+    expect(champ("sw-kbl", "kbl", "서울 SK 나이츠", { gp: 8, w: 8 })).toBe(true);
+    expect(champ("sw-lost", "nba", "보스턴 셀틱스", { gp: 17, l: 1 })).toBe(false);
+    // 유로리그는 단판이라 우승하면 늘 전승이에요.
+    expect(champ("sw-euro", "euro", "레알 마드리드", { gp: 3, w: 3 })).toBe(false);
+    expect(champ("sw-out", "nba", "보스턴 셀틱스", { gp: 0 })).toBe(false);
+  });
+});

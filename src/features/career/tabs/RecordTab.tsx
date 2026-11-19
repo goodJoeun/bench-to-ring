@@ -1,4 +1,4 @@
-import { LEAGUES, careerSummary, fmtNum, r1, stripYear, type Career } from "@/game";
+import { LEAGUES, careerSummary, fmtNum, missingPlayoffs, r1, stripYear, sumPlayoffs, type Career, type PlayoffTotals } from "@/game";
 import { militaryLine } from "@/shared/lib/format";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 import { Panel, StatTiles } from "@/shared/ui/ui";
@@ -82,6 +82,8 @@ export function SeasonTable({ career: c }: { career: Career }) {
               <th>득점</th>
               <th>리바</th>
               <th>어시</th>
+              <th>스틸</th>
+              <th>블록</th>
               <th>FG%</th>
               <th>3P%</th>
               <th>평점</th>
@@ -107,6 +109,8 @@ export function SeasonTable({ career: c }: { career: Career }) {
                 <td>{h.pts}</td>
                 <td>{h.reb}</td>
                 <td>{h.ast}</td>
+                <td>{h.stl}</td>
+                <td>{h.blk}</td>
                 <td>{h.fg || "–"}</td>
                 <td>{h.tpp ?? "–"}</td>
                 <td>{h.rating || "–"}</td>
@@ -119,6 +123,114 @@ export function SeasonTable({ career: c }: { career: Career }) {
           </tbody>
         </table>
       </div>
+    </Panel>
+  );
+}
+
+/** 플레이오프 통산 한 묶음: "프로 플레이오프 통산 21경기 평균"과 경기당 기록 타일, 진출 시즌과 팀 승패 */
+function PlayoffSummary({ label, t }: { label: string; t: PlayoffTotals }) {
+  const avg = (v: number) => (t.gp ? r1(v / t.gp).toFixed(1) : "–");
+  const tiles: [string, string][] = [
+    ["득점", avg(t.pts)],
+    ["리바운드", avg(t.reb)],
+    ["어시스트", avg(t.ast)],
+    ["스틸", avg(t.stl)],
+    ["블록", avg(t.blk)],
+    ["출전 시간", avg(t.min)],
+  ];
+  return (
+    <section className="po-sum" aria-label={label}>
+      <h3>
+        {label} <b>{fmtNum(t.gp)}경기</b> 평균
+      </h3>
+      <div className="tiles po-tiles">
+        {tiles.map(([k, v]) => (
+          <div className="tile" key={k}>
+            <span className="label">{k}</span>
+            <span className="n">{v}</span>
+          </div>
+        ))}
+      </div>
+      <p className="hint">
+        진출 {t.seasons}시즌 · 팀 플레이오프 {t.w}승 {t.l}패 · 통산 {fmtNum(t.pts)}득점 {fmtNum(t.reb)}리바운드 {fmtNum(t.ast)}어시스트{" "}
+        {fmtNum(t.stl)}스틸 {fmtNum(t.blk)}블록
+      </p>
+    </section>
+  );
+}
+
+/**
+ * 플레이오프 기록: 프로 플레이오프 통산 평균, 고교·대학 전국대회 본선 통산, 시즌별 플레이오프 기록 표.
+ * 정규시즌 기록(시즌별 기록 표, 프로 통산)과 따로 세요. 진행 중 기록 탭과 은퇴 화면이 함께 써요.
+ */
+export function PlayoffPanel({ career: c }: { career: Career }) {
+  const rows = c.hist.filter((h) => h.po);
+  const pro = sumPlayoffs(c.hist.filter((h) => h.pro));
+  const amateur = sumPlayoffs(c.hist.filter((h) => !h.pro));
+  const missing = missingPlayoffs(c.hist).length;
+  return (
+    <Panel title="플레이오프 기록">
+      {pro.seasons > 0 ? (
+        <PlayoffSummary label="프로 플레이오프 통산" t={pro} />
+      ) : (
+        <p className="hint">아직 프로 플레이오프 무대를 밟지 못했어요. 정규시즌 성적이 좋으면 플레이오프에 올라요.</p>
+      )}
+      {amateur.seasons > 0 && <PlayoffSummary label="고교·대학 전국대회 본선 통산" t={amateur} />}
+      {rows.length > 0 && (
+        <div className="tbl-wrap">
+          <table>
+            <caption className="sr-only">시즌별 플레이오프 기록</caption>
+            <thead>
+              <tr>
+                <th className="l">시즌</th>
+                <th>나이</th>
+                <th className="l">팀</th>
+                <th className="l">리그</th>
+                <th className="l">성적</th>
+                <th>팀 승패</th>
+                <th>경기</th>
+                <th>분</th>
+                <th>득점</th>
+                <th>리바</th>
+                <th>어시</th>
+                <th>스틸</th>
+                <th>블록</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...rows].reverse().map((h) => {
+                const po = h.po!;
+                const out = po.gp === 0;
+                return (
+                  <tr key={h.year}>
+                    <td className="l">{h.year}</td>
+                    <td>{h.age}</td>
+                    <td className="l t">
+                      <span className="team-cell">
+                        <TeamBadge name={h.team} size={16} />
+                        {h.team}
+                      </span>
+                    </td>
+                    <td className="l t">{h.lg ? LEAGUES[h.lg].short : "–"}</td>
+                    <td className="l t">{h.result}</td>
+                    <td>
+                      {po.w}-{po.l}
+                    </td>
+                    <td>{out ? "결장" : po.gp}</td>
+                    <td>{out ? "–" : po.min}</td>
+                    <td>{out ? "–" : po.pts}</td>
+                    <td>{out ? "–" : po.reb}</td>
+                    <td>{out ? "–" : po.ast}</td>
+                    <td>{out ? "–" : po.stl}</td>
+                    <td>{out ? "–" : po.blk}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {missing > 0 && <p className="hint">플레이오프 기록이 생기기 전에 치른 {missing}시즌의 플레이오프는 기록에 없어요.</p>}
     </Panel>
   );
 }
@@ -149,6 +261,7 @@ export function RecordTab({ career: c }: { career: Career }) {
         )}
       </Panel>
       <SeasonTable career={c} />
+      <PlayoffPanel career={c} />
       <NationalLog career={c} />
     </>
   );

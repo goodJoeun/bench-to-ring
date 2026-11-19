@@ -18,7 +18,7 @@ import type { UseQueryResult } from "@tanstack/react-query";
 import type { CareerSummary } from "@/game";
 import { loadState } from "../load-state";
 import { getQueryClient, shouldRetry } from "../query-client";
-import { pendingIds, submitCareer } from "@/shared/leaderboard/client";
+import { deleteOnline, flushPending, pendingIds, submitCareer } from "@/shared/leaderboard/client";
 import { LEADERBOARD, leaderboardKeys } from "@/shared/leaderboard/keys";
 
 /** 테스트용 쿼리 결과: loadState가 읽는 값만 채워요. */
@@ -71,11 +71,13 @@ describe("랭킹 쿼리 키", () => {
   });
 });
 
+// 흉내 낸 window는 이 파일의 테스트가 모두 끝난 뒤에 치워요.
+afterAll(() => {
+  delete (globalThis as Record<string, unknown>).window;
+});
+
 describe("은퇴 기록 올리기", () => {
-  afterAll(() => {
-    delete (globalThis as Record<string, unknown>).window;
-    vi.unstubAllGlobals();
-  });
+  afterAll(() => vi.unstubAllGlobals());
 
   const summary = { id: "c1", name: "테스트" } as CareerSummary;
 
@@ -104,5 +106,47 @@ describe("은퇴 기록 올리기", () => {
     await expect(submitCareer(summary)).resolves.toBeNull();
     expect(invalidate).not.toHaveBeenCalled();
     expect(pendingIds()).toEqual(new Set(["c1"]));
+  });
+});
+
+describe("은퇴 기록 지우기", () => {
+  afterAll(() => vi.unstubAllGlobals());
+
+  it("올린 적이 없는 브라우저는 서버에 묻지 않고, 대기열의 기록만 빼요", async () => {
+    store.clear();
+    store.set("b2r-pending-v1", JSON.stringify([{ id: "c1" }, { id: "c2" }]));
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    await expect(deleteOnline("c1")).resolves.toBe(true);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(pendingIds()).toEqual(new Set(["c2"]));
+  });
+
+  it("내 토큰으로 지우고, 지웠으면 랭킹 쿼리를 모두 낡은 것으로 쳐요", async () => {
+    store.clear();
+    store.set("b2r-player-v1", "tok");
+    const invalidate = vi.spyOn(getQueryClient(), "invalidateQueries");
+    invalidate.mockClear();
+    const fetch = vi.fn(async () => new Response(JSON.stringify({ deleted: true }), { status: 200 }));
+    vi.stubGlobal("fetch", fetch);
+    await expect(deleteOnline("c 1")).resolves.toBe(true);
+    expect(fetch).toHaveBeenCalledWith("/api/careers/mine?career=c%201", { method: "DELETE", headers: { authorization: "Bearer tok" } });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: LEADERBOARD });
+    expect(store.has("b2r-delete-v1")).toBe(false);
+    // 지운 브라우저는 한동안 CDN이 들고 있는 순위표를 건너뛰어요.
+    expect(Number(store.get("b2r-submitted-v1"))).toBeGreaterThan(0);
+  });
+
+  it("서버가 안 되면 지울 기록을 남겨 두고, 다음에 접속할 때 지워요", async () => {
+    store.clear();
+    store.set("b2r-player-v1", "tok");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 503 })));
+    await expect(deleteOnline("c3")).resolves.toBe(false);
+    expect(JSON.parse(store.get("b2r-delete-v1")!)).toEqual(["c3"]);
+    const fetch = vi.fn(async () => new Response(JSON.stringify({ deleted: true }), { status: 200 }));
+    vi.stubGlobal("fetch", fetch);
+    await flushPending();
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(store.has("b2r-delete-v1")).toBe(false);
   });
 });

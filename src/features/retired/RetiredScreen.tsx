@@ -8,7 +8,7 @@ import { jerseyOf } from "@/shared/ui/sprite/look";
 import { RecordBoards } from "./RecordBoards";
 import { SimilarPlayers } from "./SimilarPlayers";
 import { ShareSheet } from "./ShareSheet";
-import { SeasonTable } from "@/features/career/tabs/RecordTab";
+import { PlayoffPanel, SeasonTable } from "@/features/career/tabs/RecordTab";
 import { HallOfFame } from "@/features/hall-of-fame/HallOfFame";
 import { AchievedBadge } from "@/shared/ui/badge/Medal";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
@@ -153,6 +153,7 @@ export function RetiredScreen({ career: c, hall, past = false }: { career: Caree
       </Panel>
 
       {c.hist.length > 0 && <SeasonTable career={c} />}
+      {c.hist.length > 0 && <PlayoffPanel career={c} />}
 
       <RecordBoards career={c} />
 

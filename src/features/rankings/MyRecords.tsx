@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { useState } from "react";
 import { fmtNum, rankHall, type CareerSummary } from "@/game";
 import { gameActions } from "@/shared/store/game-store";
 import type { MyRanks } from "@/shared/leaderboard/types";
 import { nameFit } from "@/shared/lib/format";
+import { DeleteRecordButton, DeleteRecordSheet } from "@/shared/ui/DeleteRecordSheet";
 import { Sprite } from "@/shared/ui/sprite/Sprite";
 import { StatTiles } from "@/shared/ui/ui";
 import { jerseyOf, lookOf } from "../../shared/ui/sprite/look";
@@ -19,8 +21,12 @@ interface MyRecordsProps {
   endings: Set<string>;
 }
 
-/** 나의 기록: 이 브라우저에서 은퇴한 선수들을 랭킹과 같은 기준으로 줄 세우고, 온라인 순위를 붙여요. */
+/**
+ * 나의 기록: 이 브라우저에서 은퇴한 선수들을 랭킹과 같은 기준으로 줄 세우고, 온라인 순위를 붙여요.
+ * 줄마다 휴지통 단추로 기록을 지울 수 있어요(이 브라우저와 온라인 랭킹 모두에서).
+ */
 export function MyRecords({ hall, mine, pending, endings }: MyRecordsProps) {
+  const [deleting, setDeleting] = useState<CareerSummary | null>(null);
   if (!hall.length)
     return (
       <div className="rk-empty">
@@ -43,6 +49,7 @@ export function MyRecords({ hall, mine, pending, endings }: MyRecordsProps) {
           ["올라온 전체 기록", mine ? `${fmtNum(mine.total)}명` : "–"],
         ]}
       />
+      <p className="hint">마음에 들지 않는 기록은 휴지통 단추로 지울 수 있어요. 이 브라우저와 온라인 랭킹에서 함께 지워져요.</p>
       <ol className="rk-list mine">
         {rankHall(hall).map(({ rank, career: s }) => {
           const o = online.get(s.id);
@@ -54,7 +61,7 @@ export function MyRecords({ hall, mine, pending, endings }: MyRecordsProps) {
                 ? "온라인 순위 확인 중"
                 : "온라인 기록 없음";
           return (
-            <li key={s.id} data-ending={endings.has(s.id) ? "" : undefined}>
+            <li key={s.id}>
               <RankMark rank={rank} />
               <Sprite look={lookOf(s.id, s.look)} color={jerseyOf(s.teams.at(-1))} scale={2} className="rk-mini" label={`${s.name} 캐릭터`} />
               <span className="rk-who">
@@ -68,15 +75,19 @@ export function MyRecords({ hall, mine, pending, endings }: MyRecordsProps) {
                   {status}
                 </span>
               </span>
-              {endings.has(s.id) && (
-                <Link className="btn rk-end" href="/" onClick={() => gameActions.openEnding(s.id)}>
-                  엔딩 보기
-                </Link>
-              )}
+              <span className="rk-acts">
+                {endings.has(s.id) && (
+                  <Link className="btn rk-end" href="/" onClick={() => gameActions.openEnding(s.id)}>
+                    엔딩 보기
+                  </Link>
+                )}
+                <DeleteRecordButton career={s} onClick={() => setDeleting(s)} />
+              </span>
             </li>
           );
         })}
       </ol>
+      {deleting && <DeleteRecordSheet career={deleting} onClose={() => setDeleting(null)} />}
     </>
   );
 }

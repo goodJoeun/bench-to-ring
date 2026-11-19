@@ -15,7 +15,7 @@ import {
   type Career,
   type CareerSummary,
 } from "@/game";
-import { HIDDEN_NAME, checkSummary, cleanName, parseBoardQuery, parseStatQuery } from "@/server/leaderboard/validate";
+import { HIDDEN_NAME, checkSummary, cleanName, isCareerId, parseBoardQuery, parseStatQuery } from "@/server/leaderboard/validate";
 import { FRESH_PARAM } from "@/shared/leaderboard/cdn";
 
 afterEach(() => resetRandom());
@@ -96,6 +96,15 @@ describe("선수 이름 필터", () => {
     expect(cleanName("씨발")).toBe(HIDDEN_NAME);
     expect(cleanName("씨 1 발 놈")).toBe(HIDDEN_NAME);
     expect(cleanName("F.u.c.k")).toBe(HIDDEN_NAME);
+  });
+});
+
+describe("기록 지우기 조건", () => {
+  it("커리어 id는 1~64자 문자열이에요", () => {
+    expect(isCareerId("1763520000000-ab12")).toBe(true);
+    expect(isCareerId("")).toBe(false);
+    expect(isCareerId(null)).toBe(false);
+    expect(isCareerId("x".repeat(65))).toBe(false);
   });
 });
 

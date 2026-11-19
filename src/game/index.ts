@@ -21,7 +21,7 @@ export {
   CAP_JITTER,
   SPIKE_CAP,
 } from "./player/create";
-export { CRITICAL_HEALTH, injuryKind, simulateSeason, startSeason, stepSeason, seasonProgress, type SeasonStep } from "./season/season";
+export { CRITICAL_HEALTH, injuryKind, roundLine, roundRecord, simulateSeason, startSeason, stepSeason, seasonProgress, type SeasonStep } from "./season/season";
 export { draftSlot } from "./world/draft";
 export { NATIONS, NAT_EVENTS, natColor, natEventFor, simulateTournament, teamPower } from "./world/national";
 export { ARMY, ENLIST_DEADLINE, SANGMU, militaryDecision, militaryUnit, owesService } from "./world/military";
@@ -81,6 +81,7 @@ export {
   type JourneyStep,
   type TitleEntry,
 } from "./career/career";
+export { madePlayoffs, missingPlayoffs, sumPlayoffs, type PlayoffTotals } from "./career/playoffs";
 export {
   REPORT_STAT_NAME,
   seasonReport,

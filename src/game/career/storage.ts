@@ -372,6 +372,19 @@ export function loadEnding(id: string): Career | null {
   return c?.stage === "retired" ? c : null;
 }
 
+/**
+ * 은퇴한 선수 기록을 이 브라우저에서 지워요: 명예의 전당(은퇴 요약)과 엔딩 보관함에서 빼요.
+ * 딴 업적과 누적 기록은 그대로 남아요. 남은 명예의 전당과 엔딩 id를 돌려줘요.
+ */
+export function deleteRetired(id: string): { hall: CareerSummary[]; endings: string[] } {
+  const hall = loadHall().filter((s) => s.id !== id);
+  saveHall(hall);
+  const endings = readEndings();
+  const kept = endings.filter((x) => idOf(x) !== id);
+  if (kept.length !== endings.length) write(ENDING_KEY, kept.length ? JSON.stringify(kept) : null);
+  return { hall, endings: loadEndingIds() };
+}
+
 /** 은퇴한 커리어를 엔딩 보관함에 넣고, 남은 id를 돌려줘요. 자리가 모자라면 오래된 것부터 지워요. */
 export function saveEnding(c: Career): string[] {
   const list = [...readEndings().filter((x) => idOf(x) !== c.id), c].slice(-ENDING_LIMIT);

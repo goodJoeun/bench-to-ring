@@ -1,14 +1,66 @@
 "use client";
 
 import { useState } from "react";
-import { REPORT_STAT_NAME, fmtNum, josa, type CommunityBoard, type ReportStat, type SeasonReport, type SiteStyle } from "@/game";
+import { REPORT_STAT_NAME, fmtNum, josa, madePlayoffs, type CommunityBoard, type ReportStat, type SeasonReport, type SiteStyle } from "@/game";
 
 const GROUP_NAME = { nba: "NBA", kbl: "KBL", olympics: "올림픽" } as const;
 const r1 = (v: number) => (Math.round(v * 10) / 10).toFixed(1);
 /** 앞말 받침에 맞는 조사만 돌려줘요. 괄호 뒤에 붙일 때 써요. */
 const particle = (word: string, a: string, b: string) => josa(word, a, b).slice(word.length);
 
-/** 리포트 탭: 시즌 개인 스탯, 누적 기록으로 넘은 선수와 이정표, 개인 수상 */
+/** 이 시즌 플레이오프(아마추어는 전국대회 본선) 경기당 기록과, 이 시즌까지의 같은 무대 플레이오프 통산 평균 */
+function PlayoffReport({ report: rp }: { report: SeasonReport }) {
+  const { rec } = rp;
+  const { season: po, career: total } = rp.playoffs;
+  const stage = rec.pro ? "플레이오프" : "전국대회 본선";
+  const diff = po?.gp ? Math.round((po.pts - rec.pts) * 10) / 10 : 0;
+  const tiles = po?.gp
+    ? [
+        { label: "득점", value: r1(po.pts), sub: rec.gp && diff ? `정규 대비 ${diff > 0 ? "+" : ""}${r1(diff)}` : undefined },
+        { label: "리바운드", value: r1(po.reb) },
+        { label: "어시스트", value: r1(po.ast) },
+        { label: "스틸", value: r1(po.stl) },
+        { label: "블록", value: r1(po.blk) },
+        { label: "출전 시간", value: r1(po.min) },
+      ]
+    : [];
+  const avg = (v: number) => r1(v / total.gp);
+  return (
+    <section aria-labelledby="rp-po">
+      <h3 id="rp-po">
+        {stage} 스탯 {po && <span>{po.gp ? `${po.gp}경기 · ` : ""}팀 {po.w}승 {po.l}패 · {rec.result}</span>}
+      </h3>
+      {po?.gp ? (
+        <ul className="rp-tiles">
+          {tiles.map((t) => (
+            <li key={t.label}>
+              <span className="rp-l">{t.label}</span>
+              <b>{t.value}</b>
+              {t.sub && <span className="rp-sub">{t.sub}</span>}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="rp-total">
+          {po
+            ? `부상으로 ${stage}에 나서지 못했어요.`
+            : madePlayoffs(rec)
+              ? `${stage} 기록이 생기기 전에 치른 시즌이에요.`
+              : `이번 시즌은 ${stage}에 오르지 못했어요.`}
+        </p>
+      )}
+      {total.gp > 0 && (
+        <p className="rp-total">
+          {rec.pro ? "프로 " : ""}
+          {stage} 통산 {fmtNum(total.gp)}경기 평균 {avg(total.pts)}점 · {avg(total.reb)}리바운드 · {avg(total.ast)}어시스트 · {avg(total.stl)}스틸 ·{" "}
+          {avg(total.blk)}블록
+        </p>
+      )}
+    </section>
+  );
+}
+
+/** 리포트 탭: 시즌 개인 스탯, 플레이오프 스탯, 누적 기록으로 넘은 선수와 이정표, 개인 수상 */
 export function ReportView({ report: rp }: { report: SeasonReport }) {
   const { rec } = rp;
   const high = (k: ReportStat) => rp.highs.includes(k);
@@ -42,6 +94,8 @@ export function ReportView({ report: rp }: { report: SeasonReport }) {
           ))}
         </ul>
       </section>
+
+      <PlayoffReport report={rp} />
 
       <section aria-labelledby="rp-acc">
         <h3 id="rp-acc">누적 기록</h3>

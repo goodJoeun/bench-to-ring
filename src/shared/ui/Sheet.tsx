@@ -15,10 +15,12 @@ export function Sheet({ labelledBy, onClose, children }: SheetProps) {
   const ref = useRef<HTMLDivElement>(null);
   useEscapeKey(onClose);
 
-  // 열릴 때 한 번만: 첫 버튼에 초점을 두고, 닫히면 원래 자리로 돌려놔요.
+  // 열릴 때 한 번만: 첫 버튼(data-autofocus가 있으면 그 단추)에 초점을 두고, 닫히면 원래 자리로 돌려놔요.
+  // 되돌릴 수 없는 일을 묻는 시트는 취소 단추에 data-autofocus를 달아, 엔터를 잘못 눌러도 실행되지 않게 해요.
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
-    ref.current?.querySelector<HTMLElement>("button")?.focus({ preventScroll: true });
+    const first = ref.current?.querySelector<HTMLElement>("[data-autofocus]") ?? ref.current?.querySelector<HTMLElement>("button");
+    first?.focus({ preventScroll: true });
     return () => prev?.focus?.({ preventScroll: true });
   }, []);
 

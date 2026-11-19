@@ -41,6 +41,7 @@ import {
 } from "@/game";
 import {
   browserRecord,
+  deleteRetired,
   startLifetime,
   loadCareer,
   loadEnding,
@@ -51,7 +52,7 @@ import {
   saveHall,
   unlockAchievements,
 } from "@/game/career/storage";
-import { flushPending, submitCareer } from "@/shared/leaderboard/client";
+import { deleteOnline, flushPending, submitCareer } from "@/shared/leaderboard/client";
 
 /** 선수 생성 화면의 입력값 */
 export interface CreationDraft {
@@ -573,6 +574,25 @@ export const gameActions = {
     if (!ending) return set({ endings: loadEndingIds(), toast: toast("이 선수의 엔딩을 불러오지 못했어요") });
     set({ ending, playing: false, seasonEnd: false, farewell: false, farewellReplay: false });
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
+  },
+  /**
+   * 은퇴한 선수 기록을 지워요: 이 브라우저의 명예의 전당·엔딩과 온라인 랭킹 기록. 딴 업적과 누적 기록은 남아요.
+   * 그 선수의 엔딩을 보고 있었거나 은퇴 화면에 머물러 있었으면 닫고 새 선수 만들기로 가요.
+   * 온라인 기록은 서버가 안 되면 다음에 접속할 때 지워요.
+   */
+  deleteRecord(id: string) {
+    const s = snapshot.hall.find((h) => h.id === id);
+    const { hall, endings } = deleteRetired(id);
+    const patch: Partial<GameSnapshot> = { hall, endings, toast: toast(`${s ? `${s.name} #${s.num}` : "선수"} 기록을 지웠어요`) };
+    if (snapshot.ending?.id === id) Object.assign(patch, { ending: null, farewell: false, farewellReplay: false });
+    if (snapshot.career?.id === id && snapshot.career.stage === "retired") {
+      saveCareer(null);
+      Object.assign(patch, { career: null, draft: freshDraft(snapshot.draft), farewell: false, farewellReplay: false });
+    }
+    set(patch);
+    void deleteOnline(id).then((done) => {
+      if (!done) set({ toast: toast("온라인 랭킹 기록은 다음에 접속할 때 지워져요") });
+    });
   },
   /** 지난 엔딩을 닫고 원래 화면(진행 중인 커리어나 새 선수 만들기)으로 돌아가요. */
   closeEnding() {

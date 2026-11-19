@@ -1,5 +1,6 @@
 import { sumSeasons } from "../career/career";
-import type { AwardEntry, Career, CareerSummary, LeagueKey, SeasonRecord } from "../core/types";
+import { sumPlayoffs, type PlayoffTotals } from "../career/playoffs";
+import type { AwardEntry, Career, CareerSummary, LeagueKey, PlayoffRecord, SeasonRecord } from "../core/types";
 import { RECORD_BOARDS, type RecordGroup, type RecordStat } from "./records";
 
 /*
@@ -65,6 +66,11 @@ export interface SeasonReport {
   next: NextTarget | null;
   /** 이 시즌에 받은 개인상과 팀 성적 */
   awards: AwardEntry[];
+  /**
+   * 플레이오프: 이 시즌 기록(팀이 오르지 못했으면 null)과, 이 시즌까지 같은 무대(프로·아마추어)에서 쌓은 플레이오프 통산.
+   * 아마추어 시즌의 플레이오프는 전국대회 본선이에요.
+   */
+  playoffs: { season: PlayoffRecord | null; career: PlayoffTotals };
 }
 
 const MILESTONES: Record<Milestone["stat"], number[]> = {
@@ -143,6 +149,7 @@ export function seasonReport(c: Career, rec: SeasonRecord, hall: CareerSummary[]
     milestones,
     next,
     awards: c.awardLog.filter((a) => a.y === rec.year),
+    playoffs: { season: rec.po ?? null, career: sumPlayoffs(upto.filter((h) => h.pro === rec.pro)) },
   };
 }
 

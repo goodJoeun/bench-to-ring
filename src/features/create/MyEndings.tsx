@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import type { CareerSummary } from "@/game";
 import { gameActions } from "@/shared/store/game-store";
 import { nameFit } from "@/shared/lib/format";
+import { DeleteRecordButton, DeleteRecordSheet } from "@/shared/ui/DeleteRecordSheet";
 import { Sprite } from "@/shared/ui/sprite/Sprite";
 import { Panel } from "@/shared/ui/ui";
 import { jerseyOf, lookOf } from "@/shared/ui/sprite/look";
@@ -12,17 +14,18 @@ import { jerseyOf, lookOf } from "@/shared/ui/sprite/look";
 const SHOWN = 5;
 
 /**
- * 첫 화면의 '내 은퇴 선수': 이 브라우저에서 은퇴한 선수를 최근 순으로 늘어놓고, 엔딩을 다시 열어요.
+ * 첫 화면의 '내 은퇴 선수': 이 브라우저에서 은퇴한 선수를 최근 순으로 늘어놓고, 엔딩을 다시 열거나 기록을 지워요.
  * 엔딩이 남아 있는 선수만 보여줘요(엔딩 보관 기능 전에 은퇴했거나 오래되어 지워진 선수는 빠져요).
  */
 export function MyEndings({ hall, endings }: { hall: CareerSummary[]; endings: string[] }) {
+  const [deleting, setDeleting] = useState<CareerSummary | null>(null);
   const saved = new Set(endings);
   // 명예의 전당은 은퇴한 순서대로 쌓여서 뒤집으면 최근 순이에요.
   const list = hall.filter((s) => saved.has(s.id)).reverse();
   if (!list.length) return null;
   return (
     <Panel title="내 은퇴 선수">
-      <p className="hint">은퇴한 선수의 엔딩과 커리어 회고를 다시 볼 수 있어요.</p>
+      <p className="hint">은퇴한 선수의 엔딩과 커리어 회고를 다시 볼 수 있어요. 마음에 들지 않는 기록은 지울 수 있어요.</p>
       <ol className="rk-list my-end">
         {list.slice(0, SHOWN).map((s) => (
           <li key={s.id}>
@@ -35,9 +38,12 @@ export function MyEndings({ hall, endings }: { hall: CareerSummary[]; endings: s
                 {s.pos} · OVR {s.peak} · {s.legacy} · {s.retYear}년 은퇴
               </span>
             </span>
-            <button type="button" className="btn rk-end" onClick={() => gameActions.openEnding(s.id)}>
-              엔딩 보기
-            </button>
+            <span className="rk-acts">
+              <button type="button" className="btn rk-end" onClick={() => gameActions.openEnding(s.id)}>
+                엔딩 보기
+              </button>
+              <DeleteRecordButton career={s} onClick={() => setDeleting(s)} />
+            </span>
           </li>
         ))}
       </ol>
@@ -48,6 +54,7 @@ export function MyEndings({ hall, endings }: { hall: CareerSummary[]; endings: s
           </Link>
         </div>
       )}
+      {deleting && <DeleteRecordSheet career={deleting} onClose={() => setDeleting(null)} />}
     </Panel>
   );
 }

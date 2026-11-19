@@ -1,5 +1,5 @@
 import "server-only";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import type { PosKey } from "@/game";
 import type { SubmitResult } from "@/shared/leaderboard/types";
 import { allTimeCounts, rankOf } from "./boards";
@@ -49,6 +49,18 @@ export async function insertCareer(playerId: string, s: SubmittedSummary): Promi
     .onConflictDoNothing({ target: [careers.playerId, careers.careerId] })
     .returning({ id: careers.id });
   return rows[0]?.id ?? null;
+}
+
+/**
+ * 플레이어가 올린 기록 하나를 지워요. careerId는 브라우저의 커리어 id예요. 지웠으면 true,
+ * 그런 기록이 없거나 다른 플레이어의 기록이면 false예요. 집계(커리어 수·플레이어 수)는 careers 트리거가 맞춰요.
+ */
+export async function deleteCareer(playerId: string, careerId: string): Promise<boolean> {
+  const rows = await db()
+    .delete(careers)
+    .where(and(eq(careers.playerId, playerId), eq(careers.careerId, careerId)))
+    .returning({ id: careers.id });
+  return rows.length > 0;
 }
 
 /**

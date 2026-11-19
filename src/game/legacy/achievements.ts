@@ -6,6 +6,7 @@ import { LEAGUES } from "../world/leagues";
 import { PLAYOFF_SPOTS, seasonStandings } from "../world/standings";
 import { addNews, cheer } from "../career/log";
 import { shopItem } from "../economy/shop";
+import { madePlayoffs, sumPlayoffs } from "../career/playoffs";
 import { EMPTY_LIFETIME, LIFETIME_PREFIX, addLifetime, fromCareer, subLifetime, type Lifetime } from "./lifetime";
 import type { AttrKey, AwardEntry, AwardKey, Career, LeagueKey, MilitaryKind, PosKey, SeasonRecord } from "../core/types";
 
@@ -20,11 +21,24 @@ import type { AttrKey, AwardEntry, AwardKey, Career, LeagueKey, MilitaryKind, Po
  * 업적 창은 따기 전에는 이름과 힌트(hint)만, 딴 뒤에는 조건(desc)까지 보여줘요.
  */
 
-export type AchievementGroup = "school" | "team" | "award" | "clutch" | "star" | "ability" | "path" | "life" | "military" | "rank" | "lifetime";
+export type AchievementGroup =
+  | "school"
+  | "team"
+  | "playoff"
+  | "award"
+  | "clutch"
+  | "star"
+  | "ability"
+  | "path"
+  | "life"
+  | "military"
+  | "rank"
+  | "lifetime";
 
 export const ACHIEVEMENT_GROUPS: Record<AchievementGroup, string> = {
   school: "고교·대학",
   team: "팀·우승",
+  playoff: "플레이오프",
   award: "개인상·기록",
   clutch: "클러치",
   star: "스타성",
@@ -178,6 +192,17 @@ const POS_LEGEND: Record<PosKey, [string, string]> = {
 /** 히든 스탯 보너스까지 더한 오버롤로 넘어야 하는 값 */
 const BEYOND = 100;
 
+/**
+ * 플레이오프 업적 기준. 무작위 선택 커리어 600개에서 저마다 4~9% 커리어가 따요.
+ * 한 시즌 평균을 보는 업적은 PO_GAMES 경기 이상 뛴 시즌만 쳐요. 그래서 단판 라운드뿐인 유로리그·G리그(최대 3경기)는 들지 않아요.
+ */
+const PO = { seasons: 13, games: 120, pts: 3000, nbaPts: 30, rise: 7, stl: 3, blk: 3 };
+const PO_GAMES = 8;
+/** 플레이오프 기록이 있고 PO_GAMES 경기 이상 뛴 프로 시즌의 플레이오프 기록 */
+const poSeasons = (v: View) => v.pro.flatMap((h) => (h.po && h.po.gp >= PO_GAMES ? [{ h, po: h.po }] : []));
+/** 7전 4선승제로 치르는 리그 */
+const BEST_OF_SEVEN: (LeagueKey | null)[] = ["nba", "kbl"];
+
 /** 누적 기록 업적: 모든 커리어를 더한 값이 목표 이상이면 따요. */
 function lifetime(key: string, name: string, hint: string, desc: string, of: (l: LifeView) => number, n: number, unit: string): Achievement {
   return { id: LIFETIME_PREFIX + key, name, hint, desc, group: "lifetime", test: (v) => of(v.life) >= n, goal: { of, n, unit } };
@@ -312,6 +337,57 @@ export const ACHIEVEMENTS: Achievement[] = [
     desc: "프로 6시즌 이상 뛰는 동안 식스맨 이상 역할을 한 번도 맡지 못하고 은퇴", hint: "벤치에도 지정석이 있다면",
     group: "team",
     test: (v) => v.retired && v.pro.length >= 6 && v.pro.every((h) => BENCH.includes(h.role) || h.role === "로테이션"),
+  },
+
+  // 플레이오프: 시즌 기록의 플레이오프 기록(SeasonRecord.po)으로 판정해요. 플레이오프 기록이 생기기 전 시즌은 진출 시즌 수만 쳐요.
+  {
+    id: "po_regular",
+    name: "봄 농구 단골",
+    desc: `프로 플레이오프에 ${PO.seasons}시즌 이상 진출`, hint: "봄이 올 때마다 코트에 서 있는 팀과 함께",
+    group: "playoff",
+    test: (v) => v.pro.filter(madePlayoffs).length >= PO.seasons,
+  },
+  {
+    id: "po_ironman",
+    name: "플레이오프 철인",
+    desc: `프로 플레이오프 통산 ${PO.games}경기 출전`, hint: "긴 봄을 여러 번 끝까지 버텨 내세요",
+    group: "playoff",
+    test: (v) => sumPlayoffs(v.pro).gp >= PO.games,
+  },
+  {
+    id: "po_mister",
+    name: "미스터 플레이오프",
+    desc: `프로 플레이오프 통산 ${PO.pts.toLocaleString("en-US")}득점`, hint: "큰 경기에서 쌓은 득점이 진짜 실력이에요",
+    group: "playoff",
+    test: (v) => sumPlayoffs(v.pro).pts >= PO.pts,
+  },
+  {
+    id: "po_big_game",
+    name: "빅게임 헌터",
+    desc: `NBA 플레이오프 한 시즌 평균 ${PO.nbaPts}득점 이상 (${PO_GAMES}경기 이상)`, hint: "꿈의 무대의 봄, 매 경기 30점씩",
+    group: "playoff",
+    test: (v) => poSeasons(v).some(({ h, po }) => h.lg === "nba" && po.pts >= PO.nbaPts),
+  },
+  {
+    id: "po_mode",
+    name: "플레이오프 모드",
+    desc: `한 시즌 플레이오프 평균 득점이 그 시즌 정규시즌보다 ${PO.rise}점 이상 높기 (${PO_GAMES}경기 이상)`, hint: "봄이 오면 다른 사람이 돼요",
+    group: "playoff",
+    test: (v) => poSeasons(v).some(({ h, po }) => po.pts - h.pts >= PO.rise),
+  },
+  {
+    id: "po_wall",
+    name: "통곡의 벽",
+    desc: `한 시즌 프로 플레이오프 평균 스틸 ${PO.stl}개·블록 ${PO.blk}개 이상 (${PO_GAMES}경기 이상)`, hint: "봄 농구에서 상대 공격을 끊고 또 막아 내세요",
+    group: "playoff",
+    test: (v) => poSeasons(v).some(({ po }) => po.stl >= PO.stl && po.blk >= PO.blk),
+  },
+  {
+    id: "po_sweep",
+    name: "무결점 우승",
+    desc: "NBA·KBL 플레이오프에 뛰며 모든 시리즈를 4-0으로 이기고 우승", hint: "우승까지 가는 길에 한 경기도 내주지 마세요",
+    group: "playoff",
+    test: (v) => v.pro.some((h) => champ(h) && BEST_OF_SEVEN.includes(h.lg) && !!h.po?.gp && h.po.l === 0),
   },
 
   // 개인상
