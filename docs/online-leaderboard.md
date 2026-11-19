@@ -159,7 +159,7 @@ create table replays (
 
 - 순위표는 서버에서 캐시하고, 기록이 제출될 때만 다시 계산해요. 이 프로젝트는 Cache Components가 켜져 있어서 Next.js 캐시 API를 써요. **이 Next.js 버전은 API가 많이 바뀌었으니, 만들기 전에 `node_modules/next/dist/docs/`의 캐시와 Route Handler 문서를 확인해요(AGENTS.md).**
   - `src/server/leaderboard/boards.ts`의 `getBoard`가 `'use cache'` + `cacheTag("boards")` + `cacheLife("days")`예요. 기록 제출 API가 `revalidateTag("boards", { expire: 0 })`로 바로 비워서, 은퇴하고 바로 순위표를 열어도 내 기록이 보여요. 다시 계산은 그 제출로 DB가 깨어 있는 동안 일어나요. 시간으로 다시 계산하는 건 DB를 직접 고쳤을 때를 위한 안전장치라, 보기만 해도 DB를 깨우지 않게 길게 둬요.
-  - 순위표 GET(`/api/boards`, `/api/boards/days`, `/api/stats`)은 `Cache-Control: public, max-age=0, s-maxage=300, stale-while-revalidate=3600`을 붙여 Vercel CDN이 들고 있어요(`src/shared/leaderboard/cdn.ts`). 보기만 하는 요청이 함수와 DB까지 오지 않아서 Neon 무료 플랜의 compute 시간(프로젝트당 월 100 CU-시간, 5분 동안 쿼리가 없어야 잠들어요)을 아껴요. 다른 사람이 올린 기록은 최대 5분쯤 늦게 보여요.
+  - 순위표 GET(`/api/boards`, `/api/boards/days`, `/api/stats`)은 `Cache-Control: public, max-age=0, s-maxage=300, stale-while-revalidate=3600`을 붙여 Vercel CDN이 들고 있어요(`src/shared/leaderboard/cdn.ts`). 보기만 하는 요청이 함수와 DB까지 오지 않아서 DB 부하와 데이터 전송량(Supabase 무료 플랜 월 5GB)을 아껴요. 다른 사람이 올린 기록은 최대 5분쯤 늦게 보여요.
   - 기록을 올린 브라우저는 그 뒤 65분(`s-maxage` + `stale-while-revalidate`) 동안 순위표 요청에 `fresh=<올린 때>`를 붙여 CDN의 묵은 응답을 건너뛰어요. 서버는 이 값을 읽지 않아요(조건 검사에서 빠져요). 올린 때는 `localStorage`의 `b2r-submitted-v1`에 남아요.
   - 기본 캐시는 서버 메모리라서, 서버리스로 배포하면 인스턴스마다 따로 캐시되고 오래 남지 않아요. 순위표 계산은 인덱스로 상위 N개만 읽어 가볍지만, 사용량이 늘면 `'use cache: remote'`로 인스턴스끼리 캐시를 나눠요(10장 3단계).
 - 플레이어 인증은 요청 헤더의 토큰으로 해요. 토큰 원문은 DB에 두지 않고 해시만 둬요.
@@ -207,8 +207,8 @@ src/
 - [x] 1단계(검증 전) 기록: 순위표 기본 화면에 함께 보여줘요. 2단계에서 재생 검증이 생기면 검증된 기록만 보는 거름을 더해요
 - [ ] 로그인: 익명 토큰만 / Google 연결도 (기기를 바꿔도 기록 유지)
 - [x] 공개 범위: 선수 이름 (닉네임은 따로 없어요)
-- [x] DB 호스트: Neon (싱가포르 `ap-southeast-1`, 로컬은 `dev` 브랜치)
-- [x] 배포 위치: Vercel (https://bench-to-ring.vercel.app). 함수는 DB와 같은 싱가포르(`sin1`, `vercel.json`)에서 돌려요. 배포 DB는 Neon `main` 브랜치이고, 마이그레이션은 `DATABASE_URL_UNPOOLED`를 main 주소로 지정해 `db:migrate`로 넣어요
+- [x] DB 호스트: Supabase (서울 `ap-northeast-2`). 2026년 11월에 Neon(싱가포르)에서 옮겼어요. Neon 무료 플랜의 compute 시간(월 100 CU-시간)을 기록 제출만으로 다 썼기 때문이에요(README "온라인 랭킹")
+- [x] 배포 위치: Vercel (https://bench-to-ring.vercel.app). 함수는 DB와 같은 서울(`icn1`, `vercel.json`)에서 돌려요. 앱은 Supabase Transaction pooler(6543), 마이그레이션은 `DATABASE_URL_UNPOOLED`(Session pooler, 5432)로 `db:migrate`를 돌려요
 
 ## 10. 단계별 작업
 

@@ -18,18 +18,19 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:rescore": "tsx scripts/rescore.mts"
+    "db:rescore": "tsx scripts/rescore.mts",
+    "db:copy": "tsx scripts/db-copy.mts"
   },
   "dependencies": {
     "@fontsource/black-han-sans": "^5.3.0",
     "@fontsource/ibm-plex-sans-kr": "^5.3.0",
     "@fontsource/saira-condensed": "^5.3.0",
-    "@neondatabase/serverless": "^1.2.0",
     "@tanstack/react-query": "^5.107.1",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.1.0",
     "drizzle-orm": "^0.45.4",
     "next": "16.4.2",
+    "postgres": "^3.4.9",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "server-only": "^0.0.1",

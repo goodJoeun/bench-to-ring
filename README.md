@@ -20,13 +20,13 @@ npm run dev
 게임은 DB 없이도 할 수 있어요. 은퇴 기록 등록과 랭킹 페이지(`/rankings`)를 쓰려면 Postgres 연결이 필요해요(아래 "온라인 랭킹").
 
 1. `.env.example`을 `.env.local`로 복사하고 값을 채워요. 값은 커밋하지 않아요.
-   - `DATABASE_URL`: 게임 서버용 Neon 연결 문자열 (Connection pooling을 켠 주소, 호스트에 `-pooler`)
-   - `DATABASE_URL_UNPOOLED`: 마이그레이션용 연결 문자열 (pooling을 끈 주소)
+   - `DATABASE_URL`: 게임 서버용 Supabase 연결 문자열 (대시보드 Connect의 Transaction pooler, 포트 6543)
+   - `DATABASE_URL_UNPOOLED`: 마이그레이션·스크립트용 연결 문자열 (Session pooler, 포트 5432)
    - `TOKEN_SECRET`: 플레이어 토큰 해시에 쓰는 비밀 값. `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`로 만들어요.
    - `RESEND_API_KEY`, `FEEDBACK_TO`: 의견 보내기 메일. [Resend](https://resend.com) API 키와 의견을 받을 주소예요. 도메인을 인증하기 전에는 Resend 가입 메일 주소로만 보낼 수 있어요. 비어 있으면 의견 보내기가 "지금은 의견을 보낼 수 없어요"로 끝나요.
 2. `npm run db:migrate`로 테이블을 만들어요.
 
-로컬은 Neon의 dev 브랜치, 배포는 main 브랜치 주소를 써요.
+배포 DB는 Supabase 서울 리전 프로젝트예요. 로컬에서 배포 DB에 연결하면 실제 기록이 바뀌니 조심해요.
 
 | 명령 | 하는 일 |
 | --- | --- |
@@ -363,7 +363,9 @@ src/
 
 은퇴 기록을 서버에 모아 전체·포지션별 순위, 역대 베스트 5, 스탯 랭킹을 보여줘요. 별도 서버 없이 Next.js Route Handler와 Postgres로 만들었어요. 설계와 단계별 계획은 [docs/online-leaderboard.md](docs/online-leaderboard.md)에 있어요.
 
-- **DB**: [Neon](https://neon.tech) 서버리스 Postgres를 [Drizzle ORM](https://orm.drizzle.team)으로 써요. 서버는 쿼리마다 HTTP로 보내는 Neon 드라이버로 연결해서, 서버리스에서 연결이 쌓이지 않아요. Vercel 함수는 Neon과 같은 싱가포르 리전(`sin1`, `vercel.json`)에서 돌아요.
+- **DB**: [Supabase](https://supabase.com) Postgres(서울 `ap-northeast-2`)를 [Drizzle ORM](https://orm.drizzle.team)과 [postgres.js](https://github.com/porsager/postgres)로 써요. 서버는 Supabase 공유 풀러의 트랜잭션 모드(포트 6543)로 연결하고, 이 모드는 prepared statement를 못 써서 꺼요(`src/server/db/db.ts`). 인스턴스마다 연결은 하나만 쥐어요. Vercel 함수는 DB와 같은 서울 리전(`icn1`, `vercel.json`)에서 돌아요. 모든 표에 RLS를 켜고 정책을 두지 않아서, Supabase Data API로는 표를 읽고 쓸 수 없어요.
+  - 2026년 11월에 Neon에서 옮겼어요. Neon 무료 플랜은 DB가 깨어 있던 시간으로 세는데(월 100 CU-시간, 5분 동안 쿼리가 없어야 잠들어요), 기록 제출이 하루 종일 이어져서 하루 22~24시간 깨어 있었어요. Supabase 무료 플랜은 깨어 있는 시간 한도가 없어요. 대신 DB 500MB, 데이터 전송 월 5GB 한도가 있어요(옮길 때 26MB, 한 달에 약 40MB씩 늘어요).
+  - 옮길 때는 `npm run db:copy -- <보내는 쪽 환경 변수> <받는 쪽 환경 변수>`(`scripts/db-copy.mts`)로 받는 쪽에 없는 플레이어와 기록만 넣고 집계를 다시 셌어요. 서비스를 멈추지 않으려고 먼저 한 번 옮기고, 배포 DB를 바꾼 뒤 그사이 올라온 기록을 한 번 더 옮겼어요.
 - **테이블** (`src/server/db/schema.ts`)
   - `players`: 익명 플레이어(기기). 브라우저가 토큰 원문을 갖고, DB에는 `TOKEN_SECRET`으로 만든 해시만 둬요.
   - `careers`: 제출한 은퇴 기록. 순위에 쓰는 값(랭킹 점수, NBA MVP, 최고 오버롤, 통산 기록 등)은 칸으로, 은퇴 요약 전체는 `summary`(jsonb)로 둬요. 플레이어마다 같은 커리어는 한 번만 받아요.
@@ -372,7 +374,7 @@ src/
 - **흐름**: 처음 기록을 올릴 때 익명 플레이어를 만들어 토큰을 localStorage(`b2r-player-v1`)에 둬요. 프로 무대를 밟고 은퇴하면 요약을 등록 대기열(`b2r-pending-v1`)에 넣고 보내요. 실패하면 다음에 접속할 때 다시 보내요. 서버가 안 되면 조용히 실패하고 게임은 오프라인으로 계속돼요. 선수를 만들 때 "은퇴하면 이름과 기록이 공개돼요"라고 알려요.
 - **기록 검사** (`src/server/leaderboard/validate.ts`): 엔진이 낼 수 있는 모양과 범위인지(최고 오버롤, MVP 수와 수상 기록, 은퇴 나이, 레거시 등급 등) 봐요. 욕설이 들어간 선수 이름은 "익명의 선수"로 바꿔 올려요. 같은 플레이어는 1분에 한 번만 제출할 수 있어요. 기록을 서버에서 다시 돌려 보는 재생 검증은 아직 없어요(계획 2단계).
 - **룰셋 버전**: 은퇴 기록에 그때의 밸런스 버전 `RULESET_VERSION`(`src/game/core/data.ts`)이 남아요. 지금은 2예요(NBA 시상 기록 문턱부터). 랭킹 화면과 순위 알림은 버전을 가리지 않고 모든 기록을 한 줄로 세우고, API는 `ruleset`으로 한 버전만 골라 볼 수 있어요.
-- **캐시**: 순위표와 스탯 랭킹은 서버에서 캐시하고(`'use cache'` + `cacheTag("boards")`), 기록이 제출되면 바로 비워서 은퇴 직후에도 내 기록이 보여요. 순위표 GET 응답은 Vercel CDN이 5분 동안 들고 있어서(`src/shared/leaderboard/cdn.ts`) 보기만 하는 요청은 DB(Neon)를 깨우지 않아요. 기록을 올린 브라우저는 한동안 `fresh=` 쿼리로 CDN을 건너뛰어 내 기록을 바로 봐요. 브라우저에서는 TanStack Query가 불러온 순위표를 1분 동안 기억하고, 기록이 올라가면 비워요(위 "상태 관리").
+- **캐시**: 순위표와 스탯 랭킹은 서버에서 캐시하고(`'use cache'` + `cacheTag("boards")`), 기록이 제출되면 바로 비워서 은퇴 직후에도 내 기록이 보여요. 순위표 GET 응답은 Vercel CDN이 5분 동안 들고 있어서(`src/shared/leaderboard/cdn.ts`) 보기만 하는 요청은 함수와 DB까지 오지 않아요. 기록을 올린 브라우저는 한동안 `fresh=` 쿼리로 CDN을 건너뛰어 내 기록을 바로 봐요. 브라우저에서는 TanStack Query가 불러온 순위표를 1분 동안 기억하고, 기록이 올라가면 비워요(위 "상태 관리").
 
 | API | 하는 일 |
 | --- | --- |

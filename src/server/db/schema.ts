@@ -3,6 +3,7 @@ import { boolean, check, doublePrecision, index, integer, jsonb, pgTable, primar
 import type { CareerSummary } from "@/game";
 
 // 테이블 설계는 docs/online-leaderboard.md 3장을 따라요. 바꾸면 `npm run db:generate`로 마이그레이션을 만들어요.
+// 모든 표에 RLS를 켜고 정책은 두지 않아요. Supabase Data API(anon·authenticated 역할)로는 읽고 쓸 수 없고, 표 주인인 서버 연결(postgres)만 써요.
 
 /** 플레이어(기기). 지금은 익명 토큰, 나중에 Google 로그인을 연결해요. 순위표에는 선수 이름만 보여서 닉네임은 없어요. */
 export const players = pgTable("players", {
@@ -12,7 +13,7 @@ export const players = pgTable("players", {
   /** 올린 기록 수. careers 트리거가 맞춰 두고, 0에서 1이 될 때와 1에서 0이 될 때 career_totals.players를 바꿔요. */
   careers: integer("careers").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}).enableRLS();
 
 /** 제출한 은퇴 기록. CareerSummary에서 순위·화면에 필요한 값만 따로 칸으로 둬요. */
 export const careers = pgTable(
@@ -82,7 +83,7 @@ export const careers = pgTable(
     // 내 기록 목록과 제출 횟수 제한 (플레이어마다 최근 제출 시각)
     index("careers_player").on(t.playerId, t.createdAt.desc()),
   ],
-);
+).enableRLS();
 
 /**
  * 룰셋·포지션마다 올라온 커리어 수. careers 트리거(drizzle/0004_scale.sql)가 기록을 넣고 뺄 때 맞춰 둬서,
@@ -100,7 +101,7 @@ export const careerCounts = pgTable(
     nbaMvp: integer("nba_mvp").notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.ruleset, t.pos] })],
-);
+).enableRLS();
 
 /** 기록을 한 번이라도 올린 플레이어 수 (한 줄). careers 트리거가 맞춰 둬요. */
 export const careerTotals = pgTable(
@@ -110,4 +111,4 @@ export const careerTotals = pgTable(
     players: integer("players").notNull().default(0),
   },
   (t) => [check("career_totals_one_row", sql`${t.id} = 1`)],
-);
+).enableRLS();

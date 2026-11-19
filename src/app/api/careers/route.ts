@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   const id = await insertCareer(playerId, checked.summary);
   if (!id) return fail(409, "이미 제출한 커리어예요.");
   // 은퇴하고 바로 순위표를 열면 내 기록이 보이게, 묵은 순위표를 내주지 않고 바로 다시 계산해요.
-  // 다시 계산은 이 제출로 깨어 있는 동안 일어나서 Neon compute를 더 깨우지 않아요. 올린 브라우저는 CDN 캐시를 건너뛰어 불러요(shared/leaderboard/cdn.ts).
+  // 올린 브라우저는 CDN 캐시를 건너뛰어 불러요(shared/leaderboard/cdn.ts).
   revalidateTag(BOARDS_TAG, { expire: 0 });
   const ranks = await ranksOf(id);
   return Response.json(ranks satisfies SubmitResult, { status: 201 });
