@@ -124,7 +124,8 @@ import {
   seasonEvent,
   signatureMove,
 } from "@/game/season/events";
-import { makeLiveGame } from "@/game/season/live";
+import { FINAL_SCORE, makeLiveGame } from "@/game/season/live";
+import { leagueTeams } from "@/game/world/leagues";
 import { giveAward, setTeam } from "@/game/career/log";
 import { militaryDecision } from "@/game/world/military";
 import { TRAITS, TRAIT_KEYS } from "@/game/player/players";
@@ -1452,6 +1453,30 @@ describe("플레이오프 기록", () => {
       expect(last.me!.reb).toBeGreaterThanOrEqual(c.live!.mine.reb);
     }
     expect(found).toBe(true);
+  });
+
+  it("모든 리그의 경기 점수와 결승 중계의 내 득점이 숫자예요 (빠진 리그는 플레이오프 득점이 NaN이었어요)", () => {
+    for (const lg of Object.keys(LEAGUES) as LeagueKey[]) expect(Number.isFinite(FINAL_SCORE[lg]), lg).toBe(true);
+    setRandom(seeded(75));
+    const finite = (o: object) => Object.values(o).every((v) => typeof v !== "number" || Number.isFinite(v));
+    let finals = 0;
+    for (const lg of ["bleague", "pba", "cba", "nbl", "aba", "lnb", "acb", "cebl"] as const) {
+      for (let i = 0; i < 30; i++) {
+        const c = proCareer(`po-lg-${lg}${i}`);
+        c.team = { name: leagueTeams(lg, c.p.nat)[0][0], color: "#000000", q: 0.8, lg };
+        startSeason(c);
+        const run = c.run!;
+        finish(c);
+        for (const g of run.log) expect(Number.isFinite(g.us) && Number.isFinite(g.them), `${lg} 정규시즌 점수`).toBe(true);
+        for (const r of run.post) expect(r.score, `${lg} ${r.name}`).not.toContain("NaN");
+        if (c.last!.po) expect(finite(c.last!.po), `${lg} 플레이오프 기록`).toBe(true);
+        if (c.last!.final && c.live?.key === `league-${run.year}`) {
+          finals++;
+          expect(finite(c.live.mine), `${lg} 결승 중계`).toBe(true);
+        }
+      }
+    }
+    expect(finals).toBeGreaterThan(0);
   });
 
   it("결승이 아닌 라운드를 공개해도 게임 난수를 쓰지 않아요 (시즌 진행의 난수 흐름과 밸런스가 그대로예요)", () => {

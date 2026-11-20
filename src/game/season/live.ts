@@ -1,5 +1,5 @@
 import { pick, random, ri, rnd, shuffle } from "../core/random";
-import type { LiveGame, LivePlay } from "../core/types";
+import type { LeagueKey, LiveGame, LivePlay } from "../core/types";
 
 /*
  * 결승전 문자 중계. 최종 점수를 먼저 정한 뒤, 그 점수를 득점(1·2·3점) 단위로 쪼개
@@ -117,8 +117,32 @@ export function makeLiveGame(i: LiveInput): LiveGame {
   };
 }
 
-/** 리그별 결승 한 경기 평균 득점 */
-export const FINAL_SCORE: Record<string, number> = { nba: 108, gleague: 112, euro: 80, kbl: 80, ncaa: 72, kuniv: 76, hs: 66, fiba: 80 };
+/**
+ * 리그별 결승 한 경기 평균 득점. 정규시즌·플레이오프 점수와 클러치 전광판도 이 값을 써요.
+ * 리그마다 꼭 있어야 해요. 빠지면 점수가 NaN이 되고, 결승 중계의 내 득점(플레이오프 득점)까지 NaN이 돼요.
+ */
+export const FINAL_SCORE: Record<LeagueKey | "fiba", number> = {
+  hs: 66,
+  kuniv: 76,
+  juniv: 74,
+  uaap: 72,
+  cubal: 76,
+  usports: 78,
+  ncaa: 72,
+  kbl: 80,
+  pba: 98,
+  cebl: 90,
+  cba: 100,
+  bleague: 80,
+  nbl: 90,
+  aba: 82,
+  lnb: 83,
+  acb: 82,
+  gleague: 112,
+  euro: 80,
+  nba: 108,
+  fiba: 80,
+};
 
 /** 정규시즌 한 경기 점수. 결승보다 점수 차가 크게 벌어질 때가 많아요. */
 export function gameScore(avg: number, win: boolean): [number, number] {
