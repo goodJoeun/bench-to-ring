@@ -87,7 +87,7 @@ export interface AwardGroups {
 /** 개인상은 MVP부터 보여줘요. 나머지는 AWARDS 순서예요. */
 const PERSONAL_ORDER: AwardKey[] = ["mvp_nba", "mvp", "fmvp", "cfmvp", ...PERSONAL_AWARDS.filter((k) => !["mvp_nba", "mvp", "fmvp", "cfmvp"].includes(k))];
 /** 수상을 보여줄 리그 순서: 프로는 리그 수준(평균 오버롤) 순, 그다음 아마추어 */
-const LEAGUE_ORDER: LeagueKey[] = ["nba", "euro", "gleague", "kbl", "ncaa", "kuniv", "hs"];
+const LEAGUE_ORDER: LeagueKey[] = ["nba", "euro", "gleague", "acb", "nbl", "lnb", "aba", "bleague", "cba", "kbl", "pba", "cebl", "ncaa", "kuniv", "juniv", "uaap", "usports", "cubal", "hs"];
 
 /**
  * 커리어 수상을 리그·대회 이름 그대로 세어 팀·개인·국가대표로 나눠요. 'KBL 우승'과 'NBA 우승'은 따로 세요.

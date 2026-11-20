@@ -13,6 +13,7 @@ import { addNews, giveAward, pickTeam } from "../career/log";
 import { STUDENT_ALLOWANCE, investPerks, payInvestments, type InvestPerks } from "../economy/invest";
 import { serviceSeason } from "../world/military";
 import { nationalCallUp } from "../world/national";
+import { YOUTH_AGE, pathOf } from "../world/paths";
 import { runOffseason } from "./offseason";
 import { chance, pick, random, ri, rnd, seededPick, shuffle } from "../core/random";
 import { shopPerks, type ShopPerks } from "../economy/shop";
@@ -138,6 +139,14 @@ const NCAA_PRACTICE = 0.75;
  * U-리그에서는 주전, NCAA에서는 벤치인 같은 선수가 23세 무렵 비슷한 오버롤이 되게 맞췄어요.
  */
 const NCAA_COACHING = 1.2;
+/**
+ * 호주 NBL의 어린 선수(육성 선수·Next Stars)는 NBL 시즌이 끝나면 겨울에 주(州) 리그에서 주전으로 뛰어요.
+ * 유럽 구단(LNB·ACB·ABA)의 어린 선수도 1군 벤치에 앉으면서 U21(에스푸아)·2군 경기를 함께 뛰어요.
+ * 그래서 이 리그에서는 벤치에 있어도 NBL_DEV_AGE세까지 출전 시간 계수가 이 밑으로 내려가지 않고, 성장 한계도 깎이지 않아요.
+ */
+const NBL_DEV = 0.75;
+const NBL_DEV_AGE = 21;
+const DEV_LEAGUES: (LeagueKey | undefined)[] = ["nbl", "lnb", "acb", "aba"];
 /** 출전 시간이 부족하면 성장 한계가 깎이기 시작하는 나이 */
 const POT_CUT_AGE = 21;
 
@@ -208,6 +217,18 @@ const FINAL_NAME: Record<LeagueKey, string> = {
   ncaa: "NCAA 토너먼트 결승",
   kuniv: "U-리그 챔피언결정전",
   hs: "전국대회 결승",
+  bleague: "B.리그 파이널",
+  cba: "CBA 챔피언결정전",
+  pba: "PBA 파이널",
+  nbl: "NBL 그랜드 파이널",
+  aba: "ABA 리그 파이널",
+  lnb: "LNB 파이널",
+  acb: "ACB 파이널",
+  juniv: "인칼레 결승",
+  uaap: "UAAP 파이널",
+  cubal: "CUBAL 전국대회 결승",
+  usports: "U 스포츠 파이널 8 결승",
+  cebl: "CEBL 파이널",
 };
 
 /**
@@ -1025,8 +1046,11 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: InvestPe
   const adult = Math.min(1.05, 0.35 + 0.7 * Math.min(1, min / 28));
   const toAdult = clamp((age - 18) / 3, 0, 1);
   const played = youth + (adult - youth) * toAdult;
-  const minutesFactor = ncaa ? Math.max(played, NCAA_PRACTICE) * NCAA_COACHING : played;
+  const nblDev = c.stage === "pro" && DEV_LEAGUES.includes(c.team?.lg) && age <= NBL_DEV_AGE;
+  const minutesFactor = ncaa ? Math.max(played, NCAA_PRACTICE) * NCAA_COACHING : nblDev ? Math.max(played, NBL_DEV) : played;
   const perf = rating >= 7.5 ? 1.1 : 1;
+  // 나라의 육성 환경: 호주 선수는 YOUTH_AGE세까지 더 빨리 커요.
+  const youthDev = age <= YOUTH_AGE ? pathOf(p.nat).youth : 1;
   const decline: Record<AttrKey, number> = { ath: 1.6, sht: 0.7, iq: 0.25, hdl: 0.9, pas: 0.5, def: 1.1 };
   const gear = shopPerks(c);
   const delta: Partial<Record<AttrKey, number>> = {};
@@ -1035,7 +1059,7 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: InvestPe
     const worker = t === "연습벌레";
     const focus = c.focus === "bal" ? (worker ? G.worker.bal : 1.1) : c.focus === "rest" ? 0.6 : c.focus === k ? (worker ? G.worker.focus : 1.5) : 1;
     let g: number;
-    if (base > 0) g = base * headroom * minutesFactor * tf * perf * focus * rnd(0.55, 1.4);
+    if (base > 0) g = base * headroom * minutesFactor * tf * perf * focus * youthDev * rnd(0.55, 1.4);
     else {
       g = base * tf * decline[k] * rnd(0.6, 1.4);
       if (c.focus === k) g *= 0.6;
@@ -1050,7 +1074,7 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: InvestPe
   }
   c.lastDelta = delta;
   // 출전이 적으면 성장 한계가 깎여요. 20세까지는 벤치가 당연한 나이라 깎지 않아요.
-  if (age >= POT_CUT_AGE && min < 15 && base > 0 && c.stage !== "hs" && !ncaa) {
+  if (age >= POT_CUT_AGE && min < 15 && base > 0 && c.stage !== "hs" && !ncaa && !nblDev) {
     const before = p.pot;
     p.pot = Math.max(Math.round(ovrOf(p.attrs, p.pos)) + 1, p.pot - ri(1, min < 8 ? 3 : 2));
     if (p.pot < before) addNews(c, tag, "bad", "출전 시간이 부족해 성장 한계가 조금 낮아졌어요.");

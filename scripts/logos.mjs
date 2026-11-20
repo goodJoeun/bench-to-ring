@@ -82,7 +82,10 @@ function clearWhiteBackground(px, w, h) {
 
 /* ---------- 게임 속 이름 모으기: 엔진 소스에서 읽어요 ---------- */
 
-const LEAGUE_NAMES = { hs: "고교", kuniv: "U-리그", ncaa: "NCAA", kbl: "KBL", gleague: "G리그", euro: "유로리그", nba: "NBA" };
+const LEAGUE_NAMES = {
+  hs: "고교", kuniv: "U-리그", ncaa: "NCAA", kbl: "KBL", gleague: "G리그", euro: "유로리그", nba: "NBA",
+  juniv: "일본 대학", uaap: "UAAP", cubal: "CUBAL", pba: "PBA", cba: "CBA", bleague: "B.리그", nbl: "호주 NBL", aba: "ABA 리그", lnb: "프랑스 LNB", acb: "스페인 ACB", usports: "U 스포츠", cebl: "CEBL",
+};
 
 /** [묶음 이름, 이름 목록] */
 const groups = [];

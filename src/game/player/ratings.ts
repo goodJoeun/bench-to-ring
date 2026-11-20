@@ -66,6 +66,17 @@ const SALARY: Record<ProLeagueKey, (o: number) => number> = {
   nba: (o) => clamp(12 * Math.pow(1.25, o - (LEAGUES.nba.avg - 5)), 17, 800),
   euro: (o) => clamp(2 * Math.pow(1.2, o - (LEAGUES.euro.avg - 6)), 2, 55),
   kbl: (o) => clamp(1 * Math.pow(1.17, o - (LEAGUES.kbl.avg - 5)), 0.7, 9),
+  // 아시아 리그: B.리그·CBA는 KBL보다 연봉이 조금 높고, 호주 NBL은 샐러리캡이 작아 비슷하고, PBA는 연봉 상한이 낮아요.
+  bleague: (o) => clamp(1.2 * Math.pow(1.17, o - (LEAGUES.bleague.avg - 5)), 0.6, 14),
+  cba: (o) => clamp(1.2 * Math.pow(1.17, o - (LEAGUES.cba.avg - 5)), 0.5, 13),
+  nbl: (o) => clamp(1 * Math.pow(1.18, o - (LEAGUES.nbl.avg - 5)), 0.6, 12),
+  pba: (o) => clamp(0.5 * Math.pow(1.15, o - (LEAGUES.pba.avg - 5)), 0.3, 2.2),
+  // 유럽 자국 리그: ACB가 유로리그 다음으로 연봉이 높고, LNB와 ABA는 그보다 낮아요.
+  acb: (o) => clamp(1.5 * Math.pow(1.19, o - (LEAGUES.acb.avg - 5)), 0.8, 28),
+  lnb: (o) => clamp(1.2 * Math.pow(1.18, o - (LEAGUES.lnb.avg - 5)), 0.7, 16),
+  aba: (o) => clamp(1 * Math.pow(1.18, o - (LEAGUES.aba.avg - 5)), 0.5, 12),
+  // CEBL은 여름 석 달만 치르는 리그라 연봉이 가장 낮아요.
+  cebl: (o) => clamp(0.3 * Math.pow(1.15, o - (LEAGUES.cebl.avg - 5)), 0.2, 1.5),
   gleague: () => 0.6,
 };
 export const salaryFor = (lg: ProLeagueKey, o: number): number => SALARY[lg](o);

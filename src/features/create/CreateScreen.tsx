@@ -2,7 +2,7 @@
 
 import { addTransitionType, startTransition, useMemo, useRef, useState, ViewTransition } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { NAME_MAX, POS, fmtNum, type CareerSummary } from "@/game";
+import { NAME_MAX, POS, fmtNum, pathHint, type CareerSummary } from "@/game";
 import { boardDaysQuery } from "@/shared/leaderboard/queries";
 import { gameActions, type CreationDraft } from "@/shared/store/game-store";
 import { HallOfFame } from "@/features/hall-of-fame/HallOfFame";
@@ -17,11 +17,12 @@ import { MyEndings } from "./MyEndings";
 import { NameRequiredSheet } from "./NameRequiredSheet";
 import { POSITIONS } from "./options";
 
-/** 국가대표 발탁과 고른 국적의 병역 안내 */
+/** 고른 국적의 진로, 국가대표 발탁, 병역 안내 */
 function natHint(nat: string): string {
   const duty =
     nat === "대한민국" ? "대한민국 선수는 병역 의무가 있고, 아시안게임 금메달·올림픽 메달로 특례를 받을 수 있어요." : "병역 의무는 없어요.";
-  return `대표팀 수준에 따라 국가대표 발탁에 필요한 실력이 달라져요. ${duty}`;
+  const path = pathHint(nat);
+  return `${path ? `${path} ` : ""}대표팀 수준에 따라 국가대표 발탁에 필요한 실력이 달라져요. ${duty}`;
 }
 
 const STEPS = {

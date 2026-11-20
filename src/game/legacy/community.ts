@@ -601,6 +601,18 @@ const EN_LEAGUE: Record<LeagueKey, string> = {
   kbl: "KBL",
   kuniv: "Korean college",
   hs: "Korean high school",
+  bleague: "B.League",
+  cba: "CBA",
+  pba: "PBA",
+  nbl: "NBL",
+  acb: "Liga ACB",
+  lnb: "LNB Élite",
+  aba: "ABA League",
+  juniv: "Japanese college",
+  uaap: "UAAP",
+  cubal: "CUBAL",
+  cebl: "CEBL",
+  usports: "U Sports",
 };
 
 const INITIAL = ["g", "kk", "n", "d", "tt", "r", "m", "b", "pp", "s", "ss", "", "j", "jj", "ch", "k", "t", "p", "h"];
@@ -659,6 +671,19 @@ const KR_SITES: Record<LeagueKey, Site[]> = {
   kbl: [DC_BASKET, FM_SITE, PARK_SITE],
   kuniv: [DC_BASKET],
   hs: [DC_BASKET],
+  // 아시아 리그는 농구 갤러리와 에펨 농구 게시판에서 다뤄요.
+  bleague: [DC_BASKET, FM_SITE],
+  cba: [DC_BASKET, FM_SITE],
+  pba: [DC_BASKET, FM_SITE],
+  nbl: [DC_BASKET, FM_SITE],
+  acb: [DC_BASKET, FM_SITE],
+  lnb: [DC_BASKET, FM_SITE],
+  aba: [DC_BASKET, FM_SITE],
+  juniv: [DC_BASKET],
+  uaap: [DC_BASKET],
+  cubal: [DC_BASKET],
+  cebl: [DC_BASKET, FM_SITE],
+  usports: [DC_BASKET],
 };
 
 /** 해외 포럼: 리그 서브레딧, 국내 무대 선수를 눈여겨볼 때는 RealGM 국제 농구 포럼 */
@@ -666,6 +691,10 @@ const EN_SITES: Partial<Record<LeagueKey, Site>> = {
   nba: { site: "레딧 r/nba", style: "reddit" },
   gleague: { site: "레딧 r/nba", style: "reddit" },
   euro: { site: "레딧 r/Euroleague", style: "reddit" },
+  // 유럽 자국 리그 이야기도 유로리그 서브레딧에서 해요.
+  acb: { site: "레딧 r/Euroleague", style: "reddit" },
+  lnb: { site: "레딧 r/Euroleague", style: "reddit" },
+  aba: { site: "레딧 r/Euroleague", style: "reddit" },
   ncaa: { site: "레딧 r/CollegeBasketball", style: "reddit" },
 };
 const SCOUT_SITE: Site = { site: "RealGM 국제 농구 포럼", style: "realgm" };
@@ -849,6 +878,18 @@ const BUZZ: Record<LeagueKey, [number, number]> = {
   kbl: [3, 0.6],
   kuniv: [1, 0.3],
   hs: [0.6, 0.2],
+  bleague: [2, 1],
+  cba: [1.8, 1],
+  pba: [1.5, 0.8],
+  nbl: [2, 1.5],
+  acb: [1.6, 2],
+  lnb: [1.4, 1.8],
+  aba: [1.4, 1.8],
+  juniv: [0.7, 0.3],
+  uaap: [0.7, 0.4],
+  cubal: [0.6, 0.3],
+  cebl: [0.8, 1],
+  usports: [0.5, 0.4],
 };
 
 /** 한 시즌의 댓글 계획: 어느 커뮤니티에 어떤 제목과 댓글이 달리는지. 난수를 쓰는 순서가 정해져 있어서 지난 시즌 것도 똑같이 다시 만들 수 있어요. */

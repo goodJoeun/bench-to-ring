@@ -20,7 +20,7 @@ const DISPLAYS: { textOnly: boolean; name: string; sub: string }[] = [
 ];
 
 /** 수준이 낮은 리그부터 */
-const LEAGUE_ORDER: LeagueKey[] = ["hs", "kuniv", "kbl", "ncaa", "gleague", "euro", "nba"];
+const LEAGUE_ORDER: LeagueKey[] = ["hs", "kuniv", "kbl", "ncaa", "gleague", "euro", "nba", "juniv", "bleague", "uaap", "pba", "cubal", "cba", "nbl", "aba", "lnb", "acb", "usports", "cebl"];
 
 interface SettingsDialogProps {
   onClose: () => void;

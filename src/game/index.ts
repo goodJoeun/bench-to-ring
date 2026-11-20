@@ -24,6 +24,7 @@ export {
 export { dailyChallenge, type DailyChallenge } from "./player/challenge";
 export { CRITICAL_HEALTH, injuryKind, roundLine, roundRecord, simulateSeason, startSeason, stepSeason, seasonProgress, type SeasonStep } from "./season/season";
 export { draftSlot } from "./world/draft";
+export { DRAFT_NAMES, hasOwnPath, pathHint, pathOf, type NationPath } from "./world/paths";
 export { NATIONS, NAT_EVENTS, natColor, natEventFor, simulateTournament, teamPower } from "./world/national";
 export { ARMY, ENLIST_DEADLINE, SANGMU, militaryDecision, militaryUnit, owesService } from "./world/military";
 export { BYE_SPOTS, PLAYOFF_SPOTS, seasonStandings, type SeasonStandings, type StandingRow, type StandingsTable } from "./world/standings";

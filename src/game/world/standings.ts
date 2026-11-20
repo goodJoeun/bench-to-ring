@@ -11,7 +11,7 @@ import { LEAGUES, leagueTeams } from "./leagues";
  * 3라운드는 8팀, NBA 4라운드는 컨퍼런스마다 8팀, KBL은 6강이에요.
  * 아마추어는 정규시즌과 전국대회 출전이 따로라 진출선이 없어요.
  */
-export const PLAYOFF_SPOTS: Partial<Record<LeagueKey, number>> = { nba: 8, kbl: 6, euro: 8, gleague: 8 };
+export const PLAYOFF_SPOTS: Partial<Record<LeagueKey, number>> = { nba: 8, kbl: 6, euro: 8, gleague: 8, bleague: 8, cba: 8, pba: 8, nbl: 8, aba: 8, lnb: 8, acb: 8, cebl: 8 };
 /** 4강에 직행하는 팀 수. KBL은 정규리그 1·2위예요. */
 export const BYE_SPOTS: Partial<Record<LeagueKey, number>> = { kbl: 2 };
 /** 다른 팀 승률이 퍼지는 정도(표준편차). NBA 82경기면 대개 20승대부터 60승대까지 벌어져요. */

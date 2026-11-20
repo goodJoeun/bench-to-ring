@@ -3,10 +3,14 @@
  * 실행: npx vitest run scripts/balance.ts  (또는 npm run balance)
  */
 import { test } from "vitest";
-import { ARCHETYPES, ATTR_KEYS, POS_KEYS, chooseOption, createCareer, currentDecision, generateCandidate, ovrOf, seeded, setRandom, simulateSeason } from "@/game";
+import { ARCHETYPES, ATTR_KEYS, LEAGUES, NATIONS, POS_KEYS, careerSummary, chooseOption, createCareer, currentDecision, generateCandidate, ovrOf, pathOf, rankScore, scoreParts, seeded, setRandom, simulateSeason, type LeagueKey } from "@/game";
 
 /** 돌릴 커리어 수. BALANCE_N으로 바꿀 수 있어요. */
 const N = Number(process.env.BALANCE_N) || 600;
+/** 국적별 비교에서 국적마다 돌릴 커리어 수. BALANCE_NAT_N으로 바꿀 수 있어요. */
+const NAT_N = Number(process.env.BALANCE_NAT_N) || 100;
+/** 국적별 비교에서 볼 국적만 쉼표로 적어요 (BALANCE_NAT=필리핀,호주). 비우면 모든 국적이에요. */
+const ONLY = (process.env.BALANCE_NAT ?? "").split(",").filter(Boolean);
 const SEED = 20270101;
 /** 실제 플레이처럼 시즌마다 능력치 하나를 무작위로 골라 집중 훈련해요. BALANCE_FOCUS=bal이면 늘 균형으로 훈련해요. */
 const BALANCED = process.env.BALANCE_FOCUS === "bal";
@@ -124,4 +128,58 @@ test("balance report", () => {
       ),
     ].join("\n"),
   );
+});
+
+/**
+ * 국적마다 진로(자국 대학·프로 리그·드래프트)가 달라서, 같은 시드·같은 후보 선수로 국적만 바꿔 돌려 봐요.
+ * 랭킹 점수가 한 국적에 쏠리면 리그 평균(LEAGUES)이나 리그 비중(LEAGUE_WEIGHT)을 손봐요.
+ */
+test("nation report", () => {
+  const avg = (a: number[]) => (a.length ? a.reduce((t, x) => t + x, 0) / a.length : 0);
+  const share = (n: number, total: number) => `${((n / total) * 100).toFixed(0)}%`;
+  const rows: (string | number)[][] = [["국적", "자국 리그", "랭킹 점수", "중앙값", "상위 10%", "최고 오버롤", "NBA 경험", "자국 프로", "자국 MVP", "프로 시즌", "수입(억)"]];
+  const PARTS = ["awards", "stats", "nat", "peak", "nba"] as const;
+  const parts: (string | number)[][] = [["국적", "리그 상", "프로 기록", "국가대표", "최고 오버롤", "NBA 진출", "국대 경기", "프로 경기"]];
+  for (const nat of NATIONS.filter((n) => !ONLY.length || ONLY.includes(n.name))) {
+    const rand = seeded(SEED);
+    setRandom(rand);
+    const home = pathOf(nat.name).pro;
+    const scores: number[] = [];
+    const peaks: number[] = [];
+    const seasons: number[] = [];
+    const earns: number[] = [];
+    const sum = { awards: 0, stats: 0, nat: 0, peak: 0, nba: 0, caps: 0, gp: 0 };
+    let nba = 0;
+    let homePro = 0;
+    let homeMvp = 0;
+    for (let i = 0; i < NAT_N; i++) {
+      const pos = POS_KEYS[i % 5];
+      const c = createCareer({ name: "n", num: 1, nat: nat.name, pos, path: "domestic" }, generateCandidate(pos, i % ARCHETYPES[pos].length), `n${i}`);
+      let steps = 0;
+      while (c.stage !== "retired" && steps++ < 200) {
+        if (c.queue.length) chooseOption(c, Math.floor(rand() * currentDecision(c)!.opts.length));
+        else {
+          if (!BALANCED) c.focus = ATTR_KEYS[Math.floor(rand() * ATTR_KEYS.length)];
+          simulateSeason(c);
+        }
+      }
+      const s = careerSummary(c);
+      scores.push(rankScore(s));
+      const sp = scoreParts(s);
+      for (const k of PARTS) sum[k] += sp[k];
+      sum.caps += s.caps;
+      sum.gp += s.gp;
+      peaks.push(c.peakOvr);
+      seasons.push(c.proSeasons);
+      earns.push(s.earn);
+      const played = new Set(c.hist.map((h) => h.lg).filter(Boolean) as LeagueKey[]);
+      if (played.has("nba")) nba++;
+      if (played.has(home)) homePro++;
+      if (s.leagues?.[home]?.awards.mvp) homeMvp++;
+    }
+    scores.sort((x, y) => x - y);
+    parts.push([nat.name, ...([...PARTS, "caps", "gp"] as const).map((k) => (sum[k] / NAT_N).toFixed(k === "gp" ? 0 : 1))]);
+    rows.push([nat.name, LEAGUES[home].short, avg(scores).toFixed(1), pct(scores, 0.5).toFixed(1), pct(scores, 0.9).toFixed(1), avg(peaks).toFixed(1), share(nba, NAT_N), share(homePro, NAT_N), share(homeMvp, NAT_N), avg(seasons).toFixed(1), avg(earns).toFixed(0)]);
+  }
+  console.log([`국적별 비교 · 국적마다 커리어 ${NAT_N}개 · 시드 ${SEED} · 선택은 무작위`, section("국적별 성과", table(rows)), section("랭킹 점수 구성 (평균)", table(parts))].join("\n"));
 });

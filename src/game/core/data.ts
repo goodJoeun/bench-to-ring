@@ -8,8 +8,9 @@ export const START_YEAR = 2027;
  * 밸런스 버전. 리그 평균·진출 기준처럼 같은 플레이라도 결과가 달라지는 값을 바꾸면 올려요.
  * 은퇴 기록에 남고, 온라인 랭킹은 같은 버전끼리 줄을 세워요.
  * 2: NBA 평균 87, NBA 개인상 기록 문턱과 에이스 득점 (README "밸런스 패치 내역")
+ * 3: 국적별 진로(나라마다 자국 리그와 드래프트, 아시아쿼터, 북미 선수의 외국선수 계약)
  */
-export const RULESET_VERSION = 2;
+export const RULESET_VERSION = 3;
 
 export const ATTRS: ReadonlyArray<readonly [AttrKey, string]> = [
   ["sht", "슛"],

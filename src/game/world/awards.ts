@@ -7,9 +7,19 @@ import type { AwardKey, LeagueKey } from "../core/types";
  */
 
 /** 베스트 팀이 몇 팀까지 있는지. NBA는 퍼스트·세컨드·서드, KBL·대학·고교는 베스트5 하나예요. */
-export const ALL_LEAGUE_TIERS: Record<LeagueKey, 1 | 2 | 3> = { nba: 3, euro: 2, gleague: 2, ncaa: 2, kbl: 1, kuniv: 1, hs: 1 };
+export const ALL_LEAGUE_TIERS: Record<LeagueKey, 1 | 2 | 3> = {
+  nba: 3, euro: 2, gleague: 2, ncaa: 2, kbl: 1, kuniv: 1, hs: 1,
+  nbl: 2, cba: 1, bleague: 1, pba: 2, juniv: 1, uaap: 1, cubal: 1,
+  acb: 2, lnb: 1, aba: 1,
+  cebl: 2, usports: 2,
+};
 /** 올-디펜시브 팀 수 */
-export const ALL_DEF_TIERS: Record<LeagueKey, 1 | 2> = { nba: 2, euro: 1, gleague: 1, ncaa: 1, kbl: 1, kuniv: 1, hs: 1 };
+export const ALL_DEF_TIERS: Record<LeagueKey, 1 | 2> = {
+  nba: 2, euro: 1, gleague: 1, ncaa: 1, kbl: 1, kuniv: 1, hs: 1,
+  nbl: 1, cba: 1, bleague: 1, pba: 1, juniv: 1, uaap: 1, cubal: 1,
+  acb: 1, lnb: 1, aba: 1,
+  cebl: 1, usports: 1,
+};
 
 const TIER = ["퍼스트팀", "세컨드팀", "서드팀"];
 
@@ -42,6 +52,18 @@ const NAMES: Partial<Record<LeagueKey, Partial<Record<AwardKey, string>>>> = {
   ncaa: { mvp: "NCAA 올해의 선수 (네이스미스 상)", fmvp: "NCAA 파이널 포 MOP", roy: "NCAA 올해의 신입생" },
   kuniv: { mvp: "U-리그 MVP", fmvp: "U-리그 챔피언결정전 MVP", allleague: "U-리그 베스트5" },
   hs: { mvp: "고교 MVP", fmvp: "고교 전국대회 MVP", allleague: "고교 베스트5" },
+  bleague: { mvp: "B.리그 정규시즌 MVP", fmvp: "B.리그 파이널 MVP", roy: "B.리그 신인상", dpoy: "B.리그 베스트 디펜더", sixth: "B.리그 식스맨상", allleague: "B.리그 베스트5" },
+  cba: { mvp: "CBA 정규리그 MVP", fmvp: "CBA 챔피언결정전 MVP", roy: "CBA 신인상", dpoy: "CBA 올해의 수비수", allleague: "CBA 베스트5" },
+  pba: { mvp: "PBA MVP", fmvp: "PBA 파이널 MVP", roy: "PBA 신인왕", dpoy: "PBA 올해의 수비수" },
+  nbl: { mvp: "NBL MVP (앤드루 게이즈 트로피)", fmvp: "NBL 그랜드 파이널 MVP", roy: "NBL 신인상", dpoy: "NBL 올해의 수비수", sixth: "NBL 식스맨상", mip: "NBL 기량발전상" },
+  acb: { mvp: "ACB MVP", fmvp: "ACB 파이널 MVP", roy: "ACB 최우수 영플레이어", dpoy: "ACB 최우수 수비수" },
+  lnb: { mvp: "LNB MVP", fmvp: "LNB 파이널 MVP", roy: "LNB 최우수 유망주", dpoy: "LNB 최우수 수비수", sixth: "LNB 식스맨상", mip: "LNB 기량발전상", allleague: "LNB 베스트5" },
+  aba: { mvp: "ABA 리그 MVP", fmvp: "ABA 리그 파이널 MVP", roy: "ABA 리그 최우수 유망주", dpoy: "ABA 리그 최우수 수비수", allleague: "ABA 리그 베스트5" },
+  cebl: { mvp: "CEBL MVP", fmvp: "CEBL 파이널 MVP", dpoy: "CEBL 올해의 수비수", sixth: "CEBL 식스맨상" },
+  usports: { mvp: "U 스포츠 올해의 선수", fmvp: "U 스포츠 파이널 8 MVP", roy: "U 스포츠 올해의 신입생" },
+  juniv: { mvp: "일본 대학농구 MVP", fmvp: "인칼레 MVP", allleague: "일본 대학농구 베스트5" },
+  uaap: { mvp: "UAAP MVP", fmvp: "UAAP 파이널 MVP", allleague: "UAAP 미시컬 팀" },
+  cubal: { mvp: "CUBAL MVP", fmvp: "CUBAL 전국대회 MVP", allleague: "CUBAL 베스트5" },
 };
 
 const BASE: Partial<Record<AwardKey, string>> = {
@@ -60,7 +82,7 @@ const BASE: Partial<Record<AwardKey, string>> = {
 /** 베스트 팀 이름. tier는 1(퍼스트)부터예요. */
 function allLeagueName(lg: LeagueKey, tier: number): string {
   if (ALL_LEAGUE_TIERS[lg] === 1) return NAMES[lg]?.allleague ?? `${LEAGUES[lg].short} 베스트5`;
-  const team = lg === "nba" ? "올-NBA" : lg === "euro" ? "올-유로리그" : lg === "gleague" ? "올-G리그" : "올-아메리칸";
+  const team = lg === "nba" ? "올-NBA" : lg === "euro" ? "올-유로리그" : lg === "gleague" ? "올-G리그" : lg === "nbl" ? "올-NBL" : lg === "acb" ? "올-ACB" : lg === "pba" ? "PBA 미시컬" : lg === "cebl" ? "올-CEBL" : lg === "usports" ? "U 스포츠 올-캐나디언" : "올-아메리칸";
   return `${team} ${TIER[tier - 1]}`;
 }
 

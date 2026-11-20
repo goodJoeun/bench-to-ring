@@ -59,6 +59,21 @@ export const STAR_EXPOSURE: Record<LeagueKey, number> = {
   gleague: 0.5,
   euro: 0.9,
   nba: 1.4,
+  // 아시아 리그: 자국에서 농구 인기가 큰 필리핀·중국은 관심이 크고, 대학 리그는 UAAP만 프로 못지않아요.
+  bleague: 0.8,
+  cba: 0.9,
+  pba: 0.9,
+  nbl: 0.7,
+  // 유럽 자국 리그: 농구가 국민 스포츠인 세르비아의 ABA와 스페인 ACB는 관심이 커요.
+  acb: 0.85,
+  lnb: 0.7,
+  aba: 0.85,
+  juniv: 0.45,
+  uaap: 0.7,
+  cubal: 0.45,
+  // 캐나다: 여름 리그 CEBL과 대학 U 스포츠는 관심이 작아요.
+  cebl: 0.5,
+  usports: 0.4,
 };
 
 /** 상마다 오르는 스타성 (리그 관심을 곱하기 전). 국가대표 메달은 리그와 상관없이 그대로예요. */

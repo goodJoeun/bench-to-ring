@@ -33,7 +33,17 @@ export const SCORE_AWARDS: Partial<Record<AwardKey, number>> = {
  * 고교·대학 상은 프로 커리어보다 작게 쳐요. 대학에서 에이스로 상을 쓸어 담은 것이 프로 성적을 앞지르지 않게요.
  * 리그별 몫(leagues)이 없는 예전 기록은 NBA 밖을 모두 SCORE_OTHER로 쳐요.
  */
-export const LEAGUE_WEIGHT: Record<LeagueKey, number> = { nba: 1, euro: 0.5, gleague: 0.4, kbl: 0.35, ncaa: 0.2, kuniv: 0.1, hs: 0.05 };
+export const LEAGUE_WEIGHT: Record<LeagueKey, number> = {
+  nba: 1, euro: 0.5, gleague: 0.4, kbl: 0.35, ncaa: 0.2, kuniv: 0.1, hs: 0.05,
+  // 아시아 리그는 리그 수준(평균 오버롤) 순서대로 KBL 위아래에 놓아요.
+  // PBA는 KBL과 수준이 비슷해도 시즌이 짧아(33경기) 몸이 덜 닳고 상을 더 오래 받아서 조금 더 낮게 쳐요.
+  // 국적만 바꿔 돌린 평균 랭킹 점수가 비슷하게 맞춘 값이에요 (npm run balance의 국적별 비교).
+  nbl: 0.46, bleague: 0.42, cba: 0.41, pba: 0.28, juniv: 0.1, uaap: 0.1, cubal: 0.1,
+  // 유럽 자국 리그도 리그 수준 순서대로 B.리그와 호주 NBL 사이예요.
+  acb: 0.45, lnb: 0.43, aba: 0.42,
+  // 캐나다 CEBL은 여름 석 달만 치르는 리그예요. 시즌이 가장 짧아(24경기) 몸이 덜 닳고 상을 오래 받아서 수준(KBL 언저리)보다 낮게 쳐요.
+  cebl: 0.15, usports: 0.1,
+};
 
 /** NBA 밖(다른 프로 리그·아마추어)에서 받은 상과 쌓은 기록을 리그를 모를 때 치는 비중이에요. */
 export const SCORE_OTHER = 0.3;

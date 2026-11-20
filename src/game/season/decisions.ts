@@ -1,9 +1,10 @@
 import { clampTrust } from "../player/condition";
-import { LEAGUES } from "../world/leagues";
+import { LEAGUES, TEAMS, ncaaTies } from "../world/leagues";
+import { DRAFT_NAMES, pathOf } from "../world/paths";
 import { addNews, pickTeam } from "../career/log";
 import { chance, ri, rnd } from "../core/random";
 import { currentExpectedMinutes, evalOvr, evalOvrOf, expectedMinutes, ovr, roleOf, salaryFor } from "../player/ratings";
-import type { Action, Career, CurrentTeam, Decision, DecisionOption, LeagueKey, ProLeagueKey, Team } from "../core/types";
+import type { Action, Career, CurrentTeam, Decision, DecisionOption, DraftKey, LeagueKey, ProLeagueKey, Team } from "../core/types";
 import { clamp, money, roundSalary } from "../core/util";
 
 /*
@@ -20,14 +21,28 @@ const avg = (lg: LeagueKey) => LEAGUES[lg].avg;
  * 같은 선수라면 U-리그보다 NCAA를 거쳐야 NBA에 지명되기 쉬워요.
  */
 const NCAA_EXPOSURE = 4;
+/**
+ * 호주 NBL은 Next Stars 프로그램으로 NBA 스카우트가 어린 선수를 꾸준히 지켜봐서(조시 기디 6순위 등),
+ * NEXT_STARS_AGE 이하 NBL 선수는 드래프트 평가가 이만큼 올라가요. NCAA보다는 조금 덜해요.
+ * 유럽 프로 리그(LNB·ACB·ABA·유로리그)의 어린 선수도 해마다 NBA 드래프트에 지명돼서(웸반야마, 요키치, 돈치치) 같아요.
+ */
+const NBL_EXPOSURE = 3;
+const NEXT_STARS_AGE = 21;
+const SCOUTED: (LeagueKey | undefined)[] = ["nbl", "lnb", "acb", "aba", "euro"];
+
+/** NBA 스카우트가 지켜보는 어린 해외 프로 선수인지 */
+const nextStar = (c: Career): boolean => SCOUTED.includes(c.team?.lg) && c.age <= NEXT_STARS_AGE;
 
 export function nbaDraftScore(c: Career, noise: number): number {
   const o = evalOvrOf(c.p.attrs, c.p.pos);
-  const exposure = c.team?.lg === "ncaa" ? NCAA_EXPOSURE : 0;
+  const exposure = c.team?.lg === "ncaa" ? NCAA_EXPOSURE : nextStar(c) ? NBL_EXPOSURE : 0;
   return o + (c.p.pot - o) * 0.35 + (22 - c.age) * 1.2 + c.p.wsd * 0.2 + exposure + noise;
 }
 
-export function kblDraftScore(c: Career, noise: number): number {
+/** 자국 프로 리그(KBL·B.리그·PBA·CBA) 신인드래프트 */
+export type HomeDraft = Exclude<DraftKey, "nba">;
+
+export function homeDraftScore(c: Career, noise: number): number {
   const o = evalOvrOf(c.p.attrs, c.p.pos);
   return o + (c.p.pot - o) * 0.25 + (21 - c.age) * 0.6 + noise;
 }
@@ -50,8 +65,16 @@ export const nbaPick = (score: number): number => {
   const pick = linear >= NBA_LOTTERY ? linear : NBA_LOTTERY - (NBA_LOTTERY - linear) * NBA_LOTTERY_STEP;
   return Math.max(1, Math.round(pick));
 };
-/** KBL 신인드래프트: 2라운드 전체 1~20순위, 21 이상이면 미지명. 평가 점수가 KBL 평균 - 11이면 20순위예요. */
-export const kblPick = (score: number): number => Math.max(1, Math.round(20 - (score - (avg("kbl") - 11)) * 1.3));
+/** 자국 신인드래프트의 전체 지명 수: 두 라운드 동안 모든 구단이 한 번씩 뽑아요 (KBL 20, B.리그 52, PBA 24, CBA 40). */
+export const homeDraftSize = (d: HomeDraft): number => TEAMS[d].length * 2;
+/**
+ * 자국 신인드래프트 순위. 마지막 순위보다 크면 미지명이에요. 평가 점수가 그 리그 평균 - 11이면 마지막 순위이고,
+ * 거기서 15점쯤 높으면 1순위예요(KBL은 1점마다 1.3순위). 리그가 달라도 평균 대비 같은 실력이면 같은 라운드에 뽑혀요.
+ */
+export const homePick = (d: HomeDraft, score: number): number => {
+  const size = homeDraftSize(d);
+  return Math.max(1, Math.round(size - (score - (avg(d) - 11)) * size * 0.065));
+};
 
 /** 예상 지명 순위를 스카우트 문구로 바꿔요. tiers는 [이 순위까지, 문구] 목록이에요. */
 const projection = (pick: number, tiers: [number, string][]): string => tiers.find(([n]) => pick <= n)?.[1] ?? "지명 불확실";
@@ -64,11 +87,11 @@ export const projectNba = (c: Career): string =>
     [60, "2라운드"],
   ]);
 
-export const projectKbl = (c: Career): string =>
-  projection(kblPick(kblDraftScore(c, 0)), [
+export const projectHome = (c: Career, d: HomeDraft): string =>
+  projection(homePick(d, homeDraftScore(c, 0)), [
     [3, "1라운드 최상위"],
-    [10, "1라운드"],
-    [20, "2라운드"],
+    [homeDraftSize(d) / 2, "1라운드"],
+    [homeDraftSize(d), "2라운드"],
   ]);
 
 /* ---------- 진로 결정 ---------- */
@@ -82,13 +105,52 @@ export const projectKbl = (c: Career): string =>
  */
 const NCAA_SCHOLARSHIP = 5;
 const NCAA_WALK_ON = 10;
+/** NCAA 제안이 그 나라 선수와 인연이 깊은 학교(leagues.ts의 NCAA_TIES)에서 올 확률 */
+const NCAA_TIE_CHANCE = 0.5;
+/** 자국 프로 리그의 계약 제안을 받는 오버롤: 리그 평균에서 이만큼 아래까지 */
+const HOME_BELOW = 12;
+
+/**
+ * 신인드래프트가 없는 리그(호주 NBL, 유럽 LNB·ACB·ABA)는 고교(구단 유소년)를 마친 유망주와 구단이 바로 계약해요.
+ * 리그 평균 - YOUTH_DEAL부터 육성 선수(유럽은 유스·에스푸아 계약)로 받아 주고, - NEXT_STARS부터는 1군 유망주 자리예요
+ * (호주는 NBA 드래프트를 노리는 Next Stars 계약, 유럽은 프로 계약).
+ */
+const YOUTH_DEAL = 14;
+const NEXT_STARS = 9;
+
+/** 고졸 유망주 계약의 이름: [육성 계약, 1군 유망주 계약] */
+const YOUTH_DEAL_NAMES: Partial<Record<ProLeagueKey, [string, string]>> = {
+  nbl: ["육성 선수 계약", "Next Stars 계약"],
+  lnb: ["에스푸아 계약", "프로 계약"],
+  acb: ["유스 계약", "프로 계약"],
+  aba: ["유스 계약", "프로 계약"],
+};
+
+/** 고졸 유망주의 프로 계약: 2년, 정해진 연봉이라 협상 없이 서명해요. */
+function youthDeal(c: Career, lg: ProLeagueKey, o: number): DecisionOption {
+  const t = pickTeam(lg);
+  const stars = o >= avg(lg) - NEXT_STARS;
+  const salary = stars ? 0.9 : 0.4;
+  const [low, top] = YOUTH_DEAL_NAMES[lg] ?? ["육성 선수 계약", "프로 계약"];
+  return {
+    label: `${t.name} ${stars ? top : low}`,
+    sub: `${LEAGUES[lg].name} · 2년 · 연봉 ${money(salary)} · 예상 역할 ${roleOf(expectedMinutes(c, lg))} · ${
+      stars ? "NBA 스카우트가 지켜보는 유망주 자리예요" : lg === "nbl" ? "벤치에서 프로의 벽을 배워요" : "U21 팀에서 뛰며 1군 훈련에 함께해요"
+    }`,
+    tag: stars && lg === "nbl" ? "Next Stars" : LEAGUES[lg].short,
+    act: { k: "sign", lg, team: t, years: 2, salary, deal: true },
+  };
+}
 
 export function highSchoolGraduation(c: Career): Decision {
   // 진학·드래프트 기준은 히든 스탯까지 반영한 평가 오버롤로 봐요.
   const o = evalOvr(c.p);
+  const path = pathOf(c.p.nat);
   const opts: DecisionOption[] = [];
-  const uc = pickTeam("ncaa");
-  const kc = pickTeam("kuniv");
+  // NCAA 제안의 절반은 그 나라 선수가 많이 간 학교에서 와요.
+  const ties = ncaaTies(c.p.nat);
+  const uc = ties.length && chance(NCAA_TIE_CHANCE) ? pickTeam("ncaa", undefined, ties) : pickTeam("ncaa");
+  const kc = path.college ? pickTeam(path.college) : null;
   const abroad = (walk: boolean): DecisionOption => ({
     label: `${uc.name} ${walk ? "워크온 입단" : "장학생 입학"}`,
     sub: `NCAA 디비전 I · 예상 역할 ${roleOf(expectedMinutes(c, "ncaa", walk ? -3 : 0))} · 벤치여도 팀 훈련으로 성장 · NBA 스카우트 주목${
@@ -98,23 +160,27 @@ export function highSchoolGraduation(c: Career): Decision {
     act: { k: "school", lg: "ncaa", team: uc, walk },
   });
   // NCAA: 해외 경로는 평균 - NCAA_SCHOLARSHIP부터 장학생, 그 아래 평균 - NCAA_WALK_ON까지는 워크온이고, 더 낮으면 받아 주는 학교가 없어요.
+  // 미국 대학이 주된 진학로인 나라(미국·캐나다·호주·유럽)는 같은 기준으로 열리고, 워크온은 언제나 받아 줘요.
   // 국내 경로는 NCAA 평균 - 1은 돼야 스카우트가 찾아와요.
-  if (c.p.path === "abroad") {
-    if (o >= avg("ncaa") - NCAA_WALK_ON) opts.push(abroad(o < avg("ncaa") - NCAA_SCHOLARSHIP));
+  if (c.p.path === "abroad" || path.ncaa) {
+    if (path.ncaa || o >= avg("ncaa") - NCAA_WALK_ON) opts.push(abroad(o < avg("ncaa") - NCAA_SCHOLARSHIP));
   } else if (o >= avg("ncaa") - 1) opts.push({ ...abroad(false), label: `${uc.name} 스카우트 제안` });
-  opts.push({
-    label: `${kc.name} 진학`,
-    sub: `대학농구 U-리그 · 예상 역할 ${roleOf(expectedMinutes(c, "kuniv"))}`,
-    tag: "U-리그",
-    act: { k: "school", lg: "kuniv", team: kc },
-  });
-  if (o >= avg("kbl") - 9)
+  if (kc && path.college)
     opts.push({
-      label: "KBL 신인드래프트 고졸 참가",
-      sub: `대학을 건너뛰고 바로 프로에 도전해요 · 스카우트 예상 ${projectKbl(c)}`,
-      tag: "드래프트",
-      act: { k: "draft", d: "kbl" },
+      label: `${kc.name} 진학`,
+      sub: `${LEAGUES[path.college].name} · 예상 역할 ${roleOf(expectedMinutes(c, path.college))}`,
+      tag: LEAGUES[path.college].short,
+      act: { k: "school", lg: path.college, team: kc },
     });
+  if (path.draft) {
+    if (o >= avg(path.pro) - 9)
+      opts.push({
+        label: `${DRAFT_NAMES[path.draft]} 고졸 참가`,
+        sub: `대학을 건너뛰고 바로 프로에 도전해요 · 스카우트 예상 ${projectHome(c, path.draft)}`,
+        tag: "드래프트",
+        act: { k: "draft", d: path.draft },
+      });
+  } else if (YOUTH_DEAL_NAMES[path.pro] && o >= avg(path.pro) - YOUTH_DEAL) opts.push(youthDeal(c, path.pro, o));
   return { scene: "path", title: "고교 졸업, 진로 선택", body: `고교 3년 동안 오버롤 ${ovr(c.p)}까지 성장했어요. 다음 무대를 고르세요.`, opts };
 }
 
@@ -122,6 +188,9 @@ export function collegeSeasonEnd(c: Career): Decision {
   const o = evalOvr(c.p);
   const lg = c.team?.lg;
   const years = c.collegeYears;
+  const path = pathOf(c.p.nat);
+  // 진로 표가 생기기 전에 U-리그에 들어간, 드래프트 없는 나라 선수는 KBL 드래프트로 프로에 가요.
+  const draft = path.draft ?? (lg === "kuniv" ? "kbl" : null);
   const opts: DecisionOption[] = [];
   if (years < 4)
     opts.push({
@@ -137,12 +206,18 @@ export function collegeSeasonEnd(c: Career): Decision {
       tag: "NBA",
       act: { k: "draft", d: "nba" },
     });
-  opts.push({
-    label: "KBL 신인드래프트 신청",
-    sub: `${lg === "ncaa" ? "국내로 돌아와 " : ""}국내 프로리그 도전 · 스카우트 예상 ${projectKbl(c)}`,
-    tag: "KBL",
-    act: { k: "draft", d: "kbl" },
-  });
+  if (draft)
+    opts.push({
+      label: `${DRAFT_NAMES[draft]} 신청`,
+      sub: `${lg === "ncaa" ? "국내로 돌아와 " : ""}국내 프로리그 도전 · 스카우트 예상 ${projectHome(c, draft)}`,
+      tag: LEAGUES[draft].short,
+      act: { k: "draft", d: draft },
+    });
+  // 드래프트가 없는 나라는 자국 리그 구단과 바로 계약해요. 미국 선수는 NBA 드래프트를 거친 뒤에 G리그·해외 제안을 받아요.
+  else if (path.pro !== "gleague" && o >= avg(path.pro) - HOME_BELOW)
+    opts.push(signOption(c, path.pro, pickTeam(path.pro), 2, roundSalary(salaryFor(path.pro, o)), undefined, LEAGUES[path.pro].short));
+  // 드래프트가 없는 나라의 자국 대학(U 스포츠) 졸업생이 자국 리그 기준에 못 미치면 팀 없이 시장에 나가요.
+  if (!opts.length) opts.push(skipOption("졸업했지만 아직 부르는 팀이 없어요. 다음 시장을 노려요"));
   return {
     scene: years >= 4 ? "draft" : "path",
     title: years >= 4 ? "대학 졸업, 드래프트" : "대학 시즌 종료",
@@ -165,7 +240,7 @@ function signOption(c: Career, lg: ProLeagueKey, t: Team, years: number, salary:
 
 /** 협상을 거친 계약 제안. 연봉이 ±10% 흔들려요. */
 function offerOption(c: Career, lg: ProLeagueKey, t: Team, years: number, sal: number, note?: string): DecisionOption {
-  // 대형 에이전시가 있으면 협상에서 10% 더 받아요. 최저 연봉 계약은 그대로예요.
+  // 대형 에이전시가 있으면 협상에서 10% 더 받아요. 최저 연봉 계약은 그대로예요. note는 선택지의 꼬리표가 돼요(재계약, 아시아쿼터…).
   const agent = c.perks.agency && note !== "최저 연봉" ? 1.1 : 1;
   return signOption(c, lg, t, years, roundSalary(sal * rnd(0.9, 1.1) * agent), t.name, note);
 }
@@ -174,7 +249,26 @@ function offerOption(c: Career, lg: ProLeagueKey, t: Team, years: number, sal: n
 const skipOption = (sub: string): DecisionOption => ({ label: "무소속으로 1년 개인 훈련", sub, act: { k: "skip" } });
 
 /** 재계약 제안을 받는 오버롤: 리그 평균에서 이만큼 아래까지 */
-const RESIGN_BELOW: Partial<Record<LeagueKey, number>> = { nba: 3, euro: 8, kbl: 12, gleague: 9 };
+const RESIGN_BELOW: Partial<Record<LeagueKey, number>> = { cebl: 12, nba: 3, euro: 8, acb: 10, lnb: 10, aba: 10, nbl: 10, bleague: 12, cba: 12, kbl: 12, pba: 12, gleague: 9 };
+/**
+ * 아시아쿼터 제안. 외국선수와 따로 두는 자리 하나라 주전급이어야 해서 리그 평균 - QUOTA_BELOW부터 오고,
+ * 자리가 구단마다 하나뿐이라 해마다 QUOTA_CHANCE 확률로만 와요. 기간은 1~2년으로 짧아요.
+ */
+const QUOTA_BELOW = 3;
+const QUOTA_CHANCE = 0.5;
+const QUOTA_TAG = "아시아쿼터";
+/**
+ * 외국선수 제안(북미 선수). 외국선수 자리는 구단마다 두세 명뿐이고 팀의 주축을 맡겨서 리그 평균 - IMPORT_BELOW부터 와요.
+ * 세계 어느 리그나 북미 선수를 찾아서, 실력이 되는 리그 가운데 IMPORT_OFFERS곳이 해마다 제안해요. 기간은 1~2년으로 짧아요.
+ * 캐나다 CEBL은 구단마다 외국선수가 다섯 명이라 미국 선수도 자국 선수처럼(평균 - HOME_BELOW) 받아 줘요.
+ */
+const IMPORT_BELOW = 3;
+const IMPORT_OFFERS = 2;
+const IMPORT_TAG = "외국선수";
+const importBelow = (lg: ProLeagueKey): number => (lg === "cebl" ? HOME_BELOW : IMPORT_BELOW);
+/** 미국 선수는 G리그가 자국 리그라서 더 낮은 실력(평균 - HOME_BELOW)과 더 많은 나이까지 받아 줘요. */
+const GLEAGUE_AGE = 27;
+const GLEAGUE_HOME_AGE = 30;
 
 /** 계약 제안. current는 재계약을 제안할 수 있는 지금 팀이고, avoid 팀은 제안 목록에서 빼요(이적 요청). */
 export function generateOffers(c: Career, current: CurrentTeam | null, rating: number, avoid?: string): DecisionOption[] {
@@ -183,6 +277,7 @@ export function generateOffers(c: Career, current: CurrentTeam | null, rating: n
   const age = c.age;
   const out: DecisionOption[] = [];
   const used = new Set<string>(avoid ? [avoid] : []);
+  const path = pathOf(c.p.nat);
   const eff = o - (age >= 33 ? 4 : 0);
   const years = () => (age < 26 ? ri(2, 4) : age < 31 ? ri(2, 3) : ri(1, 2));
   const add = (lg: ProLeagueKey, y: number, sal: number, note?: string) => {
@@ -203,9 +298,20 @@ export function generateOffers(c: Career, current: CurrentTeam | null, rating: n
     for (let i = 0; i < n; i++) add("nba", years(), salaryFor("nba", o));
   } else if (eff >= nba - 3 && rnd(0, 1) < 0.45) add("nba", 1, 17, "최저 연봉");
   if (eff >= avg("euro") - 7 && out.length < 4) add("euro", years(), salaryFor("euro", o));
-  if (eff >= avg("kbl") - 12 && out.length < 4) add("kbl", years(), salaryFor("kbl", o));
+  // 미국 선수의 자국 리그는 G리그라서 아래 G리그 규칙으로 제안해요.
+  const usa = path.pro === "gleague";
+  if (!usa && eff >= avg(path.pro) - HOME_BELOW && out.length < 4) add(path.pro, years(), salaryFor(path.pro, o));
+  for (const lg of path.quota)
+    if (eff >= avg(lg) - QUOTA_BELOW && out.length < 4 && chance(QUOTA_CHANCE)) add(lg, ri(1, 2), salaryFor(lg, o), QUOTA_TAG);
+  const imports = path.imports.filter((lg) => eff >= avg(lg) - importBelow(lg));
+  for (let i = 0; i < IMPORT_OFFERS && imports.length && out.length < 4; i++) {
+    const [lg] = imports.splice(ri(0, imports.length - 1), 1);
+    add(lg, ri(1, 2), salaryFor(lg, o), IMPORT_TAG);
+  }
   // G리그는 NBA를 노리는 젊은 선수의 길이라, NBA 정식 제안을 받을 실력이면 오지 않아요.
-  if (age <= 27 && eff >= avg("gleague") - 9 && eff < nba - 1 && out.length < 4 && rnd(0, 1) < 0.7) add("gleague", 1, 0.6);
+  if (usa) {
+    if (age <= GLEAGUE_HOME_AGE && eff >= avg("gleague") - HOME_BELOW && eff < nba - 1 && out.length < 4) add("gleague", 1, 0.6);
+  } else if (age <= GLEAGUE_AGE && eff >= avg("gleague") - 9 && eff < nba - 1 && out.length < 4 && rnd(0, 1) < 0.7) add("gleague", 1, 0.6);
   return out.slice(0, 4);
 }
 
@@ -219,6 +325,9 @@ const RETIRE_OPTION: DecisionOption = {
 export function freeAgency(c: Career, isFree: boolean): Decision {
   const offers = generateOffers(c, isFree ? null : c.team, c.last ? c.last.rating : 6);
   const opts = [...offers];
+  // 계약이 끝난 어린 프로 선수는 NBA 드래프트에 나설 수도 있어요.
+  const entry = isFree ? null : proDraftOption(c);
+  if (entry) opts.push(entry);
   if (c.age >= 31) opts.push(RETIRE_OPTION);
   if (!offers.length && c.age < 34)
     opts.push(skipOption("경기는 못 뛰지만 다음 시장을 노려요"));
@@ -242,8 +351,8 @@ export function nbaOffer(c: Career): Decision | null {
   const lg = c.team.lg;
   const o = evalOvr(c.p);
   const fromDev = lg === "gleague";
-  // G리그에서는 NBA 평균 - 1이면 콜업, KBL·유로리그에서는 평균 + 2는 돼야 바이아웃을 내고 데려가요.
-  if (!(lg === "kbl" || lg === "euro" || fromDev) || o < avg("nba") + (fromDev ? -1 : 2)) return null;
+  // G리그에서는 NBA 평균 - 1이면 콜업, 다른 프로 리그(KBL·유로리그·아시아 리그)에서는 평균 + 2는 돼야 바이아웃을 내고 데려가요.
+  if (!LEAGUES[lg].pro || lg === "nba" || o < avg("nba") + (fromDev ? -1 : 2)) return null;
   const t = pickTeam("nba");
   const sal = fromDev ? 17 : roundSalary(salaryFor("nba", o));
   const years = fromDev ? 2 : 3;
@@ -257,6 +366,46 @@ export function nbaOffer(c: Career): Decision | null {
       signOption(c, "nba", t, years, sal, `${t.name} 이적`),
       { label: `${c.team.name} 잔류`, sub: `남은 계약 ${c.contract.years}년을 채워요`, act: { k: "none" } },
     ],
+  };
+}
+
+/* ---------- 프로 선수의 NBA 드래프트 ---------- */
+
+/** NBA 밖 프로 리그 선수가 NBA 드래프트에 나설 수 있는 나이. 해외 선수는 22세가 되는 해에 자동으로 대상이 돼요. */
+const PRO_DRAFT_AGE = 22;
+/** NBA 드래프트에 한 번 나선 프로 선수의 표시(c.milestones). 다시 신청할 수 없어요. */
+export const PRO_DRAFT_MARK = "nbadraft";
+/** 스카우트 예상 순위가 이 안이어야 신청을 물어요 (전체 60순위 + 예상 범위의 반폭) */
+const PRO_DRAFT_REACH = 68;
+
+/**
+ * NBA 밖 프로 리그에서 뛰는 어린 선수의 NBA 드래프트 신청 (중국 CBA의 양한썬, 호주 NBL의 조시 기디처럼).
+ * 대학 선수와 같은 기준이에요: 평가 오버롤이 NBA 평균 - 7 이상이거나, 스카우트가 지켜보는 어린 NBL 선수여야 하고,
+ * 예상 순위가 지명권 근처여야 해요. 한 번만 신청할 수 있어요.
+ */
+function proDraftOption(c: Career): DecisionOption | null {
+  const lg = c.team?.lg;
+  if (!lg || lg === "nba" || !LEAGUES[lg].pro || c.age > PRO_DRAFT_AGE) return null;
+  if (c.draft?.lg === "NBA" || c.milestones.includes(PRO_DRAFT_MARK)) return null;
+  if (!nextStar(c) && evalOvr(c.p) < avg("nba") - 7) return null;
+  if (nbaPick(nbaDraftScore(c, 0)) > PRO_DRAFT_REACH) return null;
+  return {
+    label: "NBA 드래프트 신청",
+    sub: `스카우트 예상 ${projectNba(c)} · 지명되면 NBA 팀으로 옮겨요 · 한 번만 신청할 수 있어요`,
+    tag: "NBA",
+    act: { k: "draft", d: "nba" },
+  };
+}
+
+/** 계약이 남은 프로 선수에게 오프시즌에 묻는 NBA 드래프트 신청. 대상이 아니면 null이에요. */
+export function proDraftEntry(c: Career): Decision | null {
+  const entry = proDraftOption(c);
+  if (!entry || !c.team) return null;
+  return {
+    scene: "draft",
+    title: "NBA 드래프트 신청",
+    body: `NBA 스카우트들이 ${c.team.name}에서 뛰는 당신을 지켜보고 있어요. 올해 드래프트에 이름을 올릴까요?`,
+    opts: [entry, { label: "올해는 신청하지 않는다", sub: `${c.team.name}에서 한 시즌 더 성장해요`, act: { k: "none" } }],
   };
 }
 

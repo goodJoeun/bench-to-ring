@@ -79,7 +79,10 @@ const TRAINERS: [AttrKey, string][] = [
 /** 리그마다 스폰서 몸값: NBA는 크고, 학생·하부 리그는 작아요. */
 function leagueFame(c: Career): number {
   const lg = c.team?.lg;
-  return lg === "nba" ? 2 : lg === "euro" ? 1.1 : lg === "kbl" ? 1 : 0.6;
+  if (lg === "nba") return 2;
+  if (lg === "euro") return 1.1;
+  // 자국 프로 리그는 KBL과 비슷한 몸값이에요.
+  return lg === "kbl" || lg === "bleague" || lg === "cba" || lg === "pba" || lg === "nbl" || lg === "acb" || lg === "lnb" || lg === "aba" ? 1 : 0.6;
 }
 
 /** 팬들에게 들려오는 미담: [본문, 말을 아낄 때 소식, 감사 인사를 남길 때 소식] */

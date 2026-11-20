@@ -8,7 +8,7 @@ import { Sheet } from "@/shared/ui/Sheet";
 /** 두 칸을 다 쓰는 카드 */
 const WIDE = ["목표", "성장", "진로", "스타성", "이벤트", "챌린지"];
 
-/** 수준이 낮은 리그부터 */
+/** 수준이 낮은 리그부터. 자국 프로 리그는 국적마다 달라서(KBL·B리그·PBA·CBA·NBL) 대한민국 기준으로 보여줘요. */
 const LEAGUE_ORDER: LeagueKey[] = ["hs", "kuniv", "kbl", "ncaa", "gleague", "euro", "nba"];
 
 export function GuideDialog({ onClose }: { onClose: () => void }) {
@@ -23,7 +23,7 @@ export function GuideDialog({ onClose }: { onClose: () => void }) {
     [
       "진로",
       <>
-        리그 수준에 가까운 실력이어야 제안이 와요.
+        리그 수준에 가까운 실력이어야 제안이 와요. 국적마다 자국 리그가 달라요(B리그·PBA·CBA·NBL·LNB·ACB·ABA·CEBL). 미국·캐나다 선수는 다른 나라 리그의 외국선수로도 뛰어요.
         <span className="gd-leagues">{LEAGUE_ORDER.map((k) => LEAGUES[k].short).join(" → ")}</span>
       </>,
     ],

@@ -117,7 +117,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 |---|---|---|
 | `core/` | 모든 곳이 쓰는 바탕 | `types` 저장 데이터 모양, `data` 공통 상수·룰셋 버전, `random` 시드 난수, `util` 작은 도우미 |
 | `player/` | 선수 자체 | `create` 후보 생성·커리어 시작, `challenge` 챌린지 모드의 그날·포지션별 정해진 선수, `players` 플레이 유형·외모, `ratings` 오버롤·출전 시간·연봉, `specialty` 히든 스탯, `condition` 능력치·건강 범위 |
-| `world/` | 리그와 제도 | `leagues` 리그·구단·학교, `awards` 리그별 상 이름, `draft` 드래프트, `national` 국가대표, `military` 병역, `standings` 시즌 순위표 |
+| `world/` | 리그와 제도 | `leagues` 리그·구단·학교, `paths` 국적별 진로(대학·프로 리그·드래프트·아시아쿼터·외국선수·육성 환경), `awards` 리그별 상 이름, `draft` 드래프트, `national` 국가대표, `military` 병역, `standings` 시즌 순위표 |
 | `season/` | 시즌 흐름과 결정 | `season` 시즌 진행·성장·시상, `live` 결승 중계, `offseason` 오프시즌과 결정 대기열, `events` 이벤트, `decisions` 진로·계약 결정, `actions` 결정 처리 |
 | `economy/` | 돈 쓰기 | `invest` 시즌 투자, `shop` 상점·기부 |
 | `career/` | 커리어 기록과 저장 | `career` 은퇴·요약·레거시, `playoffs` 플레이오프 통산(정규시즌 통산과 따로), `log` 소식·수상·입단 기록, `storage` localStorage 저장·마이그레이션·은퇴 기록 지우기, 브라우저 업적과 누적 기록 |

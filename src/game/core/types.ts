@@ -9,9 +9,13 @@ export type AttrKey = "sht" | "hdl" | "pas" | "def" | "iq" | "ath";
 export type Attrs = Record<AttrKey, number>;
 
 export type PosKey = "PG" | "SG" | "SF" | "PF" | "C";
-/** hs 고교, kuniv 국내 대학(U-리그), ncaa 미국 대학, kbl, gleague NBA G리그, euro 유로리그, nba */
-export type LeagueKey = "hs" | "kuniv" | "ncaa" | "kbl" | "gleague" | "euro" | "nba";
-export type ProLeagueKey = "kbl" | "gleague" | "euro" | "nba";
+/**
+ * hs 고교, kuniv 국내 대학(U-리그), ncaa 미국 대학, kbl, gleague NBA G리그, euro 유로리그, nba.
+ * 북미 리그: usports 캐나다 대학(U 스포츠), cebl 캐나다 CEBL.
+ * 아시아 리그: juniv 일본 대학, uaap 필리핀 대학, cubal 중국 대학, bleague 일본 B.프리미어, pba 필리핀, cba 중국, nbl 호주.
+ */
+export type LeagueKey = "hs" | "kuniv" | "juniv" | "uaap" | "cubal" | "usports" | "ncaa" | "kbl" | "pba" | "cebl" | "cba" | "bleague" | "nbl" | "aba" | "lnb" | "acb" | "gleague" | "euro" | "nba";
+export type ProLeagueKey = "kbl" | "pba" | "cebl" | "cba" | "bleague" | "nbl" | "aba" | "lnb" | "acb" | "gleague" | "euro" | "nba";
 export type Region = "asia" | "europe" | "americas";
 export type CareerPath = "abroad" | "domestic";
 /** military: 상무 또는 현역으로 군 복무 중 */
@@ -485,8 +489,8 @@ export interface Military {
 
 /* ---------- 결정과 선택지 ---------- */
 
-/** 신청할 수 있는 드래프트 */
-export type DraftKey = "nba" | "kbl";
+/** 신청할 수 있는 드래프트. NBA와 자국 프로 리그의 신인드래프트예요. */
+export type DraftKey = "nba" | "kbl" | "bleague" | "pba" | "cba";
 
 export type Action =
   | { k: "school"; lg: LeagueKey; team: Team; walk?: boolean }

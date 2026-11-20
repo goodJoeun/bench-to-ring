@@ -1,6 +1,6 @@
 import { POS, POS_GROWTH } from "../core/data";
 import { TRAITS } from "../player/players";
-import { forcedRetirement, nbaOffer, resolveQueue, retirementPrompt } from "./decisions";
+import { forcedRetirement, nbaOffer, proDraftEntry, resolveQueue, retirementPrompt } from "./decisions";
 import { lifeEvent } from "./events";
 import { addNews, pickTeam } from "../career/log";
 import { endService, militaryDecision } from "../world/military";
@@ -107,7 +107,9 @@ export function runOffseason(c: Career, finishedYear: number, natCall: Decision 
     c.contract.years--;
     if (c.contract.years <= 0) q.push({ lazy: "fa" });
     else {
-      const offer = chance(0.6) ? nbaOffer(c) : null;
+      // 어린 프로 선수는 NBA 드래프트에 나설지 먼저 물어요. 대상이 아니면(대부분) 난수를 쓰지 않고 넘어가요.
+      const entry = proDraftEntry(c);
+      const offer = entry ?? (chance(0.6) ? nbaOffer(c) : null);
       if (offer) q.push(offer);
       // 구단이 트레이드를 추진하면 갑자기 옮기지 않고 받아들일지 물어요.
       // 은퇴를 묻는 오프시즌에는 묻지 않아요. 옮긴 팀에서 한 경기도 안 뛰고 은퇴하면 엔딩과 랭킹의 팀이 엇갈려요.

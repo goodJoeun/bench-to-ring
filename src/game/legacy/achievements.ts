@@ -3,6 +3,7 @@ import { ATTR_RANGE } from "../player/condition";
 import { evalOvr } from "../player/ratings";
 import { starNeed } from "../player/star";
 import { LEAGUES } from "../world/leagues";
+import { pathOf } from "../world/paths";
 import { PLAYOFF_SPOTS, seasonStandings } from "../world/standings";
 import { addNews, cheer } from "../career/log";
 import { shopItem } from "../economy/shop";
@@ -112,6 +113,14 @@ export interface Achievement {
 }
 
 const PRO_LEAGUES: LeagueKey[] = ["nba", "euro", "gleague", "kbl"];
+/**
+ * KBL 업적은 다른 국적 선수에게는 자국 프로 리그(일본 B.리그, 필리핀 PBA, 중국 CBA, 호주 NBL, 미국 G리그, 캐나다 CEBL…) 업적이에요.
+ * 국적마다 진로가 달라도 같은 업적을 딸 수 있게, 업적의 'KBL' 자리를 그 선수의 자국 리그로 읽어요.
+ */
+const homeLg = (v: View): LeagueKey => pathOf(v.c.p.nat).pro;
+const slotOf = (v: View, lg: LeagueKey): LeagueKey => (lg === "kbl" ? homeLg(v) : lg);
+const HOME_NOTE = " (다른 국적은 자국 프로 리그)";
+const noteOf = (lg: LeagueKey): string => (lg === "kbl" ? HOME_NOTE : "");
 
 /** 스타성 업적 문턱: 인기 선수(예능 제안), 슈퍼스타(시그니처 농구화 제안), 아이콘 */
 const STAR_POPULAR = starNeed("variety");
@@ -125,7 +134,7 @@ const proYears = (v: View, keys: AwardKey[]) => new Set(v.proAwards.filter((a) =
 /** 프로 시즌에 그 상을 받은 횟수 */
 const proCount = (v: View, k: AwardKey) => v.proAwards.filter((a) => a.k === k).length;
 const BENCH = ["벤치", "엔드 오브 벤치"];
-const COLLEGE: (LeagueKey | null)[] = ["kuniv", "ncaa"];
+const COLLEGE: (LeagueKey | null)[] = ["kuniv", "ncaa", "juniv", "uaap", "cubal", "usports"];
 /** 고교·대학 전국대회 우승 */
 const amateurChamp = (h: SeasonRecord) => !h.pro && h.result === "전국대회 우승";
 /** 개인수상 컬렉터: 정규시즌 MVP는 NBA MVP도 쳐요. */
@@ -236,7 +245,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "campus_legend",
     name: "캠퍼스의 전설",
-    desc: "대학(U-리그·NCAA) 시절 MVP 2회 이상", hint: "대학 코트에서 한 번으로는 모자라요",
+    desc: "대학 시절 MVP 2회 이상", hint: "대학 코트에서 한 번으로는 모자라요",
     group: "school",
     test: (v) => v.seasons.filter((h) => COLLEGE.includes(h.lg) && v.mvp.has(h.year)).length >= 2,
   },
@@ -276,10 +285,10 @@ export const ACHIEVEMENTS: Achievement[] = [
     (lg): Achievement => ({
       id: `dynasty_${lg}`,
       name: `${LEAGUES[lg].short} 왕조 건설`,
-      desc: `${LEAGUES[lg].short}에서 3시즌 연속 우승`,
+      desc: `${LEAGUES[lg].short}${noteOf(lg)}에서 3시즌 연속 우승`,
       hint: `${LEAGUES[lg].short} 정상을 쉽게 내주지 마세요`,
       group: "team",
-      test: (v) => longestRun(v.seasons, (h) => h.lg === lg && champ(h)) >= 3,
+      test: (v) => longestRun(v.seasons, (h) => h.lg === slotOf(v, lg) && champ(h)) >= 3,
     }),
   ),
   { id: "captain", name: "캡틴", desc: "소속팀 주장 완장을 차기", hint: "베테랑이 되면 감독이 먼저 부탁해 올 거예요", group: "team", test: (v) => v.c.milestones.includes("captain") },
@@ -401,10 +410,10 @@ export const ACHIEVEMENTS: Achievement[] = [
     (lg): Achievement => ({
       id: `ruler_${lg}`,
       name: `${LEAGUES[lg].short}의 지배자`,
-      desc: `${LEAGUES[lg].short}에서 3시즌 연속 MVP`,
+      desc: `${LEAGUES[lg].short}${noteOf(lg)}에서 3시즌 연속 MVP`,
       hint: `${LEAGUES[lg].short} 최고의 선수 자리를 지켜내세요`,
       group: "award",
-      test: (v) => longestRun(v.seasons, (h) => h.lg === lg && isMvp(v, h)) >= 3,
+      test: (v) => longestRun(v.seasons, (h) => h.lg === slotOf(v, lg) && isMvp(v, h)) >= 3,
     }),
   ),
   {
@@ -600,28 +609,28 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "reverse_export",
     name: "역수출 신화",
-    desc: "KBL MVP를 받은 뒤 NBA 진출", hint: "국내 리그 최고가 된 뒤 더 큰 무대로",
+    desc: `KBL${HOME_NOTE} MVP를 받은 뒤 NBA 진출`, hint: "국내 리그 최고가 된 뒤 더 큰 무대로",
     group: "path",
     test: (v) => {
-      const kblMvp = v.pro.find((h) => h.lg === "kbl" && isMvp(v, h));
+      const kblMvp = v.pro.find((h) => h.lg === homeLg(v) && isMvp(v, h));
       return !!kblMvp && v.pro.some((h) => h.lg === "nba" && h.year > kblMvp.year);
     },
   },
   {
     id: "world_tour",
     name: "월드 투어",
-    desc: "KBL·G리그·유로리그·NBA 네 리그를 모두 경험", hint: "여권에 도장을 많이 찍어 보세요",
+    desc: `KBL${HOME_NOTE}·G리그·유로리그·NBA 네 리그를 모두 경험`, hint: "여권에 도장을 많이 찍어 보세요",
     group: "path",
-    test: (v) => PRO_LEAGUES.every((lg) => v.pro.some((h) => h.lg === lg)),
+    test: (v) => PRO_LEAGUES.every((lg) => v.pro.some((h) => h.lg === slotOf(v, lg))),
   },
   {
     id: "homecoming",
     name: "금의환향",
-    desc: "NBA에서 뛴 뒤 KBL로 돌아와 우승", hint: "꿈의 무대를 거쳐 고향 코트로",
+    desc: `NBA에서 뛴 뒤 KBL${HOME_NOTE}로 돌아와 우승`, hint: "꿈의 무대를 거쳐 고향 코트로",
     group: "path",
     test: (v) => {
       const nba = v.pro.findIndex((h) => h.lg === "nba");
-      return nba >= 0 && v.pro.slice(nba + 1).some((h) => h.lg === "kbl" && champ(h));
+      return nba >= 0 && v.pro.slice(nba + 1).some((h) => h.lg === homeLg(v) && champ(h));
     },
   },
   {

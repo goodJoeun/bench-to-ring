@@ -31,7 +31,21 @@ const MONO_OVERRIDE: Record<string, string> = {
   "안양 정관장 레드부스터스": "정관장",
   "대구 한국가스공사 페가수스": "가스",
   "필라델피아 76ers": "76",
+  "애들레이드 36ers": "36",
+  "센다이 89ERS": "89",
+  "필리핀대(UP)": "UP",
   ASVEL: "ASV",
+  "U-BT 클루지나포카": "UBT",
+  "SC 데르비": "데르",
+  // NCAA는 첫 글자만 써서 미시간주립대(미)와 겹쳐요.
+  미시간대: "UM",
+  "세인트프랜시스 제이비어대": "StFX",
+  // 같은 리그 안에서 앞 글자가 겹치는 구단은 도시 이름으로 줄여요.
+  "바스켓 사라고사": "사라",
+  "바스케트 지로나": "지로",
+  "바스케트 코루냐": "코루",
+  "엘랑 샬롱": "샬롱",
+  "엘랑 베아르네": "베아",
 };
 
 const NAT_CODE: Record<string, string> = {
@@ -55,8 +69,8 @@ const SKIP_LATIN = new Set(["FC", "LA"]);
 /**
  * 이름에서 짧은 글자를 뽑아요.
  * - 영문·숫자 단어가 있으면 그대로 (SK, LG, UCLA, 905). FC·LA는 건너뛰어요.
- * - 고교·U-리그는 학교 이름 앞 두 글자 (용산, 고려), NCAA는 첫 글자 (듀)
- * - KBL은 모기업 이름 (삼성, 소노), 그 밖의 프로는 애칭 앞 두 글자 (셀틱, 레이)
+ * - 고교·U-리그·아시아 대학은 학교 이름 앞 두 글자 (용산, 고려, 도카), NCAA는 첫 글자 (듀)
+ * - KBL은 모기업 이름 (삼성, 소노), 유럽 구단은 이름 앞 두 글자 (레알, 우니), 그 밖의 프로는 애칭 앞 두 글자 (셀틱, 레이)
  */
 function monogram(name: string, kind: EmblemKind): string {
   if (MONO_OVERRIDE[name]) return MONO_OVERRIDE[name];
@@ -65,10 +79,10 @@ function monogram(name: string, kind: EmblemKind): string {
   const latin = words.find((w) => isLatin(w) && !SKIP_LATIN.has(w));
   if (latin) return latin.slice(0, 4);
   const school = words[0].replace(/(대학교|대|고)$/, "");
-  if (kind === "hs" || kind === "kuniv" || kind === "mil") return school.slice(0, 2);
+  if (kind === "hs" || kind === "kuniv" || kind === "juniv" || kind === "uaap" || kind === "cubal" || kind === "usports" || kind === "mil") return school.slice(0, 2);
   if (kind === "ncaa") return school.slice(0, 1);
   if (kind === "kbl") return (words[1] ?? words[0]).slice(0, 2);
-  if (kind === "euro") return words.filter((w) => w !== "FC")[0].slice(0, 2);
+  if (kind === "euro" || kind === "lnb" || kind === "acb" || kind === "aba") return words.filter((w) => w !== "FC")[0].slice(0, 2);
   return words[words.length - 1].slice(0, 2);
 }
 
