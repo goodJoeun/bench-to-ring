@@ -222,9 +222,12 @@ export function careerJourney(c: Career): JourneyStep[] {
   return steps;
 }
 
-export function legacyOf(o: Omit<CareerSummary, "legacy">): string {
+type LegacyInput = Pick<CareerSummary, "mvp" | "rings" | "awards" | "personal" | "peak" | "pts" | "seasons">;
+
+/** 레거시 점수: NBA MVP·우승·파이널 MVP·베스트 팀·다른 리그 MVP·올스타·개인상, 최고 오버롤, 프로 통산 득점 */
+export function legacyScore(o: LegacyInput): number {
   const a = o.awards;
-  const score =
+  return (
     o.mvp * 30 +
     o.rings * 8 +
     (a.fmvp ?? 0) * 8 +
@@ -233,8 +236,45 @@ export function legacyOf(o: Omit<CareerSummary, "legacy">): string {
     (a.allstar ?? 0) * 3 +
     o.personal +
     Math.max(0, o.peak - 70) * 2 +
-    o.pts / 1500;
-  if (!o.seasons) return "코트를 사랑한 선수";
+    o.pts / 1500
+  );
+}
+
+/**
+ * 레거시 등급. 위에서부터 조건을 처음 채우는 등급이에요(score는 legacyScore, mvp는 NBA MVP 횟수, seasons는 프로 시즌 수).
+ * 무작위 선택 커리어 3,000개에서 가장 흔한 등급도 22%를 넘지 않고, 명예의 전당(두 등급)은 약 23%예요.
+ * 상점·투자를 다 쓰는 최적화 플레이(커리어 600개)도 맨 위 등급은 약 15%예요.
+ * 예전 이름(역대 최고 논쟁의 주인공, 명예의 전당 헌액, 리그의 레전드, 올스타급 커리어, 오래 사랑받은 베테랑, 프로의 꿈을 이룬 선수)은 그대로 써요.
+ */
+export const LEGACY_TIERS: ReadonlyArray<{ name: string; test: (score: number, o: LegacyInput) => boolean }> = [
+  { name: "역대 최고 논쟁의 주인공", test: (s, o) => s >= 600 && o.mvp >= 5 },
+  { name: "한 시대를 지배한 슈퍼스타", test: (s, o) => s >= 400 && o.mvp >= 3 },
+  { name: "명예의 전당 1순위 헌액", test: (s) => s >= 260 },
+  { name: "명예의 전당 헌액", test: (s) => s >= 180 },
+  { name: "리그의 레전드", test: (s) => s >= 120 },
+  { name: "올스타급 커리어", test: (s) => s >= 75 },
+  { name: "팀의 든든한 주전", test: (s) => s >= 40 },
+  { name: "오래 사랑받은 베테랑", test: (_, o) => o.seasons >= 10 },
+  { name: "묵묵한 롤 플레이어", test: (_, o) => o.seasons >= 5 },
+  { name: "프로의 꿈을 이룬 선수", test: () => true },
+];
+
+/** 프로 무대를 밟지 못한 선수의 레거시 */
+const NO_PRO_LEGACY = "코트를 사랑한 선수";
+
+export function legacyOf(o: LegacyInput): string {
+  if (!o.seasons) return NO_PRO_LEGACY;
+  const score = legacyScore(o);
+  return LEGACY_TIERS.find((t) => t.test(score, o))!.name;
+}
+
+/**
+ * 2026-11-20 전 레거시 등급(여섯 단계). 그 전 화면이 등급을 붙여 대기열에 넣어 둔 은퇴 기록도
+ * 서버가 받아 줄 수 있게 남겨요(server/leaderboard/validate.ts). 받은 기록은 지금 등급으로 바꿔 저장해요.
+ */
+export function legacyOfV1(o: LegacyInput): string {
+  const score = legacyScore(o);
+  if (!o.seasons) return NO_PRO_LEGACY;
   if (score >= 200 && o.mvp >= 3) return "역대 최고 논쟁의 주인공";
   if (score >= 95) return "명예의 전당 헌액";
   if (score >= 55) return "리그의 레전드";
@@ -303,6 +343,7 @@ export function careerSummary(c: Career): CareerSummary {
     nba: nbaShare(c),
     leagues: leagueShares(c),
     look: playerLook(c.p),
+    ...(c.challenge && { challenge: c.challenge }),
   };
   return { ...base, legacy: legacyOf(base) };
 }

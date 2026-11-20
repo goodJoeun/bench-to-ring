@@ -1,6 +1,6 @@
 /**
- * 저장된 은퇴 기록에서 계산해 둔 칸(랭킹 점수 score, NBA 진출 nba, 스틸·블록·3점슛·기부금)을 다시 계산해요.
- * 점수 계산(src/game/legacy/hall.ts의 rankScore)이나 가중치, NBA 팀 목록을 바꾼 뒤 돌려요. 계산은 src/server/leaderboard/columns.ts예요.
+ * 저장된 은퇴 기록에서 계산해 둔 칸(랭킹 점수 score, NBA 진출 nba, 스틸·블록·3점슛·기부금, 레거시 등급 legacy)을 다시 계산해요.
+ * 점수 계산(src/game/legacy/hall.ts의 rankScore)이나 가중치, NBA 팀 목록, 레거시 등급(src/game/career/career.ts의 legacyOf)을 바꾼 뒤 돌려요. 계산은 src/server/leaderboard/columns.ts예요.
  * 기록에 저장된 은퇴 요약(summary)으로 계산하고, 값이 달라진 기록만 고쳐요. 기록이 많아도 메모리를 넘지 않게 BATCH개씩 읽어요.
  *
  * npm run db:rescore    .env.local의 DATABASE_URL에 연결해요. 배포 DB면 실제 기록이 바뀌어요.
@@ -23,13 +23,13 @@ const sql = postgres(url, options);
 
 type Derived = ReturnType<typeof derivedColumns>;
 type Row = Derived & { id: string; summary: CareerSummary };
-const KEYS = ["score", "nba", "stl", "blk", "tpm", "donated"] as const satisfies readonly (keyof Derived)[];
+const KEYS = ["score", "nba", "stl", "blk", "tpm", "donated", "legacy"] as const satisfies readonly (keyof Derived)[];
 
 let total = 0;
 let fixed = 0;
 // id 순서로 이어 읽어요 (keyset). offset과 달리 뒤로 갈수록 느려지지 않아요.
 for (let after = "00000000-0000-0000-0000-000000000000"; ; ) {
-  const rows = await sql<Row[]>`select id, score, nba, stl, blk, tpm, donated, summary from careers
+  const rows = await sql<Row[]>`select id, score, nba, stl, blk, tpm, donated, legacy, summary from careers
     where id > ${after}::uuid order by id limit ${BATCH}`;
   if (!rows.length) break;
   after = rows[rows.length - 1].id;
@@ -39,11 +39,11 @@ for (let after = "00000000-0000-0000-0000-000000000000"; ; ) {
   if (!changed.length) continue;
   fixed += changed.length;
   const col = <K extends (typeof KEYS)[number]>(k: K) => changed.map((c) => c.to[k]);
-  await sql`update careers set score = v.score, nba = v.nba, stl = v.stl, blk = v.blk, tpm = v.tpm, donated = v.donated
+  await sql`update careers set score = v.score, nba = v.nba, stl = v.stl, blk = v.blk, tpm = v.tpm, donated = v.donated, legacy = v.legacy
     from unnest(
       ${changed.map((c) => c.id)}::uuid[], ${col("score")}::float8[], ${col("nba")}::bool[],
-      ${col("stl")}::int[], ${col("blk")}::int[], ${col("tpm")}::int[], ${col("donated")}::float8[]
-    ) as v(id, score, nba, stl, blk, tpm, donated)
+      ${col("stl")}::int[], ${col("blk")}::int[], ${col("tpm")}::int[], ${col("donated")}::float8[], ${col("legacy")}::text[]
+    ) as v(id, score, nba, stl, blk, tpm, donated, legacy)
     where careers.id = v.id`;
 }
 await sql.end();

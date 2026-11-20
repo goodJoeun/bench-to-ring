@@ -475,10 +475,11 @@ export interface Military {
   s: "none" | "serving" | "served" | "exempt";
   kind?: MilitaryKind;
   /** 입대 전 상태. 전역하면 되돌려요. */
-  prev?: { stage: Stage; team: CurrentTeam | null; contract: Contract | null };
+  /** 입대 전 상태. 전역하면 되돌려요. 코치 신뢰(trust)는 예전 저장에는 없어요. */
+  prev?: { stage: Stage; team: CurrentTeam | null; contract: Contract | null; trust?: number };
   /** 다음에 입대 결정을 물어볼 나이 */
   ask?: number;
-  /** 전역 후 첫 시즌: 시즌 중반에 합류해요. */
+  /** 전역 후 첫 시즌: 시즌 초반을 지나 합류해요. */
   back?: boolean;
 }
 
@@ -719,6 +720,13 @@ export interface Contract {
 
 /* ---------- 커리어 ---------- */
 
+/** 챌린지 모드로 시작한 커리어의 표시: 시작한 날(한국 시간 `YYYY-MM-DD`)과 그날 고른 포지션 (player/challenge.ts) */
+export interface ChallengeTag {
+  day: string;
+  /** 시작 포지션. 커리어 도중 포지션을 바꿔도 그대로예요. */
+  pos: PosKey;
+}
+
 export interface CareerSummary {
   id: string;
   name: string;
@@ -760,6 +768,8 @@ export interface CareerSummary {
   leagues?: Partial<Record<LeagueKey, LeagueShare>>;
   /** 캐릭터. 예전 기록에는 없고, 캐릭터를 고르기 전 기록에는 색만 있어요. */
   look?: LookRecord;
+  /** 챌린지 모드로 뛴 커리어면 그 날짜와 시작 포지션. 온라인 랭킹이 그날 챌린지 순위표에도 올려요. */
+  challenge?: ChallengeTag;
 }
 
 /** 커리어 가운데 한 리그에서 쌓은 시즌·기록과 그 시즌에 받은 상 (국가대표 메달은 빼요) */
@@ -870,6 +880,8 @@ export interface Career {
   donated: number;
   /** 마지막으로 이적을 요청한 오프시즌 (다음 시즌 연도) */
   moveAsked: number | null;
+  /** 챌린지 모드로 시작한 커리어면 그 날짜와 시작 포지션. 일반 커리어에는 없어요. */
+  challenge?: ChallengeTag;
 }
 
 export interface NewCareerInput {
@@ -883,4 +895,6 @@ export interface NewCareerInput {
   path: CareerPath;
   /** 입학할 고등학교 (국적의 hsSchools 이름). 없거나 그 나라 학교가 아니면 무작위로 정해요. */
   school?: string;
+  /** 챌린지 모드로 시작하면 그 날짜와 포지션을 커리어에 남겨요. */
+  challenge?: ChallengeTag;
 }

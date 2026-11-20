@@ -21,6 +21,7 @@ export {
   CAP_JITTER,
   SPIKE_CAP,
 } from "./player/create";
+export { dailyChallenge, type DailyChallenge } from "./player/challenge";
 export { CRITICAL_HEALTH, injuryKind, roundLine, roundRecord, simulateSeason, startSeason, stepSeason, seasonProgress, type SeasonStep } from "./season/season";
 export { draftSlot } from "./world/draft";
 export { NATIONS, NAT_EVENTS, natColor, natEventFor, simulateTournament, teamPower } from "./world/national";
@@ -72,6 +73,9 @@ export {
   retire,
   canRetire,
   legacyOf,
+  legacyOfV1,
+  legacyScore,
+  LEGACY_TIERS,
   sumSeasons,
   titleHistory,
   type AwardCount,
@@ -157,4 +161,4 @@ export {
   type SpecialtyHit,
   type SpecialtyKey,
 } from "./player/specialty";
-export { setRandom, resetRandom, seeded, shuffle } from "./core/random";
+export { setRandom, resetRandom, seeded, shuffle, withRandom } from "./core/random";

@@ -5,7 +5,7 @@ import { HEALTH_RANGE, addAttr, addHealth, clampTrust } from "../player/conditio
 import { ATTRS, POS, ROLE_RANK } from "../core/data";
 import { currentDecision } from "./decisions";
 import { FINAL_ASK_HEALTH, FINAL_CLUTCH_CHANCE, bigGameDecision, clutchDecision, drawClutchLead, injuryDecision, seasonEvent } from "./events";
-import { addStar, seasonStar } from "../player/star";
+import { STAR_TRAIT, addStar, seasonStar } from "../player/star";
 import { LEAGUES, SCORING_TITLE, leagueTeams } from "../world/leagues";
 import { FINAL_SCORE, finalScore, gameScore, makeLiveGame } from "./live";
 import { ALL_DEF_TIERS, ALL_LEAGUE_TIERS, awardName, conferenceFinalsMvpName, nbaConference } from "../world/awards";
@@ -51,6 +51,20 @@ import { clamp, fmtNum, josa, r1, round2, sigmoid } from "../core/util";
  * 실제로는 아래 기록 문턱(MVP는 20점)이 더 빡빡해서, 커리어 100개 중 5개 정도에서 NBA MVP가 나와요.
  */
 const MVP_AT = 15.5;
+/**
+ * 전역 후 첫 시즌에 뛰는 정규시즌 비율. 예전에는 0.6(시즌 중반 합류)이라, 조금만 다쳐도 시상 기준(경기 수 60%)에 못 미쳐
+ * 병역을 치른 선수가 다른 나라 선수보다 크게 뒤졌어요.
+ */
+const MIL_RETURN_SHARE = 0.8;
+/** 특성 스타성을 타고난 선수의 올스타(팬 투표)·베스트 팀(기자단 투표) 선정 지수에 더하는 값 */
+const STAR_FAN_VOTE = 3.5;
+const STAR_MEDIA_VOTE = 1.5;
+/** 기분파: 시즌 기록이 흔들리는 범위의 가운데를 이만큼 위로 올려요(신나는 시즌이 더 자주 와요). */
+const MOOD_LIFT = 0.07;
+/** 승부사: 시상 영향력에 더하는 값(큰 경기에 강한 선수로 기억돼요). 1이면 최상위 선수의 MVP 확률이 너무 크게 올라 0.5로 줄였어요. */
+const CLUTCH_AWARD_EDGE = 0.5;
+/** 리더십: 주전으로 시즌을 다 뛰면 더해지는 팀 승률 */
+const LEADER_WIN = 0.025;
 const NBA_MVP_AT = 1;
 /** NBA 올스타·올-NBA를 뽑는 스타 지수의 기준 영향력. MVP 문턱과 따로 둬서 MVP만 쉬워지게 했어요. */
 const NBA_STAR_AT = 3;
@@ -153,8 +167,8 @@ function injuryRisk(c: Career, min: number, inv: InvestKey[]): number {
   const risk =
     0.08 +
     (100 - c.health) / 300 +
-    (p.trait === "유리몸" ? 0.12 : 0) -
-    (p.trait === "강철몸" ? 0.05 : 0) +
+    (p.trait === "유리몸" ? 0.035 : 0) -
+    (p.trait === "강철몸" ? 0.07 : 0) +
     (p.trait === "연습벌레" ? 0.03 : 0) +
     (min / 38) * 0.07 -
     (c.focus === "rest" ? 0.06 : 0) +
@@ -299,8 +313,8 @@ function planTeamSeason(c: Career, run: SeasonRun): void {
   const rel = ovr0 - L.avg + c.trust + heightEdge;
   const min = clamp(18 + rel * 1.7 + rnd(-3, 3), 1.5, 38);
 
-  // 전역 후 첫 시즌은 시즌 중반에 합류해요. 부상은 경기마다 굴려요(playGame).
-  const gp = Math.round(L.games * (run.back ? 0.6 : 1));
+  // 전역 후 첫 시즌은 시즌 초반을 지나 합류해요(18개월 복무라 다음 시즌이 조금 지나 전역해요). 부상은 경기마다 굴려요(playGame).
+  const gp = Math.round(L.games * (run.back ? MIL_RETURN_SHARE : 1));
   run.out = L.games - gp;
   run.outWhy = run.out ? "합류 전" : "";
 
@@ -311,7 +325,9 @@ function planTeamSeason(c: Career, run: SeasonRun): void {
   const wsd = p.wsd;
   const f = min / 36;
   const vr = p.trait === "꾸준함" ? 0.05 : p.trait === "기분파" ? 0.2 : 0.1;
-  const st = (v: number) => Math.max(0, v * f * rnd(1 - vr, 1 + vr));
+  // 기분파는 기복이 큰 대신 신나는 시즌이 더 자주 와서, 가운데가 조금 위로 치우쳐요.
+  const lift = p.trait === "기분파" ? MOOD_LIFT : 0;
+  const st = (v: number) => Math.max(0, v * f * rnd(1 - vr + lift, 1 + vr + lift));
   // 에이스 몫: NBA에서 리그 평균보다 크게 앞선 선수는 공격을 더 맡아 슛을 더 많이 쏴요.
   const ace = team.lg === "nba" ? 1 + clamp((ovr0 - L.avg - NBA_ACE_FROM) * NBA_ACE_STEP, 0, NBA_ACE_CAP) : 1;
   run.mean = {
@@ -328,8 +344,8 @@ function planTeamSeason(c: Career, run: SeasonRun): void {
 
   // 팀 성적: 승수를 먼저 정하고, 경기마다 남은 승수를 나눠 줘요.
   team.q = clamp(team.q + rnd(-0.06, 0.06), 0.2, 0.8);
-  // 리더십: 뛴 만큼 팀 승률을 더 끌어올려요 (주전으로 시즌을 다 뛰면 +3%p).
-  const lead = p.trait === "리더십" ? 0.03 * clamp(min / 30, 0, 1) * (gp / L.games) : 0;
+  // 리더십: 뛴 만큼 팀 승률을 더 끌어올려요 (주전으로 시즌을 다 뛰면 +2.5%p).
+  const lead = p.trait === "리더십" ? LEADER_WIN * clamp(min / 30, 0, 1) * (gp / L.games) : 0;
   const contrib = (ovr0 - L.avg) * 0.011 * clamp(min / 30, 0, 1.2) * (gp / L.games) * (ovr0 > L.avg ? fx.team : 1) + lead;
   run.games = L.games;
   run.wins = Math.round(L.games * clamp(team.q + contrib + rnd(-0.06, 0.06), 0.1, 0.9));
@@ -526,7 +542,7 @@ function playGame(c: Career, run: SeasonRun, tag: string): void {
     addHealth(c, REST_HEAL);
     if (--run.out === 0) {
       if (run.outWhy === "부상") addNews(c, tag, "good", "부상에서 회복해 코트로 돌아왔어요.");
-      if (run.outWhy === "합류 전") addNews(c, tag, "info", "전역 후 시즌 중반부터 팀에 합류했어요.");
+      if (run.outWhy === "합류 전") addNews(c, tag, "info", "전역 후 시즌 초반을 지나 팀에 합류했어요.");
     }
   } else line.me = playMinutes(c, run);
   // 라이벌전은 내가 뛰어서 이겨야 세요.
@@ -606,7 +622,7 @@ function endRegularSeason(c: Career, run: SeasonRun, tag: string): void {
   const amateur = !LEAGUES[lg].pro;
   const wp = run.w / run.games;
   const playoffs = wp >= 0.55 || (wp >= 0.47 && chance(0.4));
-  const champ = playoffs && chance(sigmoid((wp - 0.63) / 0.05) * 0.6 + (c.p.trait === "승부사" ? 0.06 : c.p.trait === "새가슴" ? -0.03 : 0));
+  const champ = playoffs && chance(sigmoid((wp - 0.63) / 0.05) * 0.6 + (c.p.trait === "승부사" ? 0.06 : c.p.trait === "새가슴" ? -0.01 : 0));
   // KBL은 정규리그 1·2위가 6강을 건너뛰고 4강으로 직행해요. 54경기에서 1·2위는 대개 승률 6할 5푼 안팎이에요.
   const bye = playoffs && lg === "kbl" && (wp >= 0.65 || (wp >= 0.59 && chance(0.4)));
   // 몇 라운드를 치르는지: 우승이면 결승까지 모두, 아니면 진 라운드까지
@@ -849,7 +865,7 @@ function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord 
   const sh = L.short;
   const give = (k: AwardKey, tier = 1) => giveAward(c, k, awardName(lg, k, tier), rec);
   // 영향력 = 실력 몫(core) + 운(noise)
-  const core = (ovr0 - L.avg + (p.trait === "승부사" ? 1 : 0)) * clamp(min / 30, 0, 1.15);
+  const core = (ovr0 - L.avg + (p.trait === "승부사" ? CLUTCH_AWARD_EDGE : 0)) * clamp(min / 30, 0, 1.15);
   const noise = rnd(-2.5, 2.5);
   const impact = core + noise;
   const rookie = L.pro && c.proSeasons === 0;
@@ -863,8 +879,12 @@ function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord 
     if (mvp) give(nba ? "mvp_nba" : "mvp");
     // 스타 지수: MVP 문턱에 맞춘 영향력. NBA는 리그 평균에 가까운 NBA_STAR_AT을 MVP 문턱 자리에 두고 선수 간 차이가 좁아서,
     // 실력 몫만 펼치고 운은 그대로 더해요. 그래서 올스타·베스트 팀이 리그마다 MVP와 같은 눈높이로 뽑혀요.
-    const star = nba ? MVP_AT + (core - NBA_STAR_AT) * 5.5 + noise : impact;
-    if (L.pro && (mvp || (statsOk("allstar") && star >= 5 && chance(sigmoid((star - 7) / 1.4))))) give("allstar");
+    // 올스타는 팬 투표, 베스트 팀은 기자단 투표라서 특성 스타성을 타고난 선수가 더 잘 뽑혀요(올스타 STAR_FAN_VOTE, 베스트 팀 STAR_MEDIA_VOTE).
+    const starTrait = p.trait === STAR_TRAIT;
+    const level = nba ? MVP_AT + (core - NBA_STAR_AT) * 5.5 + noise : impact;
+    const fans = level + (starTrait ? STAR_FAN_VOTE : 0);
+    const star = level + (starTrait ? STAR_MEDIA_VOTE : 0);
+    if (L.pro && (mvp || (statsOk("allstar") && fans >= 5 && chance(sigmoid((fans - 7) / 1.4))))) give("allstar");
     // 베스트 팀: 베스트5 하나뿐인 리그는 예전 기준 그대로, 여러 팀이 있으면 기준을 낮추고 활약에 따라 팀을 나눠요. MVP는 늘 퍼스트팀이에요.
     const tiers = ALL_LEAGUE_TIERS[lg];
     if (mvp) give("allleague");
@@ -949,15 +969,19 @@ export function seasonProgress(run: SeasonRun): { label: string; pct: number } {
  * 특성별 성장 배율. 성장 특성(조기성장·대기만성·꾸준함·연습벌레·천재형)이 커리어 전체로는 비슷한 결과를 내도록 맞춘 값이에요.
  * 조기성장은 일찍 앞서는 대신 24세부터 확실히 느려지고, 대기만성은 늦게 출발해 22~28세에 크게 따라잡아 가장 높은 전성기에 닿아요.
  * 바꿀 때는 특성마다 커리어 1,000개를 돌려 최고 오버롤·랭킹 점수·NBA 진출률이 비슷한지 확인해요.
+ * 2026-11-20에 같은 시드·같은 후보로 특성만 바꿔 맞대 보며(무작위 선택 600개 × 13, 상점·투자를 다 쓰는 최적화 플레이 300개 × 13)
+ * 특성끼리 랭킹 점수 차이를 무작위 선택 37 → 15점, 최적화 플레이 100 → 46점으로 줄였어요.
  */
 const TRAIT_GROWTH = {
-  early: { youth: 1.15, late: 0.65 },
-  bloomer: { youth: 0.9, peak: 1.35, from: 22, to: 28 },
-  steady: 1.05,
+  early: { youth: 1.15, late: 0.7 },
+  bloomer: { youth: 0.9, peak: 1.27, from: 22, to: 28 },
+  steady: 1.03,
   /** 연습벌레: 균형 훈련과 집중 훈련 배율 */
-  worker: { bal: 1.15, focus: 2.1 },
+  worker: { bal: 1.12, focus: 1.6 },
   /** 천재형: BQ 성장 배율과, 떨어질 때 남기는 몫 */
-  genius: { grow: 1.35, decline: 0.5 },
+  genius: { grow: 1.25, decline: 0.5 },
+  /** 강철몸: 나이로 떨어지는 폭 배율 */
+  iron: 0.7,
 };
 
 /**
@@ -987,7 +1011,7 @@ function grow(c: Career, min: number, rating: number, tag: string, inv: InvestPe
   } else {
     // 대기만성은 떨어지기 시작한 첫 두 해(33·34세)에 덜 떨어져요.
     if (t === "대기만성" && age <= DECLINE_START_AGE + 1) tf = 0.5;
-    if (t === "강철몸") tf = 0.7;
+    if (t === "강철몸") tf = G.iron;
   }
   // 잠재력까지 남은 여유가 클수록 빨리 커요. 잠재력에 가까워져도 0.3배는 남겨요.
   // 27세까지는 잠재력에 닿아도 0.45배로 조금씩 더 커서, 20대 중반에도 성장이 이어져요. 그 뒤로는 거의 멈춰요.

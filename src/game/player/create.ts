@@ -178,6 +178,7 @@ export function createCareer(input: NewCareerInput, cand: Candidate, id = String
     finalClutchWins: 0,
     rivalWins: 0,
   };
+  if (input.challenge) c.challenge = { day: input.challenge.day, pos: input.challenge.pos };
   refreshShop(c);
   // 고교는 국적에 맞는 학교(유럽은 유소년 아카데미) 중에서 정해요.
   const schools = hsSchools(c.p.nat);

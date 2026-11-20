@@ -6,7 +6,7 @@ import { allTimeCounts, rankOf } from "./boards";
 import { derivedColumns } from "./columns";
 import { db } from "../db/db";
 import { careers } from "../db/schema";
-import type { SubmittedSummary } from "./validate";
+import { acceptedChallenge, type SubmittedSummary } from "./validate";
 
 /** 같은 플레이어는 이 간격 안에 다시 제출할 수 없어요. */
 export const SUBMIT_INTERVAL_MS = 60_000;
@@ -22,8 +22,12 @@ export async function lastSubmittedAt(playerId: string): Promise<Date | null> {
   return row?.at ?? null;
 }
 
-/** 저장하고 기록 id를 돌려줘요. 이미 제출한 커리어면 null이에요. */
-export async function insertCareer(playerId: string, s: SubmittedSummary): Promise<string | null> {
+/**
+ * 저장하고 기록 id를 돌려줘요. 이미 제출한 커리어면 null이에요.
+ * 챌린지 기록이고 접수 기간 안이면(acceptedChallenge) 그날 챌린지 순위표에도 올라가게 날짜와 포지션을 적어요.
+ */
+export async function insertCareer(playerId: string, s: SubmittedSummary, now = Date.now()): Promise<string | null> {
+  const challenge = acceptedChallenge(s, now);
   const rows = await db()
     .insert(careers)
     .values({
@@ -43,8 +47,9 @@ export async function insertCareer(playerId: string, s: SubmittedSummary): Promi
       rings: s.rings,
       seasons: s.seasons,
       retAge: s.retAge,
-      legacy: s.legacy,
       summary: s,
+      challengeDay: challenge?.day ?? null,
+      challengePos: challenge?.pos ?? null,
     })
     .onConflictDoNothing({ target: [careers.playerId, careers.careerId] })
     .returning({ id: careers.id });

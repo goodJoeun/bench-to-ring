@@ -2,7 +2,8 @@ import { revalidateTag } from "next/cache";
 import { playerFrom } from "@/server/auth";
 import { BOARDS_TAG } from "@/server/leaderboard/boards";
 import { SUBMIT_INTERVAL_MS, insertCareer, lastSubmittedAt, ranksOf } from "@/server/leaderboard/careers";
-import { checkSummary } from "@/server/leaderboard/validate";
+import { myChallenge } from "@/server/leaderboard/challenge";
+import { acceptedChallenge, checkSummary } from "@/server/leaderboard/validate";
 import type { ApiError, SubmitResult } from "@/shared/leaderboard/types";
 
 /** 은퇴 요약 한 건이 수 KB를 넘지 않아요. */
@@ -10,7 +11,7 @@ const MAX_BODY = 16_000;
 
 const fail = (status: number, error: string) => Response.json({ error } satisfies ApiError, { status });
 
-/** 은퇴 기록 제출. 응답에 역대 전체 순위와 포지션 순위를 담아요. */
+/** 은퇴 기록 제출. 응답에 역대 전체 순위와 포지션 순위를 담아요. 챌린지 기록이면 그날 챌린지 순위도 담아요. */
 export async function POST(req: Request) {
   const playerId = await playerFrom(req);
   if (!playerId) return fail(401, "플레이어 토큰이 없거나 맞지 않아요.");
@@ -29,11 +30,17 @@ export async function POST(req: Request) {
   const last = await lastSubmittedAt(playerId);
   if (last && Date.now() - last.getTime() < SUBMIT_INTERVAL_MS) return fail(429, "잠시 뒤에 다시 제출해 주세요.");
 
-  const id = await insertCareer(playerId, checked.summary);
+  const now = Date.now();
+  const id = await insertCareer(playerId, checked.summary, now);
   if (!id) return fail(409, "이미 제출한 커리어예요.");
   // 은퇴하고 바로 순위표를 열면 내 기록이 보이게, 묵은 순위표를 내주지 않고 바로 다시 계산해요.
   // 올린 브라우저는 CDN 캐시를 건너뛰어 불러요(shared/leaderboard/cdn.ts).
   revalidateTag(BOARDS_TAG, { expire: 0 });
-  const ranks = await ranksOf(id);
-  return Response.json(ranks satisfies SubmitResult, { status: 201 });
+  const ranks: SubmitResult = await ranksOf(id);
+  const tag = acceptedChallenge(checked.summary, now);
+  if (tag) {
+    const mine = (await myChallenge(playerId, tag.day)).find((m) => m.pos === tag.pos);
+    if (mine) ranks.challenge = { day: tag.day, ...mine };
+  }
+  return Response.json(ranks, { status: 201 });
 }

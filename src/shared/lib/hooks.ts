@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { kstDay } from "@/shared/leaderboard/days";
 
 export const reducedMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -55,4 +56,12 @@ export function useReveal(count: number, delay: (i: number) => number, opts: { r
   }, [running, shown, count, wait, doneRef]);
 
   return [shown, setShown] as const;
+}
+
+const subscribeNever = () => () => {};
+const readToday = () => kstDay(Date.now());
+
+/** 오늘의 한국 날짜 `YYYY-MM-DD`. 화면이 열려 있는 동안에는 바꾸지 않고, 서버 렌더링에서는 빈 문자열이에요. */
+export function useKstToday(): string {
+  return useSyncExternalStore(subscribeNever, readToday, () => "");
 }

@@ -14,6 +14,49 @@ export interface SubmitResult {
   total: number;
   posRank: number;
   posTotal: number;
+  /** 챌린지 기록이 그날 챌린지 순위표에 올라갔으면 그 포지션에서 내 성적. 일반 기록이나 접수 기간이 지난 기록에는 없어요. */
+  challenge?: { day: string } & ChallengeStanding;
+}
+
+/** 챌린지 순위표의 한 줄: 그날 그 포지션에서 한 플레이어의 가장 좋은 기록. rank와 posRank는 둘 다 그 포지션 안의 순위예요. */
+export interface ChallengeEntry extends BoardEntry {
+  /** 이 플레이어가 그날 이 포지션에 올린 기록 수 (도전 횟수) */
+  tries: number;
+}
+
+/** 그날 한 포지션의 챌린지 순위표 */
+export interface ChallengePosBoard {
+  /** 상위 50명 */
+  top: ChallengeEntry[];
+  /** 기록을 올린 플레이어 수. 순위는 이 가운데서 매겨요. */
+  players: number;
+  /** 올라온 기록 수 (같은 플레이어의 여러 도전을 모두 세요) */
+  runs: number;
+}
+
+/** GET /api/challenge?day=: 그날(한국 시간) 챌린지의 포지션별 순위표 */
+export interface ChallengeBoard {
+  day: string;
+  boards: Record<PosKey, ChallengePosBoard>;
+}
+
+/** 그날 한 포지션에서 내 챌린지 성적: 가장 좋은 기록과 그 순위 */
+export interface ChallengeStanding {
+  /** 챌린지 포지션 (시작 포지션) */
+  pos: PosKey;
+  /** 가장 좋은 기록의 서버 기록 id와 브라우저 커리어 id */
+  id: string;
+  careerId: string;
+  rank: number;
+  players: number;
+  tries: number;
+  score: number;
+}
+
+/** GET /api/challenge/mine?day=: 이 플레이어의 그날 챌린지 성적. 도전한 포지션만 들어 있어요. */
+export interface MyChallenge {
+  day: string;
+  mine: ChallengeStanding[];
 }
 
 /** GET /api/boards의 범위: 한 룰셋 안 또는 역대 전체 */

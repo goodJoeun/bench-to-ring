@@ -15,6 +15,7 @@ import {
   simulateSeason,
   type Career,
   type CareerSummary,
+  type PosKey,
 } from "@/game";
 import { kstDay } from "@/shared/leaderboard/days";
 import { STAT_KEYS } from "@/shared/leaderboard/types";
@@ -35,6 +36,7 @@ vi.mock("../../db/db", () => ({ db: () => testDb }));
 const { getBoard, getBoardDays, myRanks } = await import("../boards");
 const { deleteCareer, insertCareer, ranksOf } = await import("../careers");
 const { getStatBoard } = await import("../stats");
+const { getChallengeBoard, myChallenge } = await import("../challenge");
 
 const PLAYERS = ["00000000-0000-0000-0000-00000000000a", "00000000-0000-0000-0000-00000000000b", "00000000-0000-0000-0000-00000000000c"];
 const DAY_MS = 86_400_000;
@@ -301,5 +303,106 @@ describe("기록이 많을 때 실행 계획", () => {
     expect(plans["순위표"]).toMatch(/Index Scan using careers_rank on careers/);
     expect(plans["포지션 순위표"]).toMatch(/Index Scan using careers_pos_rank on careers/);
     expect(plans["스틸 랭킹"]).toMatch(/Index Scan using careers_stl on careers/);
+  });
+});
+
+describe("챌린지 순위표", () => {
+  const now = Date.now();
+  const today = kstDay(now);
+  const yesterday = kstDay(now - DAY_MS);
+  const put = (player: string, s: CareerSummary, id: string, day: string, pos: PosKey) => insertCareer(player, submitted({ ...s, id, challenge: { day, pos } }), now);
+
+  /** 기준값: 그날 그 포지션 기록을 플레이어마다 가장 좋은 하나로 줄여 줄 세운 것 (커리어 id, 순위, 도전 횟수) */
+  async function truth(day: string, pos: PosKey) {
+    const { rows } = await pg.query<{ career_id: string; player_id: string; score: number; mvp: number; peak: number; pts: number; created_at: string }>(
+      `select career_id, player_id, score, mvp, peak, pts, created_at::text as created_at from careers where challenge_day = $1 and challenge_pos = $2`,
+      [day, pos],
+    );
+    type Row = (typeof rows)[number];
+    const cmp = (a: Row, b: Row) => b.score - a.score || b.mvp - a.mvp || b.peak - a.peak || b.pts - a.pts;
+    const byPlayer = new Map<string, Row[]>();
+    for (const r of rows) byPlayer.set(r.player_id, [...(byPlayer.get(r.player_id) ?? []), r]);
+    const best = [...byPlayer.values()].map((list) => ({ row: [...list].sort((a, b) => cmp(a, b) || a.created_at.localeCompare(b.created_at))[0], tries: list.length }));
+    best.sort((a, b) => cmp(a.row, b.row) || a.row.created_at.localeCompare(b.row.created_at));
+    return {
+      runs: rows.length,
+      list: best.map((b) => ({ careerId: b.row.career_id, player: b.row.player_id, tries: b.tries, rank: 1 + best.filter((o) => cmp(o.row, b.row) < 0).length })),
+    };
+  }
+  const careerIds = async () => new Map((await pg.query<{ id: string; career_id: string }>(`select id, career_id from careers where career_id like 'ch-%'`)).rows.map((r) => [r.id, r.career_id]));
+
+  it("그날 그 포지션 기록끼리, 플레이어마다 가장 좋은 기록 하나로 순위를 매겨요", async () => {
+    const [a, b, c, d, e, f] = summaries.slice(10, 16);
+    // PG: 첫째 플레이어 두 번, 둘째와 셋째 한 번씩. SG: 셋째 한 번. 어제 PG: 둘째 한 번(접수 기간 안).
+    for (const [player, s, id, day, pos] of [
+      [PLAYERS[0], a, "ch-a1", today, "PG"],
+      [PLAYERS[0], b, "ch-a2", today, "PG"],
+      [PLAYERS[1], c, "ch-b1", today, "PG"],
+      [PLAYERS[2], d, "ch-c1", today, "PG"],
+      [PLAYERS[2], e, "ch-c2", today, "SG"],
+      [PLAYERS[1], f, "ch-b2", yesterday, "PG"],
+    ] as const)
+      expect(await put(player, s, id, day, pos), id).toBeTruthy();
+    // 접수 기간이 지난 챌린지 기록과 아직 오지 않은 날의 기록은 일반 기록으로만 올라가요.
+    expect(await put(PLAYERS[1], a, "ch-late", kstDay(now - 5 * DAY_MS), "PG")).toBeTruthy();
+    expect(await put(PLAYERS[1], b, "ch-early", kstDay(now + 2 * DAY_MS), "PG")).toBeTruthy();
+    expect((await pg.query(`select career_id from careers where career_id in ('ch-late', 'ch-early') and challenge_day is null`)).rows).toHaveLength(2);
+
+    const ids = await careerIds();
+    const board = await getChallengeBoard(today);
+    expect(board.day).toBe(today);
+    for (const pos of POS_KEYS) {
+      const t = await truth(today, pos);
+      const got = board.boards[pos];
+      expect(got.top.map((x) => ({ careerId: ids.get(x.id), tries: x.tries, rank: x.rank })), pos).toEqual(t.list.map(({ careerId, tries, rank }) => ({ careerId, tries, rank })));
+      expect({ players: got.players, runs: got.runs }, pos).toEqual({ players: t.list.length, runs: t.runs });
+      for (const x of got.top) expect(x.posRank).toBe(x.rank);
+    }
+    expect(board.boards.PG).toMatchObject({ players: 3, runs: 4 });
+    expect(board.boards.SG).toMatchObject({ players: 1, runs: 1 });
+    expect(board.boards.C).toEqual({ top: [], players: 0, runs: 0 });
+    // 순위표 줄은 일반 순위표와 같은 모양이에요.
+    expect(board.boards.PG.top[0]).toMatchObject({ name: expect.any(String), pos: expect.any(String), score: expect.any(Number), fmvp: expect.any(Number), leagueMvp: expect.any(Number), verified: false });
+
+    const past = await getChallengeBoard(yesterday);
+    expect(past.boards.PG.top.map((x) => ids.get(x.id))).toEqual(["ch-b2"]);
+    // 챌린지 기록도 일반 랭킹에 함께 올라가요.
+    expect((await myRanks(PLAYERS[0])).careers.map((x) => x.careerId)).toEqual(expect.arrayContaining(["ch-a1", "ch-a2"]));
+  });
+
+  it("내 챌린지 성적은 도전한 포지션마다 가장 좋은 기록의 순위예요", async () => {
+    for (const player of PLAYERS) {
+      const mine = await myChallenge(player, today);
+      const want = [];
+      for (const pos of POS_KEYS) {
+        const t = await truth(today, pos);
+        const me = t.list.find((x) => x.player === player);
+        if (me) want.push({ pos, careerId: me.careerId, rank: me.rank, players: t.list.length, tries: me.tries });
+      }
+      expect(mine.map(({ pos, careerId, rank, players, tries }) => ({ pos, careerId, rank, players, tries })), player).toEqual(want);
+    }
+    expect((await myChallenge(PLAYERS[0], today)).map((m) => m.tries)).toEqual([2]);
+    expect(await myChallenge(PLAYERS[0], yesterday)).toEqual([]);
+  });
+
+  it("가장 좋은 기록을 지우면 남은 기록으로 순위가 바뀌어요", async () => {
+    const [before] = await myChallenge(PLAYERS[0], today);
+    expect(await deleteCareer(PLAYERS[0], before.careerId)).toBe(true);
+    const [after] = await myChallenge(PLAYERS[0], today);
+    expect(after).toMatchObject({ pos: "PG", tries: 1, players: 3 });
+    expect(after.careerId).not.toBe(before.careerId);
+    expect(after.rank).toBe((await truth(today, "PG")).list.find((x) => x.player === PLAYERS[0])!.rank);
+    expect((await getChallengeBoard(today)).boards.PG).toMatchObject({ players: 3, runs: 3 });
+  });
+
+  it("기록이 많아도 그날 챌린지 기록만 읽어요", async () => {
+    await pg.exec(`vacuum analyze careers`);
+    queries.length = 0;
+    await getChallengeBoard(today);
+    const q = queries.find((x) => x.sql.includes("challenge_day"));
+    expect(q).toBeTruthy();
+    const plan = (await pg.query<{ "QUERY PLAN": string }>(`explain ${q!.sql}`, q!.params)).rows.map((r) => r["QUERY PLAN"]).join("\n");
+    expect(plan, plan).not.toMatch(/Seq Scan on careers\b/);
+    expect(plan, plan).toMatch(/careers_challenge/);
   });
 });

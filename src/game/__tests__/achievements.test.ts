@@ -29,6 +29,7 @@ import {
   type PosKey,
   type SeasonRecord,
 } from "@/game";
+import { RETIRE_AGE } from "@/game/season/offseason";
 
 afterEach(() => {
   resetRandom();
@@ -254,6 +255,98 @@ describe("새 업적", () => {
     toRetire(starter);
     expect(has(starter, "bench_keeper")).toBe(false);
     expect(has(starter, "giving_tree")).toBe(false);
+  });
+});
+
+describe("딸 수 없던 업적", () => {
+  it("불혹의 현역은 40세 은퇴 직전 시즌(39세)을 뛰면 따요. 40세 시즌은 오지 않아요", () => {
+    const c = fresh("forty");
+    c.hist.push(season(2049, "서울 SK 나이츠", "kbl"));
+    checkAchievements(c);
+    expect(c.hist[0].age).toBe(RETIRE_AGE - 2);
+    expect(has(c, "forty")).toBe(false);
+    c.hist.push(season(2050, "서울 SK 나이츠", "kbl"));
+    checkAchievements(c);
+    expect(has(c, "forty")).toBe(true);
+
+    // 39세 시즌을 경기에 나서지 못하고 보내면 따지 못해요.
+    const idle = fresh("forty-idle");
+    idle.hist.push(season(2050, "서울 SK 나이츠", "kbl", { gp: 0 }));
+    checkAchievements(idle);
+    expect(has(idle, "forty")).toBe(false);
+  });
+
+  it("은퇴하지 않고 끝까지 뛰면 마지막 시즌이 39세이고, 프로로 뛰었으면 불혹의 현역을 따요", () => {
+    const rand = seeded(40);
+    setRandom(rand);
+    let veterans = 0;
+    for (let i = 0; i < 6; i++) {
+      const c = fresh(`forty-${i}`, (["PG", "SG", "SF", "PF", "C"] as const)[i % 5]);
+      let steps = 0;
+      while (c.stage !== "retired" && steps++ < 400) {
+        const d = currentDecision(c);
+        if (!d) {
+          simulateSeason(c);
+          continue;
+        }
+        // 은퇴·무소속을 피하고, 나머지는 무작위로 골라요(강제 은퇴는 선택지가 은퇴 하나뿐이에요).
+        const keep = d.opts.map((o, j) => [o, j] as const).filter(([o]) => o.act.k !== "retire" && o.act.k !== "skip");
+        const pool = keep.length ? keep : d.opts.map((o, j) => [o, j] as const);
+        chooseOption(c, pool[Math.floor(rand() * pool.length)][1]);
+      }
+      expect(c.stage).toBe("retired");
+      const ages = c.hist.map((h) => h.age);
+      expect(Math.max(...ages)).toBeLessThan(RETIRE_AGE);
+      const last39 = c.hist.some((h) => h.pro && h.age === RETIRE_AGE - 1 && h.gp > 0);
+      expect(has(c, "forty")).toBe(last39);
+      if (last39) veterans++;
+    }
+    expect(veterans).toBeGreaterThan(0);
+  });
+
+  it("해외 경로 고교 졸업생 일부는 워크온 제안을 받고, 워크온으로 NBA에 가면 워크온의 기적을 따요", () => {
+    const rand = seeded(42);
+    setRandom(rand);
+    let walk = 0;
+    let scholar = 0;
+    for (let i = 0; i < 200; i++) {
+      const pos = (["PG", "SG", "SF", "PF", "C"] as const)[i % 5];
+      const c = createCareer({ name: "워크온", num: 7, nat: "미국", pos, path: "abroad" }, generateCandidates(pos)[i % 3], `walk-${i}`);
+      while (c.stage === "hs") {
+        const d = currentDecision(c);
+        if (!d) simulateSeason(c);
+        else if (d.title === "고교 졸업, 진로 선택") break;
+        else chooseOption(c, Math.floor(rand() * d.opts.length));
+      }
+      const ncaa = currentDecision(c)!.opts.find((o) => o.act.k === "school" && o.act.lg === "ncaa");
+      // 해외 경로 졸업생은 모두 NCAA 제안을 받아요. 일부는 장학생 대신 워크온이에요.
+      expect(ncaa).toBeDefined();
+      if (ncaa!.act.k === "school" && ncaa!.act.walk) walk++;
+      else scholar++;
+    }
+    expect(walk).toBeGreaterThan(0);
+    expect(walk).toBeLessThan(scholar / 3);
+
+    const c = fresh("walk-nba");
+    c.milestones.push("walkon");
+    c.hist.push(season(2033, "보스턴 셀틱스", "nba"));
+    checkAchievements(c);
+    expect(has(c, "walk_on")).toBe(true);
+  });
+
+  it("NBA 드래프트 1순위로 지명되면 1순위의 무게를 따요", () => {
+    setRandom(seeded(41));
+    const c = createCareer({ name: "1순위", num: 1, nat: "미국", pos: "SF", path: "abroad" }, generateCandidates("SF")[0], "first");
+    for (const k of ["sht", "hdl", "pas", "def", "iq", "ath"] as const) c.p.attrs[k] = 99;
+    c.p.pot = 99;
+    c.p.wsd = 8;
+    c.age = 21;
+    c.year = 2032;
+    c.stage = "college";
+    applyAction(c, { k: "draft", d: "nba" });
+    expect(c.draft).toMatchObject({ lg: "NBA", pick: 1, round: 1, inRound: 1 });
+    checkAchievements(c);
+    expect(has(c, "first_pick")).toBe(true);
   });
 });
 

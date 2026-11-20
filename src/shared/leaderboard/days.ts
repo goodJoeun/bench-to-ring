@@ -21,3 +21,18 @@ export function isDay(s: string): boolean {
   const d = new Date(`${s}T00:00:00Z`);
   return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
 }
+
+/** 그날에서 n일 뒤(음수면 앞)의 날짜 */
+export const shiftDay = (day: string, n: number): string => new Date(Date.parse(`${day}T00:00:00Z`) + n * DAY_MS).toISOString().slice(0, 10);
+
+/** 챌린지 기록을 받는 기간: 시작한 날과 그 뒤 이만큼의 날(한국 시간)까지예요. 자정 무렵에 시작한 커리어도 끝까지 뛰고 올릴 수 있어요. */
+export const CHALLENGE_GRACE_DAYS = 1;
+
+/**
+ * 그날 시작한 챌린지 기록을 지금 챌린지 순위표에 받는지. 아직 오지 않은 날과 접수 기간이 지난 날은 받지 않아요.
+ * 받지 않는 기록도 일반 랭킹에는 그대로 올라가요.
+ */
+export function challengeOpen(day: string, now: number): boolean {
+  const today = kstDay(now);
+  return isDay(day) && day <= today && today <= shiftDay(day, CHALLENGE_GRACE_DAYS);
+}

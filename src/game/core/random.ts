@@ -12,6 +12,17 @@ export function resetRandom(): void {
   source = Math.random;
 }
 
+/** run을 도는 동안만 난수를 fn으로 바꿔요. 끝나면 쓰던 난수로 되돌려서, 게임 난수 흐름은 건드리지 않아요. */
+export function withRandom<T>(fn: () => number, run: () => T): T {
+  const prev = source;
+  source = fn;
+  try {
+    return run();
+  } finally {
+    source = prev;
+  }
+}
+
 /** 시드 고정 난수 (mulberry32) */
 export function seeded(seed: number): () => number {
   let a = seed >>> 0;

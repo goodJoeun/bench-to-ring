@@ -5,13 +5,14 @@ import { ovr } from "../player/ratings";
 import { FINAL_CLUTCH_CHANCE, clutchDecision, drawClutchLead } from "../season/events";
 import { makeLiveGame } from "../season/live";
 import { grantExemption, owesService } from "./military";
+import { LEAGUES } from "./leagues";
 import type { Career, ClutchBoard, ClutchMove, Decision, NatEventKey, NatGame, Nation, NatTournament, Role } from "../core/types";
 import { clamp, josa, sigmoid } from "../core/util";
 
 /*
  * 국가대표 대회. 대회마다 실제와 비슷한 출전국 전력(대략 FIBA 랭킹 순)을 두고,
  * 조별리그와 토너먼트를 한 경기씩 시뮬레이션해요.
- * 전력 차 4.5마다 승률이 약 73%로 벌어져서, 한 선수가 아무리 잘해도 약체국이 세계 대회를 우승하긴 매우 어려워요.
+ * 전력 차 4.5마다 승률이 약 73%로 벌어져서, 약체국이 세계 대회를 우승하긴 매우 어려워요. NBA 평균을 크게 넘는 슈퍼스타가 합류하면 낮은 확률로 노려볼 수 있어요.
  */
 
 /** 고를 수 있는 국적. power는 대표팀 전력, threshold는 대표팀 발탁 기준 오버롤이에요. */
@@ -114,11 +115,26 @@ export function natEventFor(year: number, n: Nation): NatEventKey {
 export const nationOf = (c: Career): Nation => NATIONS.find((n) => n.name === c.p.nat) ?? NATIONS[0];
 
 /** 국대체질 선수가 대표팀 전력에 더 보태는 값 */
-const NAT_TRAIT_BOOST = 2;
+const NAT_TRAIT_BOOST = 3.5;
 
-/** 선수 한 명이 대표팀 전력에 더하는 값. 발탁 기준을 넘을수록 커지지만 7이 한계예요. */
+/**
+ * NBA 평균을 넘는 압도적인 선수는 대표팀 전력에 더 보태요(OVR 1마다 SUPERSTAR_STEP, SUPERSTAR_CAP까지).
+ * 발탁 기준 대비 몫은 7이 한계라, 전력이 낮은 나라(대한민국 66)는 NBA MVP급이 합류해도 73에 머물러
+ * 월드컵·올림픽 8강 상대(85 안팎)를 거의 넘지 못했어요.
+ * 이 몫은 대표팀이 약할수록 커요: 전력 SUPERSTAR_FULL 이하면 그대로, SUPERSTAR_NONE이면 0이에요.
+ * 다른 NBA 선수가 즐비한 강호에서는 한 명이 더 보탤 몫이 작고, 약한 나라에서는 슈퍼스타가 공격을 도맡아요.
+ * 그래서 약한 나라의 슈퍼스타도 낮은 확률로 월드컵·올림픽 우승을 노릴 수 있고, 강호의 우승 확률은 거의 그대로예요.
+ */
+const SUPERSTAR_STEP = 0.6;
+const SUPERSTAR_CAP = 7;
+const SUPERSTAR_FULL = 70;
+const SUPERSTAR_NONE = 90;
+
+/** 선수 한 명이 대표팀 전력에 더하는 값. 발탁 기준을 넘을수록 커지지만 7이 한계이고, 약한 나라에서는 NBA 평균을 넘는 만큼 더 보태요. */
 export function playerBoost(o: number, n: Nation): number {
-  return clamp(1 + (o - n.threshold) * 0.3, 1, 7);
+  const room = clamp((SUPERSTAR_NONE - n.power) / (SUPERSTAR_NONE - SUPERSTAR_FULL), 0, 1);
+  const star = clamp((o - LEAGUES.nba.avg) * SUPERSTAR_STEP, 0, SUPERSTAR_CAP) * room;
+  return clamp(1 + (o - n.threshold) * 0.3, 1, 7) + star;
 }
 
 /** 대회에 나서는 대표팀 전력. 선수가 합류하면(o = 선수 오버롤) 그만큼 더해져요. */

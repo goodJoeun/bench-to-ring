@@ -1,6 +1,7 @@
 import { clampAttr } from "../player/condition";
 import { ATTR_KEYS } from "../core/data";
 import { ovrOf } from "../player/ratings";
+import { legacyOf } from "./career";
 import { refreshShop } from "../economy/shop";
 import { estimateStar } from "../player/star";
 import { EMPTY_LIFETIME, LIFETIME_PREFIX, addLifetime, fromCareer, subLifetime, type Lifetime } from "../legacy/lifetime";
@@ -180,6 +181,8 @@ function normalize(c: Career): Career {
   c.donated ??= 0;
   c.moveAsked ??= null;
   migrateAttrs(c);
+  // 은퇴한 커리어(엔딩 보관함)의 레거시 등급도 지금 기준으로 다시 매겨요.
+  if (c.summary) c.summary = relabel(c.summary);
   return c;
 }
 
@@ -337,10 +340,15 @@ function recordAchievements(c: Career): void {
 export function loadHall(): CareerSummary[] {
   try {
     const o: unknown = JSON.parse(read(HALL_KEY) ?? "[]");
-    return Array.isArray(o) ? (o as CareerSummary[]) : [];
+    return Array.isArray(o) ? (o as CareerSummary[]).map(relabel) : [];
   } catch {
     return [];
   }
+}
+
+/** 레거시 등급은 저장할 때의 기준으로 남아 있어서, 읽을 때 지금 기준으로 다시 매겨요. */
+function relabel(s: CareerSummary): CareerSummary {
+  return s && s.awards ? { ...s, legacy: legacyOf(s) } : s;
 }
 
 export function saveHall(h: CareerSummary[]): void {

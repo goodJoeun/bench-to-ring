@@ -2,7 +2,7 @@ import type { CareerSummary, PosKey } from "@/game";
 import { getQueryClient } from "@/shared/query/query-client";
 import { FRESH_BYPASS_MS, FRESH_PARAM } from "./cdn";
 import { LEADERBOARD } from "./keys";
-import type { Board, BoardDay, BoardDays, BoardScope, DeleteResult, MyRanks, PlayerCreated, StatBoard, StatKey, SubmitResult } from "./types";
+import type { Board, BoardDay, BoardDays, BoardScope, ChallengeBoard, DeleteResult, MyChallenge, MyRanks, PlayerCreated, StatBoard, StatKey, SubmitResult } from "./types";
 
 // 온라인 랭킹에 은퇴 기록을 올리고 지워요. 서버가 안 되면 조용히 실패하고, 보내지 못한 기록과 지우지 못한 기록은 다음에 다시 해요.
 
@@ -185,6 +185,17 @@ export const fetchBoardDays = (): Promise<BoardDays> => {
 export async function fetchMine(): Promise<MyRanks | null> {
   const t = read(TOKEN_KEY);
   return t ? getJson<MyRanks>("/api/careers/mine", { authorization: `Bearer ${t}` }) : null;
+}
+
+/** 그날(한국 시간) 챌린지의 포지션별 순위표를 가져와요. */
+export function fetchChallenge(day: string): Promise<ChallengeBoard> {
+  return getJson(`/api/challenge?${withFresh(new URLSearchParams({ day }))}`);
+}
+
+/** 이 브라우저(플레이어)의 그날 챌린지 성적. 아직 올린 적이 없으면 null이에요. */
+export async function fetchMyChallenge(day: string): Promise<MyChallenge | null> {
+  const t = read(TOKEN_KEY);
+  return t ? getJson<MyChallenge>(`/api/challenge/mine?${new URLSearchParams({ day })}`, { authorization: `Bearer ${t}` }) : null;
 }
 
 /** 아직 서버에 올리지 못하고 기다리는 기록의 커리어 id */

@@ -8,6 +8,8 @@ import {
   createCareer,
   currentDecision,
   generateCandidate,
+  legacyOf,
+  legacyOfV1,
   resetRandom,
   seeded,
   setRandom,
@@ -15,7 +17,8 @@ import {
   type Career,
   type CareerSummary,
 } from "@/game";
-import { HIDDEN_NAME, checkSummary, cleanName, isCareerId, parseBoardQuery, parseStatQuery } from "@/server/leaderboard/validate";
+import { HIDDEN_NAME, acceptedChallenge, checkSummary, cleanName, isCareerId, parseBoardQuery, parseChallengeDay, parseStatQuery } from "@/server/leaderboard/validate";
+import { challengeOpen, kstDay, shiftDay } from "@/shared/leaderboard/days";
 import { FRESH_PARAM } from "@/shared/leaderboard/cdn";
 
 afterEach(() => resetRandom());
@@ -48,6 +51,15 @@ describe("은퇴 기록 검사", () => {
       expect(s.ruleset).toBe(RULESET_VERSION);
       const r = checkSummary(JSON.parse(JSON.stringify(s)));
       expect(r, s.name).toMatchObject({ ok: true });
+    }
+  });
+
+  it("레거시 등급을 나누기 전 화면이 올린 예전 등급도 받고, 지금 등급으로 바꿔 저장해요", () => {
+    const old = summaries.filter((s) => legacyOfV1(s) !== legacyOf(s));
+    expect(old.length).toBeGreaterThan(0);
+    for (const s of old) {
+      const r = checkSummary(JSON.parse(JSON.stringify({ ...s, legacy: legacyOfV1(s) })));
+      expect(r, s.name).toMatchObject({ ok: true, summary: { legacy: legacyOf(s) } });
     }
   });
 
@@ -141,5 +153,47 @@ describe("순위표 조건", () => {
     for (const s of ["scope=week", "pos=G", "ruleset=0", `ruleset=${RULESET_VERSION + 1}`, "ruleset=1.5", "ruleset=abc", "scope=all&ruleset=1"]) {
       expect(q(s), s).toMatchObject({ ok: false });
     }
+  });
+});
+
+describe("챌린지 기록", () => {
+  // 2026-11-20 12:00 (한국 시간)
+  const noon = Date.parse("2026-11-20T12:00:00+09:00");
+
+  it("챌린지 표시는 날짜와 포지션 모양만 받아요", () => {
+    const [s] = retiredSummaries(1);
+    const ok = checkSummary({ ...s, challenge: { day: "2026-11-20", pos: "PG" } });
+    expect(ok).toMatchObject({ ok: true, summary: { challenge: { day: "2026-11-20", pos: "PG" } } });
+    expect(checkSummary(s)).toMatchObject({ ok: true });
+    for (const challenge of [{ day: "2026-13-01", pos: "PG" }, { day: "2026-11-20", pos: "G" }, { day: "today", pos: "C" }, "2026-11-20", { pos: "PG" }])
+      expect(checkSummary({ ...s, challenge }), JSON.stringify(challenge)).toMatchObject({ ok: false });
+  });
+
+  it("시작한 날과 그다음 날(한국 시간)까지만 챌린지 순위표에 받아요", () => {
+    expect(kstDay(noon)).toBe("2026-11-20");
+    expect(shiftDay("2026-11-30", 1)).toBe("2026-12-01");
+    expect(shiftDay("2026-03-01", -1)).toBe("2026-02-28");
+    expect(challengeOpen("2026-11-20", noon)).toBe(true);
+    expect(challengeOpen("2026-11-19", noon)).toBe(true);
+    expect(challengeOpen("2026-11-18", noon)).toBe(false);
+    // 아직 오지 않은 날의 선수를 미리 계산해 올린 기록은 받지 않아요.
+    expect(challengeOpen("2026-11-21", noon)).toBe(false);
+    expect(challengeOpen("2026-11-20", Date.parse("2026-11-21T23:59:59+09:00"))).toBe(true);
+    expect(challengeOpen("2026-11-20", Date.parse("2026-11-22T00:00:00+09:00"))).toBe(false);
+    expect(challengeOpen("nope", noon)).toBe(false);
+
+    const tag = { day: "2026-11-20", pos: "C" } as const;
+    expect(acceptedChallenge({ challenge: tag }, noon)).toEqual(tag);
+    expect(acceptedChallenge({ challenge: { day: "2026-11-10", pos: "C" } }, noon)).toBeNull();
+    expect(acceptedChallenge({}, noon)).toBeNull();
+  });
+
+  it("챌린지 순위표는 최근 일주일과 내일까지만 볼 수 있어요", () => {
+    const d = (q: string) => parseChallengeDay(new URLSearchParams(q), noon);
+    expect(d("day=2026-11-20")).toBe("2026-11-20");
+    expect(d("day=2026-11-14")).toBe("2026-11-14");
+    expect(d("day=2026-11-21")).toBe("2026-11-21");
+    expect(d(`day=2026-11-20&${FRESH_PARAM}=1763450000000`)).toBe("2026-11-20");
+    for (const q of ["", "day=", "day=2026-11-13", "day=2026-11-22", "day=2026-02-30", "day=today"]) expect(d(q), q).toBeNull();
   });
 });

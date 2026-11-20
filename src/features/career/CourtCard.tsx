@@ -23,6 +23,11 @@ export function CourtCard({ career: c }: { career: Career }) {
         <span className="pos">
           {p.pos} · {POS[p.pos].name}
         </span>
+        {c.challenge && (
+          <span className="ch-chip">
+            챌린지 {c.challenge.day.slice(5, 7)}.{c.challenge.day.slice(8)} {c.challenge.pos}
+          </span>
+        )}
       </div>
       <div className="name" style={nameFit(p.name)}>
         {p.name}

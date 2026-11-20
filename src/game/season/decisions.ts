@@ -32,8 +32,24 @@ export function kblDraftScore(c: Career, noise: number): number {
   return o + (c.p.pot - o) * 0.25 + (21 - c.age) * 0.6 + noise;
 }
 
-/** NBA 드래프트: 2라운드 전체 1~60순위, 61 이상이면 미지명. 평가 점수가 NBA 평균 - 4이면 60순위예요. */
-export const nbaPick = (score: number): number => Math.max(1, Math.round(60 - (score - (avg("nba") - 4)) * 3.6));
+/** NBA 드래프트 로터리 순위. 이 순위부터 위로는 평가 점수 1점마다 순위가 NBA_LOTTERY_STEP배 빨리 올라가요. */
+const NBA_LOTTERY = 14;
+/**
+ * 로터리 안에서 순위가 올라가는 배수. 순위를 점수에 그대로 비례시키면 최상위 유망주도 7순위 언저리에서 멈춰서
+ * 1순위(1순위의 무게)가 나오지 않았어요. 로터리 안만 가파르게 해서, 예전 10순위쯤 되는 유망주가 1순위에 닿아요.
+ * 15순위 아래(1라운드 중후반·2라운드·미지명)는 그대로예요.
+ */
+const NBA_LOTTERY_STEP = 3;
+
+/**
+ * NBA 드래프트: 2라운드 전체 1~60순위, 61 이상이면 미지명. 평가 점수가 NBA 평균 - 4이면 60순위이고, 1점마다 3.6순위씩 올라가요.
+ * 로터리(14순위)부터는 NBA_LOTTERY_STEP배로 올라가요.
+ */
+export const nbaPick = (score: number): number => {
+  const linear = 60 - (score - (avg("nba") - 4)) * 3.6;
+  const pick = linear >= NBA_LOTTERY ? linear : NBA_LOTTERY - (NBA_LOTTERY - linear) * NBA_LOTTERY_STEP;
+  return Math.max(1, Math.round(pick));
+};
 /** KBL 신인드래프트: 2라운드 전체 1~20순위, 21 이상이면 미지명. 평가 점수가 KBL 평균 - 11이면 20순위예요. */
 export const kblPick = (score: number): number => Math.max(1, Math.round(20 - (score - (avg("kbl") - 11)) * 1.3));
 
@@ -57,6 +73,16 @@ export const projectKbl = (c: Career): string =>
 
 /* ---------- 진로 결정 ---------- */
 
+/**
+ * 해외 경로 고교 졸업생의 NCAA 기준: 평균에서 이만큼 아래부터 장학생, 그 아래 NCAA_WALK_ON까지는 워크온이에요.
+ * NCAA 평균을 65로 내린 뒤 예전 기준(장학생 - 8, 워크온 - 10)은 고교 졸업생 하위 1%(평가 오버롤 58)보다도 낮아서
+ * 모두 장학생이 되고 워크온이 한 번도 나오지 않았어요(워크온의 기적을 딸 수 없었어요).
+ * 받아 주는 기준(- 10)은 그대로 두고 장학생 기준만 - 5로 올려서, NCAA 제안을 받는 선수는 그대로이고
+ * 해외 경로 졸업생 하위 5~10%쯤이 장학생 대신 워크온으로 들어가요.
+ */
+const NCAA_SCHOLARSHIP = 5;
+const NCAA_WALK_ON = 10;
+
 export function highSchoolGraduation(c: Career): Decision {
   // 진학·드래프트 기준은 히든 스탯까지 반영한 평가 오버롤로 봐요.
   const o = evalOvr(c.p);
@@ -71,11 +97,10 @@ export function highSchoolGraduation(c: Career): Decision {
     tag: "NCAA",
     act: { k: "school", lg: "ncaa", team: uc, walk },
   });
-  // NCAA: 해외 경로는 NCAA 평균 - 8부터 장학생, 그 아래 - 10까지는 워크온이고, 더 낮으면 받아 주는 학교가 없어요.
-  // 고교 졸업생 대부분은 기준에 못 미쳐서, 진학은 가끔 있는 일이에요.
+  // NCAA: 해외 경로는 평균 - NCAA_SCHOLARSHIP부터 장학생, 그 아래 평균 - NCAA_WALK_ON까지는 워크온이고, 더 낮으면 받아 주는 학교가 없어요.
   // 국내 경로는 NCAA 평균 - 1은 돼야 스카우트가 찾아와요.
   if (c.p.path === "abroad") {
-    if (o >= avg("ncaa") - 10) opts.push(abroad(o < avg("ncaa") - 8));
+    if (o >= avg("ncaa") - NCAA_WALK_ON) opts.push(abroad(o < avg("ncaa") - NCAA_SCHOLARSHIP));
   } else if (o >= avg("ncaa") - 1) opts.push({ ...abroad(false), label: `${uc.name} 스카우트 제안` });
   opts.push({
     label: `${kc.name} 진학`,

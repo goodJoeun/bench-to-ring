@@ -8,6 +8,10 @@ import {
   ARCHETYPES,
   checkAchievements,
   retire,
+  LEGACY_TIERS,
+  legacyOf,
+  legacyOfV1,
+  legacyScore,
   ATTR_KEYS,
   LEAGUES,
   NATIONS,
@@ -125,7 +129,7 @@ import { giveAward, setTeam } from "@/game/career/log";
 import { militaryDecision } from "@/game/world/military";
 import { TRAITS, TRAIT_KEYS } from "@/game/player/players";
 import { runOffseason } from "@/game/season/offseason";
-import { leverage } from "@/game/season/decisions";
+import { leverage, nbaPick, projectNba } from "@/game/season/decisions";
 import { nationalCallUp, runNationalTeam } from "@/game/world/national";
 import {
   browserRecord,
@@ -515,6 +519,20 @@ describe("국가대표", () => {
     expect(odds("미국", "olympics", 88).gold).toBeGreaterThan(0.6);
   });
 
+  it("약한 나라의 압도적인 슈퍼스타는 대표팀에 더 보태서 낮은 확률로 월드컵 금메달을 노리고, 강호는 거의 그대로예요", () => {
+    setRandom(seeded(34));
+    const kr = nation("대한민국");
+    const us = nation("미국");
+    // NBA 평균 이하는 예전과 같고, 넘는 만큼 약한 나라는 더 보태요. 미국(전력 95)은 더 보태지 않아요.
+    expect(teamPower(kr, "worldcup", LEAGUES.nba.avg) - teamPower(kr, "worldcup")).toBe(7);
+    expect(teamPower(kr, "worldcup", 99) - teamPower(kr, "worldcup")).toBe(14);
+    expect(teamPower(us, "worldcup", 99) - teamPower(us, "worldcup")).toBeCloseTo(1 + (99 - us.threshold) * 0.3);
+    const star = odds("대한민국", "worldcup", 99, 20000);
+    expect(star.gold).toBeGreaterThan(0.002);
+    expect(star.gold).toBeLessThan(0.03);
+    expect(star.medal).toBeGreaterThan(0.03);
+  });
+
   it("약체국도 에이스가 있으면 가끔 올림픽 최종예선을 뚫어요", () => {
     setRandom(seeded(33));
     const qualify = (o: number, n = 3000) => {
@@ -878,6 +896,35 @@ describe("드래프트 진행", () => {
     }
   });
 
+  it("NBA 지명 순위: 14순위 아래는 점수 1점에 3.6순위씩, 로터리 안은 가파르게 올라가 1순위에 닿아요", () => {
+    const base = LEAGUES.nba.avg - 4;
+    /** 로터리 손질 전 공식 */
+    const linear = (s: number) => 60 - (s - base) * 3.6;
+    let prev = Infinity;
+    for (let s = base - 3; s <= base + 16; s += 0.05) {
+      const pick = nbaPick(s);
+      expect(pick).toBeLessThanOrEqual(prev);
+      expect(pick).toBeGreaterThanOrEqual(1);
+      if (linear(s) >= 14) expect(pick).toBe(Math.max(1, Math.round(linear(s))));
+      prev = pick;
+    }
+    // 미지명 기준(평균 - 4 → 60순위)은 그대로예요.
+    expect(nbaPick(base)).toBe(60);
+    expect(nbaPick(base - 0.5)).toBeGreaterThan(60);
+    // 예전 12순위 → 8순위, 예전 10순위 → 2순위, 예전 9순위부터 1순위
+    const at = (oldPick: number) => base + (60 - oldPick) / 3.6;
+    expect(nbaPick(at(12))).toBe(8);
+    expect(nbaPick(at(10))).toBe(2);
+    expect(nbaPick(at(9))).toBe(1);
+  });
+
+  it("최상위 유망주는 스카우트 예상이 1라운드 최상위예요", () => {
+    const c = prospect(97);
+    c.p.pot = 99;
+    c.p.wsd = 8;
+    expect(projectNba(c)).toBe("1라운드 최상위");
+  });
+
   it("미지명이면 끝까지 다른 선수만 불리고, 미지명 결정이 기다려요", () => {
     setRandom(seeded(12));
     const c = prospect(40);
@@ -1009,10 +1056,11 @@ describe("병역", () => {
     expect(choiceOf(c, "defer")).toBe(-1);
   });
 
-  it("상무에 가면 D리그를 뛰고, 전역하면 원래 팀과 계약 그대로 돌아와 시즌 중반에 합류해요", () => {
+  it("상무에 가면 D리그를 뛰고, 전역하면 원래 팀과 계약·코치 신뢰 그대로 돌아와 시즌 초반을 지나 합류해요", () => {
     setRandom(seeded(41));
     const c = soldier();
     for (const k of ATTR_KEYS) c.p.attrs[k] = 80;
+    c.trust = 2;
     c.hist.push({ gp: 50 } as Career["hist"][number]);
     c.queue = [militaryDecision(c)!, { lazy: "fa" }];
     chooseOption(c, 0);
@@ -1028,9 +1076,10 @@ describe("병역", () => {
     expect(c.team?.name).toBe("서울 SK 나이츠");
     expect(c.contract).toEqual({ years: 3, salary: 2 });
     expect(c.mil.s).toBe("served");
+    expect(c.trust).toBe(2);
     while (c.queue.length) chooseOption(c, 0);
     const back = simulateSeason(c);
-    expect(back.gp).toBeLessThanOrEqual(Math.round(54 * 0.6));
+    expect(back.gp).toBeLessThanOrEqual(Math.round(54 * 0.8));
     expect(militaryDecision(c)).toBeNull();
   });
 
@@ -1867,6 +1916,43 @@ describe("랭킹 점수", () => {
     if (s.gp > 0) expect(c.hist.filter((h) => h.pro && h.gp > 0).every((h) => (h.tpm ?? -1) >= 0)).toBe(true);
     const old = { ...s, leagues: undefined };
     expect(rankScore(old)).toBeGreaterThan(0);
+  });
+});
+
+describe("레거시 등급", () => {
+  const base = { mvp: 0, rings: 0, awards: {}, personal: 0, peak: 70, pts: 0, seasons: 12 };
+  /** 레거시 점수가 딱 score가 되는 기록 (올스타 수로 맞춰요) */
+  const at = (score: number, extra: Partial<typeof base> = {}) => {
+    const o = { ...base, ...extra };
+    const allstar = (score - legacyScore(o)) / 3;
+    return { ...o, awards: { ...o.awards, allstar } };
+  };
+
+  it("점수와 NBA MVP 횟수로 열 단계로 나누고, 위에서부터 처음 채우는 등급이에요", () => {
+    expect(LEGACY_TIERS.map((t) => t.name)).toEqual([
+      "역대 최고 논쟁의 주인공", "한 시대를 지배한 슈퍼스타", "명예의 전당 1순위 헌액", "명예의 전당 헌액", "리그의 레전드",
+      "올스타급 커리어", "팀의 든든한 주전", "오래 사랑받은 베테랑", "묵묵한 롤 플레이어", "프로의 꿈을 이룬 선수",
+    ]);
+    expect(legacyOf({ ...base, seasons: 0 })).toBe("코트를 사랑한 선수");
+    expect(legacyOf(at(700, { mvp: 5 }))).toBe("역대 최고 논쟁의 주인공");
+    // MVP가 모자라면 점수가 높아도 한 단계 아래예요.
+    expect(legacyOf(at(700, { mvp: 4 }))).toBe("한 시대를 지배한 슈퍼스타");
+    expect(legacyOf(at(700, { mvp: 2 }))).toBe("명예의 전당 1순위 헌액");
+    expect(legacyOf(at(259.9))).toBe("명예의 전당 헌액");
+    expect(legacyOf(at(180))).toBe("명예의 전당 헌액");
+    expect(legacyOf(at(120))).toBe("리그의 레전드");
+    expect(legacyOf(at(75))).toBe("올스타급 커리어");
+    expect(legacyOf(at(40))).toBe("팀의 든든한 주전");
+    expect(legacyOf(at(10))).toBe("오래 사랑받은 베테랑");
+    expect(legacyOf(at(10, { seasons: 6 }))).toBe("묵묵한 롤 플레이어");
+    expect(legacyOf(at(10, { seasons: 3 }))).toBe("프로의 꿈을 이룬 선수");
+  });
+
+  it("예전 여섯 단계 등급도 그대로 계산할 수 있어요(예전 화면이 올린 기록 검사용)", () => {
+    expect(legacyOfV1(at(100))).toBe("명예의 전당 헌액");
+    expect(legacyOf(at(100))).toBe("올스타급 커리어");
+    expect(legacyOfV1(at(250, { mvp: 3 }))).toBe("역대 최고 논쟁의 주인공");
+    expect(legacyOfV1({ ...base, seasons: 0 })).toBe("코트를 사랑한 선수");
   });
 });
 
@@ -3496,5 +3582,17 @@ describe("브라우저 업적과 누적 기록", () => {
     expect(deleteRetired("none").hall).toEqual([sb]);
     expect(deleteRetired(sb.id)).toEqual({ hall: [], endings: [] });
     expect(m.has("b2r-endings-v1")).toBe(false);
+  });
+
+  it("이 브라우저에 저장된 은퇴 기록의 레거시 등급은 읽을 때 지금 기준으로 다시 매겨요", () => {
+    fakeStorage();
+    const c = played(fresh("lg-old"), 8);
+    const s = retire(c);
+    expect(legacyOf(s)).not.toBe("명예의 전당 헌액");
+    saveHall([{ ...s, legacy: "명예의 전당 헌액" }]);
+    expect(loadHall()[0].legacy).toBe(legacyOf(s));
+    c.summary = { ...s, legacy: "명예의 전당 헌액" };
+    saveEnding(c);
+    expect(loadEnding(c.id)!.summary!.legacy).toBe(legacyOf(s));
   });
 });

@@ -12,6 +12,7 @@ import { daysBack, kstDay } from "@/shared/leaderboard/days";
 import { STAT_KEYS, type BoardCount, type BoardDay, type BoardDays, type StatKey } from "@/shared/leaderboard/types";
 import { Loading } from "@/shared/ui/ui";
 import { BestFiveCourt } from "./BestFiveCourt";
+import { ChallengeTab } from "./ChallengeTab";
 import { MyRecords } from "./MyRecords";
 import { RankingList } from "./RankingList";
 import { STAT_LABELS, StatList } from "./StatList";
@@ -21,6 +22,7 @@ const TABS = [
   ["ranking", "랭킹 100"],
   ["position", "포지션별 랭킹"],
   ["stats", "스탯 랭킹"],
+  ["challenge", "챌린지"],
   ["mine", "나의 기록"],
 ] as const;
 type Tab = (typeof TABS)[number][0];
@@ -37,7 +39,7 @@ const myBestFive = (hall: CareerSummary[]) =>
 /** 고른 날짜: 오늘부터 며칠 전인지(0이 오늘), 또는 올타임 */
 type DayPick = number | "all";
 
-// 탭은 주소의 #best5 · #ranking · #position · #stats · #mine을 따라가요. 링크로 바로 열 수 있고 뒤로 가기도 돼요.
+// 탭은 주소의 #best5 · #ranking · #position · #stats · #challenge · #mine을 따라가요. 링크로 바로 열 수 있고 뒤로 가기도 돼요.
 const subscribeHash = (cb: () => void) => {
   window.addEventListener("hashchange", cb);
   return () => window.removeEventListener("hashchange", cb);
@@ -241,7 +243,7 @@ export function RankingsScreen() {
               </button>
             </div>
           )}
-          {tab !== "mine" && !myBest && hydrated && (
+          {tab !== "mine" && tab !== "challenge" && !myBest && hydrated && (
             <>
               <DayChips days={days} pick={pick} onPick={setPick} counts={counts} />
               <DayCount counts={counts} day={day} today={today} />
@@ -263,6 +265,9 @@ export function RankingsScreen() {
             )
           ) : tab === "mine" ? (
             <MyRecords hall={hall} mine={mine} pending={new Set(pending ? pending.split("\n") : [])} endings={new Set(endings)} />
+          ) : tab === "challenge" ? (
+            // 챌린지는 날짜와 포지션을 탭 안에서 따로 골라요(올타임이 없어요).
+            hydrated && <ChallengeTab days={days} />
           ) : tab === "stats" ? (
             hydrated && <StatsPanel mine={myIds} day={day} today={today} />
           ) : (

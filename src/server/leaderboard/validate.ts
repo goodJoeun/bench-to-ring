@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { AWARDS, BEARDS, HAIR_STYLES, LEAGUES, LOOK_KEYS, NAME_MAX, PERSONAL_AWARDS, POS_KEYS, RULESET_VERSION, START_YEAR, legacyOf, playedNba, type AwardKey, type CareerSummary, type LeagueKey, type BeardStyle, type HairStyle, type LeagueShare, type LookKey, type PosKey } from "@/game";
+import { AWARDS, BEARDS, HAIR_STYLES, LEAGUES, LOOK_KEYS, NAME_MAX, PERSONAL_AWARDS, POS_KEYS, RULESET_VERSION, START_YEAR, legacyOf, legacyOfV1, playedNba, type AwardKey, type CareerSummary, type ChallengeTag, type LeagueKey, type BeardStyle, type HairStyle, type LeagueShare, type LookKey, type PosKey } from "@/game";
 import { RETIRE_AGE } from "@/game/season/offseason";
-import { isDay } from "@/shared/leaderboard/days";
+import { DAY_COUNT, challengeOpen, isDay, kstDay, shiftDay } from "@/shared/leaderboard/days";
 import { STAT_KEYS, type BoardDay, type BoardScope, type StatKey } from "@/shared/leaderboard/types";
 
 // 제출한 은퇴 기록이 엔진이 낼 수 있는 모양과 범위인지 봐요 (docs/online-leaderboard.md 4장 1단계). 순위표 조회 조건도 여기서 읽어요.
@@ -87,6 +87,7 @@ const summarySchema = z.object({
       }),
     )
     .optional(),
+  challenge: z.object({ day: z.string().refine(isDay), pos: z.enum(POS_KEYS as [PosKey, ...PosKey[]]) }).optional(),
 });
 
 export type SubmittedSummary = z.infer<typeof summarySchema> & CareerSummary;
@@ -126,6 +127,25 @@ export function parseStatQuery(params: URLSearchParams): StatQueryResult {
   return q.ok ? { ok: true, scope: q.scope, stat: stat as StatKey, day: q.day } : q;
 }
 
+/**
+ * 이 기록을 챌린지 순위표에 올릴 날짜와 포지션. 챌린지 기록이 아니거나 접수 기간(시작한 날과 그다음 날)이 아니면 null이에요.
+ * null이어도 일반 랭킹에는 그대로 올라가요.
+ */
+export function acceptedChallenge(s: Pick<CareerSummary, "challenge">, now: number): ChallengeTag | null {
+  return s.challenge && challengeOpen(s.challenge.day, now) ? s.challenge : null;
+}
+
+/**
+ * GET /api/challenge의 `?day=YYYY-MM-DD`. 순위표로 볼 수 있는 최근 DAY_COUNT일(한국 시간)만 받아요.
+ * 브라우저 시계가 조금 앞서 자정을 먼저 넘길 수 있어서 내일까지는 받아요(빈 순위표). 맞지 않으면 null이에요.
+ */
+export function parseChallengeDay(params: URLSearchParams, now: number): string | null {
+  const day = params.get("day");
+  if (!day || !isDay(day)) return null;
+  const today = kstDay(now);
+  return shiftDay(today, 1 - DAY_COUNT) <= day && day <= shiftDay(today, 1) ? day : null;
+}
+
 /** 욕설이 들어간 선수 이름은 이 이름으로 바꿔서 올려요. 기록은 살려요. */
 export const HIDDEN_NAME = "익명의 선수";
 
@@ -159,8 +179,10 @@ export function checkSummary(input: unknown): CheckResult {
   if ((s.stl ?? 0) > s.gp * 10 || (s.blk ?? 0) > s.gp * 10 || (s.tpm ?? 0) > s.gp * 15) return { ok: false, error: "통산 기록이 너무 많아요." };
   // 16세에 START_YEAR로 시작해 나이와 연도가 같이 늘어요.
   if (Math.abs(s.retYear - (START_YEAR - 17 + s.retAge)) > 1) return { ok: false, error: "은퇴 연도가 맞지 않아요." };
+  // 레거시 등급을 나누기 전(2026-11-20 전) 화면이 대기열에 넣어 둔 기록은 예전 등급으로 와요. 둘 다 받고, 지금 등급으로 바꿔 저장해요.
   const { legacy, ...rest } = s;
-  if (legacy !== legacyOf(rest)) return { ok: false, error: "레거시 등급이 맞지 않아요." };
+  if (legacy !== legacyOf(rest) && legacy !== legacyOfV1(rest)) return { ok: false, error: "레거시 등급이 맞지 않아요." };
+  s.legacy = legacyOf(rest);
   // NBA 몫은 전체의 일부예요. NBA MVP는 NBA에서만 받아요.
   const n = s.nba;
   if (n) {

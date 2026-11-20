@@ -8,7 +8,8 @@ import { clamp, r1, ro, sigmoid } from "../core/util";
 
 /*
  * 대한민국 선수의 병역. 만 28세까지 입대를 미룰 수 있고, 상무(국군체육부대)나 현역으로 18개월을 복무해요.
- * 게임에서는 복무 시즌 하나를 통째로 빠지고, 전역한 다음 시즌은 중반부터 합류해요.
+ * 게임에서는 복무 시즌 하나를 통째로 빠지고, 전역한 다음 시즌은 초반을 지나(정규시즌 80%를 남기고) 합류해요.
+ * 입대 전 팀으로 돌아가면 코치 신뢰도 이어 가요.
  * 아시안게임 금메달이나 올림픽 메달을 따면 예술체육요원으로 편입돼 병역 특례를 받아요.
  */
 
@@ -70,7 +71,7 @@ export function militaryDecision(c: Career): Decision | null {
 
 /** 복무 중 시즌이 이어지면 안 되는 결정(이적·계약·진로·생활 이벤트)은 입대와 함께 지워요. */
 function enlist(c: Career, kind: MilitaryKind, tag: string): void {
-  c.mil = { s: "serving", kind, prev: { stage: c.stage, team: c.team, contract: c.contract } };
+  c.mil = { s: "serving", kind, prev: { stage: c.stage, team: c.team, contract: c.contract, trust: c.trust } };
   c.stage = "military";
   c.team = null;
   c.contract = null;
@@ -154,6 +155,8 @@ export function endService(c: Career, tag: string): QueueItem[] {
   c.stage = prev?.stage ?? "free";
   c.team = prev?.team ?? null;
   c.contract = prev?.contract ?? null;
+  // 입대 전 팀으로 돌아가면 코치도 그대로라, 쌓아 둔 신뢰를 이어 가요. 새 팀을 찾아야 하면 처음부터예요.
+  if (c.team) c.trust = prev?.trust ?? 0;
   if (c.stage === "military" || c.stage === "hs") c.stage = "free";
   addNews(c, tag, "big", `${kind === "sangmu" ? "상무" : "현역"} 복무를 마치고 전역했어요!${c.team ? ` ${ro(c.team.name)} 돌아가요.` : ""}`);
   if (c.stage === "college") return [{ lazy: "college" }];

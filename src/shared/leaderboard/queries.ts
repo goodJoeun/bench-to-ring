@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import type { PosKey } from "@/game";
-import { fetchBoard, fetchBoardDays, fetchMine, fetchStatBoard } from "./client";
+import { fetchBoard, fetchBoardDays, fetchChallenge, fetchMine, fetchMyChallenge, fetchStatBoard } from "./client";
 import { leaderboardKeys } from "./keys";
 import type { BoardDay, StatKey } from "./types";
 
@@ -19,3 +19,11 @@ export const boardDaysQuery = () => queryOptions({ queryKey: leaderboardKeys.day
 
 /** 이 브라우저가 올린 기록의 지금 순위. 올린 적이 없으면 null이에요. */
 export const mineQuery = () => queryOptions({ queryKey: leaderboardKeys.mine(), queryFn: fetchMine });
+
+/** 그날(한국 시간) 챌린지의 포지션별 순위표. 날짜를 아직 모르면(서버 렌더링) 부르지 않아요. */
+export const challengeQuery = (day: string) =>
+  queryOptions({ queryKey: leaderboardKeys.challenge(day), queryFn: () => fetchChallenge(day), enabled: !!day });
+
+/** 이 브라우저의 그날 챌린지 성적. 올린 적이 없으면 null이에요. */
+export const myChallengeQuery = (day: string) =>
+  queryOptions({ queryKey: leaderboardKeys.myChallenge(day), queryFn: () => fetchMyChallenge(day), enabled: !!day });

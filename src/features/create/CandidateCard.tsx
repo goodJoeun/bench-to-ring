@@ -12,6 +12,7 @@ export function CandidateCard({
   jersey,
   index,
   selected,
+  fixed = false,
 }: {
   cand: Candidate;
   pos: PosKey;
@@ -20,22 +21,28 @@ export function CandidateCard({
   jersey: string;
   index: number;
   selected: boolean;
+  /** 고를 수 없이 보여주기만 해요 (챌린지 모드의 정해진 선수) */
+  fixed?: boolean;
 }) {
   const arch = archetypeOf(pos, cand.arch);
   return (
     // 카드 아무 곳이나 눌러 고를 수 있어요. 키보드로는 오른쪽 위 후보 버튼을 써요.
-    <div className="cand" data-selected={selected || undefined} onClick={() => gameActions.editDraft({ selected: index })}>
+    <div
+      className="cand"
+      data-selected={selected || undefined}
+      data-fixed={fixed || undefined}
+      onClick={fixed ? undefined : () => gameActions.editDraft({ selected: index })}
+    >
       <span className="floor">
         <span className="key" />
         <Sprite look={look} color={jersey} scale={4} label={`${cand.arch} 후보 캐릭터`} />
-        <button
-          type="button"
-          className="pick"
-          aria-pressed={selected}
-          aria-label={`후보 ${index + 1} ${cand.arch} 선택`}
-        >
-          {selected ? "선택됨" : `후보 ${index + 1}`}
-        </button>
+        {fixed ? (
+          <span className="pick">오늘의 선수</span>
+        ) : (
+          <button type="button" className="pick" aria-pressed={selected} aria-label={`후보 ${index + 1} ${cand.arch} 선택`}>
+            {selected ? "선택됨" : `후보 ${index + 1}`}
+          </button>
+        )}
       </span>
       <span className="cbody">
         <span className="crow">

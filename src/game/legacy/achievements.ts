@@ -7,6 +7,7 @@ import { PLAYOFF_SPOTS, seasonStandings } from "../world/standings";
 import { addNews, cheer } from "../career/log";
 import { shopItem } from "../economy/shop";
 import { madePlayoffs, sumPlayoffs } from "../career/playoffs";
+import { RETIRE_AGE } from "../season/offseason";
 import { EMPTY_LIFETIME, LIFETIME_PREFIX, addLifetime, fromCareer, subLifetime, type Lifetime } from "./lifetime";
 import type { AttrKey, AwardEntry, AwardKey, Career, LeagueKey, MilitaryKind, PosKey, SeasonRecord } from "../core/types";
 
@@ -191,6 +192,11 @@ const POS_LEGEND: Record<PosKey, [string, string]> = {
 
 /** 히든 스탯 보너스까지 더한 오버롤로 넘어야 하는 값 */
 const BEYOND = 100;
+/**
+ * 불혹의 현역: 이 나이의 시즌을 뛰면 따요. 시즌 기록의 나이는 시즌을 시작할 때 나이라서, 마지막 시즌(39세)을 마치면 40세가 되어 은퇴해요.
+ * 40세 시즌은 오지 않으니 40세로 판정하면 딸 수 없어요.
+ */
+const FORTY_SEASON_AGE = RETIRE_AGE - 1;
 
 /**
  * 플레이오프 업적 기준. 무작위 선택 커리어 600개에서 저마다 4~9% 커리어가 따요.
@@ -644,7 +650,13 @@ export const ACHIEVEMENTS: Achievement[] = [
     group: "life",
     test: (v) => (v.c.awards.ring ?? 0) > 0 && ["olympics", "worldcup"].every((ev) => golds(v.c).some((t) => t.ev === ev)),
   },
-  { id: "forty", name: "불혹의 현역", desc: "40세까지 현역으로 뛰기", hint: "불혹이 되어도 코트 위에", group: "life", test: (v) => v.pro.some((h) => h.age >= 40 && h.gp > 0) },
+  {
+    id: "forty",
+    name: "불혹의 현역",
+    desc: `${RETIRE_AGE}세 은퇴까지 현역으로 뛰기`, hint: "불혹이 되어도 코트 위에",
+    group: "life",
+    test: (v) => v.pro.some((h) => h.age >= FORTY_SEASON_AGE && h.gp > 0),
+  },
   {
     id: "luxury",
     name: "사치품 중독자",

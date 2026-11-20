@@ -43,6 +43,13 @@
       "when": 1795067273700,
       "tag": "0005_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795148051880,
+      "tag": "0006_challenge",
+      "breakpoints": true
     }
   ]
 }

@@ -60,6 +60,7 @@ app ──▶ features ──▶ shared ──▶ game
 | `shell` | 모든 화면과 창 | 화면 전환 루트예요 |
 | `create`, `career`, `retired` | `hall-of-fame/HallOfFame` | 명예의 전당을 세 화면에 끼워 넣어요 |
 | `retired` | `career/tabs/RecordTab`의 `SeasonTable`, `PlayoffPanel` | 은퇴 화면에도 시즌별 기록 표와 플레이오프 기록을 보여줘요 |
+| `create`, `rankings` | `guide/ChallengeGuide` | 챌린지 도움말 창을 첫 화면의 챌린지 카드와 랭킹의 챌린지 탭에서 열어요 |
 
 화면이 아닌 도우미(함수, 상수, 그림 그리기)를 두 기능 이상이 쓰게 되면 `shared`로 옮겨요. 그래서 표지 그림(`coverArt.ts`)과 기록 캐릭터(`look.ts`)는 `shared/ui/sprite/`에 있어요.
 
@@ -79,16 +80,16 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 | 폴더 | 하는 일 |
 |---|---|
 | `shell/` | `Game.tsx`: 화면 전환(생성 / 커리어 / 시즌 결산 / 은퇴), 상단 메뉴, 진행 팝업과 창 띄우기 |
-| `create/` | 첫 화면(표지)과 단계별 선수 생성 |
+| `create/` | 첫 화면(표지)과 단계별 선수 생성. 표지 바로 아래의 오늘의 챌린지 카드 `ChallengeCard`(강조색 테두리, 누르면 챌린지 모드로 선수 생성, '챌린지 모드란'으로 도움말) |
 | `career/` | 커리어 진행 화면. `tabs/`에 시즌 · 기록 · 트로피 · 설정 탭. 결정 시트 위 삽화는 라이벌 `RivalArt`, 클러치 `ClutchArt`, 그 밖의 장면 `SceneArt`(그리기는 `sceneDraw.ts`, 장면 종류는 엔진의 `SceneKey`) |
 | `season-end/` | 시즌 결산 화면 `SeasonEndScreen` (시즌 → 시즌 결산 → 오프시즌. 리포트·커뮤니티 `SeasonReport`, 순위표) |
 | `progress/` | 진행 팝업 (국가대표 대회, 드래프트, 결승 중계, 응원, 은퇴 회고) |
 | `retired/` | 은퇴 화면, 역대 기록 순위, 닮은 꼴 선수, 기록 카드 공유 |
-| `rankings/` | 랭킹 페이지 (베스트 5, 랭킹 100, 포지션별, 스탯 랭킹, 나의 기록) |
+| `rankings/` | 랭킹 페이지 (베스트 5, 랭킹 100, 포지션별, 스탯 랭킹, 챌린지 `ChallengeTab`, 나의 기록) |
 | `hall-of-fame/` | 명예의 전당 (내 기기 기록과 온라인 순위) |
 | `notice/` | 공지 창과 알림, 공지 글 목록 `notices.ts` (새 글은 맨 위에) |
 | `achievements/` | 업적 창 (이 브라우저에서 딴 업적과 힌트, 누적 기록 진행도). 업적 목록과 판정은 엔진의 `legacy/achievements.ts` |
-| `feedback/` · `guide/` · `settings/` · `support/` | 의견 보내기, 게임 안내(설정에서 열어요), 설정, 커피 후원 창 |
+| `feedback/` · `guide/` · `settings/` · `support/` | 의견 보내기, 게임 안내(설정에서 열어요)와 챌린지 도움말 `ChallengeGuide`, 설정, 커피 후원 창 |
 
 한 기능만 쓰는 상수나 도우미는 그 기능 폴더에 둬요 (예: `create/options.ts`, `retired/careerCard.ts`).
 
@@ -115,7 +116,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 | 폴더 | 관심사 | 파일 |
 |---|---|---|
 | `core/` | 모든 곳이 쓰는 바탕 | `types` 저장 데이터 모양, `data` 공통 상수·룰셋 버전, `random` 시드 난수, `util` 작은 도우미 |
-| `player/` | 선수 자체 | `create` 후보 생성·커리어 시작, `players` 플레이 유형·외모, `ratings` 오버롤·출전 시간·연봉, `specialty` 히든 스탯, `condition` 능력치·건강 범위 |
+| `player/` | 선수 자체 | `create` 후보 생성·커리어 시작, `challenge` 챌린지 모드의 그날·포지션별 정해진 선수, `players` 플레이 유형·외모, `ratings` 오버롤·출전 시간·연봉, `specialty` 히든 스탯, `condition` 능력치·건강 범위 |
 | `world/` | 리그와 제도 | `leagues` 리그·구단·학교, `awards` 리그별 상 이름, `draft` 드래프트, `national` 국가대표, `military` 병역, `standings` 시즌 순위표 |
 | `season/` | 시즌 흐름과 결정 | `season` 시즌 진행·성장·시상, `live` 결승 중계, `offseason` 오프시즌과 결정 대기열, `events` 이벤트, `decisions` 진로·계약 결정, `actions` 결정 처리 |
 | `economy/` | 돈 쓰기 | `invest` 시즌 투자, `shop` 상점·기부 |
@@ -131,7 +132,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 | 경로 | 내용 |
 |---|---|
 | `db/` | 연결 `db.ts`, 테이블 `schema.ts` (`drizzle.config.ts`가 가리켜요) |
-| `leaderboard/` | 순위표 `boards.ts`, 스탯 랭킹 `stats.ts`, 기록 저장 `careers.ts`, 제출·조회 검사 `validate.ts` |
+| `leaderboard/` | 순위표 `boards.ts`, 스탯 랭킹 `stats.ts`, 챌린지 순위표 `challenge.ts`, 기록 저장 `careers.ts`, 제출·조회 검사 `validate.ts` |
 | `auth.ts` | 익명 플레이어 토큰 |
 | `feedback.ts` | 의견 보내기 |
 
@@ -141,6 +142,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 
 - `game/__tests__/engine.test.ts`
 - `game/__tests__/achievements.test.ts`
+- `game/__tests__/challenge.test.ts`
 - `game/__tests__/report.test.ts`
 - `game/__tests__/standings.test.ts`
 - `features/retired/__tests__/careerCard.test.ts`

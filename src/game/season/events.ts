@@ -1486,7 +1486,7 @@ export function injuryDecision(out: number): Decision {
 }
 
 /** 큰 경기(빅매치·클러치) 성공 확률 보정: 승부사는 오르고 새가슴은 내려가요. */
-const bigGameEdge = (c: Career, x = 0.1) => (c.p.trait === "승부사" ? x : c.p.trait === "새가슴" ? -x * 0.8 : 0);
+const bigGameEdge = (c: Career, x = 0.1) => (c.p.trait === "승부사" ? x : c.p.trait === "새가슴" ? -x * 0.3 : 0);
 
 /** 결승 직전 건강(화면에 보이는 반올림 값)이 이 값 이하일 때만 풀타임 출전을 강행할지 물어요. */
 export const FINAL_ASK_HEALTH = 60;

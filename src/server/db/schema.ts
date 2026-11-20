@@ -60,6 +60,12 @@ export const careers = pgTable(
     legacy: text("legacy").notNull(),
     /** CareerSummary 전체 (화면 상세용) */
     summary: jsonb("summary").$type<CareerSummary>().notNull(),
+    /**
+     * 챌린지 모드로 뛴 기록이면 시작한 날(한국 시간 YYYY-MM-DD)과 시작 포지션. 그날 챌린지 순위표가 이 칸으로 읽어요.
+     * 일반 기록과, 접수 기간(shared/leaderboard/days.ts의 challengeOpen)이 지나 올라온 챌린지 기록은 null이에요.
+     */
+    challengeDay: text("challenge_day"),
+    challengePos: text("challenge_pos"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -80,6 +86,8 @@ export const careers = pgTable(
     index("careers_blk").on(t.blk.desc(), t.createdAt).where(sql`${t.blk} is not null`),
     index("careers_tpm").on(t.tpm.desc(), t.createdAt).where(sql`${t.tpm} is not null`),
     index("careers_donated").on(t.donated.desc(), t.createdAt).where(sql`${t.donated} is not null`),
+    // 챌린지 순위표: 그날 그 포지션의 기록만 읽어요. 챌린지가 아닌 기록은 인덱스에 넣지 않아요.
+    index("careers_challenge").on(t.challengeDay, t.challengePos).where(sql`${t.challengeDay} is not null`),
     // 내 기록 목록과 제출 횟수 제한 (플레이어마다 최근 제출 시각)
     index("careers_player").on(t.playerId, t.createdAt.desc()),
   ],

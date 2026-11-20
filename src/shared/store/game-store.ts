@@ -13,6 +13,7 @@ import {
   clutchScene,
   createCareer,
   currentDecision,
+  dailyChallenge,
   donate,
   generateCandidates,
   hsSchools,
@@ -31,6 +32,7 @@ import {
   type CareerPath,
   type CareerSummary,
   type ClutchMove,
+  type DailyChallenge,
   type FocusKey,
   type InvestKey,
   type Look,
@@ -53,6 +55,7 @@ import {
   unlockAchievements,
 } from "@/game/career/storage";
 import { deleteOnline, flushPending, submitCareer } from "@/shared/leaderboard/client";
+import { kstDay } from "@/shared/leaderboard/days";
 
 /** 선수 생성 화면의 입력값 */
 export interface CreationDraft {
@@ -76,6 +79,17 @@ export interface CreationDraft {
   pool: Partial<Record<PosKey, Candidate[]>>;
   selected: number;
   rerolls: number;
+  /**
+   * 챌린지 모드로 만드는 중이면 오늘 그 포지션의 챌린지 선수. 포지션·플레이 스타일·국적·학교는 여기 값으로 정해지고,
+   * 위의 pos·nat·school·candidates는 일반 모드로 돌아갈 때를 위해 그대로 둬요.
+   */
+  challenge: DailyChallenge | null;
+}
+
+/** 이 입력으로 시작하면 되는 선수: 챌린지 모드면 오늘의 챌린지 선수, 아니면 고른 포지션·국적·학교·후보예요. */
+export function draftStart(d: CreationDraft): { pos: PosKey; nat: string; school: string; cand: Candidate | undefined } {
+  const ch = d.challenge;
+  return ch ? { pos: ch.pos, nat: ch.nat, school: ch.school, cand: ch.cand } : { pos: d.pos, nat: d.nat, school: d.school, cand: d.candidates[d.selected] };
 }
 
 export interface GameSnapshot {
@@ -172,6 +186,7 @@ const emptyDraft = (): CreationDraft => ({
   pool: {},
   selected: 0,
   rerolls: REROLLS,
+  challenge: null,
 });
 
 const SERVER_SNAPSHOT: GameSnapshot = { ready: false, career: null, draft: emptyDraft(), hall: [], endings: [], ending: null, playing: false, speed: 1, final: false, seasonEnd: false, farewell: false, farewellReplay: false, tournament: false, drafting: false, toast: null, outcome: null };
@@ -196,6 +211,7 @@ function freshDraft(prev?: CreationDraft): CreationDraft {
     pool: { [base.pos]: candidates },
     selected: 0,
     rerolls: REROLLS,
+    challenge: null,
   };
 }
 
@@ -298,7 +314,8 @@ function submitOnline(s: CareerSummary): void {
   void submitCareer(s).then((r) => {
     if (!r) return;
     const got = rankUnlock(s.id, r);
-    set({ toast: toast(`온라인 랭킹 전체 ${r.rank}위 · ${r.pos} ${r.posRank}위 (${r.total}명 중)${got.length ? ` · 업적 달성: ${got.join(", ")}!` : ""}`) });
+    const ch = r.challenge ? ` · 챌린지 ${r.challenge.pos} ${r.challenge.rank}위 (${r.challenge.players}명 중)` : "";
+    set({ toast: toast(`온라인 랭킹 전체 ${r.rank}위 · ${r.pos} ${r.posRank}위 (${r.total}명 중)${ch}${got.length ? ` · 업적 달성: ${got.join(", ")}!` : ""}`) });
   });
 }
 
@@ -374,13 +391,26 @@ export const gameActions = {
     const candidates = generateCandidates(d.pos);
     set({ draft: { ...d, candidates, pool: { ...d.pool, [d.pos]: candidates }, selected: 0, rerolls: d.rerolls - 1 } });
   },
+  /** 오늘(한국 시간) 그 포지션의 챌린지 선수로 선수 만들기를 시작해요. 이름·등번호·캐릭터만 골라요. */
+  enterChallenge(pos: PosKey) {
+    set({ draft: { ...snapshot.draft, challenge: dailyChallenge(kstDay(Date.now()), pos) } });
+  },
+  /** 챌린지 모드를 나가 일반 선수 만들기로 돌아가요. */
+  leaveChallenge() {
+    if (snapshot.draft.challenge) set({ draft: { ...snapshot.draft, challenge: null } });
+  },
   startCareer() {
     const d = snapshot.draft;
-    const cand = d.candidates[d.selected];
+    const ch = d.challenge;
+    // 챌린지 화면을 열어 둔 채 날짜가 바뀌었으면 오늘의 선수로 바꾸고 다시 확인받아요.
+    const today = kstDay(Date.now());
+    if (ch && ch.day !== today)
+      return set({ draft: { ...d, challenge: dailyChallenge(today, ch.pos) }, toast: toast("날짜가 바뀌어 오늘의 챌린지 선수로 바꿨어요. 확인하고 다시 시작해 주세요") });
+    const { pos, nat, school, cand } = draftStart(d);
     // 이름은 반드시 지어야 해요. 화면에서 먼저 안내해요.
     if (!cand || !d.name.trim()) return;
     const c = createCareer(
-      { name: d.name, num: Number(d.num), nat: d.nat, look: d.look, pos: d.pos, path: d.path, school: d.school || undefined },
+      { name: d.name, num: Number(d.num), nat, look: d.look, pos, path: d.path, school: school || undefined, challenge: ch ? { day: ch.day, pos: ch.pos } : undefined },
       cand,
     );
     saveCareer(c);

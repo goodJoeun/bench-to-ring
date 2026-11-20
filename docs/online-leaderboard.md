@@ -66,6 +66,8 @@ create table careers (
   legacy       text not null,                -- 레거시 등급 문구
   score        double precision not null default 0, -- 랭킹 점수 (아래 순위 계산)
   summary      jsonb not null,               -- CareerSummary 전체 (화면 상세용)
+  challenge_day text,                        -- 챌린지 기록이면 시작한 날 (한국 시간 YYYY-MM-DD). 일반 기록은 null
+  challenge_pos text,                        -- 챌린지 기록이면 시작 포지션
   created_at   timestamptz not null default now()
 );
 
@@ -76,6 +78,7 @@ create index careers_pos_rank on careers (pos, score desc, mvp desc, peak desc, 
 create index careers_created  on careers (created_at);              -- 날짜별 순위표와 등록 수
 create index careers_pts      on careers (pts desc, created_at);    -- 스탯 랭킹. reb·ast도 같고,
 create index careers_stl      on careers (stl desc, created_at) where stl is not null; -- blk·tpm·donated도 같아요
+create index careers_challenge on careers (challenge_day, challenge_pos) where challenge_day is not null; -- 챌린지 순위표 (0006_challenge)
 
 -- 집계 (0004_scale). careers 트리거가 기록을 넣고 뺄 때 맞춰 둬서, 전체 수와 통계를 셀 때 careers를 훑지 않아요.
 create table career_counts (                -- 룰셋·포지션마다 커리어 수, NBA 진출 수, NBA MVP 수
@@ -111,6 +114,10 @@ create table replays (
 - **스탯 랭킹**(`GET /api/stats?stat=pts|reb|ast|stl|blk|tpm`): 프로 통산 기록 상위 50명. 스탯마다 인덱스가 있는 칸에서 읽어요. 스틸·블록·3점슛이 없는 예전 기록은 빠져요. 순위표와 같은 캐시 태그를 써요.
 - **역대 Best 5**: 포지션마다 1위 한 명 (`bestFive`와 같은 규칙). 포지션 순위 인덱스에서 포지션마다 한 줄씩 읽어요.
 - **내 순위**: 내 플레이어 기록(`careers_player` 인덱스)마다 위처럼 더 높은 기록 수를 세요(`GET /api/careers/mine`). 제출 응답의 순위(`ranksOf`)도 같아요.
+- **챌린지 순위**(`src/server/leaderboard/challenge.ts`): 챌린지 모드는 매일 포지션마다 누구나 같은 선수로 시작해요(`src/game/player/challenge.ts`). 은퇴 요약의 `challenge`(날짜와 시작 포지션)를 `challenge_day`·`challenge_pos` 칸에 적고, 그날 그 포지션 기록끼리만 위와 같은 순서로 줄을 세워요.
+  - 한 플레이어가 여러 번 도전했으면 가장 좋은 기록 하나만 순위에 넣어요(`row_number() over (partition by player_id, challenge_pos ...) = 1`). 순위는 그렇게 줄인 기록에 `rank()`를 매겨요. 하루치 챌린지 기록만 `careers_challenge` 인덱스로 읽어서, 전체 기록이 늘어도 비용은 그날 도전 수만큼이에요.
+  - 접수 기간은 시작한 날과 그다음 날(한국 시간)까지예요(`challengeOpen`). 그 뒤에 올라왔거나 아직 오지 않은 날로 적힌 기록은 두 칸을 비워 일반 랭킹에만 올려요. 챌린지 기록도 일반 랭킹에는 함께 올라가요.
+  - 챌린지 선수는 브라우저가 날짜와 포지션으로 만든 시드 난수로 뽑아요. 서버는 그 선수로 시작했는지 확인하지 못해요(2단계 재생 검증에서 함께 봐요).
 - **전체 통계**: 제출된 커리어 수, NBA 진출 비율, NBA MVP 비율 (`career_counts`, 날짜를 고르면 그날 기록을 직접 세요). "전체 유저 중 상위 2%" 같은 문구에 써요.
 
 ## 4. 기록 조작 막기
@@ -150,9 +157,11 @@ create table replays (
 | 메서드 · 경로 | 하는 일 |
 | --- | --- |
 | `POST /api/players` | 익명 플레이어 만들기. 토큰을 돌려주고 브라우저에 저장해요. |
-| `POST /api/careers` | 은퇴 기록 제출. 엔딩에 도달하면 자동으로 불러요. 선수 이름 욕설 필터. 응답에 전체 순위와 포지션 순위를 담아요. |
+| `POST /api/careers` | 은퇴 기록 제출. 엔딩에 도달하면 자동으로 불러요. 선수 이름 욕설 필터. 응답에 전체 순위와 포지션 순위를 담아요. 챌린지 기록이 접수 기간 안이면 그날 챌린지 순위(`challenge`)도 담아요. |
 | `GET /api/boards?ruleset=&pos=&scope=current\|all` | 순위표. 기본은 현재 룰셋 전체 Top 100, `pos`를 주면 그 포지션 Top 50이에요. 화면은 `scope=all`(역대 전체)로 불러요. 역대 Best 5와 전체 통계(커리어 수, NBA 진출, NBA MVP)를 함께 담아요. 캐시해요. |
 | `GET /api/boards/days` | 날짜별 등록 수. 최근 7일(한국 시간)마다, 그리고 올타임으로 기록 수와 그 기록을 올린 플레이어(기기) 수, 올타임 포지션별 기록 수예요. 역대 전체 범위이고, 순위표와 같은 태그로 캐시해요. |
+| `GET /api/challenge?day=YYYY-MM-DD` | 챌린지 순위표. 그날(한국 시간) 포지션 다섯 개의 상위 50명과 도전한 플레이어 수·기록 수를 한 번에 담아요. 최근 7일과 내일(브라우저 시계가 앞설 때)까지만 받아요. 순위표와 같은 태그로 캐시하고 CDN도 같아요. |
+| `GET /api/challenge/mine?day=YYYY-MM-DD` | 내 플레이어(토큰)의 그날 챌린지 성적. 도전한 포지션마다 가장 좋은 기록의 순위·도전 횟수예요. 캐시하지 않아요. |
 | `GET /api/careers/mine` | 내 플레이어(토큰)가 올린 기록의 지금 전체·포지션 순위. 랭킹 페이지 '나의 기록'에서 써요. |
 | `DELETE /api/careers/mine?career=<커리어 id>` | 내 플레이어(토큰)가 올린 기록 하나를 지워요. '나의 기록'·'내 은퇴 선수'에서 기록을 지울 때 불러요. 다른 플레이어의 기록은 지우지 않고, 지웠으면 순위표 캐시(`boards` 태그)를 비워요. 집계는 `careers` 트리거가 맞춰요. 브라우저는 서버가 안 되면 지울 id를 `b2r-delete-v1`에 남겨 두고 다음 접속 때 다시 지워요. |
 | `GET /api/careers/:id` | 기록 상세 (요약 전체) |
@@ -170,6 +179,7 @@ create table replays (
 - **랭킹 페이지** (`/rankings`, `src/components/rankings/`): 상단 헤더의 [랭킹] 버튼과 명예의 전당의 링크로 들어가요. 탭은 주소의 `#best5` · `#ranking` · `#mine`을 따라가요.
   - **베스트 5**: 하프 코트 위에 포지션별 랭킹 점수 1위를 도트 선수로 세워요(점수 배지, 이름·포지션·최고 오버롤). 아래에 등록된 커리어·NBA 진출·NBA MVP 수
   - **랭킹 100**: 포지션 칩(전체·PG~C), 1~3위 단상, 4위부터 목록(포지션·OVR·NBA MVP·파이널 MVP·리그 MVP·반지·통산 득점, 점수)
+  - **챌린지**(`#challenge`): 날짜(최근 7일)와 포지션을 고르면 그날의 챌린지 선수(플레이 유형·국적·학교·키·능력치)와 상위 50명, 도전한 사람 수·기록 수, 내 순위를 보여줘요. 첫 화면의 '오늘의 챌린지' 카드에서 포지션을 눌러 도전해요
   - **나의 기록**: 이 브라우저에서 은퇴한 선수를 랭킹 점수로 줄 세우고, 온라인 전체·포지션 순위(또는 등록 대기 중 / 온라인 기록 없음)를 붙여요. 내 기록은 순위표에서도 '나'로 표시해요. 서버의 `career_id`(브라우저 커리어 id)로 맞춰서 정확해요
   - 도트 색은 은퇴 요약의 `look`에서, 유니폼 색은 마지막 소속팀에서 가져와요. `look`이 없는 예전 기록은 기록 id로 색을 정해요
   - 룰셋 선택은 두지 않고 역대 전체만 보여줘요. 은퇴 직후 순위 알림, 나의 기록, 명예의 전당 탭도 역대 전체 순위예요
