@@ -4,6 +4,7 @@ import { Link } from "@/shared/ui/Link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { POS, POS_KEYS, dailyChallenge, fmtNum, type PosKey } from "@/game";
+import { challengeLeader } from "@/shared/leaderboard/leader";
 import { challengeQuery, myChallengeQuery } from "@/shared/leaderboard/queries";
 import { ChallengeGuide } from "@/features/guide/ChallengeGuide";
 import { useKstToday, useSeen } from "@/shared/lib/hooks";
@@ -13,7 +14,7 @@ import { Panel } from "@/shared/ui/ui";
 const NEW_UNTIL = "2026-12-04";
 
 /**
- * 첫 화면의 '오늘의 챌린지': 오늘(한국 시간) 포지션마다 정해진 선수와 도전한 사람 수, 내 순위를 보여줘요.
+ * 첫 화면의 '오늘의 챌린지': 오늘(한국 시간) 포지션마다 정해진 선수와 지금 1위의 이름, 도전한 사람 수, 내 순위를 보여줘요.
  * 포지션을 누르면 그 선수로 선수 만들기(캐릭터 → 오늘의 선수 → 이름)를 시작해요.
  * 순위표를 못 불러와도 선수는 브라우저에서 날짜로 정해져서 도전할 수 있어요.
  * 첫 화면에서 가장 눈에 띄게 강조색 테두리로 그리고, '챌린지 모드란'을 누르면 도움말(ChallengeGuide)을 띄워요.
@@ -50,6 +51,7 @@ export function ChallengeCard({ onPick }: { onPick: (pos: PosKey) => void }) {
           const c = dailyChallenge(today, p);
           const b = board?.boards[p];
           const m = mine?.mine.find((x) => x.pos === p);
+          const leader = b && challengeLeader(b);
           return (
             <button type="button" className="ch-pos" key={p} data-mine={m ? "" : undefined} onClick={() => onPick(p)}>
               <span className="p">
@@ -58,6 +60,23 @@ export function ChallengeCard({ onPick }: { onPick: (pos: PosKey) => void }) {
               <span className="nm">{c.cand.arch}</span>
               <span className="hint">
                 {c.nat} · {c.cand.h}cm
+              </span>
+              <span className="ch-lead">
+                {b ? (
+                  <>
+                    <span className="r">1위</span>{" "}
+                    {leader ? (
+                      <>
+                        <b>{leader.name}</b>
+                        {leader.others > 0 && ` 외 ${fmtNum(leader.others)}명`}
+                      </>
+                    ) : (
+                      "아직 없어요"
+                    )}
+                  </>
+                ) : (
+                  " "
+                )}
               </span>
               <span className="ch-n">
                 {m ? `내 순위 ${fmtNum(m.rank)}위 · ${fmtNum(m.players)}명 중` : b ? (b.players ? `${fmtNum(b.players)}명 도전` : "첫 도전자가 되어 보세요") : " "}

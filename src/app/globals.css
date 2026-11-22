@@ -8644,7 +8644,24 @@ a.btn {
   font-weight: 700;
   overflow-wrap: anywhere;
 }
+/* 지금 그 포지션 1위의 이름. 긴 이름도 다 보이게 줄을 바꿔요. */
+.ch-pos .ch-lead {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.ch-pos .ch-lead .r {
+  font-weight: 700;
+  color: var(--gold);
+}
+.ch-pos .ch-lead b {
+  color: var(--ink);
+}
 .ch-pos .ch-n {
+  margin-bottom: 8px;
   font-size: 12px;
   color: var(--muted);
 }
@@ -8653,7 +8670,8 @@ a.btn {
   font-weight: 700;
 }
 .ch-pos .ch-go {
-  margin-top: 8px;
+  /* 1위 이름이 길어 칸 높이가 달라져도 단추는 맨 아래에 나란히 있어요. */
+  margin-top: auto;
   padding: 7px 10px;
   border-radius: 8px;
   background: var(--accent);
