@@ -7,11 +7,7 @@
  */
 
 import { useSyncExternalStore } from "react";
-
-export const TEXT_ONLY_KEY = "b2r-text-only";
-
-/** 첫 화면이 그려지기 전에 저장된 값을 적용하는 스크립트(layout.tsx). 테마 스크립트 뒤에 이어 붙여요. */
-export const TEXT_ONLY_BOOT = `try{if(localStorage.getItem("${TEXT_ONLY_KEY}")==="1")document.documentElement.dataset.textOnly=""}catch(e){}`;
+import { TEXT_ONLY_KEY } from "./text-only-boot";
 
 const listeners = new Set<() => void>();
 

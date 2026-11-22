@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE } from "@/shared/lib/site";
+import { SITE_DESCRIPTION, SITE_ICON, SITE_NAME, SITE_TITLE } from "@/shared/lib/site";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -11,6 +11,6 @@ export default function manifest(): MetadataRoute.Manifest {
     display: "standalone",
     background_color: "#E7EBF0",
     theme_color: "#E7EBF0",
-    icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml" }],
+    icons: [{ src: SITE_ICON, sizes: "any", type: "image/svg+xml" }],
   };
 }

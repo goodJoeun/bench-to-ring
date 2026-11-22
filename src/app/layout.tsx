@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "@fontsource/black-han-sans/400.css";
@@ -13,10 +12,9 @@ import "@fontsource/saira-condensed/700.css";
 // 묶음에 없는 드문 글자만 위 fontsource 조각으로 받아요.
 import "./fonts/fonts.css";
 import "./globals.css";
-import { TEXT_ONLY_BOOT } from "@/shared/lib/text-only";
-import { THEME_BOOT } from "@/shared/lib/theme";
+import { BOOT_SCRIPT } from "@/shared/lib/boot";
 import { QueryProvider } from "@/shared/query/QueryProvider";
-import { SITE_DESCRIPTION, SITE_KEYWORDS, SITE_NAME, SITE_TITLE, SITE_URL } from "@/shared/lib/site";
+import { SITE_DESCRIPTION, SITE_ICON, SITE_KEYWORDS, SITE_NAME, SITE_TITLE, SITE_URL } from "@/shared/lib/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -24,6 +22,7 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
   keywords: SITE_KEYWORDS,
+  icons: { icon: [{ url: SITE_ICON, sizes: "any", type: "image/svg+xml" }] },
   alternates: { canonical: "/" },
   // 미리보기 이미지는 opengraph-image.tsx가 채워요.
   openGraph: {
@@ -52,10 +51,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   // suppressHydrationWarning은 이 두 요소 자신의 속성 차이만 넘기고, 안쪽 내용은 그대로 검사해요.
   return (
     <html lang="ko" suppressHydrationWarning>
+      <head>
+        {/* 저장된 화면 테마와 '텍스트만 보기'를 첫 화면이 그려지기 전에 적용해요. html의 data-theme·data-text-only 차이는 suppressHydrationWarning이 넘겨요. */}
+        <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
+      </head>
       <body suppressHydrationWarning>
         <QueryProvider>{children}</QueryProvider>
-        {/* 저장된 화면 테마와 '텍스트만 보기'를 하이드레이션 전에 적용해요. html의 data-theme·data-text-only 차이는 suppressHydrationWarning이 넘겨요. */}
-        <Script id="theme-boot" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `${THEME_BOOT};${TEXT_ONLY_BOOT}` }} />
         {/* Vercel 웹 분석: 페이지 방문 수를 세요. Vercel에 배포된 사이트에서만 데이터를 보내요. */}
         <Analytics />
         {/* Vercel Speed Insights: 실제 방문자 기기에서 잰 페이지 성능(LCP·INP·CLS 등)을 모아요. 마찬가지로 Vercel 배포에서만 보내요. */}

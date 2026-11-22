@@ -8,6 +8,11 @@ export const SITE_DESCRIPTION =
   "고교 벤치 멤버로 시작해 대학, KBL과 NBA를 거쳐 MVP와 우승 반지에 도전하는 무료 웹 농구 커리어 게임. 설치 없이 브라우저에서 바로 플레이해요.";
 /** app/opengraph-image.tsx가 만드는 이미지. 페이지에서 openGraph를 새로 지정하면 이어지지 않아서 직접 붙일 때 써요. */
 export const OG_IMAGE = { url: "/opengraph-image", width: 1200, height: 630, alt: SITE_TITLE };
+/**
+ * 사이트 아이콘(public/icons/icon.svg). 브라우저가 1년 동안 갖고 있으니(next.config.ts) 파일을 바꾸면 v도 내용의 sha1 앞 8자로 바꿔요.
+ * app/icon.svg로 두면 Next가 max-age=0을 붙여, 화면을 옮길 때마다 다시 확인하는 요청이 CDN 요청으로 잡혀요.
+ */
+export const SITE_ICON = "/icons/icon.svg?v=38f58020";
 export const SITE_KEYWORDS = [
   "농구 선수 키우기",
   "벤치 뎁혀 반지 굽기",
