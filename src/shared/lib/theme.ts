@@ -7,8 +7,9 @@ export const THEME_KEY = "b2r-theme";
 /**
  * 첫 화면이 그려지기 전에 저장된 테마를 적용하는 스크립트(layout.tsx의 <head>).
  * 이게 없으면 다크를 골라도 새로고침할 때 잠깐 밝은 화면이 번쩍여요.
+ * 서버 컴포넌트가 문자열로 읽으니 이 파일에는 "use client"를 붙이지 않아요. 붙이면 함수 참조가 들어가 스크립트가 문법 오류로 멈춰요.
  */
-export const THEME_BOOT = `try{var t=localStorage.getItem("${THEME_KEY}");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
+export const THEME_BOOT = `(function(){try{var t=localStorage.getItem("${THEME_KEY}");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}})()`;
 
 export function readTheme(): Theme {
   try {

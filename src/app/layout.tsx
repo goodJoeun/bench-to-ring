@@ -12,7 +12,7 @@ import "@fontsource/saira-condensed/700.css";
 // 묶음에 없는 드문 글자만 위 fontsource 조각으로 받아요.
 import "./fonts/fonts.css";
 import "./globals.css";
-import { BOOT_SCRIPT } from "@/shared/lib/boot";
+import { THEME_BOOT } from "@/shared/lib/theme";
 import { QueryProvider } from "@/shared/query/QueryProvider";
 import { SITE_DESCRIPTION, SITE_ICON, SITE_KEYWORDS, SITE_NAME, SITE_TITLE, SITE_URL } from "@/shared/lib/site";
 
@@ -52,8 +52,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
-        {/* 저장된 화면 테마와 '텍스트만 보기'를 첫 화면이 그려지기 전에 적용해요. html의 data-theme·data-text-only 차이는 suppressHydrationWarning이 넘겨요. */}
-        <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
+        {/* 저장된 화면 테마를 첫 화면이 그려지기 전에 적용해요. html의 data-theme 차이는 suppressHydrationWarning이 넘겨요. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
       </head>
       <body suppressHydrationWarning>
         <QueryProvider>{children}</QueryProvider>

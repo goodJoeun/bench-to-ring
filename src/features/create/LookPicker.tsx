@@ -2,7 +2,6 @@
 
 import { lookLabel, type Look } from "@/game";
 import { gameActions } from "@/shared/store/game-store";
-import { useTextOnly } from "@/shared/lib/text-only";
 import { Sprite } from "@/shared/ui/sprite/Sprite";
 
 /**
@@ -21,7 +20,6 @@ export function LookPicker({
   jerseys: string[];
 }) {
   const chosen = JSON.stringify(look);
-  const textOnly = useTextOnly();
   return (
     <>
       <div className="look-grid" role="group" aria-label="캐릭터">
@@ -38,18 +36,13 @@ export function LookPicker({
               title={label}
               onClick={() => gameActions.chooseLook(i)}
             >
-              {/* '텍스트만 보기'에서는 그림 대신 생김새 설명으로 골라요. */}
-              {textOnly ? (
-                <span className="look-text">{label}</span>
-              ) : (
-                <Sprite
-                  look={l}
-                  color={jerseys[i]}
-                  scale={5}
-                  className="look-art"
-                  label=""
-                />
-              )}
+              <Sprite
+                look={l}
+                color={jerseys[i]}
+                scale={5}
+                className="look-art"
+                label=""
+              />
             </button>
           );
         })}

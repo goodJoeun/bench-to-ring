@@ -4,7 +4,7 @@ import { useState } from "react";
 import { LEAGUES, TEAMS, type LeagueKey } from "@/game";
 import { Sheet } from "@/shared/ui/Sheet";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
-import { applyTextOnly, useTextOnly } from "@/shared/lib/text-only";
+import { applyTextOnly, useTextOnlyChosen } from "@/shared/lib/text-only";
 import { applyTheme, readTheme, type Theme } from "@/shared/lib/theme";
 
 const THEMES: { key: Theme; name: string; sub: string }[] = [
@@ -16,7 +16,7 @@ const THEMES: { key: Theme; name: string; sub: string }[] = [
 /** 화면 표시: 그림·이펙트를 함께 볼지, 글자만 볼지 */
 const DISPLAYS: { textOnly: boolean; name: string; sub: string }[] = [
   { textOnly: false, name: "기본", sub: "그림과 이펙트 함께" },
-  { textOnly: true, name: "텍스트만", sub: "그림·이펙트 없이" },
+  { textOnly: true, name: "텍스트만", sub: "게임 중 그림·이펙트 없이" },
 ];
 
 /** 수준이 낮은 리그부터 */
@@ -33,7 +33,7 @@ interface SettingsDialogProps {
 /** 상단 톱니 버튼으로 여는 설정: 화면 테마, 화면 표시(텍스트만 보기), 플레이 가이드, 리그별 구단 목록 */
 export function SettingsDialog({ onClose, onGuide, onCareerSettings }: SettingsDialogProps) {
   const [theme, setTheme] = useState<Theme>(readTheme);
-  const textOnly = useTextOnly();
+  const textOnly = useTextOnlyChosen();
   const [league, setLeague] = useState<LeagueKey>("kbl");
   const teams = TEAMS[league];
 

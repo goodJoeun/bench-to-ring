@@ -15,6 +15,7 @@ import { NoticeAlert, markNoticesAlerted, noticeAlertHiddenToday, noticesAlerted
 import { NoticeDialog } from "@/features/notice/NoticeDialog";
 import { NOTICES, useReadNotices } from "@/features/notice/notices";
 import { SUPPORT_ACCOUNT } from "@/shared/lib/site";
+import { useTextOnlyPlay } from "@/shared/lib/text-only";
 import { CoffeeDialog } from "@/features/support/CoffeeDialog";
 import { RetiredScreen } from "@/features/retired/RetiredScreen";
 import { SeasonEndScreen } from "@/features/season-end/SeasonEndScreen";
@@ -33,6 +34,8 @@ export function Game() {
   const inGame = ready && !ending && career && career.stage !== "retired";
   /** 엔딩을 보여주는 커리어: 다시 연 지난 엔딩, 아니면 방금 은퇴한 지금 커리어 */
   const retiredShown = ending ?? (career?.stage === "retired" ? career : null);
+  // '텍스트만 보기'는 커리어를 진행하는 동안과 은퇴 회고에서만 적용해요. 첫 화면·선수 만들기·은퇴 화면은 그림을 보여줘요.
+  useTextOnlyPlay(!!inGame || !!(farewell && retiredShown));
   const [guideOpen, setGuideOpen] = useState(false);
   const [achvOpen, setAchvOpen] = useState(false);
   // 시즌이 끝나면 오프시즌 전에 시즌 결산 화면을 보여줘요. 진행 중인 시즌이 없고 지난 시즌이 팀 시즌일 때만이에요.

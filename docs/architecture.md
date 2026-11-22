@@ -100,7 +100,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 | `ui/` | `ui.tsx`(Panel, StatTiles, Choice…), `Sheet.tsx`, `Toast.tsx`, `DeleteRecordSheet.tsx`(첫 화면 '내 은퇴 선수'와 랭킹 '나의 기록'이 함께 쓰는 기록 지우기 단추·확인 창) |
 | `ui/sprite/` | Canvas 선수 캐릭터 `Sprite.tsx`, 표지 그림 `coverArt.ts`, 기록의 캐릭터·유니폼 `look.ts` |
 | `ui/badge/` | `TeamBadge.tsx`(국기·로고·엠블럼), `Medal.tsx`(업적 메달과 딴 업적 카드의 훈장), `emblem.ts`, 만든 파일 `logos.generated.ts`·`flags.generated.ts` |
-| `lib/` | 공통 문구와 색 `format.ts`, 훅 `hooks.ts`, 사이트 정보 `site.ts`, 테마 `theme.ts`, 텍스트만 보기 `text-only.ts`(그림 컴포넌트는 `useTextOnly()`로 안 그리고, 남은 꾸밈·애니메이션은 `globals.css` 맨 아래 `[data-text-only]` 규칙이 꺼요) |
+| `lib/` | 공통 문구와 색 `format.ts`, 훅 `hooks.ts`, 사이트 정보 `site.ts`, 테마 `theme.ts`, 텍스트만 보기 `text-only.ts`(커리어 진행 중에만 적용해요. `Game`의 `useTextOnlyPlay()`가 `<html data-text-only>`를 붙이고 떼며, 그림 컴포넌트는 `useTextOnly()`로 안 그리고, 남은 꾸밈·애니메이션은 `globals.css` 맨 아래 `[data-text-only]` 규칙이 꺼요) |
 | `store/` | `game-store.ts`: 화면과 엔진을 잇는 상태 저장소 (useSyncExternalStore). 게임 상태만 둬요 |
 | `query/` | TanStack Query: 함께 쓰는 클라이언트 `query-client.ts`, 레이아웃에서 감싸는 `QueryProvider.tsx`, 쿼리 결과를 화면 상태로 나누는 `load-state.ts` |
 | `leaderboard/` | 랭킹 API 타입 `types.ts`, 날짜 규칙 `days.ts`, 브라우저 클라이언트 `client.ts`, 쿼리 키 `keys.ts`, 쿼리 `queries.ts` |
