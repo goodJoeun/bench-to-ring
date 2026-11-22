@@ -29,6 +29,8 @@ function NoGamesCard({ r, kicker, title }: { r: SeasonRecord; kicker: string; ti
   );
 }
 
+const pctText = (v: number | undefined) => (v === undefined ? "–" : `${v}%`);
+
 function ResultCard({ r }: { r: SeasonRecord }) {
   if (r.mil === "army") return <NoGamesCard r={r} kicker={`${r.year} 시즌 · 군 복무`} title={r.team} />;
   if (!r.lg && !r.mil) return <NoGamesCard r={r} kicker={`${r.year} 시즌`} title="무소속 · 개인 훈련" />;
@@ -38,9 +40,11 @@ function ResultCard({ r }: { r: SeasonRecord }) {
     ["AST", r.ast],
     ["STL", r.stl],
     ["BLK", r.blk],
-    ["FG%", r.fg],
+    ["FG%", r.fg || "–"],
     ["3PM", r.tpm ?? "–"],
     ["3P%", r.tpp ?? "–"],
+    ["FT%", r.ftp ?? "–"],
+    ["TOV", r.tov ?? "–"],
   ];
   return (
     <section className="panel">
@@ -87,7 +91,10 @@ function ResultCard({ r }: { r: SeasonRecord }) {
         <p className="hint">
           {r.pro ? "플레이오프" : "전국대회 본선"}{" "}
           {r.po.gp
-            ? `${r.po.gp}경기 평균 ${r.po.pts}점 ${r.po.reb}리바 ${r.po.ast}어시 ${r.po.stl}스틸 ${r.po.blk}블록`
+            ? `${r.po.gp}경기 평균 ${r.po.pts}점 ${r.po.reb}리바 ${r.po.ast}어시 ${r.po.stl}스틸 ${r.po.blk}블록` +
+              (r.po.shots || r.po.ftp !== undefined
+                ? ` · 야투 ${pctText(r.po.fg)} 3점 ${pctText(r.po.tpp)} 자유투 ${pctText(r.po.ftp)} 턴오버 ${r.po.tov ?? "–"}`
+                : "")
             : "결장"}{" "}
           · 팀 {r.po.w}승 {r.po.l}패
         </p>

@@ -14,6 +14,7 @@ function PlayoffReport({ report: rp }: { report: SeasonReport }) {
   const { season: po, career: total } = rp.playoffs;
   const stage = rec.pro ? "플레이오프" : "전국대회 본선";
   const diff = po?.gp ? Math.round((po.pts - rec.pts) * 10) / 10 : 0;
+  const hasShots = !!po?.shots || po?.ftp !== undefined;
   const tiles = po?.gp
     ? [
         { label: "득점", value: r1(po.pts), sub: rec.gp && diff ? `정규 대비 ${diff > 0 ? "+" : ""}${r1(diff)}` : undefined },
@@ -21,14 +22,22 @@ function PlayoffReport({ report: rp }: { report: SeasonReport }) {
         { label: "어시스트", value: r1(po.ast) },
         { label: "스틸", value: r1(po.stl) },
         { label: "블록", value: r1(po.blk) },
-        { label: "출전 시간", value: r1(po.min) },
+        // 슈팅 기록이 생기기 전 시즌은 출전 시간까지 여섯 칸, 그 뒤 시즌은 출전 시간을 제목으로 올리고 아홉 칸이에요.
+        ...(!hasShots
+          ? [{ label: "출전 시간", value: r1(po.min) }]
+          : [
+              { label: "턴오버", value: r1(po.tov ?? 0) },
+              { label: "야투", value: po.fg !== undefined ? `${r1(po.fg)}%` : "–" },
+              { label: "3점", value: po.tpp !== undefined ? `${r1(po.tpp)}%` : "–", sub: po.tpm ? `경기당 ${r1(po.tpm)}개` : undefined },
+              { label: "자유투", value: po.ftp !== undefined ? `${r1(po.ftp)}%` : "–" },
+            ]),
       ]
     : [];
   const avg = (v: number) => r1(v / total.gp);
   return (
     <section aria-labelledby="rp-po">
       <h3 id="rp-po">
-        {stage} 스탯 {po && <span>{po.gp ? `${po.gp}경기 · ` : ""}팀 {po.w}승 {po.l}패 · {rec.result}</span>}
+        {stage} 스탯 {po && <span>{po.gp ? `${po.gp}경기 · ${hasShots ? `평균 ${Math.round(po.min)}분 · ` : ""}` : ""}팀 {po.w}승 {po.l}패 · {rec.result}</span>}
       </h3>
       {po?.gp ? (
         <ul className="rp-tiles">
@@ -70,8 +79,11 @@ export function ReportView({ report: rp }: { report: SeasonReport }) {
     { label: "어시스트", value: r1(rec.ast), high: high("ast") },
     { label: "스틸", value: r1(rec.stl), high: high("stl") },
     { label: "블록", value: r1(rec.blk), high: high("blk") },
-    { label: "3점", value: r1(rec.tpm ?? 0), sub: rec.tpp ? `${Math.round(rec.tpp)}%` : undefined },
+    { label: "턴오버", value: rec.tov !== undefined ? r1(rec.tov) : "–" },
     { label: "야투", value: rec.fg ? `${r1(rec.fg)}%` : "–" },
+    { label: "3점슛", value: r1(rec.tpm ?? 0) },
+    { label: "3점 성공률", value: rec.tpp ? `${r1(rec.tpp)}%` : "–" },
+    { label: "자유투", value: rec.ftp !== undefined ? `${r1(rec.ftp)}%` : "–" },
     { label: "평점", value: r1(rec.rating) },
     { label: "오버롤", value: String(rec.ovr1), sub: rec.ovr1 !== rec.ovr0 ? `${rec.ovr1 > rec.ovr0 ? "+" : ""}${rec.ovr1 - rec.ovr0}` : undefined },
   ];

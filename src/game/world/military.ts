@@ -3,6 +3,7 @@ import { ATTR_KEYS } from "../core/data";
 import { addNews, decisionTag } from "../career/log";
 import { chance, ri, rnd } from "../core/random";
 import { ovr } from "../player/ratings";
+import { applySeasonShooting } from "../season/shooting";
 import type { AttrKey, Career, Decision, DecisionOption, MilitaryKind, QueueItem, SeasonRecord } from "../core/types";
 import { clamp, r1, ro, sigmoid } from "../core/util";
 
@@ -17,6 +18,9 @@ import { clamp, r1, ro, sigmoid } from "../core/util";
 export const ENLIST_DEADLINE = 28;
 /** 처음 입대 시기를 묻는 나이 */
 const FIRST_ASK = 23;
+
+/** KBL D리그 평균 오버롤. 상무 시즌의 기록과 슈팅 기준이에요. */
+const D_LEAGUE_AVG = 58;
 
 export const SANGMU = { name: "상무 (국군체육부대)", color: "#4B5A2A" };
 export const ARMY = { name: "육군 (현역 복무)", color: "#5B6148" };
@@ -117,7 +121,7 @@ export function serviceSeason(
   if (kind === "sangmu") {
     // D리그와 각종 대회. 상무는 D리그 최강팀이에요.
     const gp = ri(18, 24);
-    const lead = ov0 - 58;
+    const lead = ov0 - D_LEAGUE_AVG;
     const v = (x: number) => r1(clamp(x * rnd(0.85, 1.15), 0, 40));
     const w = Math.round(gp * clamp(0.72 + rnd(-0.1, 0.12), 0.4, 0.95));
     const champ = chance(0.6);
@@ -127,6 +131,7 @@ export function serviceSeason(
       rating: r1(clamp(6.6 + lead / 6 + rnd(-0.4, 0.4), 5, 9.5)), w, l: gp - w,
       result: champ ? "KBL D리그 우승" : "KBL D리그 준우승",
     };
+    applySeasonShooting(c, rec, Math.round(rec.pts * rec.gp), D_LEAGUE_AVG);
     addNews(c, tag, "info", `상무 소속으로 D리그 ${gp}경기를 뛰었어요 · ${rec.result}`);
     return { rec, min: rec.min, rating: rec.rating, grow: true };
   }

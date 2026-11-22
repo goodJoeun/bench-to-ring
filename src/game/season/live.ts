@@ -144,6 +144,22 @@ export const FINAL_SCORE: Record<LeagueKey | "fiba", number> = {
   fiba: 80,
 };
 
+/** 내 득점과 내 어시스트로 들어간 점수(어시스트 하나에 2점) 말고도, 동료가 혼자 넣는 점수가 적어도 이만큼은 있어요. */
+const TEAMMATE_MIN = 6;
+
+/** 내 기록이 팀 득점 안에 들도록 승패와 점수 차는 그대로 두고 두 팀 점수를 함께 올려요. */
+export function fitScore(us: number, them: number, me: { pts: number; ast: number }): [number, number] {
+  const short = me.pts + me.ast * 2 + TEAMMATE_MIN - us;
+  return short > 0 ? [us + short, them + short] : [us, them];
+}
+
+/** 점수가 이미 정해진 경기(클러치·결승)는 내 기록을 팀 득점 안으로 줄여요. 어시스트부터 줄이고, 그래도 넘으면 득점을 줄여요. */
+export function fitLine<T extends { pts: number; ast: number }>(us: number, me: T): T {
+  const room = Math.max(0, us - TEAMMATE_MIN);
+  const pts = Math.min(me.pts, room);
+  return { ...me, pts, ast: Math.min(me.ast, Math.floor((room - pts) / 2)) };
+}
+
 /** 정규시즌 한 경기 점수. 결승보다 점수 차가 크게 벌어질 때가 많아요. */
 export function gameScore(avg: number, win: boolean): [number, number] {
   const loser = Math.round(avg + rnd(-12, 6));

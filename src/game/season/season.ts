@@ -7,7 +7,7 @@ import { currentDecision } from "./decisions";
 import { FINAL_ASK_HEALTH, FINAL_CLUTCH_CHANCE, bigGameDecision, clutchDecision, drawClutchLead, injuryDecision, seasonEvent } from "./events";
 import { STAR_TRAIT, addStar, seasonStar } from "../player/star";
 import { LEAGUES, SCORING_TITLE, leagueTeams } from "../world/leagues";
-import { FINAL_SCORE, finalScore, gameScore, makeLiveGame } from "./live";
+import { FINAL_SCORE, finalScore, fitLine, fitScore, gameScore, makeLiveGame } from "./live";
 import { ALL_DEF_TIERS, ALL_LEAGUE_TIERS, awardName, conferenceFinalsMvpName, nbaConference } from "../world/awards";
 import { addNews, giveAward, pickTeam } from "../career/log";
 import { STUDENT_ALLOWANCE, investPerks, payInvestments, type InvestPerks } from "../economy/invest";
@@ -15,6 +15,7 @@ import { serviceSeason } from "../world/military";
 import { nationalCallUp } from "../world/national";
 import { YOUTH_AGE, pathOf } from "../world/paths";
 import { runOffseason } from "./offseason";
+import { applySeasonShooting, playoffShooting, threesPerGame } from "./shooting";
 import { chance, pick, random, ri, rnd, seededPick, shuffle } from "../core/random";
 import { shopPerks, type ShopPerks } from "../economy/shop";
 import { BONUS_CAP, SPECIALTIES, combinedEffect, specialtiesOf } from "../player/specialty";
@@ -359,7 +360,8 @@ function planTeamSeason(c: Career, run: SeasonRun): void {
     stl: st(0.4 + 0.035 * (e.def - 25) + 0.02 * (e.ath - 25) + 0.02 * wsd) * fx.stl,
     blk: st(0.1 + 0.03 * (e.def - 25) + 0.05 * Math.max(0, hd + wsd * 0.5)) * fx.blk,
   };
-  run.fg = r1(clamp(0.4 + 0.003 * (e.sht - 50) + 0.004 * Math.max(0, hd) + rnd(-0.02, 0.02), 0.33, 0.64) * 100 + fx.fg);
+  // 야투율 목표: 리그 평균 수준의 슈터가 약 44.5%예요. 실제 성공률은 시즌을 마칠 때 슛 성공·시도로 정해요(shooting.ts).
+  run.fg = r1(clamp(0.445 + 0.0025 * (e.sht - 50) + 0.004 * Math.max(0, hd) + rnd(-0.02, 0.02), 0.36, 0.66) * 100 + fx.fg);
   run.rating = clamp(6.2 + (ovr0 - L.avg) / 4.5 + fx.rating + rnd(-0.7, 0.7) + (min < 8 ? -0.4 : 0), 3.5, 9.9);
   run.min = min;
 
@@ -474,6 +476,8 @@ export function roundLine(me: SeasonTotals | undefined): string {
 function playoffRound(c: Career, run: SeasonRun, round: PostRound, index: number): SeasonTotals {
   const t: SeasonTotals = { gp: 0, min: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, rating: 0 };
   if (run.out > 0 || run.tot.gp === 0) return t;
+  // 점수가 기록에 남는 경기: 단판 라운드와 결승 마지막 경기. 내 기록은 그 경기 팀 득점 안에 들어요.
+  const teamScore = (lastGame: boolean) => (isFinal && lastGame ? run.final!.us : games === 1 ? Number(round.score.split("-")[0]) : null);
   const rand = seededPick(`${c.id}:${run.year}:po${index}`);
   const between = (a: number, b: number) => a + rand() * (b - a);
   const { w, l } = roundRecord(round);
@@ -488,7 +492,9 @@ function playoffRound(c: Career, run: SeasonRun, round: PostRound, index: number
     const m = clamp(base * between(0.85, 1.15) * push, 1, 46);
     const k = (m / run.min) * (1 + run.form * 0.08) * (1 - tired * 0.25);
     const one = (v: number) => Math.floor(v * k * between(0.5, 1.5) + rand());
-    const shown = lastGame && live ? live.mine : { pts: one(run.mean.pts * PLAYOFF_PTS), reb: one(run.mean.reb), ast: one(run.mean.ast) };
+    const drawn = lastGame && live ? live.mine : { pts: one(run.mean.pts * PLAYOFF_PTS), reb: one(run.mean.reb), ast: one(run.mean.ast) };
+    const score = lastGame && live ? null : teamScore(lastGame);
+    const shown = score === null ? drawn : fitLine(score, drawn);
     t.gp++;
     t.min += m;
     t.pts += shown.pts;
@@ -502,6 +508,8 @@ function playoffRound(c: Career, run: SeasonRun, round: PostRound, index: number
 }
 
 /** 공개한 플레이오프 라운드를 시즌 기록의 플레이오프 기록(경기당 평균과 팀 승패)으로 합쳐요. */
+const playoffPoints = (rounds: PostRound[]) => rounds.reduce((total, r) => total + (r.me?.pts ?? 0), 0);
+
 function playoffRecord(rounds: PostRound[]): PlayoffRecord {
   let w = 0;
   let l = 0;
@@ -565,7 +573,13 @@ function playGame(c: Career, run: SeasonRun, tag: string): void {
       if (run.outWhy === "부상") addNews(c, tag, "good", "부상에서 회복해 코트로 돌아왔어요.");
       if (run.outWhy === "합류 전") addNews(c, tag, "info", "전역 후 시즌 초반을 지나 팀에 합류했어요.");
     }
-  } else line.me = playMinutes(c, run);
+  } else if (next && forced) {
+    // 클러치 경기는 전광판에 보여 준 점수로 끝나니 내 기록을 그 안에 맞춰요.
+    line.me = playMinutes(c, run, us);
+  } else {
+    line.me = playMinutes(c, run);
+    [line.us, line.them] = fitScore(us, them, line.me);
+  }
   // 라이벌전은 내가 뛰어서 이겨야 세요.
   if (rival && line.me && win) c.rivalWins++;
   run.log.unshift(line);
@@ -593,16 +607,18 @@ function playGame(c: Career, run: SeasonRun, tag: string): void {
  * 내가 뛴 한 경기 기록. 시즌 평균을 중심으로 흔들리고, 경기력(폼)만큼 오르내려요.
  * 지친 몸(낮은 건강)은 기록과 평점을 깎고, 뛴 시간만큼 건강이 닳아요.
  */
-function playMinutes(c: Career, run: SeasonRun): NonNullable<GameLine["me"]> {
+function playMinutes(c: Career, run: SeasonRun, teamScore?: number): NonNullable<GameLine["me"]> {
   const tired = wornOut(c.health);
   const m = clamp(run.min * rnd(0.8, 1.2), 1, 44);
   const k = (m / run.min) * (1 + run.form * 0.08) * (1 - tired * 0.25);
   const one = (v: number) => sround(v * k * rnd(0.5, 1.5));
-  const pts = one(run.mean.pts);
+  const drawnPts = one(run.mean.pts);
   const reb = one(run.mean.reb);
-  const ast = one(run.mean.ast);
+  const drawnAst = one(run.mean.ast);
   const stl = one(run.mean.stl);
   const blk = one(run.mean.blk);
+  const drawn = { pts: drawnPts, ast: drawnAst };
+  const { pts, ast } = teamScore === undefined ? drawn : fitLine(teamScore, drawn);
   const rating = r1(clamp(run.rating + run.form * 0.35 - tired * 1.2 + rnd(-1.2, 1.2), 1, 10));
   addHealth(c, GAME_DAY_HEAL - fatigueOf(run.games) * (m / 30) * shopPerks(c).fatigue * investPerks(run.inv).fatigue);
   const t = run.tot;
@@ -757,7 +773,8 @@ function playFinal(c: Career, run: SeasonRun): void {
     themScore: f.them,
     periodMin: lg === "nba" ? 12 : 10,
     player: c.p.name,
-    mine: { pts: vary(t.pts), reb: vary(t.reb), ast: vary(t.ast) },
+    // 결승 점수는 이미 정해졌으니 내 기록을 그 안에 맞춰요.
+    mine: fitLine(f.us, { pts: vary(t.pts), reb: vary(t.reb), ast: vary(t.ast) }),
   });
 }
 
@@ -832,24 +849,6 @@ function finishSeason(c: Career): SeasonRecord {
 }
 
 /** 팀 시즌의 경기 기록을 합치고 시상해요. */
-/**
- * 경기당 3점슛 성공. 득점 가운데 3점으로 넣은 몫을 슛 능력과 키로 정해요. 운은 쓰지 않아서 시즌 진행의 난수 흐름은 그대로예요.
- * 슛 70인 190cm 가드가 20점을 넣으면 1.9개, 슛 50인 212cm 센터는 거의 없어요. 많아도 득점의 36%까지예요.
- */
-function threesPerGame(pts: number, p: Career["p"]): number {
-  const share = clamp(0.1 + (p.attrs.sht - 50) * 0.009 - Math.max(0, p.h - 200) * 0.012, 0.02, 0.36);
-  return r1((pts * share) / 3);
-}
-
-/**
- * 3점슛 성공률(%). 슛 능력으로 정하고 시즌마다 ±2.5%p 흔들려요. 슛 50이면 약 28%, 75면 36%, 95면 42%예요.
- * 흔들림은 커리어 id와 연도로 정해서 시즌 진행의 난수 흐름은 그대로예요.
- */
-function threePct(c: Career, year: number): number {
-  const swing = (seededPick(`${c.id}:${year}:3p`)() - 0.5) * 5;
-  return r1(clamp(31 + (c.p.attrs.sht - 60) * 0.32 + swing, 22, 47));
-}
-
 function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord {
   const p = c.p;
   const team = c.team!;
@@ -873,13 +872,14 @@ function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord 
     rating: gp ? r1(clamp(t.rating / gp, 3.5, 9.9)) : 5.5, w: W, l: run.l, result: run.result, ovr0: ov0, ovr1: ov0, awards: [],
   };
   if (gp > 0 && run.final) rec.final = run.final;
+  if (gp > 0) {
+    rec.tpm = threesPerGame(rec.pts, p);
+    applySeasonShooting(c, rec, t.pts, L.avg);
+  }
   if (run.post.length) {
     rec.opps = run.post.map((r) => r.opp);
     rec.po = playoffRecord(run.post);
-  }
-  if (gp > 0) {
-    rec.tpm = threesPerGame(rec.pts, p);
-    if (rec.tpm >= 0.2) rec.tpp = threePct(c, run.year);
+    if (rec.po.gp > 0) Object.assign(rec.po, playoffShooting(c, run.year, rec, rec.po, playoffPoints(run.post), L.avg));
   }
 
   // 시상: 리그마다 실제 이름으로 줘요(awards.ts). 베스트 팀·올-디펜시브는 활약에 따라 퍼스트·세컨드·서드로 나눠요.
@@ -928,7 +928,9 @@ function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord 
   }
   // NBA 파이널에 올랐으면 컨퍼런스 파이널을 이긴 거예요. 그 시리즈를 이끈 선수에게 컨퍼런스 파이널 MVP를 줘요.
   const wonConference = nba && run.post.some((r) => r.name === FINAL_NAME.nba);
-  if (wonConference && gp > 0 && min >= 26 && impact >= 5 && statsOk("third") && chance(p.trait === "승부사" ? 0.8: 0.55))
+  // 컨퍼런스 파이널에 결장했으면 받지 못해요. 난수 흐름이 바뀌지 않게 추첨 뒤에 봐요.
+  const playedConfFinal = !!run.post.find((r) => r.name === "컨퍼런스 파이널")?.me?.gp;
+  if (wonConference && gp > 0 && min >= 26 && impact >= 5 && statsOk("third") && chance(p.trait === "승부사" ? 0.8: 0.55) && playedConfFinal)
     giveAward(c, "cfmvp", conferenceFinalsMvpName(team.name), rec);
   if (champ) {
     giveAward(c, L.pro ? "ring" : "title", L.pro ? `${sh} 우승` : `${sh} 전국대회 우승`, rec);

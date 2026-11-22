@@ -217,6 +217,12 @@ export interface SeasonRecord {
   tpm?: number;
   /** 3점슛 성공률(%). 3점을 거의 쏘지 않은 시즌(경기당 0.2개 미만)과 예전 기록에는 없어요. */
   tpp?: number;
+  /** 자유투 성공률(%). 이 기록이 생기기 전 시즌에는 없어요. */
+  ftp?: number;
+  /** 경기당 턴오버. 이 기록이 생기기 전 시즌에는 없어요. */
+  tov?: number;
+  /** 시즌 합계 슛 성공·시도와 턴오버. 이 기록이 생기기 전 시즌에는 없어요. */
+  shots?: ShotCounts;
   fg: number;
   rating: number;
   w: number;
@@ -240,6 +246,17 @@ export interface SeasonRecord {
   invest?: InvestKey[];
 }
 
+/** 슛 성공·시도와 턴오버 합계. fgm·fga는 3점슛을 포함해요. */
+export interface ShotCounts {
+  fgm: number;
+  fga: number;
+  tpm: number;
+  tpa: number;
+  ftm: number;
+  fta: number;
+  tov: number;
+}
+
 /** 한 시즌의 플레이오프 기록. 경기 기록은 경기당 평균(소수 한 자리)이에요. */
 export interface PlayoffRecord {
   /** 내가 뛴 플레이오프 경기 */
@@ -250,6 +267,18 @@ export interface PlayoffRecord {
   ast: number;
   stl: number;
   blk: number;
+  /** 야투율(%). 이 아래 슈팅·턴오버는 뛴 시즌에만 있고, 이 기록이 생기기 전 시즌에는 없어요. 슛을 넣지 못했으면 성공률이 없어요. */
+  fg?: number;
+  /** 경기당 3점슛 성공 */
+  tpm?: number;
+  /** 3점슛 성공률(%) */
+  tpp?: number;
+  /** 자유투 성공률(%) */
+  ftp?: number;
+  /** 경기당 턴오버 */
+  tov?: number;
+  /** 플레이오프 합계 슛 성공·시도와 턴오버 */
+  shots?: ShotCounts;
   /** 팀의 플레이오프 승패 (7전 4선승제는 시리즈 안의 경기, 단판은 한 경기씩) */
   w: number;
   l: number;
