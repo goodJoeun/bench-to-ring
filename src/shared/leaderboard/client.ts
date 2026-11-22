@@ -1,6 +1,7 @@
 import type { CareerSummary, PosKey } from "@/game";
 import { getQueryClient } from "@/shared/query/query-client";
 import { FRESH_BYPASS_MS, FRESH_PARAM } from "./cdn";
+import { kstDay } from "./days";
 import { LEADERBOARD } from "./keys";
 import type { Board, BoardDay, BoardDays, BoardScope, ChallengeBoard, DeleteResult, MyChallenge, MyRanks, PlayerCreated, StatBoard, StatKey, SubmitResult } from "./types";
 
@@ -85,6 +86,8 @@ async function send(s: CareerSummary, retried = false): Promise<Sent> {
     write(TOKEN_KEY, null);
     return send(s, true);
   }
+  // 이미 올라간 기록이면(응답만 못 받은 경우) 올린 때를 남겨 둬요. fetchMyChallenge가 이 값으로 서버에 물을지 정해요.
+  if (res.status === 409) write(SUBMITTED_KEY, String(Date.now()));
   if (res.status === 400 || res.status === 409 || res.status === 413) return { done: true, result: null };
   return { done: false };
 }
@@ -192,9 +195,14 @@ export function fetchChallenge(day: string): Promise<ChallengeBoard> {
   return getJson(`/api/challenge?${withFresh(new URLSearchParams({ day }))}`);
 }
 
-/** 이 브라우저(플레이어)의 그날 챌린지 성적. 아직 올린 적이 없으면 null이에요. */
+/**
+ * 이 브라우저(플레이어)의 그날 챌린지 성적. 아직 올린 적이 없으면 null이에요.
+ * 그날 이후로 올린 기록이 없으면 그날 성적도 없으니 서버(함수와 DB)에 묻지 않아요.
+ */
 export async function fetchMyChallenge(day: string): Promise<MyChallenge | null> {
   const t = read(TOKEN_KEY);
+  const at = Number(read(SUBMITTED_KEY));
+  if (!at || kstDay(at) < day) return null;
   return t ? getJson<MyChallenge>(`/api/challenge/mine?${new URLSearchParams({ day })}`, { authorization: `Bearer ${t}` }) : null;
 }
 

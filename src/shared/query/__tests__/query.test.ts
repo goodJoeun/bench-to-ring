@@ -14,11 +14,14 @@ const store = vi.hoisted(() => {
   return m;
 });
 
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import type { UseQueryResult } from "@tanstack/react-query";
 import type { CareerSummary } from "@/game";
 import { loadState } from "../load-state";
 import { getQueryClient, shouldRetry } from "../query-client";
-import { deleteOnline, flushPending, pendingIds, submitCareer } from "@/shared/leaderboard/client";
+import { CDN_FRESH_S } from "@/shared/leaderboard/cdn";
+import { deleteOnline, fetchMyChallenge, flushPending, pendingIds, submitCareer } from "@/shared/leaderboard/client";
 import { LEADERBOARD, leaderboardKeys } from "@/shared/leaderboard/keys";
 
 /** 테스트용 쿼리 결과: loadState가 읽는 값만 채워요. */
@@ -74,6 +77,41 @@ describe("랭킹 쿼리 키", () => {
 // 흉내 낸 window는 이 파일의 테스트가 모두 끝난 뒤에 치워요.
 afterAll(() => {
   delete (globalThis as Record<string, unknown>).window;
+});
+
+describe("CDN 요청 줄이기", () => {
+  it("순위표는 CDN이 들고 있는 동안 다시 묻지 않고, 창으로 돌아와도 다시 부르지 않아요", () => {
+    const o = getQueryClient().getDefaultOptions().queries;
+    expect(o?.staleTime).toBe(CDN_FRESH_S * 1000);
+    expect(o?.refetchOnWindowFocus).toBe(false);
+  });
+
+  it("그날(한국 시간) 이후 올린 기록이 없으면 내 챌린지 성적을 서버에 묻지 않아요", async () => {
+    const res = { day: "2026-11-23", mine: [] };
+    const fetchMock = vi.fn(async () => Response.json(res));
+    vi.stubGlobal("fetch", fetchMock);
+    store.set("b2r-player-v1", "token");
+    try {
+      expect(await fetchMyChallenge("2026-11-23")).toBeNull();
+      store.set("b2r-submitted-v1", String(Date.parse("2026-11-22T14:59:59Z"))); // 한국 시간 22일 23:59:59
+      expect(await fetchMyChallenge("2026-11-23")).toBeNull();
+      expect(fetchMock).not.toHaveBeenCalled();
+
+      store.set("b2r-submitted-v1", String(Date.parse("2026-11-22T15:00:00Z"))); // 한국 시간 23일 0시
+      expect(await fetchMyChallenge("2026-11-23")).toEqual(res);
+      expect(fetchMock).toHaveBeenCalledOnce();
+    } finally {
+      store.delete("b2r-player-v1");
+      store.delete("b2r-submitted-v1");
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("사이트 안 링크는 프리페치를 끈 Link만 써요", () => {
+    const files = readdirSync("src", { recursive: true, encoding: "utf8" }).filter((f) => /\.tsx?$/.test(f) && !f.includes("__tests__"));
+    const direct = files.filter((f) => readFileSync(join("src", f), "utf8").includes('from "next/link"'));
+    expect(direct.map((f) => f.replaceAll("\\", "/"))).toEqual(["shared/ui/Link.tsx"]);
+  });
 });
 
 describe("은퇴 기록 올리기", () => {

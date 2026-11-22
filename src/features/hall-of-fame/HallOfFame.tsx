@@ -1,11 +1,12 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/shared/ui/Link";
 import { useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { bestFive, rankHall, type CareerSummary } from "@/game";
 import { kstDay } from "@/shared/leaderboard/days";
 import { boardQuery } from "@/shared/leaderboard/queries";
+import { useSeen } from "@/shared/lib/hooks";
 import { loadState } from "@/shared/query/load-state";
 import type { Board } from "@/shared/leaderboard/types";
 import { Best5, HallTable } from "./HallTable";
@@ -20,7 +21,7 @@ const ROWS = 30;
 
 /**
  * 명예의 전당. today면 오늘(한국 시간) 올라온 기록끼리의 순위와 베스트 5를 보여줘요(첫 화면).
- * 오늘 순위표는 열 때마다 새로 불러와요(그동안은 전에 불러온 것을 보여줘요). 그 밖에는 아래처럼 역대 전체예요.
+ * 그 밖에는 아래처럼 역대 전체예요.
  *
  * 늘 온라인 랭킹(역대 전체)을 먼저 보여주고, 처음 불러오는 동안에는 로딩 표시를 띄워요.
  * 한 번 불러온 순위표는 기억해 두고(랭킹 페이지와 함께 써요) 바로 보여줘요. 오래됐으면 보여주면서 뒤에서 새로 불러와 바꿔요.
@@ -29,12 +30,12 @@ const ROWS = 30;
  */
 export function HallOfFame({ hall, rows = ROWS, today = false }: { hall: CareerSummary[]; rows?: number; today?: boolean }) {
   const day = useSyncExternalStore(subscribeNever, readToday, () => "");
-  const { data: board, loading, retry } = loadState(
-    useQuery({ ...boardQuery(today ? day : null), ...(today && { staleTime: 0, enabled: !!day }) }),
-  );
+  // 순위표는 이 패널이 화면 가까이 왔을 때 불러요. 첫 화면에서는 스크롤해야 보여서, 안 내려 보는 방문자는 요청하지 않아요.
+  const [panelRef, seen] = useSeen<HTMLElement>();
+  const { data: board, loading, retry } = loadState(useQuery({ ...boardQuery(today ? day : null), enabled: seen && (!today || !!day) }));
 
   return (
-    <Panel title={today ? "오늘의 명예의 전당" : "명예의 전당"}>
+    <Panel ref={panelRef} title={today ? "오늘의 명예의 전당" : "명예의 전당"}>
       {board ? (
         <OnlineHall board={board} rows={rows} today={today} />
       ) : loading ? (

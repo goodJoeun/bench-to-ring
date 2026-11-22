@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/shared/ui/Link";
 import { useState } from "react";
 import type { CareerSummary } from "@/game";
 import { gameActions } from "@/shared/store/game-store";

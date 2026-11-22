@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/shared/ui/Link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { POS, POS_KEYS, dailyChallenge, fmtNum, type PosKey } from "@/game";
 import { challengeQuery, myChallengeQuery } from "@/shared/leaderboard/queries";
 import { ChallengeGuide } from "@/features/guide/ChallengeGuide";
-import { useKstToday } from "@/shared/lib/hooks";
+import { useKstToday, useSeen } from "@/shared/lib/hooks";
 import { Panel } from "@/shared/ui/ui";
 
 /** 이날(한국 시간)까지 제목 옆에 NEW를 붙여요. 챌린지 모드가 나오고 두 주예요. */
@@ -20,13 +20,15 @@ const NEW_UNTIL = "2026-12-04";
  */
 export function ChallengeCard({ onPick }: { onPick: (pos: PosKey) => void }) {
   const today = useKstToday();
-  const board = useQuery(challengeQuery(today)).data;
-  const mine = useQuery(myChallengeQuery(today)).data;
+  // 도전자 수와 내 순위는 카드가 화면 가까이 왔을 때 불러요.
+  const [cardRef, seen] = useSeen<HTMLElement>();
+  const board = useQuery({ ...challengeQuery(today), enabled: seen && !!today }).data;
+  const mine = useQuery({ ...myChallengeQuery(today), enabled: seen && !!today }).data;
   const [help, setHelp] = useState(false);
   if (!today) return null;
 
   return (
-    <Panel className="ch-card">
+    <Panel ref={cardRef} className="ch-card">
       <div className="ch-head">
         <span className="label">
           {Number(today.slice(5, 7))}월 {Number(today.slice(8))}일 · 매일 0시(한국 시간)에 바뀌어요

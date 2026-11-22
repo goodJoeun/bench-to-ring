@@ -1,7 +1,31 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { kstDay } from "@/shared/leaderboard/days";
+
+/**
+ * 돌려준 ref를 단 요소가 화면 가까이(300px) 온 적이 있는지. 한 번 true가 되면 그대로예요.
+ * 스크롤해야 보이는 영역의 데이터를 보일 때 불러서 요청을 아껴요.
+ */
+export function useSeen<T extends Element>() {
+  const [seen, setSeen] = useState(false);
+  const ref = useCallback(
+    (el: T | null) => {
+      if (!el || seen) return;
+      if (typeof IntersectionObserver === "undefined") {
+        setSeen(true);
+        return;
+      }
+      const io = new IntersectionObserver((entries) => {
+        if (entries.some((e) => e.isIntersecting)) setSeen(true);
+      }, { rootMargin: "300px" });
+      io.observe(el);
+      return () => io.disconnect();
+    },
+    [seen],
+  );
+  return [ref, seen] as const;
+}
 
 export const reducedMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 

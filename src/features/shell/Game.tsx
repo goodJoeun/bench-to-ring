@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/shared/ui/Link";
 import { useState } from "react";
 import { gameActions, useGame } from "@/shared/store/game-store";
 import { CreateScreen } from "@/features/create/CreateScreen";

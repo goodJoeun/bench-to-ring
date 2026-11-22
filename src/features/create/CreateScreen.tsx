@@ -64,7 +64,8 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
   const last = flow.length - 1;
   const id = flow[Math.min(Math.max(step, 0), last)];
   // 포지션마다 온라인 랭킹에 오른 은퇴 선수 수. 불러오기 전이나 실패하면 수를 빼고 보여줘요.
-  const byPos = useQuery(boardDaysQuery()).data?.byPos;
+  // 포지션을 고르는 일반 선수 만들기에서만 쓰니 표지에서는 부르지 않고, 시작을 누르면 미리 불러 둬요.
+  const byPos = useQuery({ ...boardDaysQuery(), enabled: step >= 0 && !ch }).data?.byPos;
   const positions = useMemo(
     () => (byPos ? POSITIONS.map((o) => ({ ...o, note: `은퇴 ${fmtNum(byPos[o.key] ?? 0)}명` })) : POSITIONS),
     [byPos],

@@ -60,7 +60,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         {/* Vercel 웹 분석: 페이지 방문 수를 세요. Vercel에 배포된 사이트에서만 데이터를 보내요. */}
         <Analytics />
         {/* Vercel Speed Insights: 실제 방문자 기기에서 잰 페이지 성능(LCP·INP·CLS 등)을 모아요. 마찬가지로 Vercel 배포에서만 보내요. */}
-        <SpeedInsights />
+        {/* 추세를 보기에는 방문자의 4분의 1이면 충분해서, 수집 요청을 그만큼 줄여요. */}
+        <SpeedInsights sampleRate={0.25} />
       </body>
     </html>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/shared/ui/Link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { POS, POS_KEYS, bestFive, fmtNum, type CareerSummary, type PosKey } from "@/game";

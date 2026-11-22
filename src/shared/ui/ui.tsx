@@ -12,12 +12,13 @@ interface PanelProps {
   kicker?: React.ReactNode;
   className?: string;
   children?: React.ReactNode;
+  ref?: React.Ref<HTMLElement>;
 }
 
 /** 카드 모양 섹션 */
-export function Panel({ title, kicker, className, children }: PanelProps) {
+export function Panel({ title, kicker, className, children, ref }: PanelProps) {
   return (
-    <section className={cls("panel", className)}>
+    <section ref={ref} className={cls("panel", className)}>
       {kicker !== undefined && <span className="label">{kicker}</span>}
       {title !== undefined && <h2 className="sec">{title}</h2>}
       {children}
