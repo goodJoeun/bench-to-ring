@@ -46,7 +46,9 @@ export function giveAward(c: Career, k: AwardKey, name: string, rec?: SeasonReco
   else if (!rec) sub = `${year} 시즌`;
   else if (kind === "title") sub = `${rec.team} · ${year} 시즌${rec.final?.series ? ` · 시리즈 ${rec.final.series}` : ""}`;
   else sub = `${rec.team} · ${year} 시즌 · 경기당 ${rec.pts}점 ${rec.reb}리바 ${rec.ast}어시`;
-  cheer(c, { kind, title: name, sub, year, color: kind === "gold" ? null : (c.team?.color ?? null) });
+  // 우승 축하에는 어느 리그인지 남겨서 팝업에 그 리그 로고를 보여줘요.
+  const lg = kind === "title" ? (rec?.lg ?? c.team?.lg) : undefined;
+  cheer(c, { kind, title: name, sub, year, color: kind === "gold" ? null : (c.team?.color ?? null), ...(lg ? { lg } : {}) });
 }
 
 /** 리그 목록(teams를 주면 그 목록)에서 used에 없는 팀을 하나 골라요. */

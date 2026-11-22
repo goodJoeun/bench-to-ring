@@ -21,6 +21,11 @@ import sharp from "sharp";
 const SRC = "logos-src";
 const DIR = "public/logos";
 const OUT = "src/shared/ui/badge/logos.generated.ts";
+/** 리그 로고 원본과 결과. 우승 팝업에 크게 나오니 구단 로고보다 크게(최대 가로·세로 px) 둬요. */
+const LEAGUE_SRC = `${SRC}/leagues`;
+const LEAGUE_DIR = "public/leagues";
+const LEAGUE_W = 400;
+const LEAGUE_H = 260;
 /** 결과 크기와 둘레 여백 (px) */
 const SIZE = 128;
 const PAD = 6;
@@ -168,6 +173,21 @@ let skipped = 0;
 const whitened = [];
 const failed = [];
 const small = [];
+
+/** 원본을 읽어 흰 배경과 둘레 여백을 지운 PNG로 돌려줘요. */
+async function loadTrimmed(from, target) {
+  // SVG는 크게 그려서 줄여야 선이 깨끗해요.
+  const { data, info } = await sharp(from, { density: 384, animated: false }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  if (clearWhiteBackground(data, info.width, info.height)) whitened.push(target);
+  const input = () => sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } });
+  try {
+    return await input().trim().png().toBuffer({ resolveWithObject: true });
+  } catch {
+    // 한 가지 색뿐인 이미지는 잘라낼 여백이 없어요.
+    return await input().png().toBuffer({ resolveWithObject: true });
+  }
+}
+
 for (const f of sources) {
   const from = `${SRC}/${f}`;
   const target = targetOf(f);
@@ -182,17 +202,7 @@ for (const f of sources) {
     continue;
   }
   try {
-    // SVG는 크게 그려서 줄여야 선이 깨끗해요.
-    const { data, info } = await sharp(from, { density: 384, animated: false }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-    if (clearWhiteBackground(data, info.width, info.height)) whitened.push(target);
-    const input = () => sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } });
-    let trimmed;
-    try {
-      trimmed = await input().trim().png().toBuffer({ resolveWithObject: true });
-    } catch {
-      // 한 가지 색뿐인 이미지는 잘라낼 여백이 없어요.
-      trimmed = await input().png().toBuffer({ resolveWithObject: true });
-    }
+    const trimmed = await loadTrimmed(from, target);
     const { width, height } = trimmed.info;
     if (Math.max(width, height) < SMALL) small.push(f);
     await sharp(trimmed.data)
@@ -210,6 +220,40 @@ if (whitened.length) console.log(`흰 배경을 지운 로고 ${whitened.length}
 if (small.length) console.log(`원본이 ${SMALL}px보다 작아 흐릴 수 있어요: ${small.join(", ")}`);
 if (failed.length) console.log(`변환하지 못한 원본: ${failed.join(", ")}`);
 if (dupes.length) console.log(`같은 팀 원본이 여럿이라 건너뛴 파일: ${dupes.join(", ")}`);
+
+/* ---------- 리그 로고: 우승 팝업에 크게 보여줘요 ---------- */
+
+/**
+ * logos-src/leagues/<리그 키>.png를 public/leagues/<리그 키>.png로 바꿔요.
+ * 가로로 긴 로고가 많아 정사각형에 넣지 않고 비율 그대로 두고, 원본보다 키우지 않아요.
+ */
+mkdirSync(LEAGUE_DIR, { recursive: true });
+const leagueSources = existsSync(LEAGUE_SRC) ? readdirSync(LEAGUE_SRC).filter((f) => SRC_EXT.test(f)) : [];
+let leagueConverted = 0;
+for (const f of leagueSources) {
+  const key = f.replace(SRC_EXT, "");
+  if (!LEAGUE_NAMES[key]) {
+    console.log(`모르는 리그 키라 건너뛴 파일: ${LEAGUE_SRC}/${f}`);
+    continue;
+  }
+  const from = `${LEAGUE_SRC}/${f}`;
+  const to = `${LEAGUE_DIR}/${key}.png`;
+  if (existsSync(to) && statSync(to).mtimeMs >= Math.max(statSync(from).mtimeMs, SCRIPT_TIME)) continue;
+  try {
+    const trimmed = await loadTrimmed(from, `리그 ${key}`);
+    await sharp(trimmed.data).resize(LEAGUE_W, LEAGUE_H, { fit: "inside", withoutEnlargement: true }).png({ compressionLevel: 9 }).toFile(to);
+    leagueConverted++;
+  } catch (e) {
+    console.log(`변환하지 못한 리그 로고: ${f} (${e instanceof Error ? e.message : e})`);
+  }
+}
+if (leagueConverted) console.log(`리그 로고 새로 변환 ${leagueConverted}개`);
+const leagueLogos = {};
+for (const f of readdirSync(LEAGUE_DIR).filter((x) => /\.png$/i.test(x))) {
+  leagueLogos[f.replace(/\.png$/i, "")] = `/leagues/${f}?v=${createHash("sha1").update(readFileSync(`${LEAGUE_DIR}/${f}`)).digest("hex").slice(0, 8)}`;
+}
+const leagueMissing = Object.keys(LEAGUE_NAMES).filter((k) => !leagueLogos[k]);
+if (leagueMissing.length) console.log(`로고가 없는 리그 ${leagueMissing.length}개 (우승 팝업에 트로피를 보여줘요): ${leagueMissing.join(", ")}`);
 
 /* ---------- 2. 팀 이름과 연결 ---------- */
 
@@ -233,6 +277,12 @@ writeFileSync(
     "",
     "/** 팀 이름 → 로고 파일 경로. 여기 있는 팀은 엠블럼 대신 로고를 보여줘요. */",
     `export const LOGOS: Record<string, string> = {${entries.length ? `\n${entries.join("\n")}\n` : ""}};`,
+    "",
+    "/** 리그 키 → 리그 로고 파일 경로. 리그 우승 팝업에 보여줘요. */",
+    `export const LEAGUE_LOGOS: Record<string, string> = {\n${Object.keys(leagueLogos)
+      .sort()
+      .map((k) => `  ${k}: ${JSON.stringify(leagueLogos[k])},`)
+      .join("\n")}\n};`,
     "",
   ].join("\n"),
 );

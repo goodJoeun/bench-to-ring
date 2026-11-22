@@ -469,8 +469,9 @@ export interface Cheer {
   year: number;
   /** 유니폼 색. 모르면 null */
   color: string | null;
-  /** 입단 기자회견의 새 팀과 리그 (배경판 로고) */
+  /** 입단 기자회견의 새 팀 (배경판 로고) */
   team?: string;
+  /** 입단한 리그, 또는 우승한 리그(팝업의 리그 로고). 예전 저장의 우승 축하에는 없어요. */
   lg?: LeagueKey;
 }
 

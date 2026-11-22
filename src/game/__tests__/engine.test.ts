@@ -3079,6 +3079,21 @@ describe("축하 팝업", () => {
     ]);
   });
 
+  it("우승 축하에는 우승한 리그가 남고, 다른 축하에는 남지 않아요", () => {
+    for (const lg of Object.keys(LEAGUES) as LeagueKey[]) {
+      const c = fresh(`ch-lg-${lg}`);
+      // 시즌이 끝난 뒤 팀을 옮겼어도 그 시즌 기록의 리그로 축하해요.
+      c.team = { name: "서울 SK 나이츠", color: "#E11B22", q: 0.6, lg: lg === "kbl" ? "nba" : "kbl" };
+      const rec = { year: 2031, team: TEAMS[lg][0][0], lg, pts: 20, reb: 5, ast: 5, awards: [] as string[] } as unknown as Career["hist"][number];
+      giveAward(c, "mvp", "정규리그 MVP", rec);
+      giveAward(c, LEAGUES[lg].pro ? "ring" : "title", `${LEAGUES[lg].short} 우승`, rec);
+      expect(c.cheers.map((x) => [x.kind, x.lg])).toEqual([
+        ["mvp", undefined],
+        ["title", lg],
+      ]);
+    }
+  });
+
   it("NBA 첫 입성은 한 번만 축하하고, 예전 저장에서 이미 NBA를 뛰었으면 축하하지 않아요", () => {
     const c = fresh("ch2");
     setTeam(c, "kbl", { name: "서울 SK 나이츠", color: "#E11B22", q: 0.5 });

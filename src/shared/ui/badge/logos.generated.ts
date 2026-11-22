@@ -62,3 +62,26 @@ export const LOGOS: Record<string, string> = {
   "휴스턴 로키츠": "/logos/%ED%9C%B4%EC%8A%A4%ED%84%B4%20%EB%A1%9C%ED%82%A4%EC%B8%A0.png?v=03ad36b0",
   "휴스턴대": "/logos/%ED%9C%B4%EC%8A%A4%ED%84%B4%EB%8C%80.png?v=092388fc",
 };
+
+/** 리그 키 → 리그 로고 파일 경로. 리그 우승 팝업에 보여줘요. */
+export const LEAGUE_LOGOS: Record<string, string> = {
+  aba: "/leagues/aba.png?v=d5fa7912",
+  acb: "/leagues/acb.png?v=845895f0",
+  bleague: "/leagues/bleague.png?v=9b659b05",
+  cba: "/leagues/cba.png?v=426cfafa",
+  cebl: "/leagues/cebl.png?v=e5c18e5e",
+  cubal: "/leagues/cubal.png?v=7e026206",
+  euro: "/leagues/euro.png?v=cdf48ad6",
+  gleague: "/leagues/gleague.png?v=864e9997",
+  hs: "/leagues/hs.png?v=45dd0f6b",
+  juniv: "/leagues/juniv.png?v=602135ac",
+  kbl: "/leagues/kbl.png?v=612345f4",
+  kuniv: "/leagues/kuniv.png?v=abf967e9",
+  lnb: "/leagues/lnb.png?v=1c3c1098",
+  nba: "/leagues/nba.png?v=787fc751",
+  nbl: "/leagues/nbl.png?v=61f4a364",
+  ncaa: "/leagues/ncaa.png?v=83dc1513",
+  pba: "/leagues/pba.png?v=4e49b95b",
+  uaap: "/leagues/uaap.png?v=9140244b",
+  usports: "/leagues/usports.png?v=65cd0885",
+};
