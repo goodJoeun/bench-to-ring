@@ -14,11 +14,11 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   // public/ 파일은 Vercel 기본값(max-age=0)이면 화면을 열 때마다 다시 확인 요청을 보내고, 그 304도 CDN 요청으로 세요.
-  // 로고·국기는 scripts/logos.mjs·flags.mjs가, 사이트 아이콘은 SITE_ICON이 주소에 내용 해시를 붙이니 브라우저가 오래 갖고 있게 해요.
+  // 로고·국기와 그 묶음 이미지는 scripts/logos.mjs·flags.mjs·atlas.mjs가, 사이트 아이콘은 SITE_ICON이 주소에 내용 해시를 붙이니 브라우저가 오래 갖고 있게 해요.
   // 앱 정보(manifest)는 주소에 해시가 없어서 일주일만 갖고 있어요.
   async headers() {
     return [
-      ...cacheFor(IMMUTABLE, ["/logos/:path*", "/leagues/:path*", "/flags/:path*", "/icons/:path*"]),
+      ...cacheFor(IMMUTABLE, ["/logos/:path*", "/leagues/:path*", "/flags/:path*", "/atlas/:path*", "/icons/:path*"]),
       ...cacheFor(WEEK, ["/manifest.webmanifest"]),
     ];
   },

@@ -1,5 +1,6 @@
 import { useId } from "react";
 import { useTextOnly } from "@/shared/lib/text-only";
+import { FLAG_ATLAS, LOGO_ATLAS, type AtlasSheet } from "./atlas.generated";
 import { emblemOf, type Emblem, type EmblemKind } from "./emblem";
 import { FLAGS } from "./flags.generated";
 import { LOGOS } from "./logos.generated";
@@ -74,44 +75,110 @@ interface TeamBadgeProps {
   decorative?: boolean;
 }
 
+/** 이 크기(px) 이하의 로고는 묶음 이미지에서 그려요. 더 크면 선명하게 보이도록 로고 파일을 따로 받아요. */
+const ATLAS_LOGO_MAX = 24;
+
+/** 묶음 이미지(scripts/atlas.mjs)의 한 칸을 그려요. 여러 아이콘이 CDN 요청 한 건을 함께 써요. clipId를 주면 원형으로 잘라요. */
+function AtlasIcon({
+  sheet,
+  index,
+  className,
+  width,
+  height,
+  label,
+  clipId,
+}: {
+  sheet: AtlasSheet;
+  index: number;
+  className: string;
+  width: number;
+  height: number;
+  label?: string;
+  clipId?: string;
+}) {
+  const { cell, step, cols } = sheet;
+  const x = (index % cols) * step;
+  const y = Math.floor(index / cols) * step;
+  return (
+    <svg
+      className={className}
+      viewBox={`0 0 ${cell} ${cell}`}
+      width={width}
+      height={height}
+      role={label ? "img" : undefined}
+      aria-label={label}
+      aria-hidden={label ? undefined : true}
+    >
+      {clipId && (
+        <defs>
+          <clipPath id={clipId}>
+            <circle cx={cell / 2} cy={cell / 2} r={cell / 2} />
+          </clipPath>
+        </defs>
+      )}
+      <g clipPath={clipId ? `url(#${clipId})` : undefined}>
+        {/* 안쪽 svg가 이 칸 밖의 옆 칸을 잘라요. */}
+        <svg width={cell} height={cell} viewBox={`${x} ${y} ${cell} ${cell}`}>
+          <image href={sheet.src} width={sheet.width} height={sheet.height} />
+        </svg>
+      </g>
+    </svg>
+  );
+}
+
 /**
  * 구단·학교·국가 엠블럼. 나라(또는 'OO 대표팀')면 국기를 원형으로, public/logos/에 로고가 있으면 로고를,
  * 없으면 이름과 대표색으로 만든 엠블럼을 보여줘요. 모르는 이름이거나 '텍스트만 보기'면 아무것도 그리지 않아요.
+ * 국기와 작은 로고는 묶음 이미지를 함께 써서, 아이콘이 많은 목록도 요청이 늘지 않아요.
  */
 export function TeamBadge({ name, kind, color, size = 28, className, decorative = true }: TeamBadgeProps) {
   // clipPath id에 쓸 수 없는 글자를 빼요.
   const id = `badge${useId().replace(/[^A-Za-z0-9_-]/g, "")}`;
   if (useTextOnly()) return null;
   const nation = name.replace(/ 대표팀$/, "");
-  const flag = FLAGS[nation];
-  if (flag)
+  if (FLAGS[nation])
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
+      <AtlasIcon
+        sheet={FLAG_ATLAS}
+        index={FLAG_ATLAS.at[nation]}
         className={className ? `badge flag ${className}` : "badge flag"}
-        src={flag}
         width={size}
         height={size}
-        alt={decorative ? "" : `${nation} 국기`}
-        aria-hidden={decorative || undefined}
-        decoding="async"
+        label={decorative ? undefined : `${nation} 국기`}
+        clipId={id}
       />
     );
-  const logo = LOGOS[name] ?? LOGOS[nation];
-  if (logo)
+  const logoName = LOGOS[name] ? name : nation;
+  const logo = LOGOS[logoName];
+  if (logo) {
+    const logoClass = className ? `badge logo ${className}` : "badge logo";
+    const logoHeight = (size * 44) / 40;
+    if (size <= ATLAS_LOGO_MAX)
+      return (
+        <AtlasIcon
+          sheet={LOGO_ATLAS}
+          index={LOGO_ATLAS.at[logoName]}
+          className={logoClass}
+          width={size}
+          height={logoHeight}
+          label={decorative ? undefined : `${name} 로고`}
+        />
+      );
     return (
       // 크기가 정해진 작은 정적 이미지라 next/image의 최적화가 필요 없어요.
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        className={className ? `badge logo ${className}` : "badge logo"}
+        className={logoClass}
         src={logo}
         width={size}
-        height={(size * 44) / 40}
+        height={logoHeight}
         alt={decorative ? "" : `${name} 로고`}
         aria-hidden={decorative || undefined}
+        loading="lazy"
         decoding="async"
       />
     );
+  }
   const e = emblemOf(name, kind, color);
   if (!e) return null;
   const shape = SHAPES[e.kind];

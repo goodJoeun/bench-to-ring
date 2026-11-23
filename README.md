@@ -38,6 +38,7 @@ npm run dev
 | `npm run lint` | 린트 |
 | `npm run logos` | `logos-src/`의 원본 로고를 128×128 투명 PNG로 바꿔 팀과 연결하고, 로고가 없는 팀의 파일 이름을 리그별로 보여주기 (`dev`·`build` 전에는 요약만 보여주며 저절로 돌아요) |
 | `npm run flags` | 국가대표 대회에 나오는 나라의 국기만 `flag-icons`에서 `public/flags/`로 복사하고 나라와 연결하기 (`dev`·`build` 전에 저절로 돌아요) |
+| `npm run atlas` | 국기와 로고를 `public/atlas/`의 WebP 한 장씩으로 묶기. 국기와 24px 이하 로고가 이 파일을 함께 써서 CDN 요청과 용량을 줄여요 (`dev`·`build` 전에 저절로 돌고, 넣는 파일이 그대로면 다시 만들지 않아요) |
 | `npm run db:generate` | `src/server/db/schema.ts`를 바꾼 뒤 `drizzle/`에 마이그레이션 SQL 만들기 |
 | `npm run db:migrate` | 마이그레이션을 DB에 적용하기 (`DATABASE_URL_UNPOOLED` 사용) |
 | `npm run db:studio` | Drizzle Studio로 DB 들여다보기 |
@@ -56,7 +57,7 @@ npm run dev
 
 흰색이 아닌 배경(검정, 색 배경)은 지우지 않으니 배경이 투명한 PNG나 SVG 원본이 가장 깔끔해요. 어두운 테마와 파란 진행 팝업에서는 어두운 로고도 잘 보이게 밝은 타일 위에 올려 보여줘요. 이미 128×128로 준비한 파일은 `public/logos/`에 바로 넣어도 돼요(변환하지 않고 그대로 써요).
 
-로고는 각 구단·리그·학교의 상표예요. 사용 허락을 받았거나 쓸 수 있는 파일을 넣어 주세요. 저장소에 올리지 않고 내 컴퓨터에서만 쓰려면 `.gitignore`에 `logos-src/*`, `public/logos/*`, `!logos-src/.gitkeep`, `!public/logos/.gitkeep`을 더하고, `logos.generated.ts`의 변경도 커밋하지 않으면 돼요.
+로고는 각 구단·리그·학교의 상표예요. 사용 허락을 받았거나 쓸 수 있는 파일을 넣어 주세요. 저장소에 올리지 않고 내 컴퓨터에서만 쓰려면 `.gitignore`에 `logos-src/*`, `public/logos/*`, `public/atlas/logos.webp`, `!logos-src/.gitkeep`, `!public/logos/.gitkeep`을 더하고, `logos.generated.ts`와 `atlas.generated.ts`의 변경도 커밋하지 않으면 돼요.
 
 ## 국기
 
