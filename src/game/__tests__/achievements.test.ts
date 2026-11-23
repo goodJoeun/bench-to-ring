@@ -178,6 +178,28 @@ describe("새 업적", () => {
     expect(has(c, "first_curse")).toBe(true);
   });
 
+  it("약체 팀으로 이적해 우승하면 시기와 팀의 순위에 맞는 업적을 따요", () => {
+    const [from, weak, other] = TEAMS.nba.map(([n]) => n);
+    const ring = { result: "리그 우승" };
+    const missed = { exit: -1, last: false };
+    const got = (id: string, rows: SeasonRecord[]) => {
+      const c = fresh(id);
+      c.hist.push(...rows);
+      checkAchievements(c);
+      return ["rebuild", "savior", "worst_to_first"].filter((a) => has(c, a));
+    };
+    const before = season(2030, from, "nba");
+
+    expect(got("first", [before, season(2031, weak, "nba", { ...ring, joined: missed })])).toEqual(["rebuild", "savior"]);
+    expect(got("worst", [before, season(2031, weak, "nba", { ...ring, joined: { exit: -1, last: true } })])).toEqual(["rebuild", "savior", "worst_to_first"]);
+    expect(got("later", [before, season(2031, weak, "nba", { joined: missed }), season(2032, weak, "nba", ring)])).toEqual(["rebuild"]);
+    // 약체가 아니었던 팀, NBA 밖의 우승, 신인 계약, 떠난 뒤 다른 팀에서 한 우승은 치지 않아요.
+    expect(got("strong", [before, season(2031, weak, "nba", { ...ring, joined: { exit: 2, last: false } })])).toEqual([]);
+    expect(got("kbl", [before, season(2031, TEAMS.kbl[0][0], "kbl", { ...ring, joined: { exit: -1, last: true } })])).toEqual([]);
+    expect(got("rookie", [season(2031, weak, "nba", { ...ring, joined: missed })])).toEqual([]);
+    expect(got("left", [before, season(2031, weak, "nba", { joined: missed }), season(2032, other, "nba", ring)])).toEqual([]);
+  });
+
   it("KBL 1위는 4강에 직행해서, 4강에서 지면 첫 시리즈 탈락이에요", () => {
     const team = TEAMS.kbl[0][0];
     const exit = { gp: 54, w: 40, l: 14, result: "4강 플레이오프", opps: [TEAMS.kbl[1][0]] };

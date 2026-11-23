@@ -4,6 +4,7 @@ import { forcedRetirement, nbaOffer, proDraftEntry, resolveQueue, retirementProm
 import { lifeEvent } from "./events";
 import { addNews, pickTeam } from "../career/log";
 import { endService, militaryDecision } from "../world/military";
+import { scoutTeam } from "../world/team-form";
 import { chance, ri } from "../core/random";
 import { refreshShop } from "../economy/shop";
 import { ovr, ovrOf } from "../player/ratings";
@@ -21,7 +22,7 @@ const TRADE_REFUSE_TRUST = -0.5;
 function tradeOffer(c: Career): Decision {
   const team = c.team!;
   const lg = team.lg;
-  const t = pickTeam(lg, new Set([team.name]));
+  const t = scoutTeam(c, lg, pickTeam(lg, new Set([team.name])));
   const years = c.contract!.years;
   return {
     scene: "deal",

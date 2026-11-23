@@ -7,6 +7,7 @@ import {
   chosenInvest,
   currentDecision,
   currentExpectedMinutes,
+  formLines,
   josa,
   money,
   negotiable,
@@ -38,6 +39,26 @@ function optionBadge(a: Action): React.ReactNode {
   return undefined;
 }
 
+/** 제안한 팀의 직전 시즌 성적. 협상 중인 같은 팀 선택지에는 붙이지 않아요. */
+const optionForm = (a: Action) => (((a.k === "sign" && !a.deal) || a.k === "trade") && a.team.form ? formLines(a.team.form) : null);
+
+/** 계약 선택지 아래의 지난 시즌 성적: 정규시즌과 플레이오프 */
+function FormLine({ action }: { action: Action }) {
+  const f = optionForm(action);
+  if (!f) return null;
+  return (
+    <span className="cf">
+      <span className="cf-k">지난 시즌</span>
+      <span>
+        정규시즌 <b>{f.regular}</b>
+      </span>
+      <span>
+        플레이오프 <b>{f.playoff}</b>
+      </span>
+    </span>
+  );
+}
+
 /** 되묻는 문구: 제목, 설명, 확인 버튼 */
 interface Confirm {
   title: string;
@@ -61,7 +82,9 @@ function confirmOf(c: Career, o: DecisionOption): Confirm | null {
   const name = a.team.name;
   const same = c.team?.name === name;
   const nego = negotiable(a) ? " 고르면 연봉 협상을 거쳐 계약해요." : " 협상 없이 이 조건으로 바로 계약해요.";
-  const desc = `${o.sub ?? ""}.${nego}`;
+  const form = optionForm(a);
+  const record = form ? ` 지난 시즌 정규시즌 ${form.regular}, 플레이오프 ${form.playoff}.` : "";
+  const desc = `${o.sub ?? ""}.${record}${nego}`;
   if (same) return { title: `정말 ${josa(name, "과", "와")} 재계약할까요?`, desc, yes: "네, 재계약할게요" };
   if (c.team) return { title: `정말 ${ro(name)} 이적할까요?`, desc: `${josa(c.team.name, "을", "를")} 떠나요. ${desc}`, yes: "네, 이적할게요" };
   return { title: `정말 ${name}에 입단할까요?`, desc, yes: "네, 입단할게요" };
@@ -104,6 +127,7 @@ function DecisionSheet({ career: c, decision, kind, remaining, onHide }: { caree
             tag={o.tag}
             sub={o.sub}
             icon={optionBadge(o.act)}
+            detail={<FormLine action={o.act} />}
             onClick={() => (confirmOf(c, o) ? setAsking(i) : gameActions.choose(i))}
           />
         ))}

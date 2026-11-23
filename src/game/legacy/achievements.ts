@@ -128,6 +128,7 @@ const STAR_SUPER = starNeed("shoe");
 const STAR_ICON = 90;
 
 const champ = (h: SeasonRecord) => h.pro && h.result === "리그 우승";
+const nbaChamp = (h: SeasonRecord) => h.lg === "nba" && champ(h);
 const isMvp = (v: View, h: SeasonRecord) => h.pro && v.mvp.has(h.year);
 /** 프로 시즌에 그 상(들)을 받은 연도 */
 const proYears = (v: View, keys: AwardKey[]) => new Set(v.proAwards.filter((a) => keys.includes(a.k)).map((a) => a.y));
@@ -153,6 +154,12 @@ function longestRun(rows: SeasonRecord[], ok: (h: SeasonRecord) => boolean, same
 }
 
 const distinct = (rows: SeasonRecord[]) => new Set(rows.map((h) => h.team)).size;
+/** v.pro[i]의 팀으로 다른 프로 팀에서 옮겨 온 첫 시즌. 신인 계약처럼 옮겨 온 게 아니면 null이에요. */
+function transferSeason(v: View, i: number): SeasonRecord | null {
+  let s = i;
+  while (s > 0 && !v.pro[s].joined && v.pro[s - 1].team === v.pro[s].team) s--;
+  return s > 0 && v.pro[s].joined && v.pro[s - 1].team !== v.pro[s].team ? v.pro[s] : null;
+}
 /** 대표팀에 합류해 딴 금메달. 불참한 대회에서 대표팀이 딴 금메달은 치지 않아요. */
 const golds = (c: Career) => c.natLog.filter((t) => t.joined && t.medal === "금");
 /** 상점의 사치품 수. 사치품은 한 번씩만 살 수 있어요. */
@@ -299,6 +306,27 @@ export const ACHIEVEMENTS: Achievement[] = [
     desc: "정규시즌 승률 5할 미만 팀으로 우승", hint: "아무도 기대하지 않던 팀과 함께",
     group: "team",
     test: (v) => v.pro.some((h) => champ(h) && h.w < h.l),
+  },
+  {
+    id: "rebuild",
+    name: "리빌딩의 완성",
+    desc: "직전 시즌 플레이오프에 못 나간 NBA 팀으로 이적해 그 팀에서 우승", hint: "아무도 기대하지 않는 팀을 골라 정상까지",
+    group: "team",
+    test: (v) => v.pro.some((h, i) => nbaChamp(h) && transferSeason(v, i)?.joined?.exit === -1),
+  },
+  {
+    id: "savior",
+    name: "구단의 구세주",
+    desc: "직전 시즌 플레이오프에 못 나간 NBA 팀으로 이적한 첫 시즌에 우승", hint: "오자마자 팀의 운명을 바꾸세요",
+    group: "team",
+    test: (v) => v.pro.some((h, i) => nbaChamp(h) && h.joined?.exit === -1 && transferSeason(v, i) === h),
+  },
+  {
+    id: "worst_to_first",
+    name: "꼴찌의 반란",
+    desc: "직전 시즌 컨퍼런스 최하위였던 NBA 팀으로 이적한 첫 시즌에 우승", hint: "꼴찌 팀 유니폼을 입고 곧바로 정상으로",
+    group: "team",
+    test: (v) => v.pro.some((h, i) => nbaChamp(h) && !!h.joined?.last && transferSeason(v, i) === h),
   },
   {
     id: "royal_road",

@@ -103,10 +103,12 @@ type ChoiceProps = {
   sub?: React.ReactNode;
   /** 이름 앞 작은 그림 (팀 엠블럼 등) */
   icon?: React.ReactNode;
+  /** 설명 아래 덧붙이는 내용 (제안한 팀의 지난 시즌 성적 등) */
+  detail?: React.ReactNode;
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "type" | "className" | "children">;
 
 /** 시트 안의 큰 선택 버튼 */
-export function Choice({ label, tag, sub, icon, ...rest }: ChoiceProps) {
+export function Choice({ label, tag, sub, icon, detail, ...rest }: ChoiceProps) {
   return (
     <button type="button" className="choice" {...rest}>
       <span className="cl">
@@ -115,6 +117,7 @@ export function Choice({ label, tag, sub, icon, ...rest }: ChoiceProps) {
         {tag && <span className="ct">{tag}</span>}
       </span>
       {sub && <span className="cs">{sub}</span>}
+      {detail}
     </button>
   );
 }

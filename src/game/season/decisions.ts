@@ -2,6 +2,7 @@ import { clampTrust } from "../player/condition";
 import { LEAGUES, TEAMS, ncaaTies } from "../world/leagues";
 import { DRAFT_NAMES, pathOf } from "../world/paths";
 import { addNews, pickTeam } from "../career/log";
+import { scoutTeam } from "../world/team-form";
 import { chance, ri, rnd } from "../core/random";
 import { currentExpectedMinutes, evalOvr, evalOvrOf, expectedMinutes, ovr, roleOf, salaryFor } from "../player/ratings";
 import type { Action, Career, CurrentTeam, Decision, DecisionOption, DraftKey, LeagueKey, ProLeagueKey, Team } from "../core/types";
@@ -229,7 +230,8 @@ export function collegeSeasonEnd(c: Career): Decision {
 /* ---------- 계약 제안 ---------- */
 
 /** 계약 선택지. 설명에는 리그, 기간, 연봉, 그 팀에서의 예상 역할이 들어가요. */
-function signOption(c: Career, lg: ProLeagueKey, t: Team, years: number, salary: number, label = t.name, tag = LEAGUES[lg].short): DecisionOption {
+function signOption(c: Career, lg: ProLeagueKey, picked: Team, years: number, salary: number, label = picked.name, tag = LEAGUES[lg].short): DecisionOption {
+  const t = scoutTeam(c, lg, picked);
   return {
     label,
     sub: `${LEAGUES[lg].name} · ${years}년 · 연봉 ${money(salary)} · 예상 역할 ${roleOf(expectedMinutes(c, lg))}`,

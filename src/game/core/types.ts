@@ -90,6 +90,24 @@ export interface Team {
   color: string;
   /** 팀 전력 (0.2~0.8). 높을수록 승률이 높아요. */
   q: number;
+  /** 제안 받은 팀의 직전 시즌 성적. 이적 첫 시즌 성적의 기준이 돼요(world/team-form.ts). 재계약이나 예전 저장에는 없어요. */
+  form?: TeamForm;
+}
+
+/** 한 팀의 직전 시즌 성적: 정규시즌과 플레이오프 */
+export interface TeamForm {
+  year: number;
+  /** 순위를 매긴 묶음: 서부 컨퍼런스, KBL… */
+  group: string;
+  rank: number;
+  w: number;
+  l: number;
+  /** 플레이오프 성적: 리그 우승, 컨퍼런스 파이널, 플레이오프 진출 실패… */
+  result: string;
+  /** 플레이오프에서 떨어진 라운드(0부터). 진출 실패는 -1, 우승은 라운드 수와 같아요. */
+  exit: number;
+  /** 순위를 매긴 묶음(리그·컨퍼런스)의 최하위면 true예요. */
+  last?: boolean;
 }
 
 export interface CurrentTeam extends Team {
@@ -244,6 +262,8 @@ export interface SeasonRecord {
   po?: PlayoffRecord;
   /** 이 시즌에 비용을 내고 한 투자 */
   invest?: InvestKey[];
+  /** 이 팀에 들어온 첫 시즌이면 그 팀의 직전 시즌 성적. 약체 팀 이적 업적이 봐요. 예전 기록에는 없어요. */
+  joined?: { exit: number; last: boolean };
 }
 
 /** 슛 성공·시도와 턴오버 합계. fgm·fga는 3점슛을 포함해요. */
@@ -359,6 +379,8 @@ export interface SeasonRun {
   l: number;
   /** 정규시즌에 거둘 승수. 남은 승수를 남은 경기에 무작위로 나눠요. */
   wins: number;
+  /** 약팀 에이스 보정으로 더해진 승률. 플레이오프 우승 확률에도 그대로 더해져요. 예전 저장에는 없어요. */
+  lift?: number;
   /** 예상 출전 시간, 기본 평점, 예상 출전 시간만큼 뛸 때의 경기당 기록, 야투율 */
   min: number;
   rating: number;

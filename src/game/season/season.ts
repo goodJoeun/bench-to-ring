@@ -16,6 +16,8 @@ import { nationalCallUp } from "../world/national";
 import { YOUTH_AGE, pathOf } from "../world/paths";
 import { runOffseason } from "./offseason";
 import { applySeasonShooting, playoffShooting, threesPerGame } from "./shooting";
+import { FINAL_NAME, playoffRounds } from "../world/playoffs";
+import { formFloor, weakTeamLift } from "../world/team-form";
 import { chance, pick, random, ri, rnd, seededPick, shuffle } from "../core/random";
 import { shopPerks, type ShopPerks } from "../economy/shop";
 import { BONUS_CAP, SPECIALTIES, combinedEffect, specialtiesOf } from "../player/specialty";
@@ -209,46 +211,6 @@ const SOLO_PLAN = ["체력 훈련", "기술 훈련", "기술 훈련", "연습 �
 const SANGMU_PLAN = ["기초군사훈련", "D리그 1라운드", "D리그 2라운드", "D리그 3라운드", "국군체육부대 대회", "전역 준비"];
 const ARMY_PLAN = ["기초군사훈련", "자대 배치", "복무와 개인 운동", "복무와 개인 운동", "복무와 개인 운동", "전역 준비"];
 
-/** 리그별 결승 이름 */
-const FINAL_NAME: Record<LeagueKey, string> = {
-  nba: "NBA 파이널",
-  kbl: "KBL 챔피언결정전",
-  euro: "유로리그 파이널 포 결승",
-  gleague: "G리그 파이널",
-  ncaa: "NCAA 토너먼트 결승",
-  kuniv: "U-리그 챔피언결정전",
-  hs: "전국대회 결승",
-  bleague: "B.리그 파이널",
-  cba: "CBA 챔피언결정전",
-  pba: "PBA 파이널",
-  nbl: "NBL 그랜드 파이널",
-  aba: "ABA 리그 파이널",
-  lnb: "LNB 파이널",
-  acb: "ACB 파이널",
-  juniv: "인칼레 결승",
-  uaap: "UAAP 파이널",
-  cubal: "CUBAL 전국대회 결승",
-  usports: "U 스포츠 파이널 8 결승",
-  cebl: "CEBL 파이널",
-};
-
-/**
- * 플레이오프 라운드 이름과, 그 라운드에서 졌을 때의 시즌 성적. NBA는 실제처럼 컨퍼런스를 거치는 4라운드예요.
- * lose의 마지막은 결승에서 진 경우예요.
- */
-function playoffRounds(lg: LeagueKey): { names: string[]; lose: string[] } {
-  if (lg === "nba")
-    return {
-      names: ["플레이오프 1라운드", "컨퍼런스 세미파이널", "컨퍼런스 파이널", FINAL_NAME.nba],
-      lose: ["플레이오프 1라운드", "컨퍼런스 세미파이널", "컨퍼런스 파이널", "파이널 준우승"],
-    };
-  if (!LEAGUES[lg].pro)
-    return { names: ["전국대회 8강", "전국대회 4강", FINAL_NAME[lg]], lose: ["전국대회 8강", "전국대회 4강", "전국대회 준우승"] };
-  if (lg === "kbl")
-    return { names: ["6강 플레이오프", "4강 플레이오프", FINAL_NAME.kbl], lose: ["6강 플레이오프", "4강 플레이오프", "챔피언결정전 준우승"] };
-  return { names: ["플레이오프 1라운드", "플레이오프 4강", FINAL_NAME[lg]], lose: ["플레이오프 1라운드", "플레이오프 4강", "챔피언결정전 준우승"] };
-}
-
 /**
  * 우승하지 못한 팀이 몇 라운드에서 떨어지는지 정하는 누적 확률. 결승에서 질 확률(18%)은 리그마다 같고,
  * NBA는 3라운드제의 '4강'(32%)을 컨퍼런스 세미파이널(20%)과 컨퍼런스 파이널(12%)로 나눴어요.
@@ -369,9 +331,13 @@ function planTeamSeason(c: Career, run: SeasonRun): void {
   team.q = clamp(team.q + rnd(-0.06, 0.06), 0.2, 0.8);
   // 리더십: 뛴 만큼 팀 승률을 더 끌어올려요 (주전으로 시즌을 다 뛰면 +2.5%p).
   const lead = p.trait === "리더십" ? LEADER_WIN * clamp(min / 30, 0, 1) * (gp / L.games) : 0;
-  const contrib = (ovr0 - L.avg) * 0.011 * clamp(min / 30, 0, 1.2) * (gp / L.games) * (ovr0 > L.avg ? fx.team : 1) + lead;
+  const edge = (ovr0 - L.avg) * 0.011 * clamp(min / 30, 0, 1.2) * (gp / L.games) * (ovr0 > L.avg ? fx.team : 1);
+  // 프로 리그에서 평균 이상 선수는 약팀일수록 승률을 더 끌어올려요.
+  run.lift = L.pro ? weakTeamLift(team.q, edge) : 0;
+  const contrib = edge + run.lift + lead;
   run.games = L.games;
-  run.wins = Math.round(L.games * clamp(team.q + contrib + rnd(-0.06, 0.06), 0.1, 0.9));
+  // 강팀으로 이적한 첫 시즌은 그 팀의 직전 성적에서 크게 무너지지 않아요.
+  run.wins = Math.round(L.games * Math.max(clamp(team.q + contrib + rnd(-0.06, 0.06), 0.1, 0.9), formFloor(team, run.year).wp));
   // 시즌 중 결정은 정규시즌 초중반과 후반에 한 번씩 생길 수 있어요.
   run.checks = [Math.round(L.games * rnd(0.25, 0.4)), Math.round(L.games * rnd(0.6, 0.8))];
   // 빅매치는 시즌 중반과 막판 순위 싸움에 한 번씩 올 수 있어요.
@@ -658,8 +624,10 @@ function endRegularSeason(c: Career, run: SeasonRun, tag: string): void {
   const lg = team.lg;
   const amateur = !LEAGUES[lg].pro;
   const wp = run.w / run.games;
-  const playoffs = wp >= 0.55 || (wp >= 0.47 && chance(0.4));
-  const champ = playoffs && chance(sigmoid((wp - 0.63) / 0.05) * 0.6 + (c.p.trait === "승부사" ? 0.06 : c.p.trait === "새가슴" ? -0.01 : 0));
+  // 이적 첫 시즌의 하한: 직전 시즌보다 한 라운드 앞까지는 올라가요. 우승 팀이면 결승까지예요.
+  const floor = formFloor(team, run.year).rounds;
+  const playoffs = floor > 0 || wp >= 0.55 || (wp >= 0.47 && chance(0.4));
+  const champ = playoffs && chance(sigmoid((wp - 0.63) / 0.05) * 0.6 + (run.lift ?? 0) + (c.p.trait === "승부사" ? 0.06 : c.p.trait === "새가슴" ? -0.01 : 0));
   // KBL은 정규리그 1·2위가 6강을 건너뛰고 4강으로 직행해요. 54경기에서 1·2위는 대개 승률 6할 5푼 안팎이에요.
   const bye = playoffs && lg === "kbl" && (wp >= 0.65 || (wp >= 0.59 && chance(0.4)));
   // 몇 라운드를 치르는지: 우승이면 결승까지 모두, 아니면 진 라운드까지
@@ -674,7 +642,8 @@ function endRegularSeason(c: Career, run: SeasonRun, tag: string): void {
   } else if (playoffs) {
     const r = random();
     const cut = EXIT_AT[total].findIndex((p) => r < p);
-    rounds = cut < 0 ? total : cut + 1;
+    // KBL 4강 직행은 첫 라운드를 건너뛰어서 하한도 한 라운드 줄어요.
+    rounds = Math.max(cut < 0 ? total : cut + 1, floor - (all.names.length - total));
     run.result = lose[rounds - 1];
   } else run.result = amateur ? "전국대회 예선 탈락" : "플레이오프 진출 실패";
   run.champ = champ;
@@ -872,6 +841,7 @@ function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord 
     rating: gp ? r1(clamp(t.rating / gp, 3.5, 9.9)) : 5.5, w: W, l: run.l, result: run.result, ovr0: ov0, ovr1: ov0, awards: [],
   };
   if (gp > 0 && run.final) rec.final = run.final;
+  if (team.form?.year === run.year - 1) rec.joined = { exit: team.form.exit, last: !!team.form.last };
   if (gp > 0) {
     rec.tpm = threesPerGame(rec.pts, p);
     applySeasonShooting(c, rec, t.pts, L.avg);

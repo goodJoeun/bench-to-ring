@@ -7719,6 +7719,29 @@ html:has(.sheet) {
   font-size: 13.5px;
   line-height: 1.45;
 }
+/* 계약 제안 팀의 지난 시즌 성적: 정규시즌과 플레이오프 */
+.choice .cf {
+  align-self: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.choice .cf b {
+  font-size: inherit;
+  font-weight: 700;
+  color: var(--ink);
+}
+.choice .cf-k {
+  flex-basis: 100%;
+  font-weight: 700;
+  color: var(--accent);
+}
 .choice[aria-checked="true"] {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, var(--panel2));

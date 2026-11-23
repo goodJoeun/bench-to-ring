@@ -27,6 +27,7 @@ export { draftSlot } from "./world/draft";
 export { DRAFT_NAMES, hasOwnPath, pathHint, pathOf, type NationPath } from "./world/paths";
 export { NATIONS, NAT_EVENTS, natColor, natEventFor, simulateTournament, teamPower } from "./world/national";
 export { ARMY, ENLIST_DEADLINE, SANGMU, militaryDecision, militaryUnit, owesService } from "./world/military";
+export { formFloor, formLines, scoutTeam, teamForm } from "./world/team-form";
 export { BYE_SPOTS, PLAYOFF_SPOTS, seasonStandings, type SeasonStandings, type StandingRow, type StandingsTable } from "./world/standings";
 export { chooseOption, applyAction } from "./season/actions";
 export { CLUTCH_SCENES, boardScore, clutchScene, finalsPrize, type ClutchScene } from "./season/events";

@@ -61,7 +61,9 @@ export function pickTeam(lg: LeagueKey, used?: Set<string>, teams: ReadonlyArray
 export const makeTeam = ([name, color]: readonly [string, string]): Team => ({ name, color, q: Math.round(rnd(0.32, 0.68) * 100) / 100 });
 
 export function setTeam(c: Career, lg: LeagueKey, t: Team): void {
-  c.team = { lg, name: t.name, color: t.color, q: t.q };
+  // 지금 팀과 재계약하면 이적이 아니라서 직전 시즌 성적을 이어 가지 않아요.
+  const stayed = c.team?.lg === lg && c.team.name === t.name;
+  c.team = { lg, name: t.name, color: t.color, q: t.q, ...(t.form && !stayed ? { form: t.form } : {}) };
   // NBA 팀에 처음 들어가면 한 번만 축하해요. 드래프트·계약·영입 제안 어느 길로 와도 여기를 지나요.
   if (lg === "nba" && !c.milestones.includes("nba")) {
     c.milestones.push("nba");
