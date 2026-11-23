@@ -5769,8 +5769,14 @@ main.se {
   flex-direction: column;
   gap: 8px;
 }
+/* 오프시즌으로 가는 단추: 리포트가 길어도 화면 아래에 붙어 있고, 카드 끝에 닿으면 제자리로 돌아와요. */
 .se-go {
+  position: sticky;
+  bottom: calc(12px + var(--safe-b));
+  z-index: 2;
+  width: min(560px, 100%);
   margin-top: 4px;
+  box-shadow: 0 6px 20px rgba(6, 10, 20, 0.45);
 }
 /* 시즌 순위표: 리그(NBA는 컨퍼런스) 정규시즌 순위. 내 팀은 드래프트의 내 이름처럼 금색이에요. */
 .st-tabs {
@@ -7816,6 +7822,56 @@ html:has(.sheet) {
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+/* 내용이 길어도 시트 맨 아래에 붙어 있는 주 버튼 자리. 시트의 좌우·아래 여백까지 덮어요. */
+.sheet-dock {
+  position: sticky;
+  bottom: calc(-24px - var(--safe-b));
+  z-index: 2;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  margin: 8px -22px calc(-24px - var(--safe-b));
+  padding: 12px 22px calc(14px + var(--safe-b));
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+}
+.sheet-dock:has(.dock-invest) {
+  padding-top: 2px;
+}
+.sheet-dock .sheet-go {
+  margin-top: 0;
+}
+/* 시작 버튼 위 한 줄: 고른 투자 수와 보유 자금. 누르면 투자 칸으로 옮겨요. */
+.dock-invest {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 2px;
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.dock-invest b {
+  margin-left: 2px;
+  color: var(--ink);
+  font-family: var(--f-num);
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+.dock-invest i {
+  margin-left: 4px;
+  color: var(--accent);
+  font-style: normal;
+}
+/* 저절로 뜬 시트는 잠깐 눌리지 않아요. 눌린 듯한 반응도 보이지 않게 해요. */
+.sheet[data-guarded] button {
+  pointer-events: none;
 }
 @keyframes sheet-in {
   from {

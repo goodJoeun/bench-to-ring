@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   FOCUS,
+  INVEST_SLOTS,
   canInvest,
   chosenInvest,
   currentDecision,
@@ -64,13 +65,41 @@ interface Confirm {
   title: string;
   desc: string;
   yes: string;
+  /** 커리어가 끝나는 선택이면 확인 단추를 빨갛게 보여줘요. */
+  danger?: boolean;
+}
+
+/** 진로가 갈리는 선택의 확인 문구. 고를 수 있는 길이 하나뿐이면 묻지 않아요. */
+function pathConfirmOf(o: DecisionOption, only: boolean): Confirm | null {
+  if (only) return null;
+  const a = o.act;
+  const desc = `${o.sub ?? o.label}. 고른 뒤에는 되돌릴 수 없어요.`;
+  if (a.k === "school") return { title: `정말 ${a.team.name}에 ${a.walk ? "워크온으로 " : ""}입학할까요?`, desc, yes: "네, 입학할게요" };
+  if (a.k === "draft") return { title: `정말 ${o.label.replace(/ (신청|고졸 참가)$/, "")}에 참가할까요?`, desc, yes: "네, 참가할게요" };
+  if (a.k === "trade") {
+    const form = optionForm(a);
+    const record = form ? ` 지난 시즌 정규시즌 ${form.regular}, 플레이오프 ${form.playoff}.` : "";
+    return { title: `정말 ${ro(a.team.name)} 이적할까요?`, desc: `${josa(a.from, "을", "를")} 떠나요. ${o.sub ?? ""}.${record} 고른 뒤에는 되돌릴 수 없어요.`, yes: "네, 이적할게요" };
+  }
+  if (a.k === "military" && a.choice !== "defer")
+    return a.choice === "sangmu"
+      ? { title: "정말 상무에 지원할까요?", desc, yes: "네, 지원할게요" }
+      : { title: "정말 현역으로 입대할까요?", desc, yes: "네, 입대할게요" };
+  if (a.k === "retire")
+    return {
+      title: "정말 은퇴할까요?",
+      desc: "커리어가 여기서 끝나고 되돌릴 수 없어요. 프로 무대를 밟았다면 선수 이름과 기록이 온라인 랭킹에 공개돼요.",
+      yes: "네, 은퇴할게요",
+      danger: true,
+    };
+  return null;
 }
 
 /**
- * 되돌리기 어려운 선택(팀 고르기, 위약금 해지)은 한 번 더 물어요.
+ * 되돌리기 어려운 선택(팀 고르기, 위약금 해지, 진학·드래프트·트레이드·입대·은퇴)은 한 번 더 물어요.
  * 같은 팀이면 재계약, 다른 팀이면 이적, 소속팀이 없으면 입단으로 물어요.
  */
-function confirmOf(c: Career, o: DecisionOption): Confirm | null {
+function confirmOf(c: Career, o: DecisionOption, only: boolean): Confirm | null {
   const a = o.act;
   if (a.k === "buyout")
     return {
@@ -78,7 +107,7 @@ function confirmOf(c: Career, o: DecisionOption): Confirm | null {
       desc: `${josa(c.team?.name ?? "지금 팀", "을", "를")} 떠나 FA 시장에 나가요. 위약금은 돌려받을 수 없어요.`,
       yes: "네, 해지할게요",
     };
-  if (a.k !== "sign" || a.deal) return null;
+  if (a.k !== "sign" || a.deal) return pathConfirmOf(o, only);
   const name = a.team.name;
   const same = c.team?.name === name;
   const nego = negotiable(a) ? " 고르면 연봉 협상을 거쳐 계약해요." : " 협상 없이 이 조건으로 바로 계약해요.";
@@ -93,23 +122,24 @@ function confirmOf(c: Career, o: DecisionOption): Confirm | null {
 /** 결정 시트. 되묻는 선택지는 고르면 같은 시트 안에서 확인 화면으로 바뀌어요. */
 function DecisionSheet({ career: c, decision, kind, remaining, onHide }: { career: Career; decision: Decision; kind: string; remaining: number; onHide: () => void }) {
   const [asking, setAsking] = useState<number | null>(null);
-  const confirm = asking !== null ? confirmOf(c, decision.opts[asking]) : null;
+  const only = decision.opts.length === 1;
+  const confirm = asking !== null ? confirmOf(c, decision.opts[asking], only) : null;
   if (asking !== null && confirm)
     return (
-      <Sheet labelledBy="confirm-title" onClose={() => setAsking(null)}>
+      <Sheet labelledBy="confirm-title" guardKey="confirm" onClose={() => setAsking(null)}>
         <span className="sheet-kicker">{decision.title}</span>
         <h2 id="confirm-title">{confirm.title}</h2>
         <p className="sheet-desc">{confirm.desc}</p>
-        <button type="button" className="sheet-go" onClick={() => gameActions.choose(asking)}>
+        <button type="button" className={confirm.danger ? "sheet-go danger" : "sheet-go"} onClick={() => gameActions.choose(asking)}>
           {confirm.yes}
         </button>
-        <button type="button" className="sheet-later" onClick={() => setAsking(null)}>
+        <button type="button" className="sheet-later" data-autofocus onClick={() => setAsking(null)}>
           다시 고를게요
         </button>
       </Sheet>
     );
   return (
-    <Sheet labelledBy="decision-title">
+    <Sheet labelledBy="decision-title" guardKey="decision">
       {decision.art === "rival" && <RivalArt career={c} />}
       {decision.art === "clutch" && <ClutchArt board={decision.board} />}
       {!decision.art && decision.scene && <SceneArt career={c} scene={decision.scene} />}
@@ -128,7 +158,7 @@ function DecisionSheet({ career: c, decision, kind, remaining, onHide }: { caree
             sub={o.sub}
             icon={optionBadge(o.act)}
             detail={<FormLine action={o.act} />}
-            onClick={() => (confirmOf(c, o) ? setAsking(i) : gameActions.choose(i))}
+            onClick={() => (confirmOf(c, o, only) ? setAsking(i) : gameActions.choose(i))}
           />
         ))}
       </div>
@@ -137,6 +167,12 @@ function DecisionSheet({ career: c, decision, kind, remaining, onHide }: { caree
       </button>
     </Sheet>
   );
+}
+
+/** 시작 버튼이 아래에 붙어 있어도 투자를 지나치지 않게, 고른 개수를 보여주고 누르면 투자 칸으로 옮겨요. */
+function scrollToInvest() {
+  const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.querySelector(".sheet .invest")?.scrollIntoView({ behavior: calm ? "auto" : "smooth", block: "start" });
 }
 
 function focusHint(k: FocusKey): string {
@@ -284,17 +320,29 @@ export function ActionPanel({ career: c, playing, speed, busy, outcome, onAdvanc
             ))}
           </div>
           <InvestPicker career={c} />
-          <button
-            type="button"
-            className="sheet-go"
-            onClick={() => {
-              setPlanOpen(false);
-              gameActions.startSeason();
-              onAdvance();
-            }}
-          >
-            {ro(`${focusName(c.focus)} 훈련${invest > 0 ? ` · 투자 ${invest}개` : ""}`)} 시즌 시작
-          </button>
+          <div className="sheet-dock">
+            {canInvest(c) && (
+              <button type="button" className="dock-invest" onClick={scrollToInvest}>
+                <span>
+                  시즌 투자 <b>{invest}/{INVEST_SLOTS}</b>
+                </span>
+                <span>
+                  보유 <b>{money(c.earnings)}</b> <i aria-hidden="true">↓</i>
+                </span>
+              </button>
+            )}
+            <button
+              type="button"
+              className="sheet-go"
+              onClick={() => {
+                setPlanOpen(false);
+                gameActions.startSeason();
+                onAdvance();
+              }}
+            >
+              {ro(`${focusName(c.focus)} 훈련${invest > 0 ? ` · 투자 ${invest}개` : ""}`)} 시즌 시작
+            </button>
+          </div>
         </Sheet>
       )}
     </>
