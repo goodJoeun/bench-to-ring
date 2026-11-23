@@ -74,6 +74,9 @@ function Stardom({ career: c }: { career: Career }) {
   );
 }
 
+/** 코치 신뢰(-3~4)는 출전 시간에 영향을 줘요. 수치 대신 단계로 보여줘요. */
+const trustLabel = (t: number) => (t >= 2 ? "두터움" : t >= 0.7 ? "좋음" : t > -0.7 ? "보통" : t > -2 ? "낮음" : "매우 낮음");
+
 export function AttributesPanel({ career: c }: { career: Career }) {
   const p = c.p;
   return (
@@ -122,6 +125,11 @@ export function AttributesPanel({ career: c }: { career: Career }) {
         <span>
           특성 <b>{p.traitKnown ? p.trait : "19세에 공개"}</b>
         </span>
+        {c.team && (
+          <span title="높을수록 출전 시간을 더 받아요">
+            코치 신뢰 <b>{trustLabel(c.trust)}</b>
+          </span>
+        )}
         <span>
           국가대표 <b>{c.nat.caps}경기</b>
         </span>

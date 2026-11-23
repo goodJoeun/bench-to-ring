@@ -38,7 +38,7 @@ import type {
   SeasonTotals,
   Trait,
 } from "../core/types";
-import { clamp, fmtNum, josa, r1, round2, sigmoid } from "../core/util";
+import { clamp, fmtNum, josa, r1, ro, round2, sigmoid } from "../core/util";
 
 /*
  * 시즌은 세 단계로 흘러가요.
@@ -918,7 +918,7 @@ function teamSeasonRecord(c: Career, run: SeasonRun, tag: string): SeasonRecord 
   if (rec.final)
     addNews(c, tag, rec.final.win ? "award" : "info", `${FINAL_NAME[lg]} 상대 ${rec.final.opp} · ${rec.final.series ? `시리즈 ${rec.final.series} · ` : ""}마지막 경기 ${rec.final.us}-${rec.final.them}`);
   if (prev && prev.team === rec.team && prev.role !== "-" && ROLE_RANK[role] > ROLE_RANK[prev.role])
-    addNews(c, tag, "good", `팀 내 역할이 ${role}(으)로 올라섰어요.`);
+    addNews(c, tag, "good", `팀 내 역할이 ${ro(role)} 올라섰어요.`);
   rec.awards.forEach((n) => addNews(c, tag, "award", `수상 · ${n}`));
   if (L.pro) c.proSeasons++;
   return rec;

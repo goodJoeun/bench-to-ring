@@ -85,9 +85,13 @@ function OwnedItems({ owned }: { owned: ShopItem[] }) {
  */
 export function ShopPanel({ career: c }: { career: Career }) {
   const [pending, setPending] = useState<Pending | null>(null);
+  const [browsing, setBrowsing] = useState(false);
   if (c.stage === "retired") return null;
   const lineup = shopLineup(c);
   const owned = ownedItems(c);
+  // 아무것도 살 수 없는 동안에는 흐린 상품을 늘어놓지 않고, 원하면 펼쳐 봐요.
+  const usable = lineup.some((i) => boughtThisSeason(c, i.key) || canBuy(c, i.key)) || DONATIONS.some((d) => donatedThisSeason(c, d) || canDonate(c, d));
+  const cheapest = lineup.length ? Math.min(...lineup.map((i) => i.price)) : 0;
   const item = pending?.k === "buy" ? shopItem(pending.key) : null;
   const price = item ? item.price : pending?.k === "donate" ? pending.amount : 0;
 
@@ -96,6 +100,13 @@ export function ShopPanel({ career: c }: { career: Career }) {
       <Funds amount={c.earnings} note={c.donated ? `누적 기부 ${money(c.donated)}` : undefined} />
       {c.run ? (
         <p className="hint">상점은 시즌이 끝나면 새 상품으로 다시 열려요.</p>
+      ) : !usable && !browsing ? (
+        <div className="shop-closed">
+          <p className="hint">아직 살 수 있는 상품이 없어요. 가장 싼 상품은 {money(cheapest)}이에요.</p>
+          <button type="button" className="btn" onClick={() => setBrowsing(true)}>
+            상품 둘러보기
+          </button>
+        </div>
       ) : (
         <>
           <div className="shop-head">

@@ -58,7 +58,8 @@ interface LifeEvent {
   make: (c: Career) => Decision;
 }
 
-const isHs = (c: Career) => c.stage === "hs";
+/** 고교 재학 중. 3학년 시즌이 끝나면(schoolYear 4) 졸업 뒤 진로가 먼저 정해지니 고교 생활 이벤트가 나오지 않아요. */
+const isHs = (c: Career) => c.stage === "hs" && c.schoolYear <= 3;
 const isCollege = (c: Career) => c.stage === "college";
 const isPro = (c: Career) => c.stage === "pro" && !!c.team;
 const isFree = (c: Career) => c.stage === "free";
@@ -1607,6 +1608,14 @@ export function signatureMove(c: Career): ClutchPlay {
   return { attr, side: "주무기", label: `가장 자신 있는 무브 · ${name}`, play, pts, edge: SIGNATURE_EDGE, move };
 }
 
+/** 플레이 자체의 성격. 내 성공 확률과 쓰는 능력치는 밝히지 않아요. */
+function playNote(x: ClutchPlay): string {
+  if (x.side === "주무기") return "";
+  if ((x.edge ?? 0) < 0) return "고난도";
+  if ((x.edge ?? 0) > 0) return "안정적";
+  return (x.swing ?? 1) > 1 ? "실력 차가 크게 갈려요" : "";
+}
+
 /** 클러치 때 보여주는 선택지 수 */
 export const CLUTCH_SHOWN = 4;
 
@@ -1731,9 +1740,10 @@ export function clutchDecision(c: Career, label: string, leagueAvg: number, boar
               ? "성공하면 동점, 연장 승부 · 실패하면 패배"
               : "성공하면 역전승 · 실패하면 패배"
             : "성공하면 경기 승리와 능력치 상승 · 실패하면 패배";
+      const note = playNote(x);
       return {
         label: x.label,
-        sub,
+        sub: note ? `${note} · ${sub}` : sub,
         tag: x.side,
         act: { k: "clutch", attr: x.attr, play: x.play, p: clutchOdds(c, x.attr, leagueAvg, x), pts: x.pts, move: x.move, ...(tying && { ot }), ...(finals && { finals }) },
       };

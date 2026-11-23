@@ -87,6 +87,7 @@ export {
   type JourneyStep,
   type TitleEntry,
 } from "./career/career";
+export { decisionDelta } from "./career/delta";
 export { madePlayoffs, missingPlayoffs, sumPlayoffs, type PlayoffTotals } from "./career/playoffs";
 export { careerSplits, type LeagueSplit, type RecordSplit, type SplitKey, type TeamSplit } from "./career/splits";
 export { applySeasonShooting, freeThrowPct, playoffLines, playoffShooting, sumShooting, threePct, turnoversPerGame, type ShootingLine } from "./season/shooting";

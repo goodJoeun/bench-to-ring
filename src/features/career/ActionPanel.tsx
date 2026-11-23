@@ -9,6 +9,7 @@ import {
   currentDecision,
   currentExpectedMinutes,
   formLines,
+  isCoreAttr,
   josa,
   money,
   negotiable,
@@ -149,6 +150,7 @@ function DecisionSheet({ career: c, decision, kind, remaining, onHide }: { caree
       </span>
       <h2 id="decision-title">{decision.title}</h2>
       <p className="sheet-desc">{decision.body}</p>
+      {c.hist.length === 0 && <p className="hint">고른 결과는 능력치, 건강, 코치 신뢰에 바로 반영돼요.</p>}
       <div className="choices">
         {decision.opts.map((o, i) => (
           <Choice
@@ -175,10 +177,11 @@ function scrollToInvest() {
   document.querySelector(".sheet .invest")?.scrollIntoView({ behavior: calm ? "auto" : "smooth", block: "start" });
 }
 
-function focusHint(k: FocusKey): string {
-  if (k === "bal") return "모든 능력치를 고르게 훈련해요.";
-  if (k === "rest") return "성장은 느려지지만 건강을 회복하고 부상 위험이 줄어요.";
-  return `${focusName(k)} 위주로 집중적으로 훈련해요.`;
+/** 훈련 초점 설명: 능력치는 지금 수치와 포지션 핵심 여부. 집중 훈련 배율은 시트 설명에 한 번만 적어요. */
+function focusHint(k: FocusKey, c: Career): string {
+  if (k === "bal") return "모두 약 1.1배 성장";
+  if (k === "rest") return "성장 0.6배 · 건강 회복, 부상 위험 감소";
+  return `지금 ${Math.round(c.p.attrs[k])}${isCoreAttr(c.p.pos, k) ? " · 포지션 핵심" : ""}`;
 }
 
 /**
@@ -306,13 +309,13 @@ export function ActionPanel({ career: c, playing, speed, busy, outcome, onAdvanc
         <Sheet labelledBy="plan-title" onClose={() => setPlanOpen(false)}>
           <span className="sheet-kicker">{sub}</span>
           <h2 id="plan-title">{c.year} 시즌 계획</h2>
-          <p className="sheet-desc">이번 시즌에 집중할 훈련을 고르고 시즌을 시작하세요. 시즌 중에는 바꿀 수 없어요.</p>
+          <p className="sheet-desc">집중 훈련한 능력치는 약 1.5배 빠르게 자라요. 시즌 중에는 바꿀 수 없어요.</p>
           <div className="choices focus-grid" role="radiogroup" aria-label="훈련 초점">
             {FOCUS.map(([k, name]) => (
               <Choice
                 key={k}
                 label={name}
-                sub={focusHint(k)}
+                sub={focusHint(k, c)}
                 role="radio"
                 aria-checked={c.focus === k}
                 onClick={() => gameActions.setFocus(k)}
@@ -362,6 +365,7 @@ function OutcomeCard({ outcome }: { outcome: Outcome }) {
         <span>
           <span className="t">{outcome.label}</span>
           <span className="s">{outcome.msg}</span>
+          {outcome.delta && <b className="delta">{outcome.delta}</b>}
         </span>
         <span className="sr-only">눌러서 바로 시즌 이어가기</span>
         <span className="go" aria-hidden="true">

@@ -2298,6 +2298,17 @@ describe("클러치", () => {
     expect(clutchDecision(c, "라이벌전", LEAGUES.kbl.avg, clutchBoard(-2)).body).toContain("2점 뒤진");
   });
 
+  it("플레이의 성격은 알려 주되 내 성공 확률은 숨겨요", () => {
+    setRandom(seeded(34));
+    const c = kblPlayer("notes", 0);
+    const subs = new Map<string, string>();
+    for (let i = 0; i < 40; i++) for (const o of clutchDecision(c, "라이벌전", LEAGUES.kbl.avg, clutchBoard(2)).opts) subs.set(o.label, o.sub ?? "");
+    expect(subs.get("기습적인 트랩으로 공을 빼앗는다")).toMatch(/^고난도 · /);
+    expect(subs.get("패스 길목을 읽고 가로챈다")).toMatch(/^실력 차가 크게 갈려요 · /);
+    expect(subs.get("블록슛을 노린다")).toBe("막아 내면 승리 · 뚫리면 역전패");
+    for (const sub of subs.values()) expect(sub).not.toMatch(/\d\s*%/);
+  });
+
   it("2점 앞서면 상대의 마지막 공격을 막는 수비 플레이만 나와요", () => {
     setRandom(seeded(33));
     const c = kblPlayer("ahead", 0);

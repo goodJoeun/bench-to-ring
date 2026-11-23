@@ -11,6 +11,7 @@ import {
   chooseOption,
   chosenInvest,
   clutchScene,
+  decisionDelta,
   createCareer,
   currentDecision,
   dailyChallenge,
@@ -130,6 +131,8 @@ export type Speed = (typeof SPEEDS)[number];
 export interface Toast {
   id: number;
   msg: string;
+  /** 결정으로 실제 바뀐 값. 예: "건강 -3 · 코치 신뢰 상승" */
+  detail?: string;
 }
 
 /** 결정 결과의 성격: 성공, 실패, 그 밖 */
@@ -141,6 +144,8 @@ export interface Outcome {
   label: string;
   /** 그 결과로 생긴 소식 */
   msg: string;
+  /** 결정으로 실제 바뀐 값 */
+  delta?: string;
   tone: OutcomeTone;
   /**
    * 클러치 결과: 성공·실패 이펙트와 최종 점수, 연장 여부. 전광판 정보가 없던 예전 결정은 점수 없이 와요.
@@ -242,7 +247,7 @@ function set(patch: Partial<GameSnapshot>): void {
 let toastId = 0;
 /** 시즌 결산 화면 뒤로 미뤄 둔 시즌 종료 알림. 결산 화면을 닫으면 띄워요. 결산 화면 제목줄과 같은 내용이 겹치지 않게요. */
 let afterSeasonEnd: string | null = null;
-const toast = (msg: string): Toast => ({ id: ++toastId, msg });
+const toast = (msg: string, detail?: string): Toast => ({ id: ++toastId, msg, ...(detail && { detail }) });
 
 /** 진행 화면을 닫으며 결과를 알림으로 띄워요. 알릴 말이 없으면 지금 알림을 그대로 둬요. */
 function closeWithToast(patch: Partial<GameSnapshot>, msg: string | null | undefined): void {
@@ -495,15 +500,18 @@ export const gameActions = {
     mutate((c) => {
       chooseOption(c, index);
     });
-    if (opt?.act.k === "draft") return set({ drafting: true });
-    if (opt?.act.k === "national" && opt.act.join) return set({ tournament: true });
+    // 전체 화면 진행으로 넘어갈 때는 앞 화면의 알림이 그 위에 남지 않게 지워요.
+    if (opt?.act.k === "draft") return set({ drafting: true, toast: null });
+    if (opt?.act.k === "national" && opt.act.join) return set({ tournament: true, toast: null });
     // 국가대표 결승 클러치를 고르면 대회 화면을 다시 열어 결과 이펙트와 최종 성적을 보여줘요.
-    if (opt?.act.k === "clutch" && opt.act.finals === "nat") return set({ tournament: true });
+    if (opt?.act.k === "clutch" && opt.act.finals === "nat") return set({ tournament: true, toast: null });
     const after = snapshot.career;
     const news = after ? latestNewsItemSince(before, after) : null;
+    // 생활 이벤트처럼 수치가 바뀌는 선택은 바뀐 값을 결과와 함께 보여줘요. 클러치는 결과 이펙트가 따로 있어요.
+    const delta = after && (opt?.act.k === "boost" || opt?.act.k === "gamble") ? decisionDelta(c0, after, news?.m) : "";
     // 시즌 중 결정은 결과를 진행 막대 자리에 띄워 두고 시즌을 잠깐 멈춰요. 이어서 고를 결정이 있으면 알림으로만 알려요.
     if (opt && after?.run && !currentDecision(after)) {
-      const outcome: Outcome = { id: ++toastId, label: opt.label, msg: news?.m ?? "선택이 반영됐어요.", tone: toneOf(opt.act, news) };
+      const outcome: Outcome = { id: ++toastId, label: opt.label, msg: news?.m ?? "선택이 반영됐어요.", delta, tone: toneOf(opt.act, news) };
       // 클러치는 다음 경기 결과와 점수가 정해져 있어요. 예전 결정은 전광판 동점에서 2점 차로 끝나요.
       // 리그 결승 클러치는 결승 결과가 바로 정해져요. 우승 세리머니로 보여주고, 마지막 플레이로 끝난 경기라 결승 중계는 다시 틀지 않아요.
       const f = after.run.final;
@@ -525,8 +533,8 @@ export const gameActions = {
       }
       return set({ outcome });
     }
-    const msg = news?.m ?? (opt?.label ? `'${opt.label}'을(를) 골랐어요` : null);
-    if (msg) set({ toast: toast(msg) });
+    const msg = news?.m ?? (opt?.label ? `선택했어요: ${opt.label}` : null);
+    if (msg) set({ toast: toast(msg, delta) });
   },
   /** 국가대표 결승 클러치를 고르러 대회 진행 화면을 잠시 닫아요. 클럽 결승과 같은 결정 시트에서 고르면 다시 열려요. */
   pauseTournament() {

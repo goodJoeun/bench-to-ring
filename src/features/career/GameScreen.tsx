@@ -44,6 +44,8 @@ interface GameScreenProps {
 
 export function GameScreen({ career, hall, tab, onTab, playing, speed, busy, outcome }: GameScreenProps) {
   const pending = career.queue.length > 0;
+  // 시즌이 흘러가는 동안에는 경기 기록을 먼저 보여주고 능력치는 그 아래로 내려요.
+  const running = !!career.run && tab === "season";
 
   return (
     <main className="grid" data-tab={tab}>
@@ -53,7 +55,7 @@ export function GameScreen({ career, hall, tab, onTab, playing, speed, busy, out
         <ActionPanel career={career} playing={playing} speed={speed} busy={busy} outcome={outcome} onAdvance={() => onTab("season")} />
       </div>
       <div className="col-r">
-        <AttributesPanel career={career} />
+        {!running && <AttributesPanel career={career} />}
         <div className="tabs" role="tablist">
           {TABS.map(([k, name]) => (
             <button
@@ -85,7 +87,7 @@ export function GameScreen({ career, hall, tab, onTab, playing, speed, busy, out
           aria-labelledby={tab === "settings" ? "open-settings" : `tab-${tab}`}
           key={tab}
         >
-          {tab === "season" && <SeasonTab career={career} />}
+          {tab === "season" && <SeasonTab career={career} attributes={running ? <AttributesPanel career={career} /> : undefined} />}
           {tab === "record" && <RecordTab career={career} />}
           {tab === "trophy" && <TrophyTab career={career} />}
           {tab === "hall" && <HallOfFame hall={hall} />}

@@ -35,16 +35,16 @@ function ResultCard({ r }: { r: SeasonRecord }) {
   if (r.mil === "army") return <NoGamesCard r={r} kicker={`${r.year} 시즌 · 군 복무`} title={r.team} />;
   if (!r.lg && !r.mil) return <NoGamesCard r={r} kicker={`${r.year} 시즌`} title="무소속 · 개인 훈련" />;
   const stats: [string, number | string][] = [
-    ["PTS", r.pts],
-    ["REB", r.reb],
-    ["AST", r.ast],
-    ["STL", r.stl],
-    ["BLK", r.blk],
-    ["FG%", r.fg || "–"],
-    ["3PM", r.tpm ?? "–"],
-    ["3P%", r.tpp ?? "–"],
-    ["FT%", r.ftp ?? "–"],
-    ["TOV", r.tov ?? "–"],
+    ["득점", r.pts],
+    ["리바", r.reb],
+    ["어시", r.ast],
+    ["스틸", r.stl],
+    ["블록", r.blk],
+    ["야투%", r.fg || "–"],
+    ["3점", r.tpm ?? "–"],
+    ["3점%", r.tpp ?? "–"],
+    ["자유투%", r.ftp ?? "–"],
+    ["턴오버", r.tov ?? "–"],
   ];
   return (
     <section className="panel">
@@ -180,12 +180,12 @@ function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
   const t = run.tot;
   const avg = (v: number) => (t.gp ? r1(v / t.gp) : "-");
   const stats: [string, number | string][] = [
-    ["PTS", avg(t.pts)],
-    ["REB", avg(t.reb)],
-    ["AST", avg(t.ast)],
-    ["STL", avg(t.stl)],
-    ["BLK", avg(t.blk)],
-    ["MIN", avg(t.min)],
+    ["득점", avg(t.pts)],
+    ["리바", avg(t.reb)],
+    ["어시", avg(t.ast)],
+    ["스틸", avg(t.stl)],
+    ["블록", avg(t.blk)],
+    ["출전 분", avg(t.min)],
   ];
   const team = c.team;
   const form = formLabel(run.form);
@@ -269,7 +269,7 @@ function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
                 {g.clutch && <em className="gclutch">클러치</em>}
                 {g.ot && <em className="gclutch">연장</em>}
               </span>
-              <span className="gme">{g.me ? `${g.me.pts}점 ${g.me.reb}리바 ${g.me.ast}어시 · ${g.me.rating}` : `결장 · ${g.out}`}</span>
+              <span className="gme">{g.me ? `${g.me.pts}점 ${g.me.reb}리바 ${g.me.ast}어시 · 평점 ${g.me.rating}` : `결장 · ${g.out}`}</span>
             </li>
           ))}
         </ol>
@@ -280,7 +280,8 @@ function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
   );
 }
 
-export function SeasonTab({ career: c }: { career: Career }) {
+/** attributes: 시즌 진행 중에 경기 기록 바로 아래에 두는 능력치 패널 */
+export function SeasonTab({ career: c, attributes }: { career: Career; attributes?: React.ReactNode }) {
   const run = c.run;
   return (
     <>
@@ -295,8 +296,9 @@ export function SeasonTab({ career: c }: { career: Career }) {
       ) : (
         <Preseason career={c} />
       )}
+      {attributes}
       {!run && <ContractPanel career={c} />}
-      <ShopPanel career={c} />
+      {!run && <ShopPanel career={c} />}
       <Panel title="소식">
         <ul className="news">
           {c.news.slice(0, 18).map((n, i) => (

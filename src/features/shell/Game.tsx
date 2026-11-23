@@ -52,7 +52,11 @@ export function Game() {
   // 접속했을 때 안 읽은 새 공지가 있으면 한 번 안내해요. 닫거나 공지를 열면 이번 접속에서는 다시 띄우지 않아요.
   // 공지 목록을 연 뒤로는 그때까지의 글로 다시 안내하지 않고, 새 글이 생기면 다시 안내해요.
   const [alertDone, setAlertDone] = useState(false);
-  const alertList = ready && !alertDone && !noticeOpen && !noticeAlertHiddenToday() ? unreadList.filter((n) => !noticesAlerted().has(n.id)) : [];
+  // 처음 온 사람의 첫 시즌은 끊지 않아요. 지난 기록이 있을 때, 시즌과 결정 사이의 한가한 순간에만 안내해요.
+  const noticeMoment = career
+    ? career.hist.length > 0 && !career.run && !career.queue.length && !seasonEndRec && !cheer && !final && !tournament && !drafting && !farewell
+    : endings.length > 0;
+  const alertList = ready && noticeMoment && !alertDone && !noticeOpen && !noticeAlertHiddenToday() ? unreadList.filter((n) => !noticesAlerted().has(n.id)) : [];
   const showAlert = alertList.length > 0;
   /** 공지 목록 열기. 지금 안 읽은 글은 안내한 것으로 쳐요. */
   const openNotices = () => {

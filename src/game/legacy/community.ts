@@ -73,6 +73,8 @@ interface Ctx {
   injured: boolean;
   three: boolean;
   growth: number;
+  /** 커리어 첫 시즌. 지난 시즌과 비교하는 말은 쓰지 않아요. */
+  first: boolean;
   /** 프로 첫 시즌 */
   debut: boolean;
   /** NBA에서 뛰는데 KBL을 거쳤어요 */
@@ -776,6 +778,7 @@ function contextOf(c: Career, rec: SeasonRecord): Ctx {
     injured: rec.gp < LEAGUES[lg].games * 0.6,
     three: (rec.tpp ?? 0) >= 40 && (rec.tpm ?? 0) >= 1.5,
     growth: rec.ovr1 - rec.ovr0,
+    first: before.length === 0,
     debut: rec.pro && !before.some((h) => h.pro),
     fromKbl: lg === "nba" && before.some((h) => h.lg === "kbl"),
     bench,
@@ -796,7 +799,13 @@ function fill(t: string, x: Ctx): string {
 
 type Rand = () => number;
 const shuffle = <T>(xs: T[], rand: Rand): T[] => xs.map((v) => ({ v, r: rand() })).sort((a, b) => a.r - b.r).map((o) => o.v);
-const usable = (lines: Line[], x: Ctx) => lines.filter((l) => !l.when || l.when(x));
+const COMPARES_LAST_YEAR = /작년|last year/i;
+const usable = (lines: Line[], x: Ctx) => lines.filter((l) => (!l.when || l.when(x)) && !(x.first && COMPARES_LAST_YEAR.test(l.t)));
+/** 첫 시즌에는 지난 시즌과 비교하는 제목을 빼요. */
+const usableTitles = (titles: string[], x: Ctx) => {
+  const ok = x.first ? titles.filter((t) => !COMPARES_LAST_YEAR.test(t)) : titles;
+  return ok.length ? ok : titles;
+};
 
 /** 되도록 피할 글: 최근 두 시즌에 나온 것(recent)과 그중 직전 시즌 것(last). 모자라서 다시 쓸 때는 직전 시즌 것부터 피해요. */
 interface Avoid {
@@ -907,14 +916,14 @@ function planSeason(c: Career, rec: SeasonRecord, avoid: Avoid): Plan | null {
   const krSites = KR_SITES[x.lg];
   const krSite = krSites[Math.floor(rand() * krSites.length)];
   const kr = VOICES[krSite.style as keyof typeof VOICES];
-  const krTitle = pickTitle(x.champ ? kr.champTitle : kr.title[x.tier], rand, avoid);
+  const krTitle = pickTitle(usableTitles(x.champ ? kr.champTitle : kr.title[x.tier], x), rand, avoid);
   const krLines = pickLines(x, rand, 6, kr, 2, avoid);
 
   let en: Plan["en"] = null;
   const enSite = EN_SITES[x.lg];
   if (abroad(x) && enSite) {
     const v = VOICES.reddit;
-    en = { site: enSite, title: pickTitle(x.champ ? v.champTitle : v.title[x.tier], rand, avoid), lines: pickLines(x, rand, 5, v, 1, avoid) };
+    en = { site: enSite, title: pickTitle(usableTitles(x.champ ? v.champTitle : v.title[x.tier], x), rand, avoid), lines: pickLines(x, rand, 5, v, 1, avoid) };
   } else if (x.tier >= 3) {
     en = { site: SCOUT_SITE, title: x.tier === 4 ? "The curious case of {ename}" : "{ename} ({elg})", lines: pickFrom(REALGM, x, rand, 4, avoid) };
   }
