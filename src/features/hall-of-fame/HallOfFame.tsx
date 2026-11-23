@@ -3,12 +3,13 @@
 import { Link } from "@/shared/ui/Link";
 import { useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { bestFive, rankHall, type CareerSummary } from "@/game";
+import { bestFive, fmtNum, rankHall, type CareerSummary } from "@/game";
 import { kstDay } from "@/shared/leaderboard/days";
 import { boardQuery } from "@/shared/leaderboard/queries";
 import { useSeen } from "@/shared/lib/hooks";
 import { loadState } from "@/shared/query/load-state";
 import type { Board } from "@/shared/leaderboard/types";
+import { cardFromSummary } from "@/shared/ui/CareerCardSheet";
 import { Best5, HallTable } from "./HallTable";
 import { Loading, Panel } from "../../shared/ui/ui";
 
@@ -68,7 +69,15 @@ function OnlineHall({ board, rows, today }: { board: Board; rows: number; today:
         MVP·우승·수상과 통산 기록을 종합해 순위를 매겨요.
       </p>
       <Best5 items={board.best5} />
-      <HallTable rows={board.top.slice(0, rows).map((e) => ({ key: e.id, rank: e.rank, career: e }))} />
+      <HallTable
+        rows={board.top.slice(0, rows).map((e) => ({
+          key: e.id,
+          rank: e.rank,
+          career: e,
+          card: e,
+          ranks: `${today ? "오늘" : "올타임"} 전체 ${fmtNum(e.rank)}위 · ${e.pos} ${fmtNum(e.posRank)}위`,
+        }))}
+      />
     </>
   );
 }
@@ -87,7 +96,11 @@ function LocalHall({ hall, rows, onRetry }: { hall: CareerSummary[]; rows: numbe
       {hall.length ? (
         <>
           <Best5 items={bestFive(hall)} />
-          <HallTable rows={rankHall(hall).slice(0, rows).map(({ rank, career }) => ({ key: career.id, rank, career }))} />
+          <HallTable
+            rows={rankHall(hall)
+              .slice(0, rows)
+              .map(({ rank, career }) => ({ key: career.id, rank, career, card: cardFromSummary(career), ranks: `내 은퇴 선수 ${fmtNum(rank)}위` }))}
+          />
         </>
       ) : (
         <p className="empty">이 브라우저에서 은퇴한 선수가 아직 없어요.</p>

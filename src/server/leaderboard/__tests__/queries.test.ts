@@ -33,7 +33,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ cacheTag: () => {}, cacheLife: () => {}, revalidateTag: () => {} }));
 vi.mock("../../db/db", () => ({ db: () => testDb }));
 
-const { getBoard, getBoardDays, myRanks } = await import("../boards");
+const { getBoard, getBoardDays, myAround, myRanks } = await import("../boards");
 const { deleteCareer, insertCareer, ranksOf } = await import("../careers");
 const { getStatBoard } = await import("../stats");
 const { getChallengeBoard, myChallenge } = await import("../challenge");
@@ -193,6 +193,28 @@ describe("내 순위와 제출 응답", () => {
       expect(mine.careers.length).toBe((await one<{ n: number }>(`select count(*)::int n from careers where player_id = '${p}'`)).n);
       for (const c of mine.careers) expect([c.rank, c.posRank]).toEqual([t.get(c.id)!.rank, t.get(c.id)!.pos_rank]);
     }
+  });
+
+  it("주변 순위는 내 기록을 가운데에 두고 전체 줄 세우기와 같은 위아래 기록을 돌려줘요", async () => {
+    const t = await truth();
+    const { rows: ordered } = await pg.query<{ id: string; player_id: string; career_id: string }>(
+      `select id, player_id, career_id from careers order by score desc, mvp desc, peak desc, pts desc, created_at, id`,
+    );
+    // 맨 위, 맨 아래와 공동 순위가 있는 가운데까지 모두 봐요.
+    for (let i = 0; i < ordered.length; i++) {
+      const { id, player_id: player, career_id: careerId } = ordered[i];
+      const around = await myAround(player, careerId);
+      expect(around?.id).toBe(id);
+      expect(around!.rows.map((r) => r.id)).toEqual(ordered.slice(Math.max(0, i - 2), i + 3).map((r) => r.id));
+      for (const r of around!.rows) expect([r.rank, r.posRank]).toEqual([t.get(r.id)!.rank, t.get(r.id)!.pos_rank]);
+    }
+  });
+
+  it("다른 플레이어의 기록으로는 주변 순위를 볼 수 없어요", async () => {
+    const { player_id: owner, career_id: careerId } = await one<{ player_id: string; career_id: string }>(`select player_id, career_id from careers limit 1`);
+    const stranger = PLAYERS.find((p) => p !== owner)!;
+    expect(await pg.query(`select 1 from careers where player_id = $1 and career_id = $2`, [stranger, careerId]).then((r) => r.rows.length)).toBe(0);
+    expect(await myAround(stranger, careerId)).toBeNull();
   });
 
   it("제출 응답의 순위와 전체 수가 맞아요", async () => {

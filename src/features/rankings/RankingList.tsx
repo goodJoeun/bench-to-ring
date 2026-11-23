@@ -1,18 +1,48 @@
+"use client";
+
+import { useState } from "react";
 import { fmtNum } from "@/game";
 import type { BoardEntry } from "@/shared/leaderboard/types";
 import { nameFit } from "@/shared/lib/format";
+import { CareerCardSheet } from "@/shared/ui/CareerCardSheet";
 import { Sprite } from "@/shared/ui/sprite/Sprite";
 import { jerseyOf, lookOf, medalOf } from "../../shared/ui/sprite/look";
 
-/** 이름 아래 한 줄: 포지션·최고 오버롤과 큰 상 */
-function line(e: BoardEntry): string {
-  const parts = [`${e.pos} · OVR ${e.peak}`];
+/** 이름 아래 한 줄의 조각: 포지션·최고 오버롤과 큰 상 */
+function lineParts(e: BoardEntry): string[] {
+  const parts = [e.pos, `OVR ${e.peak}`];
   if (e.mvp) parts.push(`NBA MVP ${e.mvp}`);
   if (e.fmvp) parts.push(`파이널 MVP ${e.fmvp}`);
   if (e.leagueMvp) parts.push(`리그 MVP ${e.leagueMvp}`);
   if (e.rings) parts.push(`반지 ${e.rings}`);
   parts.push(`통산 ${fmtNum(e.pts)}점`);
-  return parts.join(" · ");
+  return parts;
+}
+
+/** 조각의 끝 두 낱말(상 이름과 횟수). 줄이 바뀌어도 횟수만 다음 줄로 떨어지지 않게 묶어요. */
+function splitPart(p: string): [string, string] {
+  const words = p.split(" ");
+  return [words.slice(0, -2).join(" "), words.slice(-2).join(" ")];
+}
+
+function Line({ e }: { e: BoardEntry }) {
+  const parts = lineParts(e);
+  return (
+    <span className="sub">
+      {parts.map((p, i) => {
+        const [lead, tail] = splitPart(p);
+        return (
+          <span key={p}>
+            {lead && `${lead} `}
+            <span className="rk-part">
+              {tail}
+              {i < parts.length - 1 && " ·"}
+            </span>{" "}
+          </span>
+        );
+      })}
+    </span>
+  );
 }
 
 /** 시상대 툴팁에 보여줄 누적 기록. 상은 받은 것만 넣어요. */
@@ -34,20 +64,41 @@ function totals(e: BoardEntry): [string, string][] {
 export function RankMark({ rank }: { rank: number }) {
   return (
     <span className="rk-r" data-medal={medalOf(rank)}>
-      {rank}
+      {fmtNum(rank)}
     </span>
+  );
+}
+
+/** 순위표 한 줄. 줄 전체가 눌려서 커리어 카드를 열어요. */
+export function RankRow({ e, rank, mine, onOpen }: { e: BoardEntry; rank: number; mine: boolean; onOpen: (e: BoardEntry) => void }) {
+  return (
+    <li data-mine={mine || undefined}>
+      <RankMark rank={rank} />
+      <Sprite look={lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={2} className="rk-mini" label={`${e.name} 캐릭터`} />
+      <span className="rk-who">
+        <b style={nameFit(`${e.name} #${e.num}`)}>
+          {e.name} <span className="num">#{e.num}</span>
+          {mine && <span className="me">나</span>}
+        </b>
+        <Line e={e} />
+      </span>
+      <span className="rk-chev" aria-hidden="true">
+        ›
+      </span>
+      <button type="button" className="rk-open" aria-haspopup="dialog" aria-label={`${fmtNum(rank)}위 ${e.name} 커리어 보기`} onClick={() => onOpen(e)} />
+    </li>
   );
 }
 
 /**
  * 시상대 한 칸: 선수가 위에 서고, 아래 단에 메달과 순위가 있어요. 1위 단이 가장 높아요.
- * 자리가 좁아 기록을 적지 못하니, 마우스를 올리거나 눌러서(초점) 누적 기록 툴팁을 봐요.
+ * 마우스를 올리면 누적 기록 툴팁이 뜨고, 누르면 커리어 카드가 열려요.
  */
-function Podium({ e, place, rank, mine }: { e: BoardEntry; place: 1 | 2 | 3; rank: number; mine: boolean }) {
+function Podium({ e, place, rank, mine, onOpen }: { e: BoardEntry; place: 1 | 2 | 3; rank: number; mine: boolean; onOpen: (e: BoardEntry) => void }) {
   const medal = medalOf(rank) ?? "bronze";
   const tipId = `rk-tip-${e.id}`;
   return (
-    <div className="rk-pod" data-place={place} data-mine={mine || undefined} tabIndex={0} aria-describedby={tipId}>
+    <div className="rk-pod" data-place={place} data-mine={mine || undefined}>
       <span className="rk-tip" id={tipId} role="tooltip">
         {totals(e).map(([k, v]) => (
           <span key={k}>
@@ -69,12 +120,24 @@ function Podium({ e, place, rank, mine }: { e: BoardEntry; place: 1 | 2 | 3; ran
         </span>
         <span className="lbl">{rank}위</span>
       </div>
+      <button type="button" className="rk-open" aria-haspopup="dialog" aria-describedby={tipId} aria-label={`${rank}위 ${e.name} 커리어 보기`} onClick={() => onOpen(e)} />
     </div>
   );
 }
 
-/** 랭킹: 1~3위는 시상대, 그 아래는 줄로 보여줘요. 포지션을 골랐으면 포지션 순위예요. */
-export function RankingList({ rows, byPos, mine }: { rows: BoardEntry[]; byPos: boolean; mine: Set<string> }) {
+interface RankingListProps {
+  rows: BoardEntry[];
+  byPos: boolean;
+  mine: Set<string>;
+  /** 커리어 카드에 적는 순위. 없으면 전체·포지션 순위예요. */
+  rankText?: (e: BoardEntry) => string;
+}
+
+export const defaultRankText = (e: BoardEntry) => `전체 ${fmtNum(e.rank)}위 · ${e.pos} ${fmtNum(e.posRank)}위`;
+
+/** 랭킹: 1~3위는 시상대, 그 아래는 줄로 보여줘요. 포지션을 골랐으면 포지션 순위예요. 누르면 커리어 카드가 열려요. */
+export function RankingList({ rows, byPos, mine, rankText = defaultRankText }: RankingListProps) {
+  const [open, setOpen] = useState<BoardEntry | null>(null);
   const rankOf = (e: BoardEntry) => (byPos ? e.posRank : e.rank);
   const podium = rows.slice(0, 3);
   // 시상대는 2·1·3위 순서로 놓아요.
@@ -83,26 +146,17 @@ export function RankingList({ rows, byPos, mine }: { rows: BoardEntry[]; byPos: 
     <>
       <div className="rk-podium">
         {order.map((e, i) =>
-          e ? <Podium key={e.id} e={e} place={([2, 1, 3] as const)[i]} rank={rankOf(e)} mine={mine.has(e.id)} /> : <div key={i} aria-hidden="true" />,
+          e ? <Podium key={e.id} e={e} place={([2, 1, 3] as const)[i]} rank={rankOf(e)} mine={mine.has(e.id)} onOpen={setOpen} /> : <div key={i} aria-hidden="true" />,
         )}
       </div>
       {rows.length > 3 && (
-        <ol className="rk-list">
+        <ol className="rk-list rk-rows">
           {rows.slice(3).map((e) => (
-            <li key={e.id} data-mine={mine.has(e.id) || undefined}>
-              <RankMark rank={rankOf(e)} />
-              <Sprite look={lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={2} className="rk-mini" label={`${e.name} 캐릭터`} />
-              <span className="rk-who">
-                <b style={nameFit(`${e.name} #${e.num}`)}>
-                  {e.name} <span className="num">#{e.num}</span>
-                  {mine.has(e.id) && <span className="me">나</span>}
-                </b>
-                <span className="sub">{line(e)}</span>
-              </span>
-            </li>
+            <RankRow key={e.id} e={e} rank={rankOf(e)} mine={mine.has(e.id)} onOpen={setOpen} />
           ))}
         </ol>
       )}
+      {open && <CareerCardSheet career={open} ranks={rankText(open)} mine={mine.has(open.id)} onClose={() => setOpen(null)} />}
     </>
   );
 }

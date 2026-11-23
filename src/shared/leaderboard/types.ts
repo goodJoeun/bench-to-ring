@@ -121,6 +121,14 @@ export interface MyRanks {
   }[];
 }
 
+/** GET /api/careers/mine/around?career=: 내 기록과 바로 위아래 기록 (역대 전체) */
+export interface MyAround {
+  /** 내 기록의 서버 id */
+  id: string;
+  /** 순위 순서. 내 기록을 가운데에 두고 위아래로 두 명까지예요. */
+  rows: BoardEntry[];
+}
+
 /** GET /api/boards */
 export interface Board {
   scope: BoardScope;

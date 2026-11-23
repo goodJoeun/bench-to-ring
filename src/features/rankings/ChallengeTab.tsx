@@ -106,7 +106,7 @@ export function ChallengeTab({ days }: { days: string[] }) {
               </>
             )}
           </p>
-          <RankingList rows={b.top} byPos={false} mine={myIds} />
+          <RankingList rows={b.top} byPos={false} mine={myIds} rankText={(e) => `${when} ${e.pos} 챌린지 ${fmtNum(e.rank)}위`} />
         </>
       )}
       <p className="hint">

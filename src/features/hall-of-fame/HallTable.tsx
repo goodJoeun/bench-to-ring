@@ -1,4 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import type { CareerSummary, PosKey } from "@/game";
+import { CareerCardSheet, type CareerCard } from "@/shared/ui/CareerCardSheet";
 import { nameFit } from "../../shared/lib/format";
 
 /* 명예의 전당(이 브라우저의 기록) 표와 Best 5 */
@@ -9,6 +13,10 @@ export interface HallRow {
   key: string;
   rank: number;
   career: HallCareer;
+  /** 이름을 누르면 여는 커리어 카드 */
+  card: CareerCard;
+  /** 커리어 카드에 적는 순위 */
+  ranks: string;
 }
 
 export function Best5({ items }: { items: { pos: PosKey; career: HallCareer | null; note?: string }[] }) {
@@ -29,9 +37,10 @@ export function Best5({ items }: { items: { pos: PosKey; career: HallCareer | nu
 
 /**
  * 명예의 전당 표: 순위·선수·포지션·MVP·반지·통산 득점·최고 OVR·레거시. 상위권의 차이가 보이게 실적을 앞에 둬요. 순위는 리그별 MVP·우승·파이널 MVP·개인상, 국가대표, 통산 기록을
- * 종합한 랭킹 점수(rankScore)로 매기고, 점수 자체는 보여주지 않아요.
+ * 종합한 랭킹 점수(rankScore)로 매기고, 점수 자체는 보여주지 않아요. 선수 이름을 누르면 커리어 카드가 열려요.
  */
 export function HallTable({ rows }: { rows: HallRow[] }) {
+  const [open, setOpen] = useState<HallRow | null>(null);
   return (
     <div className="tbl-wrap">
       <table className="hall-table">
@@ -48,23 +57,29 @@ export function HallTable({ rows }: { rows: HallRow[] }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ key, rank, career: h }) => (
-            <tr key={key}>
-              <td>{rank}</td>
-              <td className="l t">
-                <b>{h.name}</b> #{h.num}
-                <span className="hall-pos"> · {h.pos}</span>
-              </td>
-              <td className="l hall-wide">{h.pos}</td>
-              <td>{h.mvp}</td>
-              <td>{h.rings}</td>
-              <td>{h.pts.toLocaleString("ko-KR")}</td>
-              <td>{h.peak}</td>
-              <td className="l t hall-wide">{h.legacy}</td>
-            </tr>
-          ))}
+          {rows.map((row) => {
+            const { key, rank, career: h } = row;
+            return (
+              <tr key={key}>
+                <td>{rank}</td>
+                <td className="l t">
+                  <button type="button" className="hall-name" aria-haspopup="dialog" aria-label={`${rank}위 ${h.name} 커리어 보기`} onClick={() => setOpen(row)}>
+                    <b>{h.name}</b> #{h.num}
+                    <span className="hall-pos"> · {h.pos}</span>
+                  </button>
+                </td>
+                <td className="l hall-wide">{h.pos}</td>
+                <td>{h.mvp}</td>
+                <td>{h.rings}</td>
+                <td>{h.pts.toLocaleString("ko-KR")}</td>
+                <td>{h.peak}</td>
+                <td className="l t hall-wide">{h.legacy}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
+      {open && <CareerCardSheet career={open.card} ranks={open.ranks} onClose={() => setOpen(null)} />}
     </div>
   );
 }

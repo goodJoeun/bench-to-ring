@@ -14,7 +14,7 @@ import { Loading } from "@/shared/ui/ui";
 import { BestFiveCourt } from "./BestFiveCourt";
 import { ChallengeTab } from "./ChallengeTab";
 import { MyRecords } from "./MyRecords";
-import { RankingList } from "./RankingList";
+import { RankingList, defaultRankText } from "./RankingList";
 import { STAT_LABELS, StatList } from "./StatList";
 
 const TABS = [
@@ -179,6 +179,8 @@ export function RankingsScreen() {
   const [pos, setPos] = useState<PosKey>("PG");
   const [who, setWho] = useState<Who>("all");
   const [pick, setPick] = useState<DayPick>(0);
+  // 나의 기록에서 주변 순위를 펼친 선수. 랭킹 100의 '내 최고 순위'에서도 열어요.
+  const [near, setNear] = useState<string | null>(null);
   const today = useSyncExternalStore(subscribeNever, readToday, () => "");
   const days = today ? daysBack(today) : [];
   const day: BoardDay = pick === "all" ? null : (days[pick] ?? null);
@@ -204,6 +206,8 @@ export function RankingsScreen() {
 
   // 베스트 5와 랭킹 100은 전체 순위표에, 포지션별 랭킹은 고른 포지션 순위표에 들어 있어요.
   const shown = tab === "position" ? byPos : all;
+  const best = mine?.careers[0];
+  const scopeName = day === null ? "올타임" : day === today ? "오늘" : `${Number(day.slice(5, 7))}월 ${Number(day.slice(8))}일`;
 
   return (
     <>
@@ -247,6 +251,16 @@ export function RankingsScreen() {
             <>
               <DayChips days={days} pick={pick} onPick={setPick} counts={counts} />
               <DayCount counts={counts} day={day} today={today} />
+              {tab === "ranking" && best && (
+                <a className="rk-mybest" href="#mine" onClick={() => setNear(best.careerId)}>
+                  <span>
+                    내 최고 순위 <b>{fmtNum(best.rank)}위</b> <small>올타임</small>
+                  </span>
+                  <span className="rk-mybest-go">
+                    주변 순위 <span aria-hidden="true">›</span>
+                  </span>
+                </a>
+              )}
             </>
           )}
           {myBest ? (
@@ -264,7 +278,7 @@ export function RankingsScreen() {
               </>
             )
           ) : tab === "mine" ? (
-            <MyRecords hall={hall} mine={mine} pending={new Set(pending ? pending.split("\n") : [])} endings={new Set(endings)} />
+            <MyRecords hall={hall} mine={mine} pending={new Set(pending ? pending.split("\n") : [])} endings={new Set(endings)} near={near} onNear={setNear} />
           ) : tab === "challenge" ? (
             // 챌린지는 날짜와 포지션을 탭 안에서 따로 골라요(올타임이 없어요).
             hydrated && <ChallengeTab days={days} />
@@ -306,7 +320,7 @@ export function RankingsScreen() {
               ) : tab === "best5" ? (
                 <BestFiveCourt best5={shown.data.best5} mine={myIds} />
               ) : (
-                <RankingList rows={shown.data.top} byPos={tab === "position"} mine={myIds} />
+                <RankingList rows={shown.data.top} byPos={tab === "position"} mine={myIds} rankText={(e) => `${scopeName} ${defaultRankText(e)}`} />
               )}
             </>
           )}

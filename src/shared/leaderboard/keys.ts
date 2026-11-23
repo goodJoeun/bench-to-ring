@@ -14,6 +14,8 @@ export const leaderboardKeys = {
   days: () => [...LEADERBOARD, "days"] as const,
   /** 이 브라우저가 올린 기록의 순위 */
   mine: () => [...LEADERBOARD, "mine"] as const,
+  /** 내 기록 하나의 주변 순위 */
+  around: (careerId: string) => [...LEADERBOARD, "mine", "around", careerId] as const,
   /** 챌린지 순위표: 날짜마다 (포지션 다섯 개가 함께 와요) */
   challenge: (day: string) => [...LEADERBOARD, "challenge", day] as const,
   /** 이 브라우저의 그날 챌린지 성적 */

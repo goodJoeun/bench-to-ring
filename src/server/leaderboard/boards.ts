@@ -4,7 +4,7 @@ import { alias } from "drizzle-orm/pg-core";
 import { cacheLife, cacheTag } from "next/cache";
 import { POS_KEYS, type LookRecord, type PosKey } from "@/game";
 import { DAY_COUNT } from "@/shared/leaderboard/days";
-import type { Board, BoardDay, BoardDays, BoardEntry, BoardScope, MyRanks } from "@/shared/leaderboard/types";
+import type { Board, BoardDay, BoardDays, BoardEntry, BoardScope, MyAround, MyRanks } from "@/shared/leaderboard/types";
 import { db } from "../db/db";
 import { careerCounts, careerTotals, careers } from "../db/schema";
 
@@ -88,33 +88,36 @@ async function boardStats(scope: BoardScope, day: BoardDay): Promise<Board["stat
   return row;
 }
 
-/** 순위표 줄. 은퇴 요약에서 꺼내는 값은 고른 줄에서만 읽어요. */
+/** 순위표 한 줄의 칸. 은퇴 요약에서 꺼내는 값은 고른 줄에서만 읽어요. */
+const entryColumns = (scope: BoardScope, day: BoardDay) => ({
+  id: careers.id,
+  rank: rankOf(scope, day, false),
+  posRank: rankOf(scope, day, true),
+  name: careers.name,
+  num: careers.num,
+  pos: sql<PosKey>`${careers.pos}`,
+  score: careers.score,
+  mvp: careers.mvp,
+  fmvp: sql<number>`coalesce((${careers.summary}->'awards'->>'fmvp')::int, 0)`,
+  leagueMvp: sql<number>`coalesce((${careers.summary}->'awards'->>'mvp')::int, 0)`,
+  peak: careers.peak,
+  personal: careers.personal,
+  pts: careers.pts,
+  reb: careers.reb,
+  ast: careers.ast,
+  rings: careers.rings,
+  seasons: careers.seasons,
+  legacy: careers.legacy,
+  team: sql<string | null>`${careers.summary}->'teams'->> -1`,
+  look: sql<LookRecord | null>`${careers.summary}->'look'`,
+  ruleset: careers.ruleset,
+  verified: careers.verified,
+});
+
+/** 순위표 줄 */
 function entries(scope: BoardScope, day: BoardDay, pos: PosKey | null, limit: number): Promise<BoardEntry[]> {
   return db()
-    .select({
-      id: careers.id,
-      rank: rankOf(scope, day, false),
-      posRank: rankOf(scope, day, true),
-      name: careers.name,
-      num: careers.num,
-      pos: sql<PosKey>`${careers.pos}`,
-      score: careers.score,
-      mvp: careers.mvp,
-      fmvp: sql<number>`coalesce((${careers.summary}->'awards'->>'fmvp')::int, 0)`,
-      leagueMvp: sql<number>`coalesce((${careers.summary}->'awards'->>'mvp')::int, 0)`,
-      peak: careers.peak,
-      personal: careers.personal,
-      pts: careers.pts,
-      reb: careers.reb,
-      ast: careers.ast,
-      rings: careers.rings,
-      seasons: careers.seasons,
-      legacy: careers.legacy,
-      team: sql<string | null>`${careers.summary}->'teams'->> -1`,
-      look: sql<LookRecord | null>`${careers.summary}->'look'`,
-      ruleset: careers.ruleset,
-      verified: careers.verified,
-    })
+    .select(entryColumns(scope, day))
     .from(careers)
     .where(and(inScope(scope, day), pos ? eq(careers.pos, pos) : undefined))
     .orderBy(order)
@@ -189,4 +192,39 @@ export async function myRanks(playerId: string): Promise<MyRanks> {
     allTimeCounts(scope),
   ]);
   return { total: stats.careers, careers: mine };
+}
+
+/** 내 순위 주변에 보여주는 위아래 기록 수 */
+const AROUND = 2;
+/** 주변 기록을 찾을 때 기준이 되는 내 기록 */
+const me = alias(careers, "me");
+
+/**
+ * 이 플레이어의 기록 하나와 바로 위아래 기록 (역대 전체). 없는 기록이나 다른 플레이어의 기록이면 null이에요.
+ * 순위 인덱스를 내 자리에서 위아래로 읽어 전체를 줄 세우지 않아요. 공동 순위 안에서는 올린 때와 id로 자리를 정해요.
+ * 플레이어마다 달라서 캐시하지 않고, 화면에서 '주변 순위'를 열 때만 불러요.
+ */
+export async function myAround(playerId: string, careerId: string): Promise<MyAround | null> {
+  const columns = entryColumns("all", null);
+  const [mine] = await db()
+    .select(columns)
+    .from(careers)
+    .where(and(eq(careers.playerId, playerId), eq(careers.careerId, careerId)))
+    .limit(1);
+  if (!mine) return null;
+
+  const key = sql`(${careers.score}, ${careers.mvp}, ${careers.peak}, ${careers.pts})`;
+  const myKey = sql`(${me.score}, ${me.mvp}, ${me.peak}, ${me.pts})`;
+  const place = sql`(${careers.createdAt}, ${careers.id})`;
+  const myPlace = sql`(${me.createdAt}, ${me.id})`;
+  const near = (where: SQL, orderBy: SQL) => db().select(columns).from(careers).innerJoin(me, eq(me.id, mine.id)).where(where).orderBy(orderBy).limit(AROUND);
+  const [above, below] = await Promise.all([
+    // 위쪽은 인덱스를 거꾸로 읽어요. 순서를 정확히 뒤집어야 인덱스를 그대로 써요.
+    near(
+      sql`${key} >= ${myKey} and (${key} > ${myKey} or ${place} < ${myPlace})`,
+      sql`${careers.score} asc nulls first, ${careers.mvp} asc nulls first, ${careers.peak} asc nulls first, ${careers.pts} asc nulls first, ${careers.createdAt} desc, ${careers.id} desc`,
+    ),
+    near(sql`${key} <= ${myKey} and (${key} < ${myKey} or ${place} > ${myPlace})`, sql`${order}, ${careers.id}`),
+  ]);
+  return { id: mine.id, rows: [...above.reverse(), mine, ...below] };
 }

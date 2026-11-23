@@ -3,7 +3,7 @@ import { getQueryClient } from "@/shared/query/query-client";
 import { FRESH_BYPASS_MS, FRESH_PARAM } from "./cdn";
 import { kstDay } from "./days";
 import { LEADERBOARD } from "./keys";
-import type { Board, BoardDay, BoardDays, BoardScope, ChallengeBoard, DeleteResult, MyChallenge, MyRanks, PlayerCreated, StatBoard, StatKey, SubmitResult } from "./types";
+import type { Board, BoardDay, BoardDays, BoardScope, ChallengeBoard, DeleteResult, MyAround, MyChallenge, MyRanks, PlayerCreated, StatBoard, StatKey, SubmitResult } from "./types";
 
 // 온라인 랭킹에 은퇴 기록을 올리고 지워요. 서버가 안 되면 조용히 실패하고, 보내지 못한 기록과 지우지 못한 기록은 다음에 다시 해요.
 
@@ -188,6 +188,12 @@ export const fetchBoardDays = (): Promise<BoardDays> => {
 export async function fetchMine(): Promise<MyRanks | null> {
   const t = read(TOKEN_KEY);
   return t ? getJson<MyRanks>("/api/careers/mine", { authorization: `Bearer ${t}` }) : null;
+}
+
+/** 이 브라우저가 올린 기록 하나와 바로 위아래 기록. 토큰이 없으면 null이에요. */
+export async function fetchAround(careerId: string): Promise<MyAround | null> {
+  const t = read(TOKEN_KEY);
+  return t ? getJson<MyAround>(`/api/careers/mine/around?${new URLSearchParams({ career: careerId })}`, { authorization: `Bearer ${t}` }) : null;
 }
 
 /** 그날(한국 시간) 챌린지의 포지션별 순위표를 가져와요. */
