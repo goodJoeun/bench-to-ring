@@ -49,7 +49,8 @@ function hideToday(): void {
  */
 export function NoticeAlert({ latest, count, onOpen, onClose }: { latest: Notice; count: number; onOpen: () => void; onClose: () => void }) {
   return (
-    <Sheet labelledBy="na-title" onClose={onClose}>
+    // 다른 단추를 누른 직후 저절로 뜨는 시트라, 이어진 탭이 '오늘 하루 보지 않기'에 닿지 않게 잠깐 입력을 막아요.
+    <Sheet labelledBy="na-title" guardKey="notice-alert" onClose={onClose}>
       <span className="na-icon" aria-hidden="true">
         📣
       </span>
