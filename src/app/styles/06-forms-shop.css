@@ -1,0 +1,150 @@
+/* forms */
+.btn {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  border-radius: var(--r-sm);
+  padding: 9px 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: var(--text-md);
+  display: inline-flex;
+  align-items: center;
+}
+.btn.warn {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+.btn.danger {
+  color: var(--bad);
+  border-color: var(--bad);
+}
+.btn:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+.row-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.donate {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.shop-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.shop-closed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+.shop-head h3,
+.owned h3 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+.owned {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+/* 보유 아이템 유형 탭: 넘치면 가로로 밀어 봐요. */
+.cat-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.cat-tabs::-webkit-scrollbar {
+  display: none;
+}
+.cat-tabs button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  background: var(--panel2);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cat-tabs button span {
+  font-family: var(--f-num);
+  font-size: var(--text-xs);
+  opacity: 0.8;
+}
+.cat-tabs button[aria-selected="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--panel);
+}
+.owned-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+@media (max-width: 560px) {
+  .owned-list {
+    grid-template-columns: 1fr;
+  }
+}
+.owned-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  padding: 8px 12px;
+  border-radius: var(--r-md);
+  background: var(--panel2);
+}
+.owned-list b {
+  font-size: var(--text-md);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 상점 아이콘 */
+.shop-ico {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-sm);
+  background: var(--panel);
+  font-size: var(--text-lg);
+  line-height: 1;
+}
+.owned-list .shop-ico {
+  width: 22px;
+  height: 22px;
+  margin-right: 6px;
+  font-size: var(--text-md);
+  vertical-align: -5px;
+}
+.donate .btn[data-done] {
+  color: var(--good);
+  border-color: var(--good);
+}

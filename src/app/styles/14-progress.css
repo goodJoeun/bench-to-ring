@@ -1,0 +1,215 @@
+/* season loading: 원작처럼 파란 화면. 휴대폰은 전체 화면, 넓은 화면은 가운데 파란 패널이에요. */
+.sim {
+  --sim-bg: #263796;
+  --sim-soft: #d5def7;
+  --sim-lbl: #c6d2fa;
+  --sim-bar: #a9c7ff;
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  background: rgba(6, 10, 20, 0.62);
+  overscroll-behavior: contain;
+  animation: fade 0.2s ease-out;
+}
+.sim-card {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  background: var(--sim-bg);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  padding: max(24px, env(safe-area-inset-top)) 20px
+    max(24px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+@media (min-width: 481px) {
+  .sim-card {
+    width: 420px;
+    height: min(900px, 100dvh);
+    border-radius: var(--r-lg);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+  }
+}
+.sim-card > :not(.sim-skip) {
+  width: min(360px, 100%);
+}
+.sim-court {
+  position: relative;
+  height: 160px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  margin-bottom: 8px;
+}
+.sim-sprite {
+  margin-bottom: 12px;
+  filter: none;
+  animation: dribble 0.5s ease-in-out infinite alternate;
+}
+.sim-shadow {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  width: 72px;
+  height: 10px;
+  margin-left: -36px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.28);
+}
+.sim-team {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--sim-lbl);
+}
+.sim-card h2 {
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: clamp(27px, 8vw, 36px);
+  margin: 0;
+  line-height: 1.15;
+}
+.sim-phase {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--sim-soft);
+  min-height: 1.55em;
+}
+.sim-phase .dots::after {
+  content: "";
+  display: inline-block;
+  width: 1.2em;
+  text-align: left;
+  animation: dots 1.2s steps(4, end) infinite;
+}
+/* 대회 진행: 경기 결과가 한 줄씩 올라와요. */
+.tour-games {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 42dvh;
+  overflow-y: auto;
+}
+.tour-games li {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: var(--text-sm);
+  text-align: left;
+  animation: rise 0.25s ease-out both;
+}
+.tour-games .tg-stage {
+  color: var(--sim-lbl);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tour-games .tg-opp {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tour-games .tg-score {
+  font-family: var(--f-num);
+  font-variant-numeric: tabular-nums;
+}
+.tour-games .tg-wl {
+  font-weight: 800;
+  color: #ff9c8f;
+}
+.tour-games li[data-win] .tg-wl {
+  color: #8fe3a8;
+}
+.tour-games .tg-pts {
+  font-size: var(--text-xs);
+  color: var(--sim-soft);
+}
+.tour-story {
+  margin: 8px 0 0;
+  font-size: var(--text-md);
+  line-height: 1.5;
+  color: var(--sim-soft);
+}
+.tour-story b {
+  color: #ffd66b;
+}
+/* 드래프트 진행: 최근 지명이 위에서부터 쌓여요. 내 이름이 불리면 금색으로 빛나요. */
+.draft-note {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: #ffd66b;
+}
+.draft-picks {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 172px;
+}
+.draft-picks li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1.2fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 4px 0 0 var(--tc);
+  font-size: var(--text-sm);
+  text-align: left;
+  animation: rise 0.25s ease-out both;
+}
+.draft-picks .dp-no {
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-size: var(--text-base);
+  color: var(--sim-lbl);
+  font-variant-numeric: tabular-nums;
+}
+.draft-picks .dp-team {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.draft-picks .dp-who {
+  color: var(--sim-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.draft-picks li[data-mine] {
+  background: rgba(255, 214, 107, 0.18);
+  outline: 2px solid #ffd66b;
+  animation:
+    rise 0.25s ease-out both,
+    glow 1.2s ease-in-out 0.25s 2;
+}
+.draft-picks li[data-mine] .dp-who {
+  color: #ffd66b;
+  font-weight: 800;
+}
+@keyframes glow {
+  50% {
+    background: rgba(255, 214, 107, 0.34);
+  }
+}

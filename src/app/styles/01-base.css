@@ -1,0 +1,54 @@
+* {
+  box-sizing: border-box;
+}
+/* 한글은 글자 사이가 아니라 띄어쓰기에서만 줄을 바꿔요. 한 낱말이 한 줄보다 길면 그때만 낱말 안에서 끊고, 마지막 줄에 한 낱말만 외로 남지 않게 해요. */
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: var(--text-base);
+  line-height: 1.55;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  text-wrap: pretty;
+  padding-inline: 16px;
+  padding-block: env(safe-area-inset-top, 0px)
+    calc(48px + env(safe-area-inset-bottom, 0px));
+}
+button {
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--paint);
+  outline-offset: 2px;
+}
+.label {
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 700;
+}
+.hint {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+.empty {
+  color: var(--muted);
+  margin: 0;
+}
+h2.sec {
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: var(--text-xl);
+  margin: 0;
+  letter-spacing: 0.01em;
+  text-wrap: balance;
+}
+
+/* header */

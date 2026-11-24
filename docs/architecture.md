@@ -73,7 +73,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 - `page.tsx`: 게임 (`features/shell/Game`)
 - `rankings/page.tsx`: 랭킹 (`features/rankings/RankingsScreen`)
 - `api/**/route.ts`: 요청을 읽고 `server/`를 불러 응답만 만들어요.
-- `globals.css`: 전역 스타일. 아직 한 파일이에요 (아래 "남은 일").
+- `globals.css`: 전역 스타일의 입구. `styles/`의 파일 28개를 번호 순서대로 불러와요. 예전 한 파일의 규칙 순서를 그대로 나눈 거라, 순서를 바꾸면 화면이 달라질 수 있어요 (아래 "남은 일").
 
 ### `features/`: 화면 기능
 
@@ -163,4 +163,4 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 
 ## 남은 일
 
-- `app/globals.css`(5천 줄 넘음)는 아직 한 파일이에요. 나누면 규칙 순서가 바뀌어 화면이 달라질 수 있어서 이번 정리에서는 그대로 뒀어요. 나눈다면 기능 폴더마다 CSS Module을 두는 쪽이 이 구조와 맞아요.
+- 전역 스타일(`app/styles/`, 9천 줄 넘음)은 아직 모든 화면이 같이 불러요. 규칙 순서는 그대로 두고 파일만 나눴어요(빌드한 CSS가 나누기 전과 같아요). 공용 UI부터 기능 폴더마다 CSS Module로 옮기고, 옮길 때마다 `npm run test:visual`로 화면을 비교해요.

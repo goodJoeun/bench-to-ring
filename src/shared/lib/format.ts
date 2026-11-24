@@ -14,7 +14,7 @@ const textWidth = (s: string): number => [...s].reduce((w, ch) => w + (WIDE.test
 
 /**
  * 선수 이름 길이를 CSS 변수로 넘겨요: --nw는 전체 폭, --lw는 가장 긴 낱말 폭이에요(한글 한 글자가 2).
- * 이름이 나오는 칸은 이 값과 칸 너비(cqi)로 글자 크기를 줄여, 20자 이름도 한두 줄에 들어가게 해요(globals.css "긴 선수 이름").
+ * 이름이 나오는 칸은 이 값과 칸 너비(cqi)로 글자 크기를 줄여, 20자 이름도 한두 줄에 들어가게 해요(app/styles/25-long-names.css).
  */
 export function nameFit(text: string): CSSProperties {
   const t = text.trim();

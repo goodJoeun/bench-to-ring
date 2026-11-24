@@ -1,0 +1,259 @@
+/* 챌린지 모드: 첫 화면의 오늘의 챌린지 카드, 랭킹의 챌린지 탭, 커리어 화면의 표시 */
+.ch-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (max-width: 1099px) {
+  .ch-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.ch-pos {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--panel2);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ch-pos:hover {
+  border-color: var(--accent);
+}
+.ch-pos[data-mine] {
+  border-color: var(--accent);
+}
+.ch-pos .p {
+  font-family: var(--f-num);
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.ch-pos .p span {
+  font-family: var(--f-body);
+  font-weight: 500;
+  font-size: var(--text-xs);
+  letter-spacing: 0;
+  color: var(--muted);
+}
+.ch-pos .nm {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+/* 지금 그 포지션 1위의 이름. 긴 이름도 다 보이게 줄을 바꿔요. */
+.ch-pos .ch-lead {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+  font-size: var(--text-sm);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.ch-pos .ch-lead .r {
+  font-weight: 700;
+  color: var(--gold);
+}
+.ch-pos .ch-lead b {
+  color: var(--ink);
+}
+.ch-pos .ch-n {
+  margin-bottom: 8px;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+.ch-pos[data-mine] .ch-n {
+  color: var(--accent);
+  font-weight: 700;
+}
+.ch-pos .ch-go {
+  /* 1위 이름이 길어 칸 높이가 달라져도 단추는 맨 아래에 나란히 있어요. */
+  margin-top: auto;
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-align: center;
+}
+/* 첫 화면의 오늘의 챌린지 카드는 강조색 테두리와 옅은 강조색 바탕으로 다른 카드보다 눈에 띄게 해요. */
+.ch-card {
+  border: 2px solid var(--accent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 12%, var(--panel)), var(--panel) 150px);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.ch-card .ch-pos {
+  background: var(--panel);
+}
+/* 날짜 줄 옆에 도움말 단추, 그 아래 제목이 카드 너비를 다 써요(좁은 화면에서 NEW가 줄바꿈되지 않게). */
+.ch-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 10px;
+}
+.ch-head .ch-help {
+  grid-area: 1 / 2;
+}
+.ch-head h2.sec {
+  grid-column: 1 / -1;
+}
+.ch-head h2.sec {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-3xl);
+}
+.ch-new {
+  font-family: var(--f-num);
+  font-size: var(--text-xxs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: var(--r-full);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.ch-lede {
+  font-size: var(--text-base);
+  line-height: 1.55;
+}
+.ch-lede b {
+  color: var(--accent);
+}
+/* '챌린지 모드란' 도움말 단추 */
+.ch-help {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 12px 6px 7px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+  border-radius: var(--r-full);
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ch-help > span {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--f-num);
+  font-size: var(--text-xs);
+}
+.ch-help:hover {
+  border-color: var(--accent);
+}
+/* 챌린지 랭킹 탭 맨 위: 설명과 도움말 단추 */
+.ch-about {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ch-about .hint {
+  flex: 1 1 260px;
+}
+/* 챌린지 도움말: 도전하는 순서 */
+.ch-steps {
+  list-style: none;
+  counter-reset: ch-step;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ch-steps li {
+  counter-increment: ch-step;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--text-base);
+  line-height: 1.45;
+}
+.ch-steps li::before {
+  content: counter(ch-step);
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--f-num);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+}
+/* 챌린지 선수 만들기: 정해진 선수 한 명만 보여줘요. */
+.cands.one {
+  grid-template-columns: minmax(0, 420px);
+}
+.cand[data-fixed] {
+  cursor: default;
+}
+.cand[data-fixed] .pick {
+  cursor: default;
+}
+/* 챌린지에서 정해져 있어 고칠 수 없는 칸. 다른 입력칸과 높이를 맞춰요. */
+.f-fixed {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 7px 10px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-sm);
+  font-size: var(--text-lg);
+  font-weight: 400;
+  color: var(--ink);
+}
+.ch-spec {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--panel);
+}
+.ch-spec b {
+  font-size: var(--text-lg);
+}
+.ch-spec .sub {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.ch-spec .btn {
+  margin-top: 8px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.ch-chip {
+  align-self: center;
+  font-size: var(--text-xxs);
+  font-weight: 700;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-radius: var(--r-full);
+  padding: 1px 8px;
+}

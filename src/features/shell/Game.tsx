@@ -118,7 +118,7 @@ export function Game() {
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 21.4 10.5 20C5.4 15.4 2 12.3 2 8.5 2 5.4 4.4 3 7.5 3c1.7 0 3.4.8 4.5 2.1C13.1 3.8 14.8 3 16.5 3 19.6 3 22 5.4 22 8.5c0 3.8-3.4 6.9-8.5 11.5z" />
               </svg>
-              {/* 좁은 화면에서는 앞뒤를 덜어 '서버비 후원', '후원'으로 줄여요 (globals.css). */}
+              {/* 좁은 화면에서는 앞뒤를 덜어 '서버비 후원', '후원'으로 줄여요 (app/styles/02-header.css). */}
               <span className="sp-label">
                 <span className="sp-pre">서버비 </span>후원<span className="sp-post">하기</span>
               </span>

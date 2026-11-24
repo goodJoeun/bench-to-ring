@@ -4,7 +4,7 @@
  * 텍스트만 보기: 커리어를 진행하는 동안(시즌·클러치·우승 축하·드래프트·회고) 캐릭터·로고·장면 그림과 이펙트를 빼고 글자만 보여줘요.
  * 첫 화면, 선수 만들기, 랭킹, 은퇴 화면에서는 그림을 그대로 보여줘요.
  * 고른 값은 이 브라우저에 저장하고, 게임 중일 때만 <html data-text-only>를 붙여요. 그림 컴포넌트는 useTextOnly()를 보고 아예 그리지 않고,
- * 남은 꾸밈과 애니메이션은 globals.css 맨 아래의 [data-text-only] 규칙이 꺼요.
+ * 남은 꾸밈과 애니메이션은 app/styles/27-text-only.css의 [data-text-only] 규칙이 꺼요.
  */
 
 import { useLayoutEffect, useSyncExternalStore } from "react";

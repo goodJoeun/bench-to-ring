@@ -1,0 +1,247 @@
+/* 결승 문자 중계 */
+.live {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+.live-title {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--sim-lbl);
+  text-align: center;
+}
+.live-board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 16px 14px;
+  border-radius: var(--r-md);
+  background: rgba(0, 0, 0, 0.22);
+}
+.live-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  border-top: 4px solid var(--tc);
+  padding-top: 8px;
+}
+.live-name {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.live-team b {
+  font-family: var(--f-num);
+  font-size: var(--text-5xl);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.live-team b.won {
+  color: #ffd66b;
+}
+.live-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-size: var(--text-md);
+  color: var(--sim-soft);
+  font-variant-numeric: tabular-nums;
+}
+.live-final {
+  font-family: var(--f-display);
+  font-size: var(--text-lg);
+  color: #fff;
+}
+.live-bar {
+  height: 4px;
+  border-radius: var(--r-xs);
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+.live-fill {
+  height: 100%;
+  background: var(--sim-bar);
+}
+.live-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 204px;
+}
+.live-log li {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.06);
+  font-size: var(--text-sm);
+}
+.live-log li:first-child {
+  background: rgba(255, 255, 255, 0.14);
+}
+.live-log li[data-mine] {
+  color: #ffd66b;
+  font-weight: 700;
+}
+.live-log li[data-mark] {
+  background: none;
+  color: var(--sim-lbl);
+  font-weight: 700;
+}
+.live-log .lc {
+  font-family: var(--f-num);
+  font-size: var(--text-xs);
+  color: var(--sim-lbl);
+  font-variant-numeric: tabular-nums;
+}
+.live-log .lt {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.live-log .ls {
+  font-family: var(--f-num);
+  font-variant-numeric: tabular-nums;
+}
+.live-ctl {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.live-ctl .sim-skip {
+  margin-top: 0;
+}
+.live-ctl .sim-skip[aria-pressed="true"] {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+.live-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  padding: 8px 0;
+}
+.live-result b {
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: var(--text-4xl);
+  color: #ffd66b;
+}
+.live-result span {
+  font-size: var(--text-md);
+  color: var(--sim-soft);
+}
+.live-go {
+  margin-top: 12px;
+  min-width: 160px;
+  min-height: 48px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: #fff;
+  color: var(--sim-bg);
+  font-family: var(--f-display);
+  font-size: var(--text-xl);
+  cursor: pointer;
+}
+.live-go:focus-visible {
+  outline-color: #ffd66b;
+}
+.sim-skip {
+  margin-top: 18px;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: var(--r-full);
+  padding: 8px 18px;
+  font-size: var(--text-sm);
+  color: var(--sim-soft);
+  cursor: pointer;
+}
+.sim-skip:focus-visible {
+  outline-color: #fff;
+}
+@keyframes dribble {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-6px);
+  }
+}
+@keyframes dots {
+  0% {
+    content: "";
+  }
+  25% {
+    content: ".";
+  }
+  50% {
+    content: "..";
+  }
+  75% {
+    content: "...";
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tabc,
+  .sim,
+  .sim-sprite,
+  .sim-phase .dots::after,
+  .scrim,
+  .sheet,
+  .toast,
+  .tour-games li,
+  .draft-picks li,
+  .fw-title,
+  .fw-trail li,
+  .fw-walker .sprite,
+  .cheer-trophy,
+  .cheer-league-plate,
+  .cheer-ring,
+  .cheer-ring-spark,
+  .cheer-title,
+  .sim-card.cheer-achv .cheer-title,
+  .achv-rays,
+  .achv-medal,
+  .achv-banner,
+  .achv-badge {
+    animation: none;
+  }
+  .achv-badge::after {
+    display: none;
+  }
+  .cheer-confetti,
+  .achv-flash,
+  .achv-ring,
+  .achv-spark {
+    display: none;
+  }
+  .fw-fill,
+  .fw-walker {
+    transition: none;
+  }
+}

@@ -1,0 +1,70 @@
+/* 은퇴 화면의 닮은 꼴 선수 */
+.comps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (max-width: 560px) {
+  .comps {
+    grid-template-columns: 1fr;
+  }
+}
+.comp {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  background: var(--panel2);
+}
+.comp-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.comp-name {
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: var(--text-3xl);
+  line-height: 1.2;
+}
+.comp-name a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--line);
+}
+.comp-name a:hover,
+.comp-name a:focus-visible {
+  text-decoration-color: currentColor;
+}
+.comp-name .ext {
+  margin-left: 4px;
+  font-family: var(--f-num);
+  font-size: 0.6em;
+  vertical-align: 0.35em;
+  color: var(--muted);
+}
+.comp-score {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.comp-score b {
+  font-family: var(--f-num);
+  font-size: var(--text-2xl);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.comp-pos {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--muted);
+}
+.comp-blurb {
+  margin: 0;
+  font-size: var(--text-base);
+}

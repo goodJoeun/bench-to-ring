@@ -1,0 +1,135 @@
+/* 레이아웃: 왼쪽은 코트 카드·전광판·시즌 버튼, 오른쪽은 능력치와 탭. 휴대폰에서는 한 줄로 쌓여요. */
+:root {
+  --bg: #e7ebf0;
+  --panel: #f9fafc;
+  --panel2: #eef1f5;
+  --ink: #14203a;
+  --muted: #5a6577;
+  --line: #cdd4de;
+  --accent: #bb4714;
+  --accent-ink: #ffffff;
+  --paint: #1f4c99;
+  --key: #1f4c99;
+  --court-line: #f7f3ea;
+  --good: #1c7c45;
+  --bad: #bc3a2c;
+  --gold: #8a6608;
+  --silver: #6b7583;
+  --bronze: #a2622e;
+  --medal-ink: #ffffff;
+  --wood1: #dab07a;
+  --wood2: #d0a46c;
+  --score-bg: #101828;
+  --score-fg: #ffb547;
+  --score-lbl: #8e9ab0;
+  --ball-line: #4a2410;
+  --f-display: "Black Han Sans", "IBM Plex Sans KR", system-ui, sans-serif;
+  --f-body:
+    "IBM Plex Sans KR", system-ui, -apple-system, "Apple SD Gothic Neo",
+    "Malgun Gothic", sans-serif;
+  --f-num: "Saira Condensed", "IBM Plex Sans KR", system-ui, sans-serif;
+  /* 글자 크기 단계. 새 글자는 이 안에서 골라요. 화면 폭을 따라 변하는 제목만 clamp를 써요. */
+  --text-micro: 10px; /* 배지 안의 짧은 글자 전용 */
+  --text-xxs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 14px;
+  --text-base: 15px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 20px;
+  --text-3xl: 24px;
+  --text-4xl: 30px;
+  --text-5xl: 40px;
+  /* 모서리 단계: 작은 표시, 칩·타일, 카드·버튼, 시트·큰 카드, 알약 */
+  --r-xs: 4px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 20px;
+  --r-full: 999px;
+  --r: var(--r-md);
+  /* 앱 화면 폭: 휴대폰 480px, 641px 이상 640px, 1100px 이상 800px */
+  --t-max: 480px;
+  --dock: 64px;
+  --cta: 68px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  color-scheme: light;
+}
+@media (min-width: 641px) {
+  :root {
+    --t-max: min(640px, calc(100vw - 48px));
+  }
+}
+@media (min-width: 1100px) {
+  :root {
+    --t-max: min(800px, calc(100vw - 96px));
+  }
+}
+/* 어두운 테마: 설정에서 고르면(data-theme) 그대로, '시스템'이면 기기 설정을 따라가요. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c121b;
+    --panel: #141c28;
+    --panel2: #1b2534;
+    --ink: #e6ebf2;
+    --muted: #93a0b3;
+    --line: #2a3649;
+    --accent: #ee6a2a;
+    --accent-ink: #1b0e06;
+    --paint: #6b98ea;
+    --key: #24457f;
+    --court-line: #e9e2d2;
+    --good: #45c07a;
+    --bad: #f06b5b;
+    --gold: #e2b640;
+    --silver: #b9c2cd;
+    --bronze: #cd8a52;
+    --medal-ink: #1a1408;
+    --wood1: #7e5b33;
+    --wood2: #74532e;
+    --score-bg: #060a11;
+    --score-fg: #ffb547;
+    --score-lbl: #7f8ba0;
+    --ball-line: #3a1b0a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c121b;
+  --panel: #141c28;
+  --panel2: #1b2534;
+  --ink: #e6ebf2;
+  --muted: #93a0b3;
+  --line: #2a3649;
+  --accent: #ee6a2a;
+  --accent-ink: #1b0e06;
+  --paint: #6b98ea;
+  --key: #24457f;
+  --court-line: #e9e2d2;
+  --good: #45c07a;
+  --bad: #f06b5b;
+  --gold: #e2b640;
+  --silver: #b9c2cd;
+  --bronze: #cd8a52;
+  --medal-ink: #1a1408;
+  --wood1: #7e5b33;
+  --wood2: #74532e;
+  --score-bg: #060a11;
+  --score-fg: #ffb547;
+  --score-lbl: #7f8ba0;
+  --ball-line: #3a1b0a;
+  color-scheme: dark;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+}
+[hidden] {
+  display: none !important;
+}
+img {
+  max-width: 100%;
+}
