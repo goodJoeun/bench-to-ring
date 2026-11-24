@@ -3,13 +3,12 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "@fontsource/black-han-sans/400.css";
 import "@fontsource/ibm-plex-sans-kr/400.css";
-import "@fontsource/ibm-plex-sans-kr/500.css";
-import "@fontsource/ibm-plex-sans-kr/700.css";
 import "@fontsource/saira-condensed/500.css";
 import "@fontsource/saira-condensed/600.css";
 import "@fontsource/saira-condensed/700.css";
 // 자주 쓰는 한글을 굵기마다 파일 하나로 묶은 폰트(scripts/fonts.py). fontsource보다 나중에 선언해야 먼저 쓰여요.
-// 묶음에 없는 드문 글자만 위 fontsource 조각으로 받아요.
+// 묶음에 없는 드문 글자는 위 fontsource 조각으로 받아요. 선수 이름에 쓰는 제목 폰트는 조각을 남겨 글자 굵기가 튀지 않게 해요.
+// 본문 500·700은 조각을 빼고 시스템 글꼴로 보여줘요. 두 굵기의 조각 선언만 CSS 110KB예요.
 import "./fonts/fonts.css";
 import "./globals.css";
 import { THEME_BOOT } from "@/shared/lib/theme";
