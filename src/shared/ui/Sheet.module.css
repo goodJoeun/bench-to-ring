@@ -64,6 +64,13 @@ html:has(.sheet) {
 .sheet[data-guarded] button {
   pointer-events: none;
 }
+/* 움직임을 줄인 기기에서는 시트가 미끄러져 올라오지 않고 바로 떠요. 기본 규칙보다 뒤에 둬야 덮어써요. */
+@media (prefers-reduced-motion: reduce) {
+  .scrim,
+  .sheet {
+    animation: none;
+  }
+}
 @keyframes fade {
   from {
     opacity: 0;

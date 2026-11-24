@@ -38,6 +38,12 @@ html:has([aria-modal="true"]) .zone {
   height: 22px;
   fill: #4cd964;
 }
+/* 움직임을 줄인 기기에서는 알림이 올라오지 않고 바로 떠요. 기본 규칙보다 뒤에 둬야 덮어써요. */
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
 @keyframes toast-in {
   from {
     opacity: 0;
