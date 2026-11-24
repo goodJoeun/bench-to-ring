@@ -8,6 +8,7 @@ import { loadState } from "@/shared/query/load-state";
 import { CareerCardSheet } from "@/shared/ui/CareerCardSheet";
 import { Loading } from "@/shared/ui/ui";
 import { RankRow, defaultRankText } from "./RankingList";
+import styles from "./rankings.module.css";
 
 /** 내 기록의 바로 위아래 순위. 열었을 때만 불러오고, 줄을 누르면 커리어 카드가 열려요. */
 export function RankNeighbors({ careerId }: { careerId: string }) {
@@ -24,7 +25,7 @@ export function RankNeighbors({ careerId }: { careerId: string }) {
   }, [ready]);
 
   return (
-    <div className="rk-near" ref={ref}>
+    <div className={styles.rkNear} ref={ref}>
       {loading ? (
         <Loading label="주변 순위를 불러오고 있어요" />
       ) : !data ? (
@@ -37,7 +38,7 @@ export function RankNeighbors({ careerId }: { careerId: string }) {
           </button>
         </div>
       ) : (
-        <ol className="rk-list rk-rows" aria-label="내 순위 주변">
+        <ol className={`rk-list ${styles.rkRows}`} aria-label="내 순위 주변">
           {data.rows.map((e) => (
             <RankRow key={e.id} e={e} rank={e.rank} mine={e.id === data.id} onOpen={setOpen} />
           ))}

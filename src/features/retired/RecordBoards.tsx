@@ -15,6 +15,7 @@ import {
 } from "@/game";
 import { nameFit } from "@/shared/lib/format";
 import { Panel, Segmented } from "@/shared/ui/ui";
+import styles from "./retired.module.css";
 
 /** 이만큼 넘는 순위표는 상위권과 내 주변만 보여줘요. */
 const FOLD = 10;
@@ -39,24 +40,24 @@ function Board({ board, name, mine, all }: { board: RecordBoard; name: string; m
   return (
     <div className="board">
       <h3>{board.title}</h3>
-      <p className="st" data-ranked={p.rank !== null || undefined}>
+      <p className={styles.st} data-ranked={p.rank !== null || undefined}>
         {statusLine(board, mine, p)}
       </p>
-      <ol className="lb">
+      <ol className={styles.lb}>
         {visibleRows(p.rows, all).map((r, i) =>
           r ? (
             <li key={`${r.name}-${i}`} data-mine={r.mine || undefined}>
-              <span className="lr">{r.rank ?? "–"}</span>
-              <span className="ln" style={r.mine ? nameFit(r.name) : undefined}>
+              <span className={styles.lr}>{r.rank ?? "–"}</span>
+              <span className={styles.ln} style={r.mine ? nameFit(r.name) : undefined}>
                 {r.name}
                 {r.mine && <span className="me">나</span>}
                 {r.note && <span className="lt">{r.note}</span>}
                 {r.active && <span className="lt">현역</span>}
               </span>
-              <span className="lv">{num(r.v)}</span>
+              <span className={styles.lv}>{num(r.v)}</span>
             </li>
           ) : (
-            <li key={`gap-${i}`} className="lgap" aria-hidden="true">
+            <li key={`gap-${i}`} className={styles.lgap} aria-hidden="true">
               ⋯
             </li>
           ),

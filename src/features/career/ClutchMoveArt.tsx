@@ -3,6 +3,7 @@
 import type { ClutchMove, Look } from "@/game";
 import type { Mood } from "@/shared/ui/sprite/Sprite";
 import { drawPosed, type PosedExtra } from "@/shared/ui/sprite/coverArt";
+import styles from "./career.module.css";
 
 /**
  * 클러치 성공 이펙트 위에 그리는 플레이 장면. 고른 플레이마다 장면이 달라요.
@@ -108,12 +109,12 @@ function castOf(c: ClutchCast): Cast {
 
 export function ClutchMoveArt({ move, cast, win, revealed }: { move: ClutchMove; cast: ClutchCast; win: boolean; revealed: boolean }) {
   return (
-    <div className="mv" data-move={move} data-outcome={win ? "win" : "lose"} style={{ "--hit": `${MOVE_INFO[move].hit}s` } as React.CSSProperties}>
-      <svg className="mv-scene" viewBox="0 0 240 200" role="img" aria-label={revealed ? win ? LABEL[move] : FAILURE_LABEL[move] : "클러치 플레이 진행 중"}>
-        <line className="mv-floor" x1="0" y1="192.5" x2="240" y2="192.5" />
+    <div className={styles.mv} data-move={move} data-outcome={win ? "win" : "lose"} style={{ "--hit": `${MOVE_INFO[move].hit}s` } as React.CSSProperties}>
+      <svg className={styles.mvScene} viewBox="0 0 240 200" role="img" aria-label={revealed ? win ? LABEL[move] : FAILURE_LABEL[move] : "클러치 플레이 진행 중"}>
+        <line className={styles.mvFloor} x1="0" y1="192.5" x2="240" y2="192.5" />
         {(win ? SCENES : FAILURE_SCENES)[move](castOf(cast))}
       </svg>
-      {revealed && <span className="mv-tag" aria-hidden="true">{win ? MOVE_INFO[move].tag : FAILURE_TAG[move]}</span>}
+      {revealed && <span className={styles.mvTag} aria-hidden="true">{win ? MOVE_INFO[move].tag : FAILURE_TAG[move]}</span>}
     </div>
   );
 }
@@ -186,8 +187,8 @@ function Ball({ r = 8.5 }: { r?: number }) {
   const d = r * 0.71;
   return (
     <>
-      <circle className="mv-ball-b" r={r} />
-      <path className="mv-ball-l" d={`M${-r} 0H${r}M0 ${-r}V${r}M${-d} ${-d}Q${-r * 0.2} 0 ${-d} ${d}M${d} ${-d}Q${r * 0.2} 0 ${d} ${d}`} />
+      <circle className={styles.mvBallB} r={r} />
+      <path className={styles.mvBallL} d={`M${-r} 0H${r}M0 ${-r}V${r}M${-d} ${-d}Q${-r * 0.2} 0 ${-d} ${d}M${d} ${-d}Q${r * 0.2} 0 ${d} ${d}`} />
     </>
   );
 }
@@ -199,12 +200,12 @@ function Ball({ r = 8.5 }: { r?: number }) {
 function HoopBack() {
   return (
     <>
-      <g className="mv-board">
-        <rect className="mv-glass" x="-41.5" y="-41.5" width="83" height="48.5" rx="1.5" />
-        <rect className="mv-glass-sq" x="-17" y="-26" width="34" height="26" />
+      <g className={styles.mvBoard}>
+        <rect className={styles.mvGlass} x="-41.5" y="-41.5" width="83" height="48.5" rx="1.5" />
+        <rect className={styles.mvGlassSq} x="-17" y="-26" width="34" height="26" />
       </g>
-      <g className="mv-rimfx">
-        <path className="mv-rim" d="M-13 0A13 3.25 0 0 1 13 0" />
+      <g className={styles.mvRimfx}>
+        <path className={styles.mvRim} d="M-13 0A13 3.25 0 0 1 13 0" />
       </g>
     </>
   );
@@ -216,11 +217,11 @@ const NET =
 
 function HoopFront() {
   return (
-    <g className="mv-rimfx">
-      <g className="mv-net">
+    <g className={styles.mvRimfx}>
+      <g className={styles.mvNet}>
         <path d={NET} transform="scale(1.25)" />
       </g>
-      <path className="mv-rim" d="M-13 0A13 3.25 0 0 0 13 0" />
+      <path className={styles.mvRim} d="M-13 0A13 3.25 0 0 0 13 0" />
     </g>
   );
 }
@@ -234,7 +235,7 @@ function Burst({ x, y, r = 16 }: { x: number; y: number; r?: number }) {
   }).join("");
   return (
     <g transform={`translate(${x} ${y})`}>
-      <path className="mv-burst" d={d} />
+      <path className={styles.mvBurst} d={d} />
     </g>
   );
 }
@@ -242,7 +243,7 @@ function Burst({ x, y, r = 16 }: { x: number; y: number; r?: number }) {
 /** 물음표: 속거나 제쳐진 수비 머리 위 */
 function Huh() {
   return (
-    <text className="mv-q" x="-4" y="-98">
+    <text className={styles.mvQ} x="-4" y="-98">
       ?
     </text>
   );
@@ -255,23 +256,23 @@ function ShotScene({ cast, three, fail = false }: { cast: Cast; three?: boolean;
   const sx = three ? 26 : 52;
   return (
     <>
-      {three && <path className="mv-arc3" d="M2 199Q38 186 74 199" />}
+      {three && <path className={styles.mvArc3} d="M2 199Q38 186 74 199" />}
       <g transform={`translate(${sx} 192)`}>
-        <g className="mv-shooter">
+        <g className={styles.mvShooter}>
           <Player who={cast.me} {...SHOOT} />
-          {fail && <Player who={cast.me} {...SHOOT} mood="nervous" className="mv-result-face" />}
+          {fail && <Player who={cast.me} {...SHOOT} mood="nervous" className={styles.mvResultFace} />}
         </g>
       </g>
-      <path className="mv-trail" pathLength={1} d={three ? "M42 98Q119 -50.8 196 52" : "M68 98Q132 -46.7 196 52"} />
+      <path className={styles.mvTrail} pathLength={1} d={three ? "M42 98Q119 -50.8 196 52" : "M68 98Q132 -46.7 196 52"} />
       <g transform="translate(196 52)">
         <HoopBack />
       </g>
-      <g className="mv-ball mv-ball-shot">
+      <g className={`mv-ball ${styles.mvBallShot}`}>
         <Ball />
       </g>
       <g transform="translate(196 52)">
         <HoopFront />
-        <path className="mv-spark" d="M-18 -4-25 -9M18 -4 25 -9M-17 5-24 8M17 5 24 8" />
+        <path className={styles.mvSpark} d="M-18 -4-25 -9M18 -4 25 -9M-17 5-24 8M17 5 24 8" />
       </g>
     </>
   );
@@ -284,10 +285,10 @@ function DunkScene({ cast }: { cast: Cast }) {
       <g transform="translate(170 52)">
         <HoopBack />
       </g>
-      <g className="mv-dunker">
+      <g className={styles.mvDunker}>
         <Player who={cast.me} lh={[30, 120]} rh={[118, 46]} mood="strain" />
       </g>
-      <g className="mv-ball mv-ball-dunk">
+      <g className={`mv-ball ${styles.mvBallDunk}`}>
         <Ball />
       </g>
       <g transform="translate(170 52)">
@@ -302,15 +303,15 @@ function DunkScene({ cast }: { cast: Cast }) {
 function DriveScene({ cast }: { cast: Cast }) {
   return (
     <>
-      <path className="mv-trail mv-trail-drive" pathLength={1} d="M22 178C70 182 120 176 150 180S184 96 192 40" />
+      <path className={`${styles.mvTrail} ${styles.mvTrailDrive}`} pathLength={1} d="M22 178C70 182 120 176 150 180S184 96 192 40" />
       <g transform="translate(92 192)">
-        <g className="mv-fall mv-fall-1">
+        <g className={`${styles.mvFall} ${styles.mvFall1}`}>
           <Player who={cast.opp(0)} {...SPREAD} mood="nervous" />
           <Huh />
         </g>
       </g>
       <g transform="translate(140 192)">
-        <g className="mv-fall mv-fall-2">
+        <g className={`${styles.mvFall} ${styles.mvFall2}`}>
           <Player who={cast.opp(1)} {...SPREAD} mood="nervous" />
           <Huh />
         </g>
@@ -319,18 +320,18 @@ function DriveScene({ cast }: { cast: Cast }) {
         <HoopBack />
       </g>
       <g transform="translate(0 192)">
-        <g className="mv-driver">
-          <Player who={cast.me} rh={[126, 150]} className="mv-dribble" />
-          <Player who={cast.me} {...SHOOT} className="mv-layup" />
+        <g className={styles.mvDriver}>
+          <Player who={cast.me} rh={[126, 150]} className={styles.mvDribble} />
+          <Player who={cast.me} {...SHOOT} className={styles.mvLayup} />
         </g>
       </g>
-      <g className="mv-ball mv-ball-drive">
+      <g className={`mv-ball ${styles.mvBallDrive}`}>
         <Ball />
       </g>
       <g transform="translate(196 52)">
         <HoopFront />
       </g>
-      <path className="mv-speed" d="M0 150H14M-2 160H12M2 170H16" />
+      <path className={styles.mvSpeed} d="M0 150H14M-2 160H12M2 170H16" />
     </>
   );
 }
@@ -350,21 +351,21 @@ function PassScene({ cast }: { cast: Cast }) {
         <Player who={cast.mate} lh={[44, 48]} rh={[116, 48]} mood="beam" />
       </g>
       <g transform="translate(124 192)">
-        <Player who={cast.me} lh={[14, 104]} rh={[100, 150]} mood="focus" tilt={-0.3} className="mv-fake" />
-        <Player who={cast.me} lh={[40, 150]} rh={[166, 112]} mood="smirk" tilt={-0.3} className="mv-real" />
-        <path className="mv-gaze" d="M-16 -80-62 -96M-16 -72-62 -72" />
+        <Player who={cast.me} lh={[14, 104]} rh={[100, 150]} mood="focus" tilt={-0.3} className={styles.mvFake} />
+        <Player who={cast.me} lh={[40, 150]} rh={[166, 112]} mood="smirk" tilt={-0.3} className={styles.mvReal} />
+        <path className={styles.mvGaze} d="M-16 -80-62 -96M-16 -72-62 -72" />
       </g>
-      <path className="mv-feint" d="M92 141H48M56 134 46 141 56 148" />
+      <path className={styles.mvFeint} d="M92 141H48M56 134 46 141 56 148" />
       <g transform="translate(166 192)">
-        <g className="mv-bite">
+        <g className={styles.mvBite}>
           <Player who={cast.opp(0)} {...SPREAD} mood="nervous" />
           <Huh />
         </g>
       </g>
-      <circle className="mv-catch" cx="214" cy="114" r="14" />
-      <g className="mv-ball mv-ball-pass">
+      <circle className={styles.mvCatch} cx="214" cy="114" r="14" />
+      <g className={`mv-ball ${styles.mvBallPass}`}>
         <Ball />
-        <path className="mv-whoosh" d="M-9 -4H-26M-9 0H-32M-9 4H-26" />
+        <path className={styles.mvWhoosh} d="M-9 -4H-26M-9 0H-32M-9 4H-26" />
       </g>
     </>
   );
@@ -375,20 +376,20 @@ function LockdownScene({ cast, fail = false }: { cast: Cast; fail?: boolean }) {
   return (
     <>
       <g transform="translate(60 192)">
-        <g className="mv-shooter">
+        <g className={styles.mvShooter}>
           <Player who={cast.opp(0)} {...SHOOT} mood={fail ? "focus" : "nervous"} />
         </g>
       </g>
       <g transform="translate(104 192)">
-        <g className="mv-contest">
+        <g className={styles.mvContest}>
           <Player who={cast.me} rh={[116, 46]} lh={[30, 140]} />
-          {fail && <Player who={cast.me} rh={[116, 46]} lh={[30, 140]} mood="nervous" className="mv-fail-face" />}
+          {fail && <Player who={cast.me} rh={[116, 46]} lh={[30, 140]} mood="nervous" className={styles.mvFailFace} />}
         </g>
       </g>
       <g transform="translate(196 52)">
         <HoopBack />
       </g>
-      <g className="mv-ball mv-ball-clank">
+      <g className={`mv-ball ${styles.mvBallClank}`}>
         <Ball />
       </g>
       <g transform="translate(196 52)">
@@ -408,17 +409,17 @@ function BlockScene({ cast, fail = false }: { cast: Cast; fail?: boolean }) {
         <HoopFront />
       </g>
       <g transform="translate(46 192)">
-        <g className="mv-shooter">
+        <g className={styles.mvShooter}>
           <Player who={cast.opp(0)} {...SHOOT} mood={fail ? "focus" : "nervous"} />
         </g>
       </g>
       <g transform="translate(94 192)">
-        <g className="mv-jump">
+        <g className={styles.mvJump}>
           <Player who={cast.me} lh={[60, 48]} rh={[120, 46]} />
-          {fail && <Player who={cast.me} lh={[60, 48]} rh={[120, 46]} mood="nervous" className="mv-fail-face" />}
+          {fail && <Player who={cast.me} lh={[60, 48]} rh={[120, 46]} mood="nervous" className={styles.mvFailFace} />}
         </g>
       </g>
-      <g className="mv-ball mv-ball-block">
+      <g className={`mv-ball ${styles.mvBallBlock}`}>
         <Ball />
       </g>
       <Burst x={108} y={74} r={14} />
@@ -430,22 +431,22 @@ function BlockScene({ cast, fail = false }: { cast: Cast; fail?: boolean }) {
 function StealScene({ cast, fail = false }: { cast: Cast; fail?: boolean }) {
   return (
     <>
-      <line className="mv-lane" x1="66" y1="132" x2="176" y2="132" />
+      <line className={styles.mvLane} x1="66" y1="132" x2="176" y2="132" />
       <g transform="translate(30 192)">
         <Player who={cast.opp(0)} rh={[160, 80]} mood={fail ? "focus" : "nervous"} />
       </g>
       <g transform="translate(212 192)">
         <Player who={cast.opp(1)} lh={[0, 80]} mood={fail ? "focus" : "nervous"} />
       </g>
-      <path className="mv-x" d="M160 126 172 138M172 126 160 138" />
+      <path className={styles.mvX} d="M160 126 172 138M172 126 160 138" />
       <g transform="translate(124 192)">
-        <g className="mv-lunge">
+        <g className={styles.mvLunge}>
           <Player who={cast.me} lh={[20, 130]} rh={[130, 50]} />
-          {fail && <Player who={cast.me} lh={[20, 130]} rh={[130, 50]} mood="nervous" className="mv-fail-face" />}
-          <path className="mv-speed" d="M-28 -60H-48M-30 -46H-54M-28 -32H-46" />
+          {fail && <Player who={cast.me} lh={[20, 130]} rh={[130, 50]} mood="nervous" className={styles.mvFailFace} />}
+          <path className={styles.mvSpeed} d="M-28 -60H-48M-30 -46H-54M-28 -32H-46" />
         </g>
       </g>
-      <g className="mv-ball mv-ball-steal">
+      <g className={`mv-ball ${styles.mvBallSteal}`}>
         <Ball />
       </g>
       <Burst x={142} y={126} r={12} />
@@ -462,27 +463,27 @@ function ChargeScene({ cast }: { cast: Cast }) {
   return (
     <>
       <g transform="translate(22 192)">
-        <Player who={REF} outfit="ref" lh={[40, 150]} rh={[120, 150]} className="mv-ref-watch" />
-        <Player who={REF} outfit="ref" lh={[38, 50]} rh={[164, 96]} className="mv-ref-call" />
+        <Player who={REF} outfit="ref" lh={[40, 150]} rh={[120, 150]} className={styles.mvRefWatch} />
+        <Player who={REF} outfit="ref" lh={[38, 50]} rh={[164, 96]} className={styles.mvRefCall} />
         <g transform="translate(-4 -62) scale(-1 1)">
-          <path className="mv-whistle-b" d="M-4 -2.4H3A3.4 3.4 0 1 1-0.6 2.4H-4z" />
-          <circle className="mv-whistle-h" cx="3" cy="1" r="1.2" />
+          <path className={styles.mvWhistleB} d="M-4 -2.4H3A3.4 3.4 0 1 1-0.6 2.4H-4z" />
+          <circle className={styles.mvWhistleH} cx="3" cy="1" r="1.2" />
         </g>
-        <path className="mv-wave" d="M-20 -72Q-24 -66-20 -60M-26 -76Q-32 -66-26 -56" />
+        <path className={styles.mvWave} d="M-20 -72Q-24 -66-20 -60M-26 -76Q-32 -66-26 -56" />
       </g>
       <g transform="translate(150 192)">
-        <g className="mv-flop">
-          <Player who={cast.me} lh={[100, 128]} rh={[60, 128]} className="mv-stand" />
-          <Player who={cast.me} lh={[8, 76]} rh={[152, 76]} mood="nervous" className="mv-down" />
+        <g className={styles.mvFlop}>
+          <Player who={cast.me} lh={[100, 128]} rh={[60, 128]} className={styles.mvStand} />
+          <Player who={cast.me} lh={[8, 76]} rh={[152, 76]} mood="nervous" className={styles.mvDown} />
         </g>
       </g>
       <g transform="translate(182 192)">
-        <g className="mv-charger">
-          <Player who={cast.opp(0)} lh={[30, 150]} className="mv-run" />
-          <Player who={cast.opp(0)} lh={[30, 64]} rh={[130, 64]} mood="nervous" className="mv-protest" />
+        <g className={styles.mvCharger}>
+          <Player who={cast.opp(0)} lh={[30, 150]} className={styles.mvRun} />
+          <Player who={cast.opp(0)} lh={[30, 64]} rh={[130, 64]} mood="nervous" className={styles.mvProtest} />
         </g>
       </g>
-      <g className="mv-ball mv-ball-loose">
+      <g className={`mv-ball ${styles.mvBallLoose}`}>
         <Ball />
       </g>
       <Burst x={166} y={146} r={14} />
@@ -509,23 +510,23 @@ const SCENES: Record<ClutchMove, (cast: Cast) => React.ReactNode> = {
 function MissDunkScene({ cast }: { cast: Cast }) {
   return <>
     <g transform="translate(170 52)"><HoopBack /><HoopFront /></g>
-    <g className="mv-fail-dunker">
+    <g className={styles.mvFailDunker}>
       <Player who={cast.me} lh={[30, 120]} rh={[118, 46]} mood="strain" />
-      <Player who={cast.me} lh={[30, 120]} rh={[118, 46]} mood="nervous" className="mv-fail-face" />
+      <Player who={cast.me} lh={[30, 120]} rh={[118, 46]} mood="nervous" className={styles.mvFailFace} />
     </g>
-    <g className="mv-fail-ball mv-fail-dunk-ball"><Ball /></g>
+    <g className={`${styles.mvFailBall} ${styles.mvFailDunkBall}`}><Ball /></g>
     <Burst x={170} y={49} r={15} />
   </>;
 }
 
 function TurnoverScene({ cast }: { cast: Cast }) {
   return <>
-    <g className="mv-fail-driver">
+    <g className={styles.mvFailDriver}>
       <Player who={cast.me} rh={[126, 150]} />
-      <Player who={cast.me} rh={[126, 150]} mood="nervous" className="mv-fail-face" />
+      <Player who={cast.me} rh={[126, 150]} mood="nervous" className={styles.mvFailFace} />
     </g>
     <g transform="translate(157 192)"><Player who={cast.opp(0)} lh={[18, 120]} rh={[120, 124]} /></g>
-    <g className="mv-fail-ball mv-fail-drive-ball"><Ball /></g>
+    <g className={`${styles.mvFailBall} ${styles.mvFailDriveBall}`}><Ball /></g>
     <Burst x={143} y={147} r={12} />
   </>;
 }
@@ -534,14 +535,14 @@ function InterceptScene({ cast }: { cast: Cast }) {
   return <>
     <g transform="translate(64 192)">
       <Player who={cast.me} rh={[160, 112]} />
-      <Player who={cast.me} rh={[160, 112]} mood="nervous" className="mv-fail-face" />
+      <Player who={cast.me} rh={[160, 112]} mood="nervous" className={styles.mvFailFace} />
     </g>
     <g transform="translate(174 192)">
       <Player who={cast.mate} lh={[8, 112]} />
-      <Player who={cast.mate} lh={[8, 112]} mood="nervous" className="mv-fail-face" />
+      <Player who={cast.mate} lh={[8, 112]} mood="nervous" className={styles.mvFailFace} />
     </g>
     <g transform="translate(138 192)"><Player who={cast.opp(0)} lh={[20, 100]} rh={[130, 54]} /></g>
-    <g className="mv-fail-ball mv-fail-pass-ball"><Ball /></g>
+    <g className={`${styles.mvFailBall} ${styles.mvFailPassBall}`}><Ball /></g>
     <Burst x={139} y={120} r={12} />
   </>;
 }

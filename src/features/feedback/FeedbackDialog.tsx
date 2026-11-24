@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Sheet } from "@/shared/ui/Sheet";
 import type { ApiError } from "@/shared/leaderboard/types";
+import styles from "./feedback.module.css";
 
 type Kind = "bug" | "idea" | "etc";
 
@@ -60,7 +61,7 @@ export function FeedbackDialog({ onClose, career }: FeedbackDialogProps) {
       </button>
       <h2 id="fb-title">의견 보내기</h2>
       {state === "sent" ? (
-        <div className="fb-done" role="status">
+        <div className={styles.fbDone} role="status">
           <b>의견을 보냈어요</b>
           <span>소중한 의견 고마워요. 꼼꼼히 읽어 볼게요.</span>
           <button type="button" className="sheet-go" onClick={onClose}>
@@ -68,11 +69,11 @@ export function FeedbackDialog({ onClose, career }: FeedbackDialogProps) {
           </button>
         </div>
       ) : (
-        <form className="fb" onSubmit={(e) => void send(e)}>
-          <p className="fb-q" id="fb-kind">
+        <form className={styles.fb} onSubmit={(e) => void send(e)}>
+          <p className={styles.fbQ} id="fb-kind">
             어떤 이야기인가요?
           </p>
-          <div className="fb-kinds" role="radiogroup" aria-labelledby="fb-kind">
+          <div className={styles.fbKinds} role="radiogroup" aria-labelledby="fb-kind">
             {KINDS.map((k) => (
               <button type="button" key={k.key} role="radio" aria-checked={kind === k.key} onClick={() => setKind(k.key)}>
                 {k.name}
@@ -80,7 +81,7 @@ export function FeedbackDialog({ onClose, career }: FeedbackDialogProps) {
             ))}
           </div>
           <textarea
-            className="fb-text"
+            className={styles.fbText}
             aria-label="의견 내용"
             placeholder={hint}
             maxLength={MAX}
@@ -88,11 +89,11 @@ export function FeedbackDialog({ onClose, career }: FeedbackDialogProps) {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
-          <span className="fb-count" aria-live="polite">
+          <span className={styles.fbCount} aria-live="polite">
             {message.length}/{MAX}
           </span>
           <input
-            className="fb-mail"
+            className={styles.fbMail}
             type="email"
             inputMode="email"
             autoComplete="email"
@@ -103,16 +104,16 @@ export function FeedbackDialog({ onClose, career }: FeedbackDialogProps) {
             onChange={(e) => setEmail(e.target.value)}
           />
           {/* 봇만 채우는 숨은 칸 */}
-          <input className="fb-hp" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" value={website} onChange={(e) => setWebsite(e.target.value)} />
+          <input className={styles.fbHp} name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" value={website} onChange={(e) => setWebsite(e.target.value)} />
           {error && (
-            <p className="fb-err" role="alert">
+            <p className={styles.fbErr} role="alert">
               {error}
             </p>
           )}
           <button type="submit" className="sheet-go" disabled={!message.trim() || state === "sending"}>
             {state === "sending" ? "보내는 중…" : "보내기"}
           </button>
-          <p className="fb-foot">보던 화면과 브라우저 정보가 함께 전달돼요. 답장이 필요하면 이메일을 적어 주세요.</p>
+          <p className={styles.fbFoot}>보던 화면과 브라우저 정보가 함께 전달돼요. 답장이 필요하면 이메일을 적어 주세요.</p>
         </form>
       )}
     </Sheet>

@@ -17,6 +17,7 @@ import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 import { AwardName, Panel } from "@/shared/ui/ui";
 import { ContractPanel } from "../ContractPanel";
 import { ShopPanel } from "../ShopPanel";
+import styles from "../career.module.css";
 
 /** 경기를 뛰지 않은 시즌 (현역 복무, 무소속) */
 function NoGamesCard({ r, kicker, title }: { r: SeasonRecord; kicker: string; title: string }) {
@@ -48,8 +49,8 @@ function ResultCard({ r }: { r: SeasonRecord }) {
   ];
   return (
     <section className="panel">
-      <div className="rc-head">
-        <div className="rc-title">
+      <div className={styles.rcHead}>
+        <div className={styles.rcTitle}>
           <TeamBadge name={r.team} size={40} />
           <div>
             <span className="label">
@@ -60,12 +61,12 @@ function ResultCard({ r }: { r: SeasonRecord }) {
             </h2>
           </div>
         </div>
-        <div className="rating">
+        <div className={styles.rating}>
           <span className="label">평점</span>
           <b>{r.rating}</b>
         </div>
       </div>
-      <div className="statline" data-wide>
+      <div className={styles.statline} data-wide>
         {stats.map(([k, v]) => (
           <div className="stat" key={k}>
             <span className="n">{v}</span>
@@ -73,7 +74,7 @@ function ResultCard({ r }: { r: SeasonRecord }) {
           </div>
         ))}
       </div>
-      <div className="meta-row">
+      <div className={styles.metaRow}>
         <span>
           출전 <b>{r.gp}경기</b>
         </span>
@@ -106,7 +107,7 @@ function ResultCard({ r }: { r: SeasonRecord }) {
         </p>
       )}
       {r.lg && (
-        <div className="row-btns">
+        <div className={styles.rowBtns}>
           <button type="button" className="btn" onClick={() => gameActions.openSeasonEnd()}>
             {r.year} 시즌 결산 보기
           </button>
@@ -136,7 +137,7 @@ function Preseason({ career: c }: { career: Career }) {
         코치는 아직 당신을 잘 몰라요. 예상 역할은 <b>{roleOf(min)}</b>, 경기당 약 {Math.round(min)}분이에요. 훈련 초점을 정하고
         첫 시즌을 시작하세요.
       </p>
-      <ul className="tips">
+      <ul className={styles.tips}>
         <li>출전 시간이 많을수록 더 크게 성장해요. 성인이 된 뒤 벤치에만 있으면 성장이 더뎌질 수 있어요.</li>
         <li>건강이 낮으면 부상 위험이 커져요. 가끔은 회복 훈련을 고르세요.</li>
       </ul>
@@ -149,7 +150,7 @@ function RunPlan({ career: c, run }: { career: Career; run: SeasonRun }) {
   const title = c.stage === "military" ? militaryUnit(c.mil.kind).name : "무소속 · 개인 훈련";
   return (
     <Panel kicker={`${run.year} 시즌 진행 중`} title={title}>
-      <ol className="plan">
+      <ol className={styles.plan}>
         {run.plan.map((p, i) => (
           <li key={i} data-state={i < run.step ? "done" : i === run.step ? "now" : undefined}>
             {p}
@@ -169,7 +170,7 @@ function PlayoffLine({ rounds }: { rounds: PostRound[] }) {
   if (!t.gp) return null;
   const avg = (v: number) => r1(v / t.gp);
   return (
-    <p className="po-line">
+    <p className={styles.poLine}>
       플레이오프 <b>{t.gp}경기</b> 평균 {avg(t.pts)}점 · {avg(t.reb)}리바 · {avg(t.ast)}어시 · {avg(t.stl)}스틸 · {avg(t.blk)}블록
     </p>
   );
@@ -191,8 +192,8 @@ function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
   const form = formLabel(run.form);
   return (
     <section className="panel">
-      <div className="rc-head">
-        <div className="rc-title">
+      <div className={styles.rcHead}>
+        <div className={styles.rcTitle}>
           {team && <TeamBadge name={team.name} kind={team.lg} color={team.color} size={40} />}
           <div>
             <span className="label">
@@ -203,12 +204,12 @@ function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
             </h2>
           </div>
         </div>
-        <div className="rating">
+        <div className={styles.rating}>
           <span className="label">평점</span>
           <b>{avg(t.rating)}</b>
         </div>
       </div>
-      <div className="statline">
+      <div className={styles.statline}>
         {stats.map(([k, v]) => (
           <div className="stat" key={k}>
             <span className="n">{v}</span>
@@ -216,7 +217,7 @@ function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
           </div>
         ))}
       </div>
-      <div className="meta-row">
+      <div className={styles.metaRow}>
         <span>
           출전 <b>{t.gp}경기</b>
         </span>
@@ -237,7 +238,7 @@ function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
       </div>
       {run.shown > 0 && <PlayoffLine rounds={run.post.slice(0, run.shown)} />}
       {run.shown > 0 && (
-        <ul className="rounds">
+        <ul className={styles.rounds}>
           {run.post.slice(0, run.shown).map((r) => (
             <li key={r.name} data-win={r.win}>
               <span>{r.name}</span>
@@ -248,7 +249,7 @@ function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
               <b>
                 {r.score} {r.win ? "승" : "패"}
               </b>
-              {r.me && <span className="rme">{r.me.gp ? `내 기록 · ${roundLine(r.me)}` : "결장"}</span>}
+              {r.me && <span className={styles.rme}>{r.me.gp ? `내 기록 · ${roundLine(r.me)}` : "결장"}</span>}
             </li>
           ))}
         </ul>
@@ -257,19 +258,19 @@ function RunCard({ career: c, run }: { career: Career; run: SeasonRun }) {
         <ol className="games" aria-label="최근 경기">
           {run.log.map((g) => (
             <li key={g.n} data-win={g.win}>
-              <span className="gn">{g.n}</span>
-              <span className="gwl">{g.win ? "승" : "패"}</span>
+              <span className={styles.gn}>{g.n}</span>
+              <span className={styles.gwl}>{g.win ? "승" : "패"}</span>
               <span className="gopp">
                 <TeamBadge name={g.opp} size={18} />
                 {g.opp}
                 <small>
                   {g.us}-{g.them}
                 </small>
-                {g.rival && <em className="gclutch">라이벌전</em>}
-                {g.clutch && <em className="gclutch">클러치</em>}
-                {g.ot && <em className="gclutch">연장</em>}
+                {g.rival && <em className={styles.gclutch}>라이벌전</em>}
+                {g.clutch && <em className={styles.gclutch}>클러치</em>}
+                {g.ot && <em className={styles.gclutch}>연장</em>}
               </span>
-              <span className="gme">{g.me ? `${g.me.pts}점 ${g.me.reb}리바 ${g.me.ast}어시 · 평점 ${g.me.rating}` : `결장 · ${g.out}`}</span>
+              <span className={styles.gme}>{g.me ? `${g.me.pts}점 ${g.me.reb}리바 ${g.me.ast}어시 · 평점 ${g.me.rating}` : `결장 · ${g.out}`}</span>
             </li>
           ))}
         </ol>
@@ -300,10 +301,10 @@ export function SeasonTab({ career: c, attributes }: { career: Career; attribute
       {!run && <ContractPanel career={c} />}
       {!run && <ShopPanel career={c} />}
       <Panel title="소식">
-        <ul className="news">
+        <ul className={styles.news}>
           {c.news.slice(0, 18).map((n, i) => (
             <li className={n.t} key={`${n.w}-${i}`}>
-              <span className="dot" />
+              <span className={styles.dot} />
               <div>
                 <div className="when">{n.w}</div>
                 <div className="m">

@@ -34,11 +34,6 @@
   animation-duration: 0s !important;
   animation-delay: 0s !important;
 }
-/* 움직이던 점 세 개는 말줄임표로 */
-:root[data-text-only] .sim-phase .dots::after {
-  content: "…";
-  width: auto;
-}
 /* 코트 카드: 캐릭터와 코트 없이 이름판만 */
 :root[data-text-only] .court {
   display: block;

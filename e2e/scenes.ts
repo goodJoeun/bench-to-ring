@@ -11,6 +11,11 @@ export interface Scene {
   textOnly?: boolean;
   /** 알림은 2.6초 뒤 사라져요(shared/ui/Toast.tsx). 찍는 동안 남아 있게 그 타이머만 멈춰요. */
   holdToast?: boolean;
+  /**
+   * 다르게 찍혀도 봐주는 픽셀 수. 국적 칸의 작은 태극기(묶음 이미지를 줄여 그려요)는 찍을 때마다 태극 경계 몇 픽셀의 색이 달라져요.
+   * CSS가 바뀌면 이보다 훨씬 많은 픽셀이 달라져요.
+   */
+  flakyPixels?: number;
   act?: (page: Page) => Promise<void>;
 }
 
@@ -43,9 +48,10 @@ export const SCENES: Record<string, Scene[]> = {
     { name: "step-look", act: toStep(0) },
     { name: "step-position", act: toStep(1) },
     { name: "step-style", act: toStep(2) },
-    { name: "step-info", act: toStep(3) },
+    { name: "step-info", act: toStep(3), flakyPixels: 10 },
     {
       name: "name-required-sheet",
+      flakyPixels: 10,
       act: async (page) => {
         await toStep(3)(page);
         await tap(page, "이 선수로 커리어 시작");
@@ -53,6 +59,7 @@ export const SCENES: Record<string, Scene[]> = {
     },
     {
       name: "confirm-start-sheet",
+      flakyPixels: 10,
       act: async (page) => {
         await toStep(3)(page);
         await page.locator("#f-name").fill("테스트");

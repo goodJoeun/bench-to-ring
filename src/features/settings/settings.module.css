@@ -1,0 +1,49 @@
+/* settings 화면의 모양. 예전 전역 CSS(app/styles)에서 규칙 순서 그대로 옮겼어요. 다른 화면과 같이 쓰는 클래스는 :global로 남겨 둬요. */
+.themeSeg {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.themeSeg[data-cols="2"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.themeSeg button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--panel2);
+  cursor: pointer;
+  text-align: left;
+}
+.themeSeg button b {
+  font-size: var(--text-md);
+}
+.themeSeg button span {
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+.themeSeg button[aria-pressed="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--panel);
+}
+.themeSeg button[aria-pressed="true"] span {
+  color: inherit;
+  opacity: 0.75;
+}
+.teamCount {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  margin: 0;
+}
+/* 설정의 바로가기: 플레이 가이드와 커리어 관리를 한 줄로 */
+.setLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}

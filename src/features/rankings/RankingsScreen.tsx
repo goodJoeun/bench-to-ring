@@ -16,6 +16,7 @@ import { ChallengeTab } from "./ChallengeTab";
 import { MyRecords } from "./MyRecords";
 import { RankingList, defaultRankText } from "./RankingList";
 import { STAT_LABELS, StatList } from "./StatList";
+import styles from "./rankings.module.css";
 
 const TABS = [
   ["best5", "베스트 5"],
@@ -77,10 +78,10 @@ function DayChips({
 }) {
   const badge = (day: BoardDay) => {
     const n = countOf(counts, day);
-    return n && <span className="rk-day-n">{fmtNum(n.careers)}</span>;
+    return n && <span className={styles.rkDayN}>{fmtNum(n.careers)}</span>;
   };
   return (
-    <div className="rk-chips rk-days" role="group" aria-label="날짜 고르기">
+    <div className={`${styles.rkChips} ${styles.rkDays}`} role="group" aria-label="날짜 고르기">
       {days.map((d, i) => (
         <button key={d} type="button" aria-pressed={pick === i} onClick={() => onPick(i)}>
           {dayLabel(d, i)}
@@ -101,7 +102,7 @@ function DayCount({ counts, day, today }: { counts: BoardDays | null | undefined
   if (!n) return null;
   const when = day === null ? "올타임" : day === today ? "오늘" : `${Number(day.slice(5, 7))}월 ${Number(day.slice(8))}일`;
   return (
-    <p className="hint rk-day-count" role="status">
+    <p className={`hint ${styles.rkDayCount}`} role="status">
       {when} 랭킹 등록 · 선수 <b>{fmtNum(n.careers)}</b>명
     </p>
   );
@@ -131,7 +132,7 @@ function StatsPanel({ mine, day, today }: { mine: Set<string>; day: BoardDay; to
 
   return (
     <>
-      <div className="rk-chips" role="group" aria-label="스탯 고르기">
+      <div className={styles.rkChips} role="group" aria-label="스탯 고르기">
         {STAT_KEYS.map((k) => (
           <button key={k} type="button" aria-pressed={stat === k} onClick={() => setStat(k)}>
             {STAT_LABELS[k].name}
@@ -150,7 +151,7 @@ function StatsPanel({ mine, day, today }: { mine: Set<string>; day: BoardDay; to
           </button>
         </div>
       ) : !board.top.length ? (
-        <div className="rk-empty">
+        <div className={styles.rkEmpty}>
           <b>
             {day === null ? "아직" : dayName(day, today)} 올라온 {STAT_LABELS[stat].name} 기록이 없어요
           </b>
@@ -216,20 +217,20 @@ export function RankingsScreen() {
           <span className="ball" aria-hidden="true" />
           <span>농구 선수 키우기</span>
         </Link>
-        <Link className="rk-back" href="/">
+        <Link className={styles.rkBack} href="/">
           <span aria-hidden="true">←</span>
           <span>게임으로</span>
         </Link>
       </header>
-      <main className="rk">
-        <div className="rk-head">
+      <main className={styles.rk}>
+        <div className={styles.rkHead}>
           <h1>랭킹</h1>
           <p className="hint">
             NBA MVP·파이널 MVP·리그 MVP·우승 반지·수상과 통산 기록, 최고 오버롤을 종합해 순위를 매겨요. NBA에서 쌓은 기록을 더 크게
             쳐요. 날짜를 고르면 그날 올라온 기록끼리, 올타임은 모든 기록으로 겨뤄요.
           </p>
         </div>
-        <div className="rk-tabs" role="tablist">
+        <div className={styles.rkTabs} role="tablist">
           {TABS.map(([k, name]) => (
             <a key={k} href={`#${k}`} role="tab" id={`rk-tab-${k}`} aria-selected={tab === k} aria-controls="rk-panel">
               {name}
@@ -238,7 +239,7 @@ export function RankingsScreen() {
         </div>
         <section className="rk-panel" role="tabpanel" id="rk-panel" aria-labelledby={`rk-tab-${tab}`}>
           {tab === "best5" && hydrated && (
-            <div className="rk-chips" role="group" aria-label="베스트 5 고르기">
+            <div className={styles.rkChips} role="group" aria-label="베스트 5 고르기">
               <button type="button" aria-pressed={who === "all"} onClick={() => setWho("all")}>
                 전체 유저
               </button>
@@ -252,11 +253,11 @@ export function RankingsScreen() {
               <DayChips days={days} pick={pick} onPick={setPick} counts={counts} />
               <DayCount counts={counts} day={day} today={today} />
               {tab === "ranking" && best && (
-                <a className="rk-mybest" href="#mine" onClick={() => setNear(best.careerId)}>
+                <a className={styles.rkMybest} href="#mine" onClick={() => setNear(best.careerId)}>
                   <span>
                     내 최고 순위 <b>{fmtNum(best.rank)}위</b> <small>올타임</small>
                   </span>
-                  <span className="rk-mybest-go">
+                  <span className={styles.rkMybestGo}>
                     주변 순위 <span aria-hidden="true">›</span>
                   </span>
                 </a>
@@ -265,7 +266,7 @@ export function RankingsScreen() {
           )}
           {myBest ? (
             !hall.length ? (
-              <div className="rk-empty">
+              <div className={styles.rkEmpty}>
                 <b>아직 은퇴한 내 선수가 없어요</b>
                 <span>선수가 은퇴하면 포지션마다 가장 빛난 선수로 내 베스트 5가 꾸려져요.</span>
               </div>
@@ -287,7 +288,7 @@ export function RankingsScreen() {
           ) : (
             <>
               {tab === "position" && (
-                <div className="rk-chips" role="group" aria-label="포지션 고르기">
+                <div className={styles.rkChips} role="group" aria-label="포지션 고르기">
                   {POS_KEYS.map((p) => (
                     <button key={p} type="button" aria-pressed={pos === p} onClick={() => setPos(p)}>
                       {p} <span>{POS[p].name}</span>
@@ -307,7 +308,7 @@ export function RankingsScreen() {
                   </button>
                 </div>
               ) : !shown.data.top.length ? (
-                <div className="rk-empty">
+                <div className={styles.rkEmpty}>
                   <b>
                     {tab === "position"
                       ? `${dayName(day, today)}${POS[pos].name}(${pos})로 올라온 기록이 ${day === null ? "아직 " : ""}없어요`

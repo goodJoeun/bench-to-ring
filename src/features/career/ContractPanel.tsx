@@ -5,6 +5,7 @@ import { buyoutCost, canRequestTransfer, currentExpectedMinutes, leverage, money
 import { gameActions } from "@/shared/store/game-store";
 import { Sheet } from "@/shared/ui/Sheet";
 import { Panel } from "@/shared/ui/ui";
+import styles from "./career.module.css";
 
 const leverageLabel = (v: number) => (v >= 0.6 ? "강함" : v >= 0.35 ? "보통" : "약함");
 
@@ -17,7 +18,7 @@ export function ContractPanel({ career: c }: { career: Career }) {
   const asked = c.moveAsked === c.year;
   return (
     <Panel kicker={c.team.name} title="계약">
-      <div className="meta-row">
+      <div className={styles.metaRow}>
         <span>
           연봉 <b>{money(c.contract.salary)}</b>
         </span>
@@ -35,7 +36,7 @@ export function ContractPanel({ career: c }: { career: Career }) {
         계약이 끝나기 전에도 이적을 요청할 수 있어요. 출전 시간이 적으면 구단이 쉽게 보내 주고, 팀의 핵심이면 붙잡아요. 새 팀이나 FA
         제안을 고르면 연봉을 협상해요.
       </p>
-      <div className="row-btns">
+      <div className={styles.rowBtns}>
         <button type="button" className="btn" disabled={!can} aria-haspopup="dialog" onClick={() => setAsking(true)}>
           {asked ? "이번 오프시즌에 이미 요청했어요" : "이적 요청"}
         </button>

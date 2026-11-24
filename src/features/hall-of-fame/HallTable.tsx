@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { CareerSummary, PosKey } from "@/game";
 import { CareerCardSheet, type CareerCard } from "@/shared/ui/CareerCardSheet";
 import { nameFit } from "../../shared/lib/format";
+import styles from "./hall-of-fame.module.css";
 
 /* 명예의 전당(이 브라우저의 기록) 표와 Best 5 */
 
@@ -23,7 +24,7 @@ export function Best5({ items }: { items: { pos: PosKey; career: HallCareer | nu
   return (
     <div className="best5">
       {items.map(({ pos, career, note }) => (
-        <div className="b5" key={pos}>
+        <div className={styles.b5} key={pos}>
           <span className="p">{pos}</span>
           <span className="nm" style={career ? nameFit(career.name) : undefined}>
             {career ? career.name : "비어 있음"}
@@ -43,17 +44,17 @@ export function HallTable({ rows }: { rows: HallRow[] }) {
   const [open, setOpen] = useState<HallRow | null>(null);
   return (
     <div className="tbl-wrap">
-      <table className="hall-table">
+      <table className={styles.hallTable}>
         <thead>
           <tr>
             <th>순위</th>
             <th className="l">선수</th>
-            <th className="l hall-wide">포지션</th>
+            <th className={`l ${styles.hallWide}`}>포지션</th>
             <th>MVP</th>
             <th>반지</th>
             <th>통산 득점</th>
             <th>최고 OVR</th>
-            <th className="l hall-wide">레거시</th>
+            <th className={`l ${styles.hallWide}`}>레거시</th>
           </tr>
         </thead>
         <tbody>
@@ -63,17 +64,17 @@ export function HallTable({ rows }: { rows: HallRow[] }) {
               <tr key={key}>
                 <td>{rank}</td>
                 <td className="l t">
-                  <button type="button" className="hall-name" aria-haspopup="dialog" aria-label={`${rank}위 ${h.name} 커리어 보기`} onClick={() => setOpen(row)}>
+                  <button type="button" className={styles.hallName} aria-haspopup="dialog" aria-label={`${rank}위 ${h.name} 커리어 보기`} onClick={() => setOpen(row)}>
                     <b>{h.name}</b> #{h.num}
-                    <span className="hall-pos"> · {h.pos}</span>
+                    <span className={styles.hallPos}> · {h.pos}</span>
                   </button>
                 </td>
-                <td className="l hall-wide">{h.pos}</td>
+                <td className={`l ${styles.hallWide}`}>{h.pos}</td>
                 <td>{h.mvp}</td>
                 <td>{h.rings}</td>
                 <td>{h.pts.toLocaleString("ko-KR")}</td>
                 <td>{h.peak}</td>
-                <td className="l t hall-wide">{h.legacy}</td>
+                <td className={`l t ${styles.hallWide}`}>{h.legacy}</td>
               </tr>
             );
           })}

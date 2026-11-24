@@ -9,6 +9,7 @@ import { challengeQuery, myChallengeQuery } from "@/shared/leaderboard/queries";
 import { ChallengeGuide } from "@/features/guide/ChallengeGuide";
 import { useKstToday, useSeen } from "@/shared/lib/hooks";
 import { Panel } from "@/shared/ui/ui";
+import styles from "./create.module.css";
 
 /** 이날(한국 시간)까지 제목 옆에 NEW를 붙여요. 챌린지 모드가 나오고 두 주예요. */
 const NEW_UNTIL = "2026-12-04";
@@ -29,24 +30,24 @@ export function ChallengeCard({ onPick }: { onPick: (pos: PosKey) => void }) {
   if (!today) return null;
 
   return (
-    <Panel ref={cardRef} className="ch-card">
-      <div className="ch-head">
+    <Panel ref={cardRef} className={styles.chCard}>
+      <div className={styles.chHead}>
         <span className="label">
           {Number(today.slice(5, 7))}월 {Number(today.slice(8))}일 · 매일 0시(한국 시간)에 바뀌어요
         </span>
         <h2 className="sec">
           <span aria-hidden="true">🎯</span> 오늘의 챌린지
-          {today <= NEW_UNTIL && <span className="ch-new">NEW</span>}
+          {today <= NEW_UNTIL && <span className={styles.chNew}>NEW</span>}
         </h2>
         <button type="button" className="ch-help" onClick={() => setHelp(true)}>
           <span aria-hidden="true">?</span> 챌린지 모드란
         </button>
       </div>
-      <p className="ch-lede">
+      <p className={styles.chLede}>
         오늘은 <b>누구나 포지션마다 같은 선수</b>로 시작해요. 플레이 스타일·능력치·키·잠재력·국적·학교가 모두 같으니, 같은 조건에서 누가 더
         잘 키우는지 겨뤄 보세요.
       </p>
-      <div className="ch-grid">
+      <div className={styles.chGrid}>
         {POS_KEYS.map((p) => {
           const c = dailyChallenge(today, p);
           const b = board?.boards[p];
@@ -61,7 +62,7 @@ export function ChallengeCard({ onPick }: { onPick: (pos: PosKey) => void }) {
               <span className="hint">
                 {c.nat} · {c.cand.h}cm
               </span>
-              <span className="ch-lead">
+              <span className={styles.chLead}>
                 {b ? (
                   <>
                     <span className="r">1위</span>{" "}
@@ -78,10 +79,10 @@ export function ChallengeCard({ onPick }: { onPick: (pos: PosKey) => void }) {
                   " "
                 )}
               </span>
-              <span className="ch-n">
+              <span className={styles.chN}>
                 {m ? `내 순위 ${fmtNum(m.rank)}위 · ${fmtNum(m.players)}명 중` : b ? (b.players ? `${fmtNum(b.players)}명 도전` : "첫 도전자가 되어 보세요") : " "}
               </span>
-              <span className="ch-go">{m ? "다시 도전" : "도전하기"} →</span>
+              <span className={styles.chGo}>{m ? "다시 도전" : "도전하기"} →</span>
             </button>
           );
         })}

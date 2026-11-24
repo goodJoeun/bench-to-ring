@@ -4,6 +4,7 @@ import { ATTR_KEYS, SHORT, archetypeOf, bodyOf, isCoreAttr, ovrOf, type Candidat
 import { gameActions } from "@/shared/store/game-store";
 import { Sprite } from "@/shared/ui/sprite/Sprite";
 import { ArchetypeTip } from "./ArchetypeTip";
+import styles from "./create.module.css";
 
 export function CandidateCard({
   cand,
@@ -28,12 +29,12 @@ export function CandidateCard({
   return (
     // 카드 아무 곳이나 눌러 고를 수 있어요. 키보드로는 오른쪽 위 후보 버튼을 써요.
     <div
-      className="cand"
+      className={styles.cand}
       data-selected={selected || undefined}
       data-fixed={fixed || undefined}
       onClick={fixed ? undefined : () => gameActions.editDraft({ selected: index })}
     >
-      <span className="floor">
+      <span className={styles.floor}>
         <span className="key" />
         <Sprite look={look} color={jersey} scale={4} label={`${cand.arch} 후보 캐릭터`} />
         {fixed ? (
@@ -44,24 +45,24 @@ export function CandidateCard({
           </button>
         )}
       </span>
-      <span className="cbody">
-        <span className="crow">
-          <span className="arch-name">
-            <span className="arch">{cand.arch}</span>
+      <span className={styles.cbody}>
+        <span className={styles.crow}>
+          <span className={styles.archName}>
+            <span className={styles.arch}>{cand.arch}</span>
             {arch && <ArchetypeTip arch={arch} />}
           </span>
-          <span className="covr">OVR {Math.round(ovrOf(cand.attrs, pos))}</span>
+          <span className={styles.covr}>OVR {Math.round(ovrOf(cand.attrs, pos))}</span>
         </span>
-        {arch && <span className="cdesc">{arch.desc}</span>}
-        <span className="cmeta">
+        {arch && <span className={styles.cdesc}>{arch.desc}</span>}
+        <span className={styles.cmeta}>
           <span>
             키 {cand.h}cm{arch && ` · 성인 예상 ${bodyOf(pos, arch).h.join("–")}cm`}
           </span>
           <span>윙스팬 {cand.h + cand.wsd}cm</span>
         </span>
-        <span className="mbars">
+        <span className={styles.mbars}>
           {ATTR_KEYS.map((k) => (
-            <span className="mb" key={k}>
+            <span className={styles.mb} key={k}>
               <span>
                 {SHORT[k]}
                 {isCoreAttr(pos, k) && (

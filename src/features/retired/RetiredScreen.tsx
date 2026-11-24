@@ -13,6 +13,7 @@ import { HallOfFame } from "@/features/hall-of-fame/HallOfFame";
 import { AchievedBadge } from "@/shared/ui/badge/Medal";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 import { AwardName, CourtStage, Panel, StatTiles } from "@/shared/ui/ui";
+import styles from "./retired.module.css";
 
 /** 커리어 요약의 수상: 팀·개인·국가대표 줄로 나눠, 리그·대회 이름별로 횟수를 보여줘요. 받은 게 없는 줄은 숨겨요. */
 function AwardRows({ career: c }: { career: Career }) {
@@ -24,7 +25,7 @@ function AwardRows({ career: c }: { career: Career }) {
   ];
   if (!rows.some(([, list]) => list.length)) return null;
   return (
-    <dl className="aw-rows">
+    <dl className={styles.awRows}>
       {rows
         .filter(([, list]) => list.length)
         .map(([label, list]) => (
@@ -87,7 +88,7 @@ export function RetiredScreen({ career: c, hall, past = false }: { career: Caree
     ["통산 어시스트", fmtNum(s.ast)],
   ];
   return (
-    <main className="ret">
+    <main className={styles.ret}>
       <CourtStage player={p} color={jerseyOf(lastTeam)}>
         {lastTeam && <TeamBadge className="plate-badge" name={lastTeam} size={52} />}
         <span className="label">
@@ -113,8 +114,8 @@ export function RetiredScreen({ career: c, hall, past = false }: { career: Caree
           const parts = [...legacy, s.donated ? `유소년 농구 기부 ${money(s.donated)}` : ""].filter(Boolean);
           return parts.length > 0 && <p className="hint">코트 밖에서 · {parts.join(" · ")}</p>;
         })()}
-        <div className="row share-row">
-          <button type="button" className="share-cta" onClick={() => setSharing(true)}>
+        <div className={`row ${styles.shareRow}`}>
+          <button type="button" className={styles.shareCta} onClick={() => setSharing(true)}>
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M18 16a3 3 0 0 0-2.4 1.2l-6.7-3.4a3 3 0 0 0 0-1.6l6.7-3.4A3 3 0 1 0 15 7c0 .3 0 .5.1.8L8.4 11.2a3 3 0 1 0 0 3.6l6.7 3.4A3 3 0 1 0 18 16z" />
             </svg>
@@ -129,12 +130,12 @@ export function RetiredScreen({ career: c, hall, past = false }: { career: Caree
 
       <Panel title={`우승 기록 · ${titles.length}회`}>
         {titles.length ? (
-          <ol className="titles">
+          <ol className={styles.titles}>
             {titles.map((t, i) => (
-              <li key={`${t.year}-${t.name}-${i}`} className="title-row" data-kind={t.kind}>
+              <li key={`${t.year}-${t.name}-${i}`} className={styles.titleRow} data-kind={t.kind}>
                 <span className="ty">{t.year}</span>
                 <TeamBadge name={t.team} size={30} />
-                <span className="tb">
+                <span className={styles.tb}>
                   <b>{t.name}</b>
                   <span>
                     {t.team}
@@ -157,7 +158,7 @@ export function RetiredScreen({ career: c, hall, past = false }: { career: Caree
 
       <RecordBoards career={c} />
 
-      <div className="end-bar">
+      <div className={styles.endBar}>
         <button type="button" className="start sub" onClick={gameActions.openFarewell}>
           커리어 회고
         </button>

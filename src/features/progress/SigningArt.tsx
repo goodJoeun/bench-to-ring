@@ -7,6 +7,7 @@ import { reducedMotion } from "@/shared/lib/hooks";
 import { NO_TEAM_COLOR } from "@/shared/lib/format";
 import { useTextOnly } from "@/shared/lib/text-only";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
+import styles from "./progress.module.css";
 
 /** 배경판에 늘어놓는 로고 수 (가로 × 세로) */
 const WALL_COLS = 6;
@@ -66,8 +67,8 @@ function SigningCanvas({ career: c, cheer }: { career: Career; cheer: Cheer }) {
   }, [key, w]);
 
   return (
-    <div ref={box} className="sign-art" style={{ "--team": color } as React.CSSProperties} aria-hidden="true">
-      <div className="sign-wall">
+    <div ref={box} className={styles.signArt} style={{ "--team": color } as React.CSSProperties} aria-hidden="true">
+      <div className={styles.signWall}>
         {Array.from({ length: WALL_COLS * WALL_ROWS }, (_, i) => (
           <TeamBadge key={i} name={cheer.team ?? ""} kind={cheer.lg} color={color} size={26} />
         ))}

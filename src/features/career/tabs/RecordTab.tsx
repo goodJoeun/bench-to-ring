@@ -21,6 +21,7 @@ import {
 import { militaryLine } from "@/shared/lib/format";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 import { Panel, StatTiles } from "@/shared/ui/ui";
+import styles from "../career.module.css";
 
 function NationalLog({ career: c }: { career: Career }) {
   const log = [...c.natLog].reverse();
@@ -35,15 +36,15 @@ function NationalLog({ career: c }: { career: Career }) {
       }
     >
       {log.length ? (
-        <ul className="natlog">
+        <ul className={styles.natlog}>
           {log.map((t, i) => {
             const w = t.games.filter((g) => g.win).length;
             return (
               <li key={`${t.year}-${t.ev}-${i}`} data-medal={t.medal ?? undefined} data-joined={t.joined || undefined}>
                 <details>
                   <summary>
-                    <span className="ny">{t.year}</span>
-                    <span className="nb">
+                    <span className={styles.ny}>{t.year}</span>
+                    <span className={styles.nb}>
                       <b>{stripYear(t.name)}</b>
                       <span>
                         {t.joined ? "합류" : "불참"} · {t.label}
@@ -54,7 +55,7 @@ function NationalLog({ career: c }: { career: Career }) {
                   </summary>
                   <p className="hint">{t.story}</p>
                   {t.games.length > 0 && (
-                    <ol className="natgames">
+                    <ol className={styles.natgames}>
                       {t.games.map((g, k) => (
                         <li key={k} data-win={g.win || undefined}>
                           <span>{g.stage}</span>
@@ -62,10 +63,10 @@ function NationalLog({ career: c }: { career: Career }) {
                             <TeamBadge name={g.opp} kind="nat" size={16} />
                             vs {g.opp}
                           </span>
-                          <span className="sc">
+                          <span className={styles.sc}>
                             {g.us}-{g.them} {g.win ? "승" : "패"}
                           </span>
-                          {g.pts !== undefined && <span className="pt">{g.pts}점</span>}
+                          {g.pts !== undefined && <span className={styles.pt}>{g.pts}점</span>}
                         </li>
                       ))}
                     </ol>
@@ -118,8 +119,8 @@ export function SeasonTable({ career: c }: { career: Career }) {
   return (
     <Panel title="시즌별 기록">
       {splits.length > 0 && (
-        <div className="split-nav">
-          <div className="split-tabs" role="group" aria-label="리그 선택">
+        <div className={styles.splitNav}>
+          <div className={styles.splitTabs} role="group" aria-label="리그 선택">
             <button type="button" aria-pressed={!league} onClick={() => setPick(null)}>
               전체
             </button>
@@ -131,7 +132,7 @@ export function SeasonTable({ career: c }: { career: Career }) {
             ))}
           </div>
           {league && (
-            <div className="split-tabs teams" role="group" aria-label={`${splitName(league.key)} 팀 선택`}>
+            <div className={`${styles.splitTabs} teams`} role="group" aria-label={`${splitName(league.key)} 팀 선택`}>
               {league.teams.length > 1 && (
                 <button type="button" aria-pressed={!team} onClick={() => setPick({ lg: league.key, team: null })}>
                   리그 전체
@@ -235,7 +236,7 @@ function ShotTiles({ s }: { s: ShootingLine }) {
     ["턴오버", s.tov === null ? "–" : s.tov.toFixed(1)],
   ];
   return (
-    <div className="tiles shot-tiles">
+    <div className={`tiles ${styles.shotTiles}`}>
       {tiles.map(([k, v]) => (
         <div className="tile" key={k}>
           <span className="label">{k}</span>
@@ -258,11 +259,11 @@ function PlayoffSummary({ label, t, shot, note }: { label: string; t: PlayoffTot
     ["출전 시간", avg(t.min)],
   ];
   return (
-    <section className="po-sum" aria-label={label}>
+    <section className={styles.poSum} aria-label={label}>
       <h3>
         {label} <b>{fmtNum(t.gp)}경기</b> 평균
       </h3>
-      <div className="tiles po-tiles">
+      <div className={`tiles ${styles.poTiles}`}>
         {tiles.map(([k, v]) => (
           <div className="tile" key={k}>
             <span className="label">{k}</span>

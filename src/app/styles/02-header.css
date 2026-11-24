@@ -20,18 +20,6 @@
   font-size: var(--text-2xl);
   white-space: nowrap;
 }
-/* 부제는 제목 바로 아래에 둬서 상단 메뉴 자리를 차지하지 않아요. */
-.brand-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.15;
-}
-.brand-sub {
-  font-family: var(--f-body);
-  font-size: var(--text-xs);
-  font-weight: 700;
-  color: var(--muted);
-}
 .ball {
   width: 24px;
   height: 24px;
@@ -66,28 +54,6 @@
   text-overflow: ellipsis;
   min-width: 0;
 }
-.icon-btn {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  margin-right: -8px;
-  border: 0;
-  border-radius: var(--r-full);
-  background: none;
-  color: var(--muted);
-  cursor: pointer;
-}
-.icon-btn svg {
-  width: 24px;
-  height: 24px;
-  fill: currentColor;
-}
-.icon-btn[aria-pressed="true"] {
-  color: var(--accent);
-  background: var(--panel2);
-}
 .hmeta .saved::before {
   content: "";
   display: inline-block;
@@ -98,121 +64,4 @@
   margin-right: 6px;
   vertical-align: 1px;
 }
-.hleft {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-.hright {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-.guide-btn {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 34px;
-  padding: 0 12px 0 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-full);
-  background: var(--panel);
-  color: var(--ink);
-  font-size: var(--text-sm);
-  font-weight: 700;
-  cursor: pointer;
-}
-/* 보이는 크기는 그대로 두고 눌리는 영역만 넓혀요. 이웃 버튼과 겹치지 않게 간격의 절반까지만 써요. */
-.guide-btn,
-.icon-btn {
-  position: relative;
-}
-.guide-btn::after {
-  content: "";
-  position: absolute;
-  inset: -6px -5px;
-}
-.icon-btn::after {
-  content: "";
-  position: absolute;
-  inset: -2px;
-}
-.guide-btn svg {
-  width: 17px;
-  height: 17px;
-  fill: var(--accent);
-}
-.guide-btn:hover {
-  border-color: var(--ink);
-}
-.guide-btn[aria-expanded="true"] {
-  background: var(--panel2);
-}
-
-/* 서버비 후원: 헤더 단추는 게임 제목 오른쪽에 따뜻한 색으로 두고, 시트에 계좌를 크게 보여줘요. */
-.support-btn svg {
-  fill: #e0457b;
-}
 /* 이름은 화면 폭에 따라 '서버비 후원하기' → '서버비 후원'(1099px 이하) → '후원'(600px 이하) → 하트만(400px 이하)으로 줄어요. */
-@media (max-width: 1099px) {
-  .support-btn .sp-post {
-    display: none;
-  }
-}
-@media (max-width: 600px) {
-  .support-btn .sp-pre {
-    display: none;
-  }
-}
-@media (max-width: 400px) {
-  .support-btn {
-    padding: 0;
-    justify-content: center;
-  }
-  .support-btn .sp-label {
-    display: none;
-  }
-}
-.cf-cup {
-  font-size: var(--text-5xl);
-  line-height: 1;
-  margin-top: 6px;
-}
-.cf-account {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  margin-top: 14px;
-  padding: 18px 16px;
-  border: 1px dashed var(--line);
-  border-radius: var(--r);
-  background: var(--panel2);
-  text-align: center;
-}
-.cf-bank {
-  font-size: var(--text-sm);
-  font-weight: 700;
-  color: var(--muted);
-}
-.cf-num {
-  font-family: var(--f-num);
-  font-size: clamp(22px, 6.5vw, 28px);
-  letter-spacing: 0.04em;
-  font-variant-numeric: tabular-nums;
-  user-select: all;
-  word-break: break-all;
-}
-.cf-holder {
-  font-size: var(--text-sm);
-  color: var(--muted);
-}
-.cf-note {
-  margin: 8px 0 0;
-  text-align: center;
-  font-size: var(--text-sm);
-  color: var(--muted);
-}

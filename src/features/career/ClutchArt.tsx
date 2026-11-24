@@ -6,6 +6,7 @@ import { reducedMotion } from "@/shared/lib/hooks";
 import { useTextOnly } from "@/shared/lib/text-only";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 import { ClutchMoveArt, MOVE_INFO, type ClutchCast } from "./ClutchMoveArt";
+import styles from "./career.module.css";
 
 /**
  * 클러치 결정 위에 띄우는 전광판: 4쿼터 남은 시간, 우리 팀과 상대의 엠블럼·이름·점수, 상황(동점 · 2점 차 열세 · 2점 차 리드).
@@ -25,20 +26,20 @@ export function ClutchArt({ board }: { board?: ClutchBoard }) {
   // '텍스트만 보기'에서는 전광판 대신 같은 내용을 한 줄 글로 보여줘요.
   if (textOnly) return <p className="hint">{summary}</p>;
   return (
-    <div className="cl-art" data-finals={finals ? "" : undefined} aria-label={summary} role="img">
+    <div className={styles.clArt} data-finals={finals ? "" : undefined} aria-label={summary} role="img">
       {finals && (
-        <div className="cl-banner">
+        <div className={styles.clBanner}>
           {gold ? <MedalIcon className="cl-banner-icon" /> : <TrophyIcon className="cl-banner-icon" />}
-          <span className="cl-banner-t">{finals}</span>
-          <span className="cl-banner-s">{gold ? "금메달 결정전" : "우승 결정전"}</span>
+          <span className={styles.clBannerT}>{finals}</span>
+          <span className={styles.clBannerS}>{gold ? "금메달 결정전" : "우승 결정전"}</span>
         </div>
       )}
-      <div className="cl-board">
+      <div className={styles.clBoard}>
         {board && <Side name={board.team} color={board.teamColor} lg={board.lg} score={us} tag="우리 팀" />}
-        <div className="cl-mid">
-          <span className="cl-q">4Q</span>
-          <b className="cl-clock">{scene.clock}</b>
-          <span className="cl-tie">{scene.state}</span>
+        <div className={styles.clMid}>
+          <span className={styles.clQ}>4Q</span>
+          <b className={styles.clClock}>{scene.clock}</b>
+          <span className={styles.clTie}>{scene.state}</span>
         </div>
         {board && <Side name={board.opp} color={board.oppColor} lg={board.lg} score={them} tag="상대" />}
       </div>
@@ -48,11 +49,11 @@ export function ClutchArt({ board }: { board?: ClutchBoard }) {
 
 function Side({ name, color, lg, score, tag }: { name: string; color: string; lg: ClutchBoard["lg"]; score: number; tag: string }) {
   return (
-    <div className="cl-side">
+    <div className={styles.clSide}>
       <TeamBadge name={name} kind={lg} color={color} size={30} />
-      <span className="cl-name">{name}</span>
-      <b className="cl-score">{score}</b>
-      <span className="cl-tag">{tag}</span>
+      <span className={styles.clName}>{name}</span>
+      <b className={styles.clScore}>{score}</b>
+      <span className={styles.clTag}>{tag}</span>
     </div>
   );
 }
@@ -61,12 +62,12 @@ function Side({ name, color, lg, score, tag }: { name: string; color: string; lg
 function TrophyIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 64 72" aria-hidden="true">
-      <path className="tr-cup" d="M14 4h36v18c0 12-8 22-18 22S14 34 14 22z" />
-      <path className="tr-ear" d="M14 9H5c0 10 4 17 11 19M50 9h9c0 10-4 17-11 19" />
-      <path className="tr-cup" d="M27 43h10l2 12H25z" />
-      <rect className="tr-base" x="17" y="55" width="30" height="7" rx="2" />
-      <rect className="tr-base" x="13" y="62" width="38" height="7" rx="2" />
-      <path className="tr-shine" d="M22 9v13c0 6 3 11 7 14" />
+      <path className={styles.trCup} d="M14 4h36v18c0 12-8 22-18 22S14 34 14 22z" />
+      <path className={styles.trEar} d="M14 9H5c0 10 4 17 11 19M50 9h9c0 10-4 17-11 19" />
+      <path className={styles.trCup} d="M27 43h10l2 12H25z" />
+      <rect className={styles.trBase} x="17" y="55" width="30" height="7" rx="2" />
+      <rect className={styles.trBase} x="13" y="62" width="38" height="7" rx="2" />
+      <path className={styles.trShine} d="M22 9v13c0 6 3 11 7 14" />
     </svg>
   );
 }
@@ -75,10 +76,10 @@ function TrophyIcon({ className }: { className?: string }) {
 function MedalIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 64 72" aria-hidden="true">
-      <path className="md-ribbon" d="M16 2h12l8 22h-12zM48 2H36l-8 22h12z" />
-      <circle className="tr-cup" cx="32" cy="46" r="22" />
-      <circle className="md-ring" cx="32" cy="46" r="15" />
-      <path className="md-star" d="m32 36 3 6.5 7 .8-5.2 4.8 1.4 7L32 51.6l-6.2 3.5 1.4-7-5.2-4.8 7-.8z" />
+      <path className={styles.mdRibbon} d="M16 2h12l8 22h-12zM48 2H36l-8 22h12z" />
+      <circle className={styles.trCup} cx="32" cy="46" r="22" />
+      <circle className={styles.mdRing} cx="32" cy="46" r="15" />
+      <path className={styles.mdStar} d="m32 36 3 6.5 7 .8-5.2 4.8 1.4 7L32 51.6l-6.2 3.5 1.4-7-5.2-4.8 7-.8z" />
     </svg>
   );
 }
@@ -108,21 +109,21 @@ export function ClutchFlash({ board, onDone }: { board?: ClutchBoard; onDone: ()
   if (skip) return null;
   if (finals)
     return (
-      <div className="cl-flash cl-flash-finals" role="status" aria-live="assertive">
-        <span className="cl-spot cl-spot-l" aria-hidden="true" />
-        <span className="cl-spot cl-spot-r" aria-hidden="true" />
+      <div className={`${styles.clFlash} ${styles.clFlashFinals}`} role="status" aria-live="assertive">
+        <span className={`${styles.clSpot} ${styles.clSpotL}`} aria-hidden="true" />
+        <span className={`${styles.clSpot} ${styles.clSpotR}`} aria-hidden="true" />
         {Array.from({ length: 10 }, (_, i) => (
           <i
             key={i}
-            className="cl-cam"
+            className={styles.clCam}
             aria-hidden="true"
             style={{ "--x": `${(i * 41 + 7) % 100}%`, "--y": `${(i * 23 + 11) % 70}%`, "--d": `${0.25 + (i % 5) * 0.22}s` } as React.CSSProperties}
           />
         ))}
-        <div className="cl-flash-core">
-          {board.lg === "nat" ? <MedalIcon className="cl-trophy" /> : <TrophyIcon className="cl-trophy" />}
-          <b className="cl-flash-t">FINALS CLUTCH</b>
-          <span className="cl-flash-s">
+        <div className={styles.clFlashCore}>
+          {board.lg === "nat" ? <MedalIcon className={styles.clTrophy} /> : <TrophyIcon className={styles.clTrophy} />}
+          <b className={styles.clFlashT}>FINALS CLUTCH</b>
+          <span className={styles.clFlashS}>
             {finals}
             <br />
             {CLUTCH_SCENES[clutchScene(board)].flash} · {finalsPrize(board)[0]}까지 마지막 한 번
@@ -131,20 +132,20 @@ export function ClutchFlash({ board, onDone }: { board?: ClutchBoard; onDone: ()
       </div>
     );
   return (
-    <div className="cl-flash" role="status" aria-live="assertive">
-      <div className="cl-flash-core">
-        <svg className="cl-bolt cl-bolt-l" viewBox="0 0 40 80" aria-hidden="true">
+    <div className={styles.clFlash} role="status" aria-live="assertive">
+      <div className={styles.clFlashCore}>
+        <svg className={`${styles.clBolt} ${styles.clBoltL}`} viewBox="0 0 40 80" aria-hidden="true">
           <path d="M24 0 4 44h14L10 80 36 30H21z" />
         </svg>
-        <svg className="cl-fire" viewBox="0 0 100 120" aria-hidden="true">
-          <path className="cl-fire-o" d="M50 2c6 22 30 30 30 62a30 30 0 0 1-60 0c0-14 6-22 12-30 2 10 6 14 10 16 0-20 2-34 8-48z" />
-          <path className="cl-fire-i" d="M50 46c4 12 16 18 16 34a16 16 0 0 1-32 0c0-8 4-12 8-16 1 6 3 8 6 9 0-11 0-18 2-27z" />
+        <svg className={styles.clFire} viewBox="0 0 100 120" aria-hidden="true">
+          <path className={styles.clFireO} d="M50 2c6 22 30 30 30 62a30 30 0 0 1-60 0c0-14 6-22 12-30 2 10 6 14 10 16 0-20 2-34 8-48z" />
+          <path className={styles.clFireI} d="M50 46c4 12 16 18 16 34a16 16 0 0 1-32 0c0-8 4-12 8-16 1 6 3 8 6 9 0-11 0-18 2-27z" />
         </svg>
-        <svg className="cl-bolt cl-bolt-r" viewBox="0 0 40 80" aria-hidden="true">
+        <svg className={`${styles.clBolt} ${styles.clBoltR}`} viewBox="0 0 40 80" aria-hidden="true">
           <path d="M24 0 4 44h14L10 80 36 30H21z" />
         </svg>
-        <b className="cl-flash-t">CLUTCH TIME</b>
-        <span className="cl-flash-s">{CLUTCH_SCENES[clutchScene(board)].flash}</span>
+        <b className={styles.clFlashT}>CLUTCH TIME</b>
+        <span className={styles.clFlashS}>{CLUTCH_SCENES[clutchScene(board)].flash}</span>
       </div>
     </div>
   );
@@ -222,7 +223,7 @@ export function ClutchResult({ result, cast, onDone }: { result: ClutchResultInf
   const palette = finals ? GOLD_CONFETTI : CONFETTI;
   return (
     <div
-      className="cl-res"
+      className={styles.clRes}
       data-win={revealed && win || undefined}
       data-finals={revealed && finals ? "" : undefined}
       data-move={move}
@@ -233,12 +234,12 @@ export function ClutchResult({ result, cast, onDone }: { result: ClutchResultInf
     >
       {revealed && (win ? (
         <>
-          <span className="cl-rays" aria-hidden="true" />
+          <span className={styles.clRays} aria-hidden="true" />
           {finals &&
             Array.from({ length: 5 }, (_, i) => (
               <span
                 key={`fw${i}`}
-                className="cl-fw"
+                className={styles.clFw}
                 aria-hidden="true"
                 style={{ "--x": `${12 + i * 19}%`, "--y": `${18 + ((i * 29) % 30)}%`, "--d": `${0.3 + i * 0.32}s` } as React.CSSProperties}
               />
@@ -246,23 +247,23 @@ export function ClutchResult({ result, cast, onDone }: { result: ClutchResultInf
           {Array.from({ length: finals ? 40 : 18 }, (_, i) => (
             <i
               key={i}
-              className="cl-conf"
+              className={styles.clConf}
               aria-hidden="true"
               style={{ "--x": `${(i * 37) % 100}%`, "--d": `${(i % 8) * 0.09}s`, "--c": palette[i % palette.length] } as React.CSSProperties}
             />
           ))}
         </>
       ) : (
-        <svg className="cl-crack" viewBox="0 0 200 200" preserveAspectRatio="none" aria-hidden="true">
+        <svg className={styles.clCrack} viewBox="0 0 200 200" preserveAspectRatio="none" aria-hidden="true">
           <path d="M100 96 72 40 60 0M100 96 140 52 176 30M100 96 150 120 200 116M100 96 118 150 110 200M100 96 54 132 0 150M100 96 30 84 0 70M72 40 48 52M140 52 150 22M118 150 142 172M54 132 50 168" />
         </svg>
       ))}
-      <div className="cl-res-core">
+      <div className={styles.clResCore}>
         {move && cast && <ClutchMoveArt move={move} cast={cast} win={win} revealed={revealed} />}
         {revealed && <>
-        {finals && (gold ? <MedalIcon className="cl-res-trophy" /> : <TrophyIcon className="cl-res-trophy" />)}
-        <b className="cl-res-t">{title}</b>
-        <span className="cl-res-s">
+        {finals && (gold ? <MedalIcon className={styles.clResTrophy} /> : <TrophyIcon className={styles.clResTrophy} />)}
+        <b className={styles.clResT}>{title}</b>
+        <span className={styles.clResS}>
           {finals && (
             <>
               {finals}
@@ -273,8 +274,8 @@ export function ClutchResult({ result, cast, onDone }: { result: ClutchResultInf
           {score && (
             <>
               <br />
-              <span className="cl-res-score">{score}</span>
-              {opp && <span className="cl-res-opp"> vs {opp}</span>}
+              <span className={styles.clResScore}>{score}</span>
+              {opp && <span className={styles.clResOpp}> vs {opp}</span>}
             </>
           )}
         </span>

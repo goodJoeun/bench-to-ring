@@ -7,6 +7,7 @@ import { nameFit } from "@/shared/lib/format";
 import { CareerCardSheet } from "@/shared/ui/CareerCardSheet";
 import { Sprite } from "@/shared/ui/sprite/Sprite";
 import { jerseyOf, lookOf, medalOf } from "../../shared/ui/sprite/look";
+import styles from "./rankings.module.css";
 
 /** 이름 아래 한 줄의 조각: 포지션·최고 오버롤과 큰 상 */
 function lineParts(e: BoardEntry): string[] {
@@ -34,7 +35,7 @@ function Line({ e }: { e: BoardEntry }) {
         return (
           <span key={p}>
             {lead && `${lead} `}
-            <span className="rk-part">
+            <span className={styles.rkPart}>
               {tail}
               {i < parts.length - 1 && " ·"}
             </span>{" "}
@@ -63,7 +64,7 @@ function totals(e: BoardEntry): [string, string][] {
 /** 순위 숫자. 1~3위는 금·은·동 메달로 보여줘요. */
 export function RankMark({ rank }: { rank: number }) {
   return (
-    <span className="rk-r" data-medal={medalOf(rank)}>
+    <span className={styles.rkR} data-medal={medalOf(rank)}>
       {fmtNum(rank)}
     </span>
   );
@@ -82,7 +83,7 @@ export function RankRow({ e, rank, mine, onOpen }: { e: BoardEntry; rank: number
         </b>
         <Line e={e} />
       </span>
-      <span className="rk-chev" aria-hidden="true">
+      <span className={styles.rkChev} aria-hidden="true">
         ›
       </span>
       <button type="button" className="rk-open" aria-haspopup="dialog" aria-label={`${fmtNum(rank)}위 ${e.name} 커리어 보기`} onClick={() => onOpen(e)} />
@@ -98,15 +99,15 @@ function Podium({ e, place, rank, mine, onOpen }: { e: BoardEntry; place: 1 | 2 
   const medal = medalOf(rank) ?? "bronze";
   const tipId = `rk-tip-${e.id}`;
   return (
-    <div className="rk-pod" data-place={place} data-mine={mine || undefined}>
-      <span className="rk-tip" id={tipId} role="tooltip">
+    <div className={styles.rkPod} data-place={place} data-mine={mine || undefined}>
+      <span className={styles.rkTip} id={tipId} role="tooltip">
         {totals(e).map(([k, v]) => (
           <span key={k}>
             {k} <b>{v}</b>
           </span>
         ))}
       </span>
-      <Sprite look={lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={3} className="rk-sprite" label={`${e.name} 캐릭터`} />
+      <Sprite look={lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={3} className={styles.rkSprite} label={`${e.name} 캐릭터`} />
       <b className="nm" style={nameFit(e.name)}>
         {e.name}
         {mine && <span className="me">나</span>}
@@ -114,11 +115,11 @@ function Podium({ e, place, rank, mine, onOpen }: { e: BoardEntry; place: 1 | 2 
       <span className="sub">
         {e.pos} · OVR {e.peak}
       </span>
-      <div className="rk-step" data-medal={medal}>
-        <span className="rk-medal" aria-hidden="true">
+      <div className={styles.rkStep} data-medal={medal}>
+        <span className={styles.rkMedal} aria-hidden="true">
           {rank}
         </span>
-        <span className="lbl">{rank}위</span>
+        <span className={styles.lbl}>{rank}위</span>
       </div>
       <button type="button" className="rk-open" aria-haspopup="dialog" aria-describedby={tipId} aria-label={`${rank}위 ${e.name} 커리어 보기`} onClick={() => onOpen(e)} />
     </div>
@@ -144,13 +145,13 @@ export function RankingList({ rows, byPos, mine, rankText = defaultRankText }: R
   const order = [podium[1], podium[0], podium[2]];
   return (
     <>
-      <div className="rk-podium">
+      <div className={styles.rkPodium}>
         {order.map((e, i) =>
           e ? <Podium key={e.id} e={e} place={([2, 1, 3] as const)[i]} rank={rankOf(e)} mine={mine.has(e.id)} onOpen={setOpen} /> : <div key={i} aria-hidden="true" />,
         )}
       </div>
       {rows.length > 3 && (
-        <ol className="rk-list rk-rows">
+        <ol className={`rk-list ${styles.rkRows}`}>
           {rows.slice(3).map((e) => (
             <RankRow key={e.id} e={e} rank={rankOf(e)} mine={mine.has(e.id)} onOpen={setOpen} />
           ))}

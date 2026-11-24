@@ -15,10 +15,6 @@
   gap: 8px;
   margin-top: 12px;
 }
-.focus-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
 /* 시즌 투자 */
 .invest {
   display: flex;
@@ -27,27 +23,6 @@
   margin-top: 16px;
   padding-top: 14px;
   border-top: 1px solid var(--line);
-}
-.invest-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-}
-.invest-head h3 {
-  margin: 0;
-  font-size: var(--text-lg);
-}
-.invest-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: 4px;
-}
-@media (max-width: 480px) {
-  .invest-grid {
-    grid-template-columns: 1fr;
-  }
 }
 .invest .hint[data-warn] {
   color: var(--bad);
@@ -76,50 +51,4 @@
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 3px;
-}
-/* 내용이 길어도 시트 맨 아래에 붙어 있는 주 버튼 자리. 시트의 좌우·아래 여백까지 덮어요. */
-.sheet-dock {
-  position: sticky;
-  bottom: calc(-24px - var(--safe-b));
-  z-index: 2;
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  margin: 8px -22px calc(-24px - var(--safe-b));
-  padding: 12px 22px calc(14px + var(--safe-b));
-  background: var(--panel);
-  border-top: 1px solid var(--line);
-}
-.sheet-dock:has(.dock-invest) {
-  padding-top: 2px;
-}
-.sheet-dock .sheet-go {
-  margin-top: 0;
-}
-/* 시작 버튼 위 한 줄: 고른 투자 수와 보유 자금. 누르면 투자 칸으로 옮겨요. */
-.dock-invest {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  min-height: 44px;
-  padding: 0 2px;
-  background: none;
-  border: 0;
-  color: var(--muted);
-  font-size: var(--text-md);
-  font-weight: 700;
-  cursor: pointer;
-}
-.dock-invest b {
-  margin-left: 2px;
-  color: var(--ink);
-  font-family: var(--f-num);
-  font-size: var(--text-lg);
-  font-variant-numeric: tabular-nums;
-}
-.dock-invest i {
-  margin-left: 4px;
-  color: var(--accent);
-  font-style: normal;
 }

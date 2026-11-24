@@ -3,6 +3,7 @@
 import { lookLabel, type Look } from "@/game";
 import { gameActions } from "@/shared/store/game-store";
 import { Sprite } from "@/shared/ui/sprite/Sprite";
+import styles from "./create.module.css";
 
 /**
  * 캐릭터 고르기. 피부색·머리 모양·머리색·눈동자·수염·헤어밴드를 무작위로 조합한 남성 캐릭터를 늘어놓고 하나를 골라요.
@@ -22,7 +23,7 @@ export function LookPicker({
   const chosen = JSON.stringify(look);
   return (
     <>
-      <div className="look-grid" role="group" aria-label="캐릭터">
+      <div className={styles.lookGrid} role="group" aria-label="캐릭터">
         {looks.map((l, i) => {
           const label = lookLabel(l);
           return (
@@ -40,14 +41,14 @@ export function LookPicker({
                 look={l}
                 color={jerseys[i]}
                 scale={5}
-                className="look-art"
+                className={styles.lookArt}
                 label=""
               />
             </button>
           );
         })}
       </div>
-      <div className="flabel-row">
+      <div className={styles.flabelRow}>
         <button type="button" className="btn" onClick={gameActions.rerollLooks}>
           다른 캐릭터 보기
         </button>

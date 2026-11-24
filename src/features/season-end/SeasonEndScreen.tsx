@@ -5,6 +5,7 @@ import { LEAGUES, seasonCommunity, seasonReport, seasonStandings, type Career, t
 import { gameActions } from "@/shared/store/game-store";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 import { CommunityView, ReportView } from "./SeasonReport";
+import styles from "./season-end.module.css";
 
 /** 진출선 안의 자리: 4강 직행, 플레이오프 진출 */
 function zoneOf(t: StandingsTable, r: StandingRow): "bye" | "po" | undefined {
@@ -59,8 +60,8 @@ export function SeasonEndScreen({ career: c, rec, hall }: { career: Career; rec:
 
   return (
     <main className="se" aria-labelledby="se-title">
-      <div className="se-card">
-        <div className="se-head">
+      <div className={styles.seCard}>
+        <div className={styles.seHead}>
           <TeamBadge name={rec.team} kind={st.lg} size={56} />
           <span className="sim-team">
             {rec.year} 시즌 결산 · {L.name}
@@ -72,7 +73,7 @@ export function SeasonEndScreen({ career: c, rec, hall }: { career: Career; rec:
             {rec.team} · {rec.w}승 {rec.l}패 · {rec.result}
           </p>
         </div>
-        <div className="st-views" role="tablist" aria-label="시즌 결산">
+        <div className={styles.stViews} role="tablist" aria-label="시즌 결산">
           {views.map(([v, label]) => (
             <button
               type="button"
@@ -89,19 +90,19 @@ export function SeasonEndScreen({ career: c, rec, hall }: { career: Career; rec:
         </div>
         <div className="se-panel" role="tabpanel" id="se-panel" aria-labelledby={`se-tab-${view}`}>
           {view === "report" && (
-            <div className="rp-wrap">
+            <div className={styles.rpWrap}>
               <ReportView report={report} />
             </div>
           )}
           {view === "community" && community && (
-            <div className="rp-wrap">
+            <div className={styles.rpWrap}>
               <CommunityView domestic={community.domestic} overseas={community.overseas} name={c.p.name} />
             </div>
           )}
           {view === "standings" && (
             <>
               {st.tables.length > 1 && (
-                <div className="st-tabs" role="group" aria-label="컨퍼런스">
+                <div className={styles.stTabs} role="group" aria-label="컨퍼런스">
                   {st.tables.map((t, i) => (
                     <button type="button" key={t.name} aria-pressed={tab === i} onClick={() => setTab(i)}>
                       {short(t)}
@@ -110,7 +111,7 @@ export function SeasonEndScreen({ career: c, rec, hall }: { career: Career; rec:
                   ))}
                 </div>
               )}
-              <table className="st-table">
+              <table className={styles.stTable}>
                 <caption className="sr-only">
                   {rec.year} 시즌 {table.name} 정규시즌 순위
                 </caption>
@@ -134,24 +135,24 @@ export function SeasonEndScreen({ career: c, rec, hall }: { career: Career; rec:
                       data-cut={(table.cut && r.rank === table.cut) || undefined}
                       style={{ "--tc": r.color } as React.CSSProperties}
                     >
-                      <td className="st-rank">{r.rank}</td>
-                      <th scope="row" className="st-team">
-                        <span className="st-tc">
+                      <td className={styles.stRank}>{r.rank}</td>
+                      <th scope="row" className={styles.stTeam}>
+                        <span className={styles.stTc}>
                           <TeamBadge name={r.team} kind={st.lg} color={r.color} size={18} />
-                          <span className="st-name">{r.team}</span>
+                          <span className={styles.stName}>{r.team}</span>
                           {r.me && <em data-me>내 팀</em>}
                           {r.met && <em data-final={r.met === "final" || undefined}>{metLabel(r.met)}</em>}
                         </span>
                       </th>
                       <td>{r.w}</td>
                       <td>{r.l}</td>
-                      <td className="st-gb">{r.gb ? r.gb : "-"}</td>
+                      <td className={styles.stGb}>{r.gb ? r.gb : "-"}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               {table.cut > 0 && (
-                <p className="st-legend">
+                <p className={styles.stLegend}>
                   {table.bye > 0 && (
                     <span>
                       <i data-zone="bye" aria-hidden="true" />

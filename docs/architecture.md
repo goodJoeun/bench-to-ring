@@ -73,7 +73,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 - `page.tsx`: 게임 (`features/shell/Game`)
 - `rankings/page.tsx`: 랭킹 (`features/rankings/RankingsScreen`)
 - `api/**/route.ts`: 요청을 읽고 `server/`를 불러 응답만 만들어요.
-- `globals.css`: 전역 스타일의 입구. `styles/`의 파일 28개를 번호 순서대로 불러와요. 예전 한 파일의 규칙 순서를 그대로 나눈 거라, 순서를 바꾸면 화면이 달라질 수 있어요 (아래 "남은 일").
+- `globals.css`: 전역 스타일의 입구. `styles/`의 파일을 번호 순서대로 불러와요. 토큰·기본 요소와 여러 화면이 같이 쓰는 클래스만 남아 있고, 화면마다 쓰는 모양은 각 기능 폴더의 CSS Module에 있어요. 순서를 바꾸면 화면이 달라질 수 있어요 (아래 "남은 일").
 
 ### `features/`: 화면 기능
 
@@ -92,6 +92,8 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 | `feedback/` · `guide/` · `settings/` · `support/` | 의견 보내기, 게임 안내(설정에서 열어요)와 챌린지 도움말 `ChallengeGuide`, 설정, 커피 후원 창 |
 
 한 기능만 쓰는 상수나 도우미는 그 기능 폴더에 둬요 (예: `create/options.ts`, `retired/careerCard.ts`).
+
+기능의 모양은 폴더 이름을 딴 CSS Module(`create/create.module.css` 등)에 있어요. 그 기능 컴포넌트만 `import styles from "./create.module.css"`로 불러 써요. 여러 기능이 같이 쓰는 클래스(`.btn`, `.hint`, `.sheet-go` 등)는 전역 CSS에 두고, 모듈 안에서는 `:global(.btn)`처럼 써요.
 
 ### `shared/`: 같이 쓰는 것
 
@@ -163,7 +165,10 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 
 ## 남은 일
 
-- 전역 스타일(`app/styles/`)은 아직 모든 화면이 같이 불러요. 공용 UI 중 시트·알림·자금·선택지·팀 엠블럼·업적 훈장·커리어 카드·기록 지우기는 CSS Module로 옮겼어요. 다음은 기능 폴더마다 CSS Module을 두는 일이에요.
-  - 모듈 CSS는 전역 CSS 뒤에 붙고, 페이지를 옮겨 다니면 늦게 붙기도 해요. 그래서 옮긴 규칙과 같은 요소에 같은 우선순위로 닿는 전역 규칙이 없을 때만 옮겨요. 아직 남긴 것: `Segmented`(선수 만들기의 `.pos-seg`가 같은 요소를 덧칠해요), 기록 지우기 단추 `.rk-del`(공용 `.btn` 위에 덧칠해요), `Panel`·`StatTiles`·`CourtStage`·`Loading`(기능 화면이 같은 클래스를 직접 써요).
-  - `TeamBadge`와 업적 훈장은 모듈 클래스와 함께 `badge`·`flag`·`achv-badge` 전역 이름도 달아요. 진행 팝업·시즌 결산·텍스트만 보기처럼 자리에 맞게 꾸미는 전역 규칙이 이 이름을 써요. 그 기능을 옮길 때 같이 정리해요.
-  - 옮긴 뒤에는 `npm run test:visual`로 화면을 비교해요. 모듈 클래스 이름은 빌드할 때 바뀌니, 코드에서 요소를 찾을 때는 클래스 대신 `styles.x`나 `aria-modal` 같은 속성을 써요.
+- 화면 CSS는 대부분 CSS Module로 옮겼어요(전역 9,322줄 → 약 1,800줄). 남은 전역 CSS는 모든 화면이 같이 불러요. 옮기지 않고 남긴 것은 이래요.
+  - 여러 기능이 같이 쓰는 클래스: `.btn`, `.hint`, `.label`, `.sheet-kicker`·`.sheet-go`, `Panel`·`StatTiles`·`CourtStage`·`Loading`의 클래스 등. 공용 컴포넌트로 묶어야 모듈로 옮길 수 있어요.
+  - 코드나 화면 비교 테스트가 이름으로 찾는 클래스(`.advance`, `.choices`, `.invest`, `.sim`, `.rk-open`, `.ch-pos`, `.boot`), 문자열로 이어 붙여 만드는 클래스, 여러 기능의 클래스를 한 규칙으로 묶은 곳(텍스트만 보기 등).
+  - 같은 요소에 같은 우선순위로 덮어쓰는 전역 규칙이 뒤에 있는 클래스: `Segmented`(`.pos-seg`), 기록 지우기 단추 `.rk-del`, 시즌 결산의 `.se-go`.
+  - `TeamBadge`와 업적 훈장은 모듈 클래스와 함께 `badge`·`flag`·`achv-badge` 전역 이름도 달아요. 텍스트만 보기 등 전역 규칙이 이 이름을 써요.
+- 모듈 CSS는 전역 CSS 뒤에 붙고, 페이지를 옮겨 다니면 늦게 붙기도 해요. 그래서 모듈로 옮길 때는 옮긴 규칙과 같은 요소에 같은 우선순위로 닿는 규칙이 원래 뒤에 있지 않은지, 다른 모듈과 겹치지 않는지 확인해요. 옮긴 뒤에는 `npm run test:visual`로 화면을 비교해요.
+- 모듈 클래스 이름은 빌드할 때 바뀌어요. 코드에서 요소를 찾을 때는 클래스 대신 `styles.x`나 `aria-modal` 같은 속성을 써요.

@@ -24,6 +24,7 @@ import { LiveGameView } from "@/features/progress/LiveGameView";
 import { Popup } from "@/features/progress/Popup";
 import { Toast } from "@/shared/ui/Toast";
 import { TournamentLoading } from "@/features/progress/TournamentLoading";
+import styles from "./shell.module.css";
 
 export function Game() {
   const { ready, career, draft, hall, endings, ending, playing, speed, final, seasonEnd, farewell, farewellReplay, tournament, drafting, toast, outcome } = useGame();
@@ -98,18 +99,18 @@ export function Game() {
   return (
     <>
       <header className="top">
-        <div className="hleft">
+        <div className={styles.hleft}>
           <div className="brand">
             <span className="ball" aria-hidden="true" />
-            <span className="brand-text">
+            <span className={styles.brandText}>
               <span>농구 선수 키우기</span>
-              <span className="brand-sub">벤치 뎁혀 반지 굽기</span>
+              <span className={styles.brandSub}>벤치 뎁혀 반지 굽기</span>
             </span>
           </div>
           {SUPPORT_ACCOUNT.number && (
             <button
               type="button"
-              className="guide-btn support-btn"
+              className={`${styles.guideBtn} ${styles.supportBtn}`}
               aria-label="서버비 후원하기"
               aria-haspopup="dialog"
               aria-expanded={coffeeOpen}
@@ -118,15 +119,15 @@ export function Game() {
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 21.4 10.5 20C5.4 15.4 2 12.3 2 8.5 2 5.4 4.4 3 7.5 3c1.7 0 3.4.8 4.5 2.1C13.1 3.8 14.8 3 16.5 3 19.6 3 22 5.4 22 8.5c0 3.8-3.4 6.9-8.5 11.5z" />
               </svg>
-              {/* 좁은 화면에서는 앞뒤를 덜어 '서버비 후원', '후원'으로 줄여요 (app/styles/02-header.css). */}
-              <span className="sp-label">
-                <span className="sp-pre">서버비 </span>후원<span className="sp-post">하기</span>
+              {/* 좁은 화면에서는 앞뒤를 덜어 '서버비 후원', '후원'으로 줄여요 (shell.module.css). */}
+              <span className={styles.spLabel}>
+                <span className={styles.spPre}>서버비 </span>후원<span className={styles.spPost}>하기</span>
               </span>
             </button>
           )}
         </div>
-        <div className="hright">
-          <Link className="guide-btn" href="/rankings" aria-label="랭킹">
+        <div className={styles.hright}>
+          <Link className={styles.guideBtn} href="/rankings" aria-label="랭킹">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M7 4h10v2h3v3a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 15.9V18h3v2H8v-2h3v-2.1A5 5 0 0 1 8.4 13H8a4 4 0 0 1-4-4V6h3zm0 4H6v1a2 2 0 0 0 1 1.7zm10 0v2.7A2 2 0 0 0 18 9V8z" />
             </svg>
@@ -134,7 +135,7 @@ export function Game() {
           </Link>
           <button
             type="button"
-            className="guide-btn"
+            className={styles.guideBtn}
             aria-label={unread ? "공지 (새 글 있음)" : "공지"}
             aria-haspopup="dialog"
             aria-expanded={noticeOpen}
@@ -148,7 +149,7 @@ export function Game() {
           </button>
           <button
             type="button"
-            className="guide-btn"
+            className={styles.guideBtn}
             aria-label="업적"
             aria-haspopup="dialog"
             aria-expanded={achvOpen}
@@ -161,7 +162,7 @@ export function Game() {
           </button>
           <button
             type="button"
-            className="guide-btn"
+            className={styles.guideBtn}
             aria-label="의견 보내기"
             aria-haspopup="dialog"
             aria-expanded={feedbackOpen}
@@ -175,7 +176,7 @@ export function Game() {
           <button
             type="button"
             id="open-settings"
-            className="icon-btn"
+            className={styles.iconBtn}
             aria-label="설정"
             aria-haspopup="dialog"
             aria-expanded={settingsOpen}

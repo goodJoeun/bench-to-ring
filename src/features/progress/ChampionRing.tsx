@@ -1,4 +1,5 @@
 import { useId } from "react";
+import styles from "./progress.module.css";
 
 /** 반지 머리 둘레에 박힌 다이아몬드 자리 */
 const DIAMONDS = Array.from({ length: 16 }, (_, i) => {
@@ -18,7 +19,7 @@ export function ChampionRing({ color, year }: { color: string; year: number }) {
   const id = useId().replace(/[^A-Za-z0-9_-]/g, "");
   const gold = `ring-gold-${id}`;
   return (
-    <svg className="cheer-ring" viewBox="0 0 120 136" role="img" aria-label={`${year} 시즌 우승 반지`}>
+    <svg className={styles.cheerRing} viewBox="0 0 120 136" role="img" aria-label={`${year} 시즌 우승 반지`}>
       <defs>
         <linearGradient id={gold} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#FFF3B8" />
@@ -34,7 +35,7 @@ export function ChampionRing({ color, year }: { color: string; year: number }) {
         stroke="#8A5B0A"
         strokeWidth="1.2"
       />
-      <text x="60" y="129.5" textAnchor="middle" fontSize="10" fontWeight="700" fill="#5C3F00" className="cheer-ring-year">
+      <text x="60" y="129.5" textAnchor="middle" fontSize="10" fontWeight="700" fill="#5C3F00" className={styles.cheerRingYear}>
         {year}
       </text>
       <path d="M38 3H82L99 20V64L82 81H38L21 64V20Z" fill={`url(#${gold})`} stroke="#8A5B0A" strokeWidth="1.4" />
@@ -48,7 +49,7 @@ export function ChampionRing({ color, year }: { color: string; year: number }) {
       {SPARKS.map(([x, y, s], i) => (
         <path
           key={i}
-          className="cheer-ring-spark"
+          className={styles.cheerRingSpark}
           style={{ animationDelay: `${i * 0.45}s` }}
           d={`M${x} ${y - s}Q${x} ${y} ${x + s} ${y}Q${x} ${y} ${x} ${y + s}Q${x} ${y} ${x - s} ${y}Q${x} ${y} ${x} ${y - s}Z`}
           fill="#FFFFFF"

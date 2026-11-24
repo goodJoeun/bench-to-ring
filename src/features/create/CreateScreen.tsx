@@ -16,6 +16,7 @@ import { LookPicker } from "./LookPicker";
 import { MyEndings } from "./MyEndings";
 import { NameRequiredSheet } from "./NameRequiredSheet";
 import { POSITIONS } from "./options";
+import styles from "./create.module.css";
 
 /** 고른 국적의 진로, 국가대표 발탁, 병역 안내 */
 function natHint(nat: string): string {
@@ -102,14 +103,14 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
               <h1>
                 농구 선수 <em>키우기</em>
               </h1>
-              <p className="lede">
+              <p className={styles.lede}>
                 고교 벤치 멤버로 시작해 드래프트, 주전, 올스타를 거쳐 MVP와 우승 반지까지. 시즌마다 쌓이는 기록과 선택으로 나만의 농구
                 인생을 완성하세요.
               </p>
               <CareerPath />
             </section>
             {/* 오늘의 챌린지는 눈에 잘 띄게 표지 바로 아래에 둬요. */}
-            <div className="resume">
+            <div className={styles.resume}>
               <ChallengeCard
                 onPick={(pos) => {
                   gameActions.enterChallenge(pos);
@@ -120,16 +121,16 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
             {/* 내 기록이 없어도 온라인 랭킹을 볼 수 있게 늘 보여줘요. 첫 화면은 오늘 랭킹 Top 5와 오늘의 베스트 5만, 나머지는 랭킹 페이지에서 봐요. */}
             {/* 은퇴한 선수가 있으면 랭킹 위에서 바로 엔딩을 다시 열어요. */}
             {endings.length > 0 && (
-              <div className="resume">
+              <div className={styles.resume}>
                 <MyEndings hall={hall} endings={endings} />
               </div>
             )}
-            <div className="resume">
+            <div className={styles.resume}>
               <HallOfFame hall={hall} rows={5} today />
             </div>
           </div>
         </ViewTransition>
-        <button type="button" className="start cover-start" onClick={() => go(0)}>
+        <button type="button" className={`start ${styles.coverStart}`} onClick={() => go(0)}>
           커리어 시작하기
         </button>
       </>
@@ -138,21 +139,21 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
   return (
     <>
       <ViewTransition key="wizard" enter={SLIDE} exit={SLIDE} default="none">
-        <section className="panel create wiz">
-          <ol className="wiz-steps" aria-label="선수 만들기 단계" style={{ "--steps": flow.length } as React.CSSProperties}>
+        <section className={`panel ${styles.create} ${styles.wiz}`}>
+          <ol className={styles.wizSteps} aria-label="선수 만들기 단계" style={{ "--steps": flow.length } as React.CSSProperties}>
             {flow.map((sid, i) => (
               <li key={sid} data-state={i < step ? "done" : i === step ? "now" : undefined}>
                 <button type="button" aria-current={i === step ? "step" : undefined} onClick={() => go(i)}>
-                  <span className="wiz-n">{i + 1}</span>
-                  <span className="wiz-name">{STEPS[sid].name}</span>
+                  <span className={styles.wizN}>{i + 1}</span>
+                  <span className={styles.wizName}>{STEPS[sid].name}</span>
                 </button>
               </li>
             ))}
           </ol>
 
           <ViewTransition key={step} enter={SLIDE} exit={SLIDE} default="none">
-            <div className="wiz-body">
-              <div className="wiz-head">
+            <div className={styles.wizBody}>
+              <div className={styles.wizHead}>
                 <span className="label">
                   {ch && `오늘의 챌린지 ${ch.pos} · `}
                   {step + 1} / {flow.length} · {STEPS[id].name}
@@ -161,16 +162,16 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
               </div>
 
               {id === "look" && (
-                <div className="field">
+                <div className={styles.field}>
                   <LookPicker look={draft.look} jersey={draft.jersey} looks={draft.looks} jerseys={draft.jerseys} />
                   <p className="hint">유니폼은 고교 시절 색이에요. 프로에 가면 소속팀 색을 입어요.</p>
                 </div>
               )}
 
               {id === "pos" && (
-                <div className="field">
+                <div className={styles.field}>
                   <Segmented
-                    className="pos-seg"
+                    className={styles.posSeg}
                     label="포지션"
                     options={positions}
                     value={draft.pos}
@@ -184,11 +185,11 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
               )}
 
               {id === "today" && ch && (
-                <div className="field">
+                <div className={styles.field}>
                   <span className="label">
                     {dayText(ch.day)} · {ch.pos} {POS[ch.pos].name} · 오늘 이 포지션은 누구나 이 선수로 시작해요
                   </span>
-                  <div className="cands one">
+                  <div className={`${styles.cands} one`}>
                     <CandidateCard cand={ch.cand} pos={ch.pos} look={draft.look} jersey={draft.jersey} index={0} selected fixed />
                   </div>
                   <p className="hint">
@@ -199,14 +200,14 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
               )}
 
               {id === "style" && (
-                <div className="field">
-                  <div className="flabel-row">
+                <div className={styles.field}>
+                  <div className={styles.flabelRow}>
                     <span className="label">모두 오버롤 45, 시작 능력치 57 이하, 16세 기준 · 플레이 유형은 무작위</span>
                     <button type="button" className="btn" disabled={!draft.rerolls} onClick={gameActions.reroll}>
                       후보 다시 뽑기 · {draft.rerolls}회 남음
                     </button>
                   </div>
-                  <div className="cands">
+                  <div className={styles.cands}>
                     {draft.candidates.map((c, i) => (
                       <CandidateCard
                         key={`${draft.pos}-${i}-${c.arch}-${c.h}`}
@@ -224,9 +225,9 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
               )}
 
               {id === "info" && (
-                <div className="field">
-                  <div className="form-grid">
-                    <label className="f" htmlFor="f-name">
+                <div className={styles.field}>
+                  <div className={styles.formGrid}>
+                    <label className={styles.f} htmlFor="f-name">
                       선수 이름
                       <input
                         id="f-name"
@@ -239,7 +240,7 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
                         onChange={(e) => gameActions.editDraft({ name: e.target.value })}
                       />
                     </label>
-                    <label className="f" htmlFor="f-num">
+                    <label className={styles.f} htmlFor="f-num">
                       등번호
                       <input
                         id="f-num"
@@ -253,23 +254,23 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
                     {ch ? (
                       // 챌린지에서는 국적과 고등학교가 정해져 있어요.
                       <>
-                        <div className="f">
+                        <div className={styles.f}>
                           <span>국적</span>
-                          <span className="f-fixed">{ch.nat}</span>
+                          <span className={styles.fFixed}>{ch.nat}</span>
                         </div>
-                        <div className="f">
+                        <div className={styles.f}>
                           <span>고등학교</span>
-                          <span className="f-fixed">{ch.school}</span>
+                          <span className={styles.fFixed}>{ch.school}</span>
                         </div>
                       </>
                     ) : (
                       <>
                         {/* label로 감싸면 목록 항목을 누를 때 버튼이 다시 눌려 목록이 또 열려서 div로 묶어요. */}
-                        <div className="f">
+                        <div className={styles.f}>
                           <span id="f-nat-label">국적</span>
                           <NationPicker labelledBy="f-nat-label" value={draft.nat} onChange={(nat) => gameActions.editDraft({ nat })} />
                         </div>
-                        <div className="f">
+                        <div className={styles.f}>
                           <span id="f-school-label">고등학교</span>
                           <SchoolPicker
                             nat={draft.nat}
@@ -289,7 +290,7 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
         </section>
       </ViewTransition>
 
-      <div className="wiz-nav">
+      <div className={styles.wizNav}>
         <button type="button" className="start sub" onClick={() => go(step - 1)}>
           {step === 0 ? "← 처음으로" : "← 이전"}
         </button>

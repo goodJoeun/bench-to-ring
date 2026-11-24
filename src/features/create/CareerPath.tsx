@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { reducedMotion } from "@/shared/lib/hooks";
 import { drawStage, STAGE_SEC, VIEW, type StageKey } from "../../shared/ui/sprite/coverArt";
+import styles from "./create.module.css";
 
 /*
  * 표지 그림: 진화 그림처럼 선수가 왼쪽에서 오른쪽으로 자라요.
@@ -78,27 +79,27 @@ export function CareerPath() {
   };
 
   return (
-    <figure className="evo" aria-label="고교 벤치에서 프로 데뷔, 챔피언결정전 우승, NBA 진출, NBA MVP 수상까지 자라는 선수">
-      <div className="evo-stage" aria-hidden="true">
+    <figure className={styles.evo} aria-label="고교 벤치에서 프로 데뷔, 챔피언결정전 우승, NBA 진출, NBA MVP 수상까지 자라는 선수">
+      <div className={styles.evoStage} aria-hidden="true">
         {STAGES.map((s, i) => (
-          <div key={s.key} className="evo-fig" data-focus={focus === i || undefined} style={{ "--i": i } as React.CSSProperties}>
+          <div key={s.key} className={styles.evoFig} data-focus={focus === i || undefined} style={{ "--i": i } as React.CSSProperties}>
             <canvas
               ref={(el) => {
                 canvases.current[i] = el;
               }}
-              className="evo-art"
+              className={styles.evoArt}
               width={VIEW.w * DENSITY}
               height={VIEW.h * DENSITY}
             />
           </div>
         ))}
       </div>
-      <ol className="evo-caps">
+      <ol className={styles.evoCaps}>
         {STAGES.map((s, i) => (
           <li key={s.key} data-focus={focus === i || undefined} style={{ "--i": i } as React.CSSProperties}>
             <button type="button" aria-label={s.alt} aria-current={focus === i ? "step" : undefined} onClick={(e) => jump(i, e.timeStamp)}>
-              <span className="evo-n">{i + 1}</span>
-              <span className="evo-t">{s.title}</span>
+              <span className={styles.evoN}>{i + 1}</span>
+              <span className={styles.evoT}>{s.title}</span>
             </button>
           </li>
         ))}

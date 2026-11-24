@@ -1,4 +1,5 @@
 import { ATTR_KEYS, SHORT, type Attrs } from "@/game";
+import styles from "./career.module.css";
 
 const W = 240;
 const H = 192;
@@ -19,18 +20,18 @@ export function Radar({ attrs }: { attrs: Attrs }) {
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="radar" role="img" aria-label="능력치 레이더 차트">
       {[25, 50, 75, 100].map((r) => (
-        <polygon key={r} className="rg" points={polygon(() => r)} />
+        <polygon key={r} className={styles.rg} points={polygon(() => r)} />
       ))}
       {ATTR_KEYS.map((k, i) => {
         const [x, y] = point(i, 100);
-        return <line key={k} className="rg" x1={CX} y1={CY} x2={x.toFixed(1)} y2={y.toFixed(1)} />;
+        return <line key={k} className={styles.rg} x1={CX} y1={CY} x2={x.toFixed(1)} y2={y.toFixed(1)} />;
       })}
-      <polygon className="rv" points={polygon((i) => attrs[ATTR_KEYS[i]])} />
+      <polygon className={styles.rv} points={polygon((i) => attrs[ATTR_KEYS[i]])} />
       {ATTR_KEYS.map((k, i) => {
         const [x, y] = point(i, 121);
         const anchor = Math.abs(x - CX) < 4 ? "middle" : x < CX ? "end" : "start";
         return (
-          <text key={k} className="rl" x={x.toFixed(1)} y={(y + 4).toFixed(1)} textAnchor={anchor}>
+          <text key={k} className={styles.rl} x={x.toFixed(1)} y={(y + 4).toFixed(1)} textAnchor={anchor}>
             {SHORT[k]}
           </text>
         );

@@ -1,0 +1,623 @@
+/* rankings 화면의 모양. 예전 전역 CSS(app/styles)에서 규칙 순서 그대로 옮겼어요. 다른 화면과 같이 쓰는 클래스는 :global로 남겨 둬요. */
+/* 랭킹 페이지 (/rankings) */
+.rk {
+  max-width: var(--t-max);
+  margin: 0 auto;
+  padding-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.rkHead {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rkHead h1 {
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: var(--text-4xl);
+  line-height: 1.2;
+  margin: 0;
+}
+.rkBack {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  background: var(--panel);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-decoration: none;
+}
+.rkTabs {
+  display: grid;
+  /* 탭 여섯 개를 세 개씩 두 줄로 놓아요. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--r-md);
+  background: var(--panel2);
+  border: 1px solid var(--line);
+}
+.rkTabs a {
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  padding: 10px 4px;
+  font-weight: 700;
+  font-size: var(--text-md);
+  line-height: 1.25;
+  color: var(--muted);
+  text-align: center;
+  text-decoration: none;
+}
+@media (max-width: 480px) {
+  .rkTabs a {
+    font-size: var(--text-sm);
+    padding: 8px 2px;
+  }
+}
+.rkChips button span {
+  font-family: var(--f-body);
+  font-weight: 500;
+  font-size: var(--text-xs);
+  letter-spacing: 0;
+  opacity: 0.75;
+}
+.rkTabs a[aria-selected="true"] {
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.rkChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rkChips button {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: var(--r-full);
+  padding: 6px 14px;
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-size: var(--text-md);
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  cursor: pointer;
+}
+.rkChips button[aria-pressed="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--panel);
+}
+/* 날짜 칩: 포지션·스탯 칩 위에 한 줄로 두고, 좁은 화면에서는 옆으로 밀어요. */
+.rkDays {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.rkDays::-webkit-scrollbar {
+  display: none;
+}
+.rkDays button {
+  flex: none;
+  padding: 5px 12px;
+  font-size: var(--text-sm);
+}
+/* 날짜 칩의 등록 수 */
+.rkDays button .rkDayN {
+  margin-left: 5px;
+  font-family: var(--f-num);
+  font-weight: 700;
+}
+.rkDayCount {
+  margin: -4px 0 0;
+}
+.rkDayCount b {
+  color: var(--ink);
+  font-family: var(--f-num);
+}
+.rkEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  padding: 36px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--panel);
+}
+.rkEmpty b {
+  font-size: var(--text-lg);
+}
+.rkEmpty span {
+  color: var(--muted);
+  font-size: var(--text-md);
+}
+.rkEmpty :global(.btn) {
+  margin-top: 8px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.rkSprite {
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.25));
+}
+.rkSprite {
+  width: 48px;
+  height: 72px;
+}
+/* 베스트 5 코트: 골대가 위에 있는 하프 코트 */
+.rkCourt {
+  position: relative;
+  aspect-ratio: 500/470;
+  border-radius: var(--r);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: repeating-linear-gradient(
+    90deg,
+    var(--wood1) 0 31px,
+    var(--wood2) 31px 62px
+  );
+}
+.rkLines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.rkLines * {
+  fill: none;
+  stroke: var(--court-line);
+  stroke-width: 4;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.9;
+}
+.rkLines .paint {
+  fill: var(--key);
+  fill-opacity: 0.55;
+}
+.rkLines :global(.board) {
+  stroke-width: 6;
+}
+.rkSpot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 31%;
+  max-width: 150px;
+}
+.rkPlate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+  padding: 3px 9px;
+  border-radius: var(--r-sm);
+  background: rgba(12, 18, 27, 0.82);
+  color: #fff;
+  text-align: center;
+  line-height: 1.3;
+}
+.rkPlate b {
+  font-size: var(--text-sm);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rkPlate span {
+  font-family: var(--f-num);
+  font-size: var(--text-xs);
+  opacity: 0.85;
+  letter-spacing: 0.03em;
+}
+.rkPlate[data-mine] {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.rkPlate:global(.empty) {
+  background: rgba(12, 18, 27, 0.45);
+}
+@media (max-width: 420px) {
+  .rkSprite {
+    width: 36px;
+    height: 54px;
+  }
+  .rkPlate b {
+    font-size: var(--text-xs);
+  }
+  .rkPlate span {
+    font-size: var(--text-xxs);
+  }
+}
+/* 랭킹 100: 금·은·동 시상대와 목록 */
+.rkPodium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  align-items: end;
+  padding-top: 6px;
+}
+.rkPod {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+  min-width: 0;
+}
+/* 시상대 툴팁: 마우스를 올리거나 눌러서(초점) 누적 기록을 봐요. 양옆 칸은 화면 밖으로 나가지 않게 바깥쪽 모서리에 맞춰요. */
+.rkPod {
+  position: relative;
+  border-radius: var(--r-md);
+  cursor: default;
+}
+.rkTip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  width: max-content;
+  max-width: min(240px, 80vw);
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: rgba(8, 12, 20, 0.96);
+  color: #fff;
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  text-align: left;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+.rkTip > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+.rkTip b {
+  font-family: var(--f-num);
+  font-size: var(--text-md);
+  font-variant-numeric: tabular-nums;
+}
+.rkPod[data-place="2"] .rkTip {
+  left: 0;
+  transform: none;
+}
+.rkPod[data-place="3"] .rkTip {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.rkPod:has(:global(.rk-open):focus-visible) .rkTip {
+  display: flex;
+}
+@media (hover: hover) {
+  .rkPod:hover .rkTip {
+    display: flex;
+  }
+}
+.rkPod :global(.nm) {
+  font-size: var(--text-base);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}
+.rkPod :global(.sub) {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  line-height: 1.35;
+}
+.rkPod[data-place="1"] .rkSprite {
+  width: 60px;
+  height: 90px;
+}
+.rkPod[data-place="1"] :global(.nm) {
+  font-size: var(--text-lg);
+}
+.rkStep {
+  --m: var(--bronze);
+  align-self: stretch;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  padding-top: 12px;
+  border-radius: var(--r-md) var(--r-md) 0 0;
+  border: 1px solid color-mix(in srgb, var(--m) 55%, var(--line));
+  border-bottom: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--m) 34%, var(--panel)),
+    color-mix(in srgb, var(--m) 10%, var(--panel))
+  );
+}
+.rkStep[data-medal="gold"] {
+  --m: var(--gold);
+}
+.rkStep[data-medal="silver"] {
+  --m: var(--silver);
+}
+.rkPod[data-place="1"] .rkStep {
+  height: 118px;
+}
+.rkPod[data-place="2"] .rkStep {
+  height: 88px;
+}
+.rkPod[data-place="3"] .rkStep {
+  height: 66px;
+}
+.rkMedal {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--m);
+  color: var(--medal-ink);
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-size: var(--text-2xl);
+  line-height: 1;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.35),
+    0 2px 0 rgba(0, 0, 0, 0.2);
+}
+.rkPod[data-place="1"] .rkMedal {
+  width: 48px;
+  height: 48px;
+  font-size: var(--text-4xl);
+}
+.rkStep .lbl {
+  font-weight: 800;
+  font-size: var(--text-sm);
+  color: var(--ink);
+}
+.rkPod[data-mine] :global(.nm) {
+  color: var(--accent);
+}
+.rkPodium + :global(.rk-list) {
+  margin-top: -12px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+.rkR {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.rkR[data-medal] {
+  --m: var(--bronze);
+  border-radius: 50%;
+  background: var(--m);
+  color: var(--medal-ink);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35);
+}
+.rkR[data-medal="gold"] {
+  --m: var(--gold);
+}
+.rkR[data-medal="silver"] {
+  --m: var(--silver);
+}
+/* 스탯 랭킹: 오른쪽에 프로 통산 값을 크게 */
+.rkStat li {
+  grid-template-columns: 30px 24px minmax(0, 1fr) auto;
+}
+.rkVal {
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-size: var(--text-2xl);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.rkVal small {
+  margin-left: 2px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--muted);
+}
+:global(.rk-list) li[data-mine] .rkR {
+  color: var(--accent);
+}
+/* 누르면 커리어 카드가 열리는 줄과 시상대. 투명한 단추가 칸 전체를 덮어요. */
+.rkRows li {
+  position: relative;
+  /* 화살표가 들어와도 기록 줄이 세 줄로 늘지 않게 여백을 조금씩 줄여요. */
+  grid-template-columns: 26px 24px minmax(0, 1fr) 8px;
+  column-gap: 8px;
+  padding-inline: 10px 8px;
+}
+.rkChev {
+  color: var(--muted);
+  font-size: var(--text-2xl);
+  line-height: 1;
+}
+.rkPart {
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .rkRows li:hover {
+    background: var(--panel2);
+  }
+  .rkRows li:hover .rkChev {
+    color: var(--accent);
+  }
+}
+/* 랭킹 100 위의 내 최고 순위 */
+.rkMybest {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--accent) 5%, var(--panel));
+  color: var(--ink);
+  font-size: var(--text-md);
+  font-weight: 700;
+  text-decoration: none;
+}
+.rkMybest b {
+  font-family: var(--f-num);
+  font-size: var(--text-xl);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.rkMybest small {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--muted);
+}
+.rkMybestGo {
+  flex: none;
+  color: var(--accent);
+  font-size: var(--text-sm);
+}
+/* 나의 기록: 주변 순위 펼치기 */
+.rkNearBtn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  margin-top: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--paint);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+:global(.rk-list):global(.mine) > li.rkNearWrap {
+  display: block;
+  padding: 0 10px 12px;
+  background: var(--panel2);
+}
+/* 브라우저에 남지 않은 최고 기록의 주변 순위 */
+.rkNearSolo {
+  padding: 10px 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--panel2);
+}
+.rkNearHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rkNear {
+  padding-top: 10px;
+  scroll-margin-block: 76px 132px;
+}
+.rkNear .rkRows li,
+:global(.rk-list):global(.mine) .rkNear .rkRows li {
+  grid-template-columns: 44px 24px minmax(0, 1fr) 8px;
+  padding-inline: 8px 6px;
+}
+.rkNear .rkR:not([data-medal]) {
+  width: 100%;
+  font-size: var(--text-base);
+}
+.rkOn {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--muted);
+}
+.rkOn[data-on] {
+  color: var(--accent);
+}
+.rkPod,
+.rkSpot {
+  container-type: inline-size;
+}
+.rkPod :global(.nm),
+.rkPod[data-place="1"] :global(.nm) {
+  font-size: clamp(
+    11.5px,
+    min(368cqi / var(--nw, 1), 184cqi / var(--lw, 1)),
+    var(--fs, 14.5px)
+  );
+}
+.rkPod[data-place="1"] :global(.nm) {
+  --fs: 16px;
+}
+.rkPlate b {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.rkPlate b {
+  font-size: clamp(
+    10px,
+    (100cqi - 18px) * 1.84 / var(--nw, 1),
+    var(--fs, 13px)
+  );
+  line-height: 1.25;
+  -webkit-line-clamp: 3;
+}
+@media (max-width: 420px) {
+  .rkPlate b {
+    --fs: 12px;
+  }
+}
+/* 챌린지 랭킹 탭 맨 위: 설명과 도움말 단추 */
+.chAbout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.chAbout :global(.hint) {
+  flex: 1 1 260px;
+}
+.chSpec {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--panel);
+}
+.chSpec b {
+  font-size: var(--text-lg);
+}
+.chSpec :global(.sub) {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.chSpec :global(.btn) {
+  margin-top: 8px;
+  text-decoration: none;
+  color: var(--ink);
+}

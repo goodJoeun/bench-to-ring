@@ -11,6 +11,7 @@ import { RecordTab } from "./tabs/RecordTab";
 import { SeasonTab } from "./tabs/SeasonTab";
 import { SettingsTab } from "./tabs/SettingsTab";
 import { TrophyTab } from "./tabs/TrophyTab";
+import styles from "./career.module.css";
 
 /** 하단 탭 바. 설정은 상단 헤더의 톱니 버튼으로 열어요. */
 const TABS = [
@@ -48,15 +49,15 @@ export function GameScreen({ career, hall, tab, onTab, playing, speed, busy, out
   const running = !!career.run && tab === "season";
 
   return (
-    <main className="grid" data-tab={tab}>
-      <div className="col-l">
+    <main className={styles.grid} data-tab={tab}>
+      <div className={styles.colL}>
         <CourtCard career={career} />
         <Scoreboard career={career} />
         <ActionPanel career={career} playing={playing} speed={speed} busy={busy} outcome={outcome} onAdvance={() => onTab("season")} />
       </div>
-      <div className="col-r">
+      <div className={styles.colR}>
         {!running && <AttributesPanel career={career} />}
-        <div className="tabs" role="tablist">
+        <div className={styles.tabs} role="tablist">
           {TABS.map(([k, name]) => (
             <button
               type="button"
@@ -68,12 +69,12 @@ export function GameScreen({ career, hall, tab, onTab, playing, speed, busy, out
               aria-controls="tabpanel"
               onClick={() => onTab(k)}
             >
-              <svg className="ti" viewBox="0 0 24 24" aria-hidden="true">
+              <svg className={styles.ti} viewBox="0 0 24 24" aria-hidden="true">
                 {TAB_ICONS[k]}
               </svg>
-              <span className="tl">{name}</span>
+              <span className={styles.tl}>{name}</span>
               {k === "season" && pending && (
-                <span className="tdot">
+                <span className={styles.tdot}>
                   <span className="sr-only">결정 남음</span>
                 </span>
               )}
@@ -81,7 +82,7 @@ export function GameScreen({ career, hall, tab, onTab, playing, speed, busy, out
           ))}
         </div>
         <div
-          className="tabc"
+          className={styles.tabc}
           role="tabpanel"
           id="tabpanel"
           aria-labelledby={tab === "settings" ? "open-settings" : `tab-${tab}`}

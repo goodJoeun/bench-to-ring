@@ -9,6 +9,7 @@ import { Sprite } from "@/shared/ui/sprite/Sprite";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 import { AwardName } from "@/shared/ui/ui";
 import { Popup } from "./Popup";
+import styles from "./progress.module.css";
 
 /** 지나온 발자취를 몇 줄 남길지 */
 const TRAIL = 3;
@@ -33,7 +34,7 @@ function AwardChips({ awards }: { awards: string[] }) {
   const shown = awards.length > CHIP_LIMIT ? awards.slice(0, CHIP_LIMIT - 1) : awards;
   const rest = awards.slice(shown.length);
   return (
-    <div className="fw-awards">
+    <div className={styles.fwAwards}>
       {shown.map((a) => (
         <span key={a}>
           <AwardName name={a} />
@@ -41,7 +42,7 @@ function AwardChips({ awards }: { awards: string[] }) {
       ))}
       {rest.length > 0 && (
         // 마우스는 올리면, 터치는 누르면 열려요.
-        <span ref={ref} className="fw-more" data-open={open || undefined}>
+        <span ref={ref} className={styles.fwMore} data-open={open || undefined}>
           <button type="button" aria-expanded={open} aria-describedby={id} onClick={() => setOpen((o) => !o)}>
             외 {rest.length}개의 우승 및 수상
           </button>
@@ -108,27 +109,27 @@ export function FarewellLoading({ career: c }: { career: Career }) {
   useEscapeKey(gameActions.finishFarewell);
 
   return (
-    <Popup labelledBy="fw-title" className="fw">
-      <button type="button" className="fw-x" aria-label="커리어 회고 닫기" onClick={gameActions.finishFarewell}>
+    <Popup labelledBy="fw-title" className={styles.fw}>
+      <button type="button" className={styles.fwX} aria-label="커리어 회고 닫기" onClick={gameActions.finishFarewell}>
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4z" />
         </svg>
       </button>
       <div className="fw-road" aria-hidden="true" style={{ "--tc": color } as React.CSSProperties}>
-        <div className="fw-track">
-          <div className="fw-line">
-            <div className="fw-fill" style={{ width: `${pos}%` }} />
+        <div className={styles.fwTrack}>
+          <div className={styles.fwLine}>
+            <div className={styles.fwFill} style={{ width: `${pos}%` }} />
           </div>
           {steps.map((s, i) => (
             <span
               key={i}
-              className="fw-dot"
+              className={styles.fwDot}
               data-on={i < shown || undefined}
               data-big={s.big || undefined}
               style={{ left: `${n > 1 ? (i / (n - 1)) * 100 : 0}%` }}
             />
           ))}
-          <div className="fw-walker" style={{ left: `${pos}%` }}>
+          <div className={styles.fwWalker} style={{ left: `${pos}%` }}>
             <Sprite look={playerLook(c.p)} color={color} scale={3} label="" />
           </div>
         </div>
@@ -136,11 +137,11 @@ export function FarewellLoading({ career: c }: { career: Career }) {
 
       {cur ? (
         <>
-          <div className="fw-year">
+          <div className={styles.fwYear}>
             <b>{cur.year}</b>
             <span>{cur.age}세</span>
           </div>
-          <span className="fw-team">
+          <span className={styles.fwTeam}>
             <TeamBadge name={cur.team} color={cur.color ?? undefined} size={22} />
             {cur.team}
           </span>
@@ -159,7 +160,7 @@ export function FarewellLoading({ career: c }: { career: Career }) {
         </h2>
       )}
 
-      <div className="fw-tally">
+      <div className={styles.fwTally}>
         <span>
           <small>경기</small>
           <b>{fmtNum(gp)}</b>
@@ -175,11 +176,11 @@ export function FarewellLoading({ career: c }: { career: Career }) {
       </div>
 
       {done ? (
-        <p className="tour-story">
+        <p className={styles.tourStory}>
           <b>{summary.legacy}</b> · {summary.retAge}세 은퇴 · 프로 {summary.seasons}시즌
         </p>
       ) : (
-        <ol className="fw-trail" aria-label="지나온 발자취">
+        <ol className={styles.fwTrail} aria-label="지나온 발자취">
           {trail.map((s) => (
             <li key={`${s.year}-${s.title}`} data-big={s.big || undefined}>
               <span className="ty">{s.year}</span>
@@ -189,11 +190,11 @@ export function FarewellLoading({ career: c }: { career: Career }) {
         </ol>
       )}
 
-      <div className="fw-nav">
-        <button type="button" className="sim-skip" disabled={shown <= 1} onClick={() => setShown(shown - 1)}>
+      <div className={styles.fwNav}>
+        <button type="button" className={styles.simSkip} disabled={shown <= 1} onClick={() => setShown(shown - 1)}>
           이전
         </button>
-        <span className="fw-count" aria-label={`${n}개 중 ${shown}번째`}>
+        <span className={styles.fwCount} aria-label={`${n}개 중 ${shown}번째`}>
           {shown} / {n}
         </span>
         <button type="button" ref={goRef} className="live-go" onClick={next}>
@@ -201,7 +202,7 @@ export function FarewellLoading({ career: c }: { career: Career }) {
         </button>
       </div>
       {!done && (
-        <button type="button" className="sim-skip fw-skip" onClick={() => setShown(n)}>
+        <button type="button" className={`${styles.simSkip} ${styles.fwSkip}`} onClick={() => setShown(n)}>
           마지막으로 건너뛰기
         </button>
       )}

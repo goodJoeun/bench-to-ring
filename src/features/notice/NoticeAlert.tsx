@@ -3,6 +3,7 @@
 import { Sheet } from "@/shared/ui/Sheet";
 import { kstDay } from "@/shared/leaderboard/days";
 import type { Notice } from "@/features/notice/notices";
+import styles from "./notice.module.css";
 
 const HIDE_KEY = "b2r-notice-alert-hidden";
 /** 공지 목록을 열어 이미 안내한 글 id. 이 글들로는 다시 안내하지 않아요. */
@@ -51,15 +52,15 @@ export function NoticeAlert({ latest, count, onOpen, onClose }: { latest: Notice
   return (
     // 다른 단추를 누른 직후 저절로 뜨는 시트라, 이어진 탭이 '오늘 하루 보지 않기'에 닿지 않게 잠깐 입력을 막아요.
     <Sheet labelledBy="na-title" guardKey="notice-alert" onClose={onClose}>
-      <span className="na-icon" aria-hidden="true">
+      <span className={styles.naIcon} aria-hidden="true">
         📣
       </span>
       <h2 id="na-title">새로운 소식이 있어요</h2>
       <p className="sheet-desc">
         새로운 패치 내용이 있어요. 상단의 <b>📣 공지</b>를 눌러 확인해 주세요.
       </p>
-      <div className="na-latest">
-        <span className="nt-tag">{count > 1 ? `새 글 ${count}개` : "새 글"}</span>
+      <div className={styles.naLatest}>
+        <span className={styles.ntTag}>{count > 1 ? `새 글 ${count}개` : "새 글"}</span>
         <b>
           <span aria-hidden="true">{latest.icon}</span> {latest.title}
         </b>
@@ -67,7 +68,7 @@ export function NoticeAlert({ latest, count, onOpen, onClose }: { latest: Notice
       <button type="button" className="sheet-go" onClick={onOpen}>
         지금 공지 보기
       </button>
-      <div className="na-actions">
+      <div className={styles.naActions}>
         <button
           type="button"
           className="sheet-later"

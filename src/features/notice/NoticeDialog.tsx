@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { Sheet } from "@/shared/ui/Sheet";
 import { NOTICE_KIND_NAME, NOTICES, markNoticeRead, useReadNotices, type Notice } from "@/features/notice/notices";
+import styles from "./notice.module.css";
 
 /** 목록에 한 번에 보이는 글 수. 더 있으면 목록 안에서 내려서 봐요. */
 const SHOWN = 5;
@@ -36,27 +37,27 @@ export function NoticeDialog({ onClose }: { onClose: () => void }) {
         </svg>
       </button>
       {open ? (
-        <article className="nt-detail">
+        <article className={styles.ntDetail}>
           {/* 누른 줄이 사라지니 초점을 '목록'으로 옮겨요. */}
-          <button type="button" className="nt-back" autoFocus onClick={() => setOpen(null)}>
+          <button type="button" className={styles.ntBack} autoFocus onClick={() => setOpen(null)}>
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M15.4 5 8.4 12l7 7-1.4 1.4L5.6 12 14 3.6z" />
             </svg>
             목록
           </button>
-          <span className="nt-tag">{NOTICE_KIND_NAME[open.kind]}</span>
+          <span className={styles.ntTag}>{NOTICE_KIND_NAME[open.kind]}</span>
           <h2 id="nt-title">
             <span aria-hidden="true">{open.icon}</span> {open.title}
           </h2>
-          <span className="nt-date">{open.date}</span>
-          {open.intro && <p className="nt-intro">{open.intro}</p>}
+          <span className={styles.ntDate}>{open.date}</span>
+          {open.intro && <p className={styles.ntIntro}>{open.intro}</p>}
           {open.body?.map((para) => (
-            <p key={para} className="nt-body">
+            <p key={para} className={styles.ntBody}>
               {para}
             </p>
           ))}
           {open.sections.map((s) => (
-            <section key={s.title} className="nt-sec">
+            <section key={s.title} className={styles.ntSec}>
               <h3>{s.title}</h3>
               <ul>
                 {s.items.map((it) => (
@@ -71,7 +72,7 @@ export function NoticeDialog({ onClose }: { onClose: () => void }) {
           <h2 id="nt-title">공지</h2>
           <ul
             ref={listRef}
-            className="nt-list"
+            className={styles.ntList}
             data-scroll={NOTICES.length > SHOWN || undefined}
             data-end={atEnd || undefined}
             tabIndex={NOTICES.length > SHOWN ? 0 : undefined}
@@ -83,21 +84,21 @@ export function NoticeDialog({ onClose }: { onClose: () => void }) {
           >
             {NOTICES.map((n) => (
               <li key={n.id} data-pinned={n.pinned || undefined}>
-                <button type="button" className="nt-row" onClick={() => show(n)}>
-                  <span className="nt-tag">{n.pinned ? "📌 고정" : NOTICE_KIND_NAME[n.kind]}</span>
-                  <span className="nt-main">
+                <button type="button" className={styles.ntRow} onClick={() => show(n)}>
+                  <span className={styles.ntTag}>{n.pinned ? "📌 고정" : NOTICE_KIND_NAME[n.kind]}</span>
+                  <span className={styles.ntMain}>
                     <b>
                       <span aria-hidden="true">{n.icon}</span> {n.title}
                       {!read.has(n.id) && <i className="nt-dot" role="img" aria-label="새 글" />}
                     </b>
-                    <span className="nt-date">{n.date}</span>
+                    <span className={styles.ntDate}>{n.date}</span>
                   </span>
                 </button>
               </li>
             ))}
           </ul>
           {NOTICES.length > SHOWN && (
-            <p className="nt-more" aria-hidden="true">
+            <p className={styles.ntMore} aria-hidden="true">
               {atEnd ? `공지 ${NOTICES.length}개를 모두 봤어요` : `내려서 더 보기 · 공지 ${NOTICES.length}개`}
             </p>
           )}

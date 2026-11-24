@@ -1,17 +1,3 @@
-/* game grid */
-main.grid,
-.col-l,
-.col-r {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-width: 0;
-}
-main.grid {
-  max-width: var(--t-max);
-  margin: 0 auto;
-  padding-top: 4px;
-}
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -85,12 +71,6 @@ main.grid {
   flex-direction: column;
   gap: 2px;
 }
-.plate-top {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0 8px;
-}
 .plate .num {
   font-family: var(--f-num);
   font-weight: 700;
@@ -143,12 +123,6 @@ main.grid {
   align-items: center;
   gap: 6px;
 }
-.rc-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
 .plate .name {
   font-family: var(--f-display);
   font-size: var(--text-3xl);
@@ -159,19 +133,6 @@ main.grid {
   color: var(--muted);
   font-size: var(--text-sm);
   line-height: 1.45;
-}
-.health {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) 28px;
-  align-items: center;
-  gap: 8px;
-  margin-top: 6px;
-}
-.hv {
-  font-family: var(--f-num);
-  font-weight: 700;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
 }
 .track {
   height: 8px;
@@ -192,45 +153,6 @@ main.grid {
 }
 .fill.hp-low {
   background: var(--bad);
-}
-
-/* scoreboard */
-.sb {
-  background: var(--score-bg);
-  border-radius: var(--r);
-  padding: 12px 14px;
-  display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
-  gap: 8px;
-  color: var(--score-fg);
-}
-.sb .cell {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.sb .k {
-  font-size: var(--text-xxs);
-  letter-spacing: 0.1em;
-  color: var(--score-lbl);
-  font-weight: 700;
-}
-.sb .v {
-  font-family: var(--f-num);
-  font-weight: 700;
-  font-size: var(--text-4xl);
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.sb .v.big {
-  font-size: var(--text-5xl);
-}
-.sb .v small {
-  font-size: var(--text-base);
-  color: var(--score-lbl);
-  margin-left: 2px;
 }
 
 /* action */
@@ -266,82 +188,15 @@ main.grid {
   font-weight: 700;
   color: #ffd66b;
 }
-/* 초록·빨강 결과 카드 위에서는 노랑의 명암비가 모자라 글자색을 그대로 써요. */
-.advance.outcome .delta {
-  color: inherit;
-}
 .advance .go {
   font-family: var(--f-num);
   font-size: var(--text-4xl);
   font-weight: 700;
 }
-
-/* ratings */
-.head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.attr-body {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  align-items: center;
-}
 .radar {
   width: 240px;
   max-width: 100%;
   flex: 0 0 auto;
-}
-.radar .rg {
-  fill: none;
-  stroke: var(--line);
-  stroke-width: 1;
-}
-.radar .rv {
-  fill: var(--accent);
-  fill-opacity: 0.2;
-  stroke: var(--accent);
-  stroke-width: 2;
-  stroke-linejoin: round;
-}
-.radar .rl {
-  fill: var(--muted);
-  font-size: var(--text-xs);
-  font-weight: 700;
-  font-family: var(--f-body);
-}
-.bars {
-  flex: 1 1 250px;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-.ar {
-  display: grid;
-  grid-template-columns: 88px minmax(0, 1fr) 30px 28px;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--text-md);
-}
-.ar .n {
-  white-space: nowrap;
-}
-.ar .core {
-  color: var(--accent);
-  font-size: var(--text-micro);
-  margin-left: 3px;
-  vertical-align: 2px;
-}
-.ar .v {
-  font-family: var(--f-num);
-  font-weight: 700;
-  font-size: var(--text-lg);
-  text-align: right;
-  font-variant-numeric: tabular-nums;
 }
 .d {
   font-family: var(--f-num);
@@ -354,54 +209,6 @@ main.grid {
 .d.up {
   color: var(--good);
 }
-.d.dn {
-  color: var(--bad);
-}
-/* 히든 스탯: 지금 가진 조합과 평가 오버롤. 조건은 보여주지 않아요. */
-.spec {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  border-top: 1px solid var(--line);
-  padding-top: 10px;
-}
-.spec-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.spec-eval {
-  font-size: var(--text-sm);
-  color: var(--muted);
-}
-.spec-eval b {
-  font-family: var(--f-num);
-  font-size: var(--text-lg);
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
-}
-.spec-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.spec-chip {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: var(--r-full);
-  font-size: var(--text-sm);
-  font-weight: 700;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, var(--panel2));
-  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
-}
-.spec-chip b {
-  color: var(--ink);
-}
 /* 스타성: 단계, 시그니처 세리머니, 막대(눈금은 제안이 열리는 수치), 제안 목록 */
 .star {
   display: flex;
@@ -409,103 +216,4 @@ main.grid {
   gap: 8px;
   border-top: 1px solid var(--line);
   padding-top: 10px;
-}
-.star-head {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.star-tier {
-  font-weight: 700;
-  font-size: var(--text-md);
-  color: var(--gold);
-}
-.star-cele {
-  margin-left: auto;
-  font-size: var(--text-sm);
-  color: var(--muted);
-}
-.star-cele b {
-  color: var(--ink);
-}
-.star-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 30px;
-  align-items: center;
-  gap: 8px;
-}
-.star-row .v {
-  font-family: var(--f-num);
-  font-weight: 700;
-  font-size: var(--text-lg);
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-.star-track {
-  position: relative;
-  height: 10px;
-  border-radius: var(--r-xs);
-}
-.star-fill {
-  background: linear-gradient(90deg, #e8b53c, #ffd25a);
-}
-.star-tick {
-  position: absolute;
-  top: -1px;
-  bottom: -1px;
-  width: 2px;
-  margin-left: -1px;
-  background: var(--muted);
-  opacity: 0.55;
-}
-.star-tick[data-on] {
-  background: var(--panel);
-  opacity: 0.9;
-}
-.star-unlocks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.star-unlocks li {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 3px 10px;
-  border-radius: var(--r-full);
-  font-size: var(--text-sm);
-  color: var(--muted);
-  background: var(--panel2);
-  border: 1px dashed var(--line);
-}
-.star-unlocks li b {
-  font-family: var(--f-num);
-  font-size: var(--text-sm);
-}
-.star-unlocks li[data-on] {
-  color: var(--gold);
-  border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
-  background: color-mix(in srgb, var(--gold) 12%, var(--panel2));
-  font-weight: 700;
-}
-.star-unlocks li[data-on] b {
-  color: var(--ink);
-  font-family: inherit;
-}
-.phys {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
-  font-size: var(--text-sm);
-  color: var(--muted);
-  border-top: 1px solid var(--line);
-  padding-top: 10px;
-}
-.phys b {
-  color: var(--ink);
-  font-weight: 700;
 }

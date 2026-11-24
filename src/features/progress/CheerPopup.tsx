@@ -11,6 +11,7 @@ import { AwardName } from "@/shared/ui/ui";
 import { ChampionRing } from "./ChampionRing";
 import { Popup } from "./Popup";
 import { SigningArt } from "./SigningArt";
+import styles from "./progress.module.css";
 
 const KICKER: Record<Cheer["kind"], string> = {
   title: "우승",
@@ -47,13 +48,13 @@ const SPARKS: [number, number, number][] = Array.from({ length: 12 }, (_, i) => 
 function AchievementMedal() {
   return (
     <div className="achv-medal-wrap" aria-hidden="true">
-      <span className="achv-rays" />
-      <span className="achv-ring" />
-      <span className="achv-ring" style={{ animationDelay: "1s" }} />
+      <span className={styles.achvRays} />
+      <span className={styles.achvRing} />
+      <span className={styles.achvRing} style={{ animationDelay: "1s" }} />
       {SPARKS.map(([deg, dist, delay], i) => (
-        <i key={i} className="achv-spark" style={{ "--a": `${deg}deg`, "--d": `${-dist}px`, animationDelay: `${0.2 + delay}s` } as React.CSSProperties} />
+        <i key={i} className={styles.achvSpark} style={{ "--a": `${deg}deg`, "--d": `${-dist}px`, animationDelay: `${0.2 + delay}s` } as React.CSSProperties} />
       ))}
-      <Medal className="achv-medal" />
+      <Medal className={styles.achvMedal} />
     </div>
   );
 }
@@ -74,7 +75,7 @@ export function CheerPopup({ career: c, cheer }: { career: Career; cheer: Cheer 
   // 리그 우승이면 트로피 자리에 그 리그 로고를 올려요. 예전 저장의 축하처럼 리그를 모르면 트로피예요.
   const league = cheer.kind === "title" && hasLeagueLogo(cheer.lg) ? cheer.lg : null;
   return (
-    <Popup labelledBy="cheer-title" className={achv ? "cheer cheer-achv" : sign ? "cheer cheer-sign" : "cheer"} key={`${cheer.year}-${cheer.title}`}>
+    <Popup labelledBy="cheer-title" className={achv ? `cheer ${styles.cheerAchv}` : sign ? `cheer ${styles.cheerSign}` : "cheer"} key={`${cheer.year}-${cheer.title}`}>
       {achv && <span className="achv-flash" aria-hidden="true" />}
       {!sign && (
         <div className="cheer-confetti" aria-hidden="true">
@@ -93,7 +94,7 @@ export function CheerPopup({ career: c, cheer }: { career: Career; cheer: Cheer 
       ) : achv ? (
         <>
           <AchievementMedal />
-          <span className="achv-banner">업적 달성!</span>
+          <span className={styles.achvBanner}>업적 달성!</span>
           <span className="sim-team" style={nameFit(`${c.p.name} #${c.p.num}`)}>
             {c.p.name} #{c.p.num}
           </span>
@@ -102,7 +103,7 @@ export function CheerPopup({ career: c, cheer }: { career: Career; cheer: Cheer 
         <>
           {league ? (
             <div className="cheer-league">
-              <div className="cheer-league-plate">
+              <div className={styles.cheerLeaguePlate}>
                 <LeagueLogo lg={league} />
               </div>
               {/* 우승 반지는 프로 우승만 세니까 프로 리그에만 보여주고, 고교·대학은 트로피예요. */}
@@ -119,9 +120,9 @@ export function CheerPopup({ career: c, cheer }: { career: Career; cheer: Cheer 
               <path d={TROPHY} />
             </svg>
           )}
-          <div className="sim-court cheer-court" aria-hidden="true">
-            <Sprite look={playerLook(c.p)} color={color} label="" className="sprite sim-sprite" />
-            <span className="sim-shadow" />
+          <div className={`sim-court ${styles.cheerCourt}`} aria-hidden="true">
+            <Sprite look={playerLook(c.p)} color={color} label="" className={`sprite ${styles.simSprite}`} />
+            <span className={styles.simShadow} />
           </div>
           <span className="sim-team" style={nameFit(`${KICKER[cheer.kind]} · ${c.p.name} #${c.p.num}`)}>
             {KICKER[cheer.kind]} · {c.p.name} #{c.p.num}

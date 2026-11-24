@@ -1,5 +1,6 @@
 import { LEAGUES, POS, careerProfile, namuWikiUrl, similarPlayers, type Career, type CompLeague } from "@/game";
 import { Panel } from "@/shared/ui/ui";
+import styles from "./retired.module.css";
 
 const LEAGUE_ORDER: CompLeague[] = ["kbl", "nba"];
 
@@ -15,32 +16,32 @@ export function SimilarPlayers({ career: c }: { career: Career }) {
 
   return (
     <Panel title="닮은 꼴 선수">
-      <div className="comps">
+      <div className={styles.comps}>
         {rows.map(({ lg, matches, played }) => {
           const [top, ...rest] = matches;
           if (!top) return null;
           const name = LEAGUES[lg].short;
           return (
-            <article className="comp" key={lg}>
+            <article className={styles.comp} key={lg}>
               <span className="label">{played ? `${name}에서` : `${name}로 치면`}</span>
-              <div className="comp-head">
-                <b className="comp-name">
+              <div className={styles.compHead}>
+                <b className={styles.compName}>
                   {/* 이름을 누르면 그 선수의 나무위키 문서를 새 탭으로 열어요. */}
                   <a href={namuWikiUrl(top.player.name)} target="_blank" rel="noopener noreferrer" aria-label={`${top.player.name} 나무위키 문서 (새 탭)`}>
                     {top.player.name}
-                    <span className="ext" aria-hidden="true">
+                    <span className={styles.ext} aria-hidden="true">
                       ↗
                     </span>
                   </a>
                 </b>
-                <span className="comp-score">
+                <span className={styles.compScore}>
                   닮은 정도 <b>{top.score}%</b>
                 </span>
               </div>
-              <span className="comp-pos">
+              <span className={styles.compPos}>
                 {top.player.pos} · {POS[top.player.pos].name}
               </span>
-              <p className="comp-blurb">{top.player.blurb}</p>
+              <p className={styles.compBlurb}>{top.player.blurb}</p>
               {top.reasons.length > 0 && (
                 <div className="awards">
                   {top.reasons.map((r) => (

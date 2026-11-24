@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { REPORT_STAT_NAME, fmtNum, josa, madePlayoffs, type CommunityBoard, type ReportStat, type SeasonReport, type SiteStyle } from "@/game";
+import styles from "./season-end.module.css";
 
 const GROUP_NAME = { nba: "NBA", kbl: "KBL", olympics: "올림픽" } as const;
 const r1 = (v: number) => (Math.round(v * 10) / 10).toFixed(1);
@@ -40,17 +41,17 @@ function PlayoffReport({ report: rp }: { report: SeasonReport }) {
         {stage} 스탯 {po && <span>{po.gp ? `${po.gp}경기 · ${hasShots ? `평균 ${Math.round(po.min)}분 · ` : ""}` : ""}팀 {po.w}승 {po.l}패 · {rec.result}</span>}
       </h3>
       {po?.gp ? (
-        <ul className="rp-tiles">
+        <ul className={styles.rpTiles}>
           {tiles.map((t) => (
             <li key={t.label}>
-              <span className="rp-l">{t.label}</span>
+              <span className={styles.rpL}>{t.label}</span>
               <b>{t.value}</b>
-              {t.sub && <span className="rp-sub">{t.sub}</span>}
+              {t.sub && <span className={styles.rpSub}>{t.sub}</span>}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="rp-total">
+        <p className={styles.rpTotal}>
           {po
             ? `부상으로 ${stage}에 나서지 못했어요.`
             : madePlayoffs(rec)
@@ -59,7 +60,7 @@ function PlayoffReport({ report: rp }: { report: SeasonReport }) {
         </p>
       )}
       {total.gp > 0 && (
-        <p className="rp-total">
+        <p className={styles.rpTotal}>
           {rec.pro ? "프로 " : ""}
           {stage} 통산 {fmtNum(total.gp)}경기 평균 {avg(total.pts)}점 · {avg(total.reb)}리바운드 · {avg(total.ast)}어시스트 · {avg(total.stl)}스틸 ·{" "}
           {avg(total.blk)}블록
@@ -90,18 +91,18 @@ export function ReportView({ report: rp }: { report: SeasonReport }) {
   const passedAny = rp.milestones.length + rp.passedReal.length + rp.passedHall.length > 0;
 
   return (
-    <div className="rp">
+    <div className={styles.rp}>
       <section aria-labelledby="rp-stats">
         <h3 id="rp-stats">
           시즌 개인 스탯 <span>{rec.gp}경기 · 평균 {Math.round(rec.min)}분 · {rec.role}</span>
         </h3>
-        <ul className="rp-tiles">
+        <ul className={styles.rpTiles}>
           {tiles.map((t) => (
             <li key={t.label} data-high={t.high || undefined}>
-              <span className="rp-l">{t.label}</span>
+              <span className={styles.rpL}>{t.label}</span>
               <b>{t.value}</b>
-              {t.sub && <span className="rp-sub">{t.sub}</span>}
-              {t.high && <span className="rp-high">커리어 하이</span>}
+              {t.sub && <span className={styles.rpSub}>{t.sub}</span>}
+              {t.high && <span className={styles.rpHigh}>커리어 하이</span>}
             </li>
           ))}
         </ul>
@@ -112,14 +113,14 @@ export function ReportView({ report: rp }: { report: SeasonReport }) {
       <section aria-labelledby="rp-acc">
         <h3 id="rp-acc">누적 기록</h3>
         {rp.totals ? (
-          <p className="rp-total">
+          <p className={styles.rpTotal}>
             프로 통산 {fmtNum(rp.totals.pts)}점 · {fmtNum(rp.totals.reb)}리바운드 · {fmtNum(rp.totals.ast)}어시스트
             <span>이번 시즌 +{fmtNum(rp.added.pts)}점</span>
           </p>
         ) : (
-          <p className="rp-total">프로 통산 기록은 프로 무대에 오르면 쌓여요.</p>
+          <p className={styles.rpTotal}>프로 통산 기록은 프로 무대에 오르면 쌓여요.</p>
         )}
-        <ul className="rp-list">
+        <ul className={styles.rpList}>
           {rp.milestones.map((m) => (
             <li key={`m-${m.stat}-${m.at}`} data-kind="milestone">
               프로 통산 <b>{fmtNum(m.at)}{REPORT_STAT_NAME[m.stat].name}</b> 돌파
@@ -137,7 +138,7 @@ export function ReportView({ report: rp }: { report: SeasonReport }) {
               {josa(REPORT_STAT_NAME[p.stat].unit, "을", "를")} 넘었어요
             </li>
           ))}
-          {!passedAny && <li className="rp-none">이번 시즌에 넘은 기록은 없어요.</li>}
+          {!passedAny && <li className={styles.rpNone}>이번 시즌에 넘은 기록은 없어요.</li>}
           {rp.next && (
             <li data-kind="next">
               다음 목표: {GROUP_NAME[rp.next.group]} 통산 {REPORT_STAT_NAME[rp.next.stat].name} {rp.next.rank}위 <b>{rp.next.name}</b>까지{" "}
@@ -159,7 +160,7 @@ export function ReportView({ report: rp }: { report: SeasonReport }) {
             ))}
           </ul>
         ) : (
-          <p className="rp-total">이번 시즌 개인 수상은 없어요.</p>
+          <p className={styles.rpTotal}>이번 시즌 개인 수상은 없어요.</p>
         )}
       </section>
     </div>
@@ -175,21 +176,21 @@ const upCount = (style: SiteStyle, v: number) => (style === "reddit" && v >= 100
 
 function Board({ b }: { b: CommunityBoard }) {
   return (
-    <article className="cm-post" data-style={b.style} lang={b.kind === "overseas" ? "en" : undefined}>
-      <span className="cm-site">{b.site}</span>
+    <article className={styles.cmPost} data-style={b.style} lang={b.kind === "overseas" ? "en" : undefined}>
+      <span className={styles.cmSite}>{b.site}</span>
       <h3>{b.title}</h3>
-      <p className="cm-meta">
+      <p className={styles.cmMeta}>
         조회 {compact(b.views)} · 댓글 {fmtNum(b.total)}
       </p>
-      <ul className="cm-list">
+      <ul className={styles.cmList}>
         {b.comments.map((cm, i) => (
           <li key={i} data-mood={cm.mood}>
-            <span className="cm-nick">
+            <span className={styles.cmNick}>
               {cm.best && <em>{BEST_LABEL[b.style]}</em>}
               {cm.nick}
             </span>
             <p>{cm.text}</p>
-            <span className="cm-like" aria-label={`추천 ${cm.likes}`}>
+            <span className={styles.cmLike} aria-label={`추천 ${cm.likes}`}>
               {b.upLabel} {upCount(b.style, cm.likes)}
             </span>
           </li>
@@ -203,8 +204,8 @@ function Board({ b }: { b: CommunityBoard }) {
 export function CommunityView({ domestic, overseas, name }: { domestic: CommunityBoard; overseas: CommunityBoard | null; name: string }) {
   const [tab, setTab] = useState<"domestic" | "overseas">("domestic");
   return (
-    <div className="cm">
-      <div className="st-tabs cm-tabs" role="group" aria-label="커뮤니티">
+    <div className={styles.cm}>
+      <div className={`${styles.stTabs} ${styles.cmTabs}`} role="group" aria-label="커뮤니티">
         <button type="button" aria-pressed={tab === "domestic"} onClick={() => setTab("domestic")}>
           국내 반응
         </button>
@@ -217,9 +218,9 @@ export function CommunityView({ domestic, overseas, name }: { domestic: Communit
       ) : overseas ? (
         <Board b={overseas} />
       ) : (
-        <p className="cm-empty">아직 레딧이나 해외 포럼에서는 {josa(name, "을", "를")} 이야기하는 사람이 거의 없어요. 더 큰 무대에 서거나 훌륭한 시즌을 보내면 반응이 생겨요.</p>
+        <p className={styles.cmEmpty}>아직 레딧이나 해외 포럼에서는 {josa(name, "을", "를")} 이야기하는 사람이 거의 없어요. 더 큰 무대에 서거나 훌륭한 시즌을 보내면 반응이 생겨요.</p>
       )}
-      <p className="cm-note">커뮤니티 이름은 재미로 빌려 썼고, 닉네임과 댓글은 모두 게임 속 가상의 반응이에요.</p>
+      <p className={styles.cmNote}>커뮤니티 이름은 재미로 빌려 썼고, 닉네임과 댓글은 모두 게임 속 가상의 반응이에요.</p>
     </div>
   );
 }

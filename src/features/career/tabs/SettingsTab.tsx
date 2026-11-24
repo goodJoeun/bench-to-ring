@@ -4,6 +4,7 @@ import { useState } from "react";
 import { canRetire, type Career } from "@/game";
 import { gameActions } from "@/shared/store/game-store";
 import { Panel } from "@/shared/ui/ui";
+import styles from "../career.module.css";
 
 export function SettingsTab({ career }: { career: Career }) {
   const [confirm, setConfirm] = useState<"retire" | "new" | null>(null);
@@ -14,7 +15,7 @@ export function SettingsTab({ career }: { career: Career }) {
         {canRetire(career) ? (
           <button
             type="button"
-            className="btn warn"
+            className={`btn ${styles.warn}`}
             onClick={() => (confirm === "retire" ? gameActions.retire() : setConfirm("retire"))}
           >
             {confirm === "retire" ? "한 번 더 누르면 은퇴해요" : "은퇴 선언"}

@@ -6,6 +6,7 @@ import { useTextOnly } from "@/shared/lib/text-only";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 import { rivalOf } from "./rival";
 import { SCENE_H, drawScene, type Paint } from "./sceneDraw";
+import styles from "./career.module.css";
 
 const NO_TEAM = "#2F5DB0";
 
@@ -59,9 +60,9 @@ function SceneCanvas({ career: c, scene }: { career: Career; scene: SceneKey }) 
   }, [key, w]);
 
   return (
-    <div ref={box} className="sc-art" data-scene={scene} aria-hidden="true">
+    <div ref={box} className={styles.scArt} data-scene={scene} aria-hidden="true">
       <canvas ref={ref} />
-      {scene === "national" && <TeamBadge name={c.p.nat} kind="nat" color="#C8372D" size={44} className="sc-flag" />}
+      {scene === "national" && <TeamBadge name={c.p.nat} kind="nat" color="#C8372D" size={44} className={styles.scFlag} />}
     </div>
   );
 }

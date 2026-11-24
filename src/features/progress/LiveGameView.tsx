@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { LiveGame } from "@/game";
 import { reducedMotion, useAutoFocus } from "@/shared/lib/hooks";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
+import styles from "./progress.module.css";
 
 /** 한 플레이를 보여주는 간격(ms). 빠르게는 3배속이에요. */
 const STEP_MS = 120;
@@ -35,17 +36,17 @@ export function LiveGameView({ game, onDone }: { game: LiveGame; onDone: () => v
   const log = game.plays.slice(Math.max(0, shown - LOG_LINES), shown).reverse();
 
   return (
-    <div className="live">
-      <span className="live-title">{game.title}</span>
-      <div className="live-board">
-        <div className="live-team" style={{ "--tc": game.usColor } as React.CSSProperties}>
+    <div className={styles.live}>
+      <span className={styles.liveTitle}>{game.title}</span>
+      <div className={styles.liveBoard}>
+        <div className={styles.liveTeam} style={{ "--tc": game.usColor } as React.CSSProperties}>
           <TeamBadge name={game.us} color={game.usColor} size={36} />
-          <span className="live-name">{game.us}</span>
-          <b className={finished && game.win ? "won" : undefined}>{us}</b>
+          <span className={styles.liveName}>{game.us}</span>
+          <b className={finished && game.win ? styles.won : undefined}>{us}</b>
         </div>
-        <div className="live-clock">
+        <div className={styles.liveClock}>
           {finished ? (
-            <span className="live-final">종료</span>
+            <span className={styles.liveFinal}>종료</span>
           ) : (
             <>
               <span>{q}Q</span>
@@ -53,18 +54,18 @@ export function LiveGameView({ game, onDone }: { game: LiveGame; onDone: () => v
             </>
           )}
         </div>
-        <div className="live-team" style={{ "--tc": game.themColor } as React.CSSProperties}>
+        <div className={styles.liveTeam} style={{ "--tc": game.themColor } as React.CSSProperties}>
           <TeamBadge name={game.them} color={game.themColor} size={36} />
-          <span className="live-name">{game.them}</span>
-          <b className={finished && !game.win ? "won" : undefined}>{them}</b>
+          <span className={styles.liveName}>{game.them}</span>
+          <b className={finished && !game.win ? styles.won : undefined}>{them}</b>
         </div>
       </div>
-      <div className="live-bar" aria-hidden="true">
-        <div className="live-fill" style={{ width: `${(shown / total) * 100}%` }} />
+      <div className={styles.liveBar} aria-hidden="true">
+        <div className={styles.liveFill} style={{ width: `${(shown / total) * 100}%` }} />
       </div>
 
       {finished ? (
-        <div className="live-result" role="status">
+        <div className={styles.liveResult} role="status">
           <b>{game.key.startsWith("nat") ? (game.win ? "금메달!" : "은메달") : game.win ? "우승!" : "준우승"}</b>
           <span>
             이 경기 {game.mine.pts}점 · {game.mine.reb}리바운드 · {game.mine.ast}어시스트
@@ -75,22 +76,22 @@ export function LiveGameView({ game, onDone }: { game: LiveGame; onDone: () => v
         </div>
       ) : (
         <>
-          <ol className="live-log" aria-live="off">
+          <ol className={styles.liveLog} aria-live="off">
             {log.map((pl, i) => (
               <li key={shown - i} data-mine={pl.mine || undefined} data-mark={pl.mark || undefined}>
-                <span className="lc">{pl.mark ? "" : `${pl.q}Q ${pl.clock}`}</span>
+                <span className={styles.lc}>{pl.mark ? "" : `${pl.q}Q ${pl.clock}`}</span>
                 <span className="lt">{pl.text}</span>
-                <span className="ls">
+                <span className={styles.ls}>
                   {pl.us}-{pl.them}
                 </span>
               </li>
             ))}
           </ol>
-          <div className="live-ctl">
-            <button type="button" className="sim-skip" aria-pressed={fast} onClick={() => setFast((f) => !f)}>
+          <div className={styles.liveCtl}>
+            <button type="button" className={styles.simSkip} aria-pressed={fast} onClick={() => setFast((f) => !f)}>
               {fast ? "보통 속도" : "빠르게 ×3"}
             </button>
-            <button type="button" className="sim-skip" onClick={() => setShown(total)}>
+            <button type="button" className={styles.simSkip} onClick={() => setShown(total)}>
               결과 바로 보기
             </button>
           </div>

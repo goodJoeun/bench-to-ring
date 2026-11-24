@@ -1,5 +1,6 @@
 import { ATTRS, POS, STAR_UNLOCKS, evalOvr, isCoreAttr, money, ovr, specialtiesOf, starTier, type Career } from "@/game";
 import { Radar } from "./Radar";
+import styles from "./career.module.css";
 
 /**
  * 지금 가진 히든 스탯과 평가 오버롤. 히든 스탯의 조건과 종류는 일부러 보여주지 않아요(이스터에그).
@@ -11,18 +12,18 @@ function Specialties({ career: c }: { career: Career }) {
   const base = ovr(c.p);
   const evaluated = evalOvr(c.p);
   return (
-    <div className="spec">
-      <div className="spec-head">
+    <div className={styles.spec}>
+      <div className={styles.specHead}>
         <span className="label">히든 스탯</span>
         {evaluated > base && (
-          <span className="spec-eval">
+          <span className={styles.specEval}>
             평가 오버롤 {base} → <b>{evaluated}</b>
           </span>
         )}
       </div>
-      <div className="spec-chips">
+      <div className={styles.specChips}>
         {hits.map((h) => (
-          <span className="spec-chip" key={h.spec.key} title={h.spec.desc}>
+          <span className={styles.specChip} key={h.spec.key} title={h.spec.desc}>
             <b>{h.spec.name}</b> +{h.bonus}
           </span>
         ))}
@@ -41,25 +42,25 @@ function Stardom({ career: c }: { career: Career }) {
   const unlocks = STAR_UNLOCKS.filter((u) => u.key !== "nil" || c.stage === "hs" || c.stage === "college");
   return (
     <div className="star">
-      <div className="star-head">
+      <div className={styles.starHead}>
         <span className="label">스타성</span>
-        <span className="star-tier">{starTier(c.star)}</span>
+        <span className={styles.starTier}>{starTier(c.star)}</span>
         {c.perks.celebration && (
-          <span className="star-cele">
+          <span className={styles.starCele}>
             세리머니 <b>{c.perks.celebration}</b>
           </span>
         )}
       </div>
-      <div className="star-row">
-        <div className="track star-track">
-          <div className="fill star-fill" style={{ width: `${v}%` }} />
+      <div className={styles.starRow}>
+        <div className={`track ${styles.starTrack}`}>
+          <div className={`fill ${styles.starFill}`} style={{ width: `${v}%` }} />
           {unlocks.map((u) => (
-            <i key={u.key} className="star-tick" style={{ left: `${u.min}%` }} data-on={c.star >= u.min || undefined} aria-hidden="true" />
+            <i key={u.key} className={styles.starTick} style={{ left: `${u.min}%` }} data-on={c.star >= u.min || undefined} aria-hidden="true" />
           ))}
         </div>
         <span className="v">{v}</span>
       </div>
-      <ul className="star-unlocks" aria-label="스타성이 있어야 오는 제안">
+      <ul className={styles.starUnlocks} aria-label="스타성이 있어야 오는 제안">
         {unlocks.map((u) => {
           const on = c.star >= u.min;
           return (
@@ -80,21 +81,21 @@ const trustLabel = (t: number) => (t >= 2 ? "두터움" : t >= 0.7 ? "좋음" : 
 export function AttributesPanel({ career: c }: { career: Career }) {
   const p = c.p;
   return (
-    <section className="panel attrs">
-      <div className="head">
+    <section className={`panel ${styles.attrs}`}>
+      <div className={styles.head}>
         <h2 className="sec">능력치</h2>
         <span className="label">
           {POS[p.pos].name} · {p.arch} · ● 포지션 핵심
         </span>
       </div>
-      <div className="attr-body">
+      <div className={styles.attrBody}>
         <Radar attrs={p.attrs} />
-        <div className="bars">
+        <div className={styles.bars}>
           {ATTRS.map(([k, name]) => {
             const v = Math.round(p.attrs[k]);
             const d = c.lastDelta[k] ?? 0;
             return (
-              <div className="ar" key={k}>
+              <div className={styles.ar} key={k}>
                 <span className="n">
                   {name}
                   {isCoreAttr(p.pos, k) && (
@@ -107,7 +108,7 @@ export function AttributesPanel({ career: c }: { career: Career }) {
                   <div className="fill" style={{ width: `${v}%` }} />
                 </div>
                 <span className="v">{v}</span>
-                <span className={`d ${d > 0 ? "up" : d < 0 ? "dn" : ""}`}>{d > 0 ? `+${d}` : d < 0 ? d : "–"}</span>
+                <span className={`d ${d > 0 ? "up" : d < 0 ? styles.dn : ""}`}>{d > 0 ? `+${d}` : d < 0 ? d : "–"}</span>
               </div>
             );
           })}
@@ -115,7 +116,7 @@ export function AttributesPanel({ career: c }: { career: Career }) {
       </div>
       <Specialties career={c} />
       <Stardom career={c} />
-      <div className="phys">
+      <div className={styles.phys}>
         <span>
           키 <b>{p.h}cm</b>
         </span>
@@ -133,7 +134,7 @@ export function AttributesPanel({ career: c }: { career: Career }) {
         <span>
           국가대표 <b>{c.nat.caps}경기</b>
         </span>
-        <span className="meta-funds">
+        <span className={styles.metaFunds}>
           보유 자금 <b>{money(c.earnings)}</b>
         </span>
       </div>

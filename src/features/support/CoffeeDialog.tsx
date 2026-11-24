@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Sheet } from "@/shared/ui/Sheet";
 import { SUPPORT_ACCOUNT } from "@/shared/lib/site";
+import styles from "./support.module.css";
 
 /** 상단 '서버비 후원하기' 버튼으로 여는 후원 안내: 계좌번호를 보여주고 눌러서 복사해요. */
 export function CoffeeDialog({ onClose }: { onClose: () => void }) {
@@ -26,22 +27,22 @@ export function CoffeeDialog({ onClose }: { onClose: () => void }) {
           <path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4z" />
         </svg>
       </button>
-      <span className="cf-cup" aria-hidden="true">
+      <span className={styles.cfCup} aria-hidden="true">
         💛
       </span>
       <h2 id="cf-title">서버비 후원하기</h2>
       <p className="sheet-desc">
         농구 선수 키우기는 광고 없이 무료로 운영하고 있어요. 재밌게 즐기셨다면 서버비 후원으로 응원해 주세요. 보내 주신 후원은 서버비와 다음 업데이트에 보탤게요.
       </p>
-      <div className="cf-account">
-        <span className="cf-bank">{bank}</span>
-        <b className="cf-num">{number}</b>
-        {holder && <span className="cf-holder">예금주 {holder}</span>}
+      <div className={styles.cfAccount}>
+        <span className={styles.cfBank}>{bank}</span>
+        <b className={styles.cfNum}>{number}</b>
+        {holder && <span className={styles.cfHolder}>예금주 {holder}</span>}
       </div>
       <button type="button" className="sheet-go" onClick={() => void copy()}>
         {copied ? "복사했어요!" : "계좌번호 복사하기"}
       </button>
-      <p className="cf-note" role="status">
+      <p className={styles.cfNote} role="status">
         {copied === false ? "복사하지 못했어요. 계좌번호를 길게 눌러 직접 복사해 주세요." : "보내 주신 마음은 하나하나 감사히 받을게요."}
       </p>
     </Sheet>

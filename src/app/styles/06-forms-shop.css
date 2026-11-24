@@ -11,10 +11,6 @@
   display: inline-flex;
   align-items: center;
 }
-.btn.warn {
-  color: var(--gold);
-  border-color: var(--gold);
-}
 .btn.danger {
   color: var(--bad);
   border-color: var(--bad);
@@ -23,38 +19,7 @@
   opacity: 0.62;
   cursor: not-allowed;
 }
-.row-btns {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
 .donate {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-}
-.shop-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.shop-closed {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 12px;
-}
-.shop-head h3,
-.owned h3 {
-  margin: 0;
-  font-size: var(--text-lg);
-}
-.owned {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -96,53 +61,6 @@
   background: var(--ink);
   border-color: var(--ink);
   color: var(--panel);
-}
-.owned-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-}
-@media (max-width: 560px) {
-  .owned-list {
-    grid-template-columns: 1fr;
-  }
-}
-.owned-list li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 2px 8px;
-  padding: 8px 12px;
-  border-radius: var(--r-md);
-  background: var(--panel2);
-}
-.owned-list b {
-  font-size: var(--text-md);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-/* 상점 아이콘 */
-.shop-ico {
-  flex: none;
-  display: inline-grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--r-sm);
-  background: var(--panel);
-  font-size: var(--text-lg);
-  line-height: 1;
-}
-.owned-list .shop-ico {
-  width: 22px;
-  height: 22px;
-  margin-right: 6px;
-  font-size: var(--text-md);
-  vertical-align: -5px;
 }
 .donate .btn[data-done] {
   color: var(--good);

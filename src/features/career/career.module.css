@@ -1,0 +1,3180 @@
+/* career 화면의 모양. 예전 전역 CSS(app/styles)에서 규칙 순서 그대로 옮겼어요. 다른 화면과 같이 쓰는 클래스는 :global로 남겨 둬요. */
+/* game grid */
+main.grid,
+.colL,
+.colR {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+main.grid {
+  max-width: var(--t-max);
+  margin: 0 auto;
+  padding-top: 4px;
+}
+.plateTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+}
+.rcTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.health {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.hv {
+  font-family: var(--f-num);
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+/* scoreboard */
+.sb {
+  background: var(--score-bg);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 8px;
+  color: var(--score-fg);
+}
+.sb .cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.sb :global(.k) {
+  font-size: var(--text-xxs);
+  letter-spacing: 0.1em;
+  color: var(--score-lbl);
+  font-weight: 700;
+}
+.sb :global(.v) {
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-size: var(--text-4xl);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.sb :global(.v):global(.big) {
+  font-size: var(--text-5xl);
+}
+.sb :global(.v) small {
+  font-size: var(--text-base);
+  color: var(--score-lbl);
+  margin-left: 2px;
+}
+/* 초록·빨강 결과 카드 위에서는 노랑의 명암비가 모자라 글자색을 그대로 써요. */
+:global(.advance).outcome :global(.delta) {
+  color: inherit;
+}
+/* ratings */
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.attrBody {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+}
+:global(.radar) .rg {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+}
+:global(.radar) .rv {
+  fill: var(--accent);
+  fill-opacity: 0.2;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+:global(.radar) .rl {
+  fill: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  font-family: var(--f-body);
+}
+.bars {
+  flex: 1 1 250px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.ar {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) 30px 28px;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-md);
+}
+.ar :global(.n) {
+  white-space: nowrap;
+}
+.ar :global(.core) {
+  color: var(--accent);
+  font-size: var(--text-micro);
+  margin-left: 3px;
+  vertical-align: 2px;
+}
+.ar :global(.v) {
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+:global(.d).dn {
+  color: var(--bad);
+}
+/* 히든 스탯: 지금 가진 조합과 평가 오버롤. 조건은 보여주지 않아요. */
+.spec {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.specHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.specEval {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.specEval b {
+  font-family: var(--f-num);
+  font-size: var(--text-lg);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.specChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.specChip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--r-full);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel2));
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.specChip b {
+  color: var(--ink);
+}
+.starHead {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.starTier {
+  font-weight: 700;
+  font-size: var(--text-md);
+  color: var(--gold);
+}
+.starCele {
+  margin-left: auto;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.starCele b {
+  color: var(--ink);
+}
+.starRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 8px;
+}
+.starRow :global(.v) {
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.starTrack {
+  position: relative;
+  height: 10px;
+  border-radius: var(--r-xs);
+}
+.starFill {
+  background: linear-gradient(90deg, #e8b53c, #ffd25a);
+}
+.starTick {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--muted);
+  opacity: 0.55;
+}
+.starTick[data-on] {
+  background: var(--panel);
+  opacity: 0.9;
+}
+.starUnlocks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.starUnlocks li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--r-full);
+  font-size: var(--text-sm);
+  color: var(--muted);
+  background: var(--panel2);
+  border: 1px dashed var(--line);
+}
+.starUnlocks li b {
+  font-family: var(--f-num);
+  font-size: var(--text-sm);
+}
+.starUnlocks li[data-on] {
+  color: var(--gold);
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  background: color-mix(in srgb, var(--gold) 12%, var(--panel2));
+  font-weight: 700;
+}
+.starUnlocks li[data-on] b {
+  color: var(--ink);
+  font-family: inherit;
+}
+.phys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.phys b {
+  color: var(--ink);
+  font-weight: 700;
+}
+/* tabs */
+.tabc {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: rise 0.3s ease-out;
+}
+/* season result */
+.rcHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.rating {
+  text-align: right;
+  flex: none;
+}
+.rating b {
+  display: block;
+  font-family: var(--f-num);
+  font-size: var(--text-4xl);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.statline {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+/* 시즌 결과 카드: 3점슛까지 8칸, 좁은 화면에서는 4칸씩 두 줄 */
+.statline[data-wide] {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+@media (max-width: 480px) {
+  .statline {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: var(--text-md);
+  color: var(--muted);
+}
+.metaRow b {
+  color: var(--ink);
+}
+/* 보유 자금은 돈을 쓰기 전에 바로 보이게 숫자를 크게 보여줘요. */
+.metaRow .metaFunds b {
+  font-family: var(--f-num);
+  font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums;
+}
+.tips {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: var(--text-md);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.news {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.news li {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+.news li:last-child {
+  border-bottom: 0;
+}
+.news .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 8px;
+  background: var(--line);
+}
+.news li:global(.award) .dot {
+  background: var(--gold);
+}
+.news li:global(.good) .dot {
+  background: var(--good);
+}
+.news li:global(.bad) .dot {
+  background: var(--bad);
+}
+.news li:global(.big) .dot {
+  background: var(--accent);
+}
+.news li:global(.move) .dot {
+  background: var(--paint);
+}
+.news li:global(.big) :global(.m) {
+  font-weight: 700;
+}
+.news :global(.when) {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+/* 플레이오프 기록: 통산 평균 제목, 경기당 기록 여섯 칸(좁은 화면은 세 칸씩 두 줄) */
+.poSum {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.poSum h3 {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+.poSum h3 b {
+  font-family: var(--f-num);
+  color: var(--accent);
+}
+:global(.tiles).poTiles {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+@media (max-width: 560px) {
+  :global(.tiles).poTiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+:global(.tiles).shotTiles {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.shotTiles :global(.tile) {
+  min-width: 0;
+  padding: 8px 10px;
+}
+.shotTiles :global(.n) {
+  font-size: var(--text-xl);
+}
+@media (max-width: 560px) {
+  .shotTiles :global(.tile) {
+    padding: 8px 6px;
+  }
+  .shotTiles :global(.n) {
+    font-size: var(--text-base);
+  }
+}
+.splitNav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.splitTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.splitTabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  background: var(--panel2);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+.splitTabs button small {
+  font-family: var(--f-num);
+  font-size: var(--text-xxs);
+  font-weight: 700;
+  opacity: 0.75;
+}
+.splitTabs button[aria-pressed="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--panel);
+}
+.splitTabs:global(.teams) {
+  padding-left: 10px;
+  border-left: 2px solid var(--line);
+}
+.splitTabs:global(.teams) button {
+  border-radius: var(--r-sm);
+  font-size: var(--text-sm);
+}
+.splitTabs:global(.teams) button[aria-pressed="true"] {
+  background: var(--panel);
+  border-color: var(--accent);
+  color: var(--ink);
+}
+.trophies {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+.tro {
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  background: var(--panel2);
+  display: flex;
+  flex-direction: column;
+}
+.tro :global(.c) {
+  font-family: var(--f-num);
+  font-size: var(--text-4xl);
+  font-weight: 700;
+  line-height: 1.05;
+}
+.tro:global(.has) {
+  border-color: var(--gold);
+}
+.tro:global(.has) :global(.c) {
+  color: var(--gold);
+}
+.tro:global(.zero) {
+  opacity: 0.55;
+}
+.loglist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--text-md);
+}
+.loglist li {
+  display: flex;
+}
+.loglist .y {
+  flex: none;
+  font-family: var(--f-num);
+  color: var(--muted);
+  margin-right: 8px;
+}
+:global(.btn).warn {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+.rowBtns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.shopHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.shopClosed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+.shopHead h3,
+.owned h3 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+.owned {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.ownedList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+@media (max-width: 560px) {
+  .ownedList {
+    grid-template-columns: 1fr;
+  }
+}
+.ownedList li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  padding: 8px 12px;
+  border-radius: var(--r-md);
+  background: var(--panel2);
+}
+.ownedList b {
+  font-size: var(--text-md);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 상점 아이콘 */
+.shopIco {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-sm);
+  background: var(--panel);
+  font-size: var(--text-lg);
+  line-height: 1;
+}
+.ownedList .shopIco {
+  width: 22px;
+  height: 22px;
+  margin-right: 6px;
+  font-size: var(--text-md);
+  vertical-align: -5px;
+}
+/* 라이벌 도발 삽화: 나(왼쪽)와 나를 가리키며 비웃는 라이벌(오른쪽), 말풍선 */
+.rv {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 150px;
+  margin: 4px -8px 6px;
+  border-radius: var(--r-md);
+  background:
+    radial-gradient(circle at 70% 35%, color-mix(in srgb, var(--bad) 22%, transparent), transparent 60%),
+    linear-gradient(180deg, var(--panel2), color-mix(in srgb, var(--wood1) 45%, var(--panel2)));
+  overflow: hidden;
+}
+.rv canvas {
+  width: 128px;
+  height: auto;
+  margin-bottom: -6px;
+}
+.rvMe {
+  transform: scaleX(1);
+  animation: rv-in-l 0.4s ease-out both;
+}
+.rvRival {
+  margin-left: -24px;
+  transform-origin: 30% 80%;
+  animation:
+    rv-in-r 0.4s ease-out both,
+    rv-jab 0.9s ease-in-out 0.5s infinite;
+}
+.rvVs {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  font-family: var(--f-display);
+  font-size: var(--text-3xl);
+  color: var(--bad);
+  text-shadow: 0 2px 0 var(--panel);
+  animation: rv-pop 0.35s 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+.rvAnger {
+  position: absolute;
+  left: calc(50% - 92px);
+  top: 18px;
+  font-size: var(--text-2xl);
+  animation: rv-pop 0.3s 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+.rvBubble {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  padding: 7px 12px;
+  border-radius: var(--r-md) var(--r-md) var(--r-xs) var(--r-md);
+  background: var(--ink);
+  color: var(--panel);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  white-space: nowrap;
+  animation: rv-pop 0.35s 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+/* 결정 장면 그림: 상황에 맞는 배경·소품 속의 내 캐릭터. 캔버스는 시트 너비를 따라가요. */
+.scArt {
+  position: relative;
+  height: 150px;
+  margin: 4px -8px 6px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--panel2);
+  animation: sc-in 0.35s ease-out both;
+}
+.scArt canvas {
+  display: block;
+  width: 100%;
+  height: 150px;
+}
+.scFlag {
+  position: absolute;
+  left: calc(50% + 67px);
+  top: 10px;
+  width: 44px;
+  height: 33px;
+  object-fit: cover;
+  border-radius: var(--r-xs);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  transform-origin: left center;
+  animation: sc-wave 2.4s ease-in-out infinite;
+}
+/* 클러치 전광판: 양 팀 엠블럼·이름·동점 점수와 가운데 4Q 0:24 */
+.clArt {
+  margin: 4px -8px 8px;
+  padding: 12px;
+  border-radius: var(--r-md);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 236, 170, 0.35), transparent 60%),
+    linear-gradient(180deg, #1b2a4a, #101a30);
+}
+.clBoard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 12px 10px;
+  border-radius: var(--r-md);
+  background: #0b111c;
+  border: 2px solid #3a4558;
+  box-shadow:
+    inset 0 0 0 1px #000,
+    0 6px 18px rgba(0, 0, 0, 0.45);
+  color: #c9d1dc;
+}
+.clSide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  text-align: center;
+}
+.clName {
+  max-width: 100%;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.clScore {
+  font-family: var(--f-num);
+  font-size: var(--text-5xl);
+  line-height: 1;
+  color: #ffb547;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 12px rgba(255, 181, 71, 0.55);
+}
+.clTag {
+  font-size: var(--text-micro);
+  color: #7f8ba0;
+}
+.clMid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding-inline: 4px;
+  font-family: var(--f-num);
+  font-weight: 700;
+}
+.clQ,
+.clTie {
+  font-size: var(--text-sm);
+  color: #c9d1dc;
+}
+.clTie {
+  padding: 1px 8px;
+  border-radius: var(--r-full);
+  background: #ff5a4a;
+  color: #fff;
+  font-family: var(--f-body);
+  font-size: var(--text-xs);
+}
+.clClock {
+  font-size: var(--text-4xl);
+  line-height: 1;
+  color: #ff5a4a;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 12px rgba(255, 90, 74, 0.6);
+  animation: cl-blink 1s steps(2, start) infinite;
+}
+/* 클러치 이펙트: 화면 가운데 불꽃과 양옆 번개, CLUTCH TIME. 화면이 한 번 번쩍이고 흔들려요. */
+.clFlash {
+  position: fixed;
+  inset: 0;
+  /* 국가대표 대회 진행 팝업(.sim, 70) 위에도 떠요. */
+  z-index: 72;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 120, 40, 0.35), rgba(8, 10, 20, 0.82) 60%);
+  animation: cl-flash-bg 1.5s ease-out both;
+}
+.clFlash::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  animation: cl-white 0.5s ease-out both;
+  pointer-events: none;
+}
+.clFlashCore {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto auto;
+  align-items: center;
+  justify-items: center;
+  gap: 4px 10px;
+  animation: cl-shake 0.45s 0.1s linear both;
+}
+.clFire {
+  width: 120px;
+  height: 144px;
+  filter: drop-shadow(0 0 24px rgba(255, 120, 40, 0.9));
+  animation: cl-fire-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+  transform-origin: 50% 100%;
+}
+.clFireO {
+  fill: #ff5a1f;
+  animation: cl-flicker 0.35s ease-in-out infinite alternate;
+  transform-origin: 50% 100%;
+}
+.clFireI {
+  fill: #ffd25a;
+  animation: cl-flicker 0.28s ease-in-out infinite alternate-reverse;
+  transform-origin: 50% 100%;
+}
+.clBolt {
+  width: 48px;
+  height: 96px;
+  fill: #ffe45c;
+  filter: drop-shadow(0 0 14px rgba(255, 228, 92, 0.95));
+  animation: cl-bolt 0.6s steps(1) 0.1s 2 both;
+}
+.clBoltL {
+  transform: rotate(-14deg);
+}
+.clBoltR {
+  transform: scaleX(-1) rotate(-14deg);
+  animation-delay: 0.25s;
+}
+.clFlashT {
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: clamp(36px, 11vw, 60px);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: #fff;
+  text-shadow:
+    0 0 18px rgba(255, 120, 40, 0.9),
+    0 3px 0 #c43c12;
+  animation: cl-title 0.5s 0.15s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+.clFlashS {
+  grid-column: 1 / -1;
+  font-weight: 700;
+  font-size: var(--text-base);
+  color: #ffd25a;
+  animation: cl-title 0.4s 0.35s ease-out both;
+}
+/* 클러치 결과: 성공은 금빛 빛줄기·꽃가루, 실패는 어두운 화면에 금 간 유리 */
+.clRes {
+  position: fixed;
+  inset: 0;
+  z-index: 72;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 50%, rgba(30, 40, 60, 0.78), rgba(6, 8, 14, 0.94) 70%);
+  animation: cl-flash-bg 1.9s ease-out both;
+}
+.clRes[data-win] {
+  background: radial-gradient(circle at 50% 50%, rgba(120, 80, 10, 0.7), rgba(20, 14, 4, 0.93) 65%);
+}
+.clRes[data-win]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #fff6c8;
+  animation: cl-white 0.45s ease-out both;
+  pointer-events: none;
+}
+.clRays {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 160vmax;
+  height: 160vmax;
+  translate: -50% -50%;
+  background: repeating-conic-gradient(rgba(255, 220, 110, 0.32) 0deg 8deg, transparent 8deg 20deg);
+  mask-image: radial-gradient(circle, #000 0%, transparent 55%);
+  animation: cl-spin 6s linear infinite;
+}
+.clConf {
+  position: absolute;
+  top: -20px;
+  left: var(--x);
+  width: 8px;
+  height: 14px;
+  border-radius: var(--r-xs);
+  background: var(--c);
+  animation: cl-fall 1.6s var(--d) cubic-bezier(0.3, 0.6, 0.5, 1) both;
+}
+.clCrack {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: rgba(220, 230, 245, 0.7);
+  stroke-width: 0.8;
+  stroke-linecap: round;
+  stroke-dasharray: 400;
+  animation: cl-crack 0.35s 0.05s ease-out both;
+}
+.clResCore {
+  position: relative;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+  text-wrap: balance;
+  animation: cl-title 0.5s 0.1s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+.clRes:not([data-win]) .clResCore {
+  animation:
+    cl-drop 0.45s 0.1s cubic-bezier(0.3, 1.4, 0.5, 1) both,
+    cl-shake 0.4s 0.5s linear both;
+}
+.clResT {
+  display: block;
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: clamp(44px, 13vw, 72px);
+  line-height: 1;
+  color: #fff;
+  text-shadow:
+    0 0 22px rgba(255, 200, 60, 0.95),
+    0 4px 0 #b8860b;
+}
+.clRes:not([data-win]) .clResT {
+  font-size: clamp(36px, 10vw, 56px);
+  color: #c9d1dc;
+  text-shadow:
+    0 0 18px rgba(80, 110, 160, 0.8),
+    0 3px 0 #2a3649;
+}
+.clResS {
+  display: block;
+  margin-top: 10px;
+  font-weight: 700;
+  font-size: var(--text-base);
+  line-height: 1.5;
+  color: #ffe27a;
+}
+.clRes:not([data-win]) .clResS {
+  color: #93a0b3;
+}
+.clResScore {
+  font-family: var(--f-num);
+  font-size: var(--text-4xl);
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.clResOpp {
+  font-size: var(--text-sm);
+}
+/* 클러치 성공 장면: 고른 플레이마다 다른 장면(슛·3점슛·덩크·돌파·노룩 패스·끝까지 막기·블록슛·가로채기·차징 유도).
+   크기는 실제 규격(1m = 46단위, 바닥 y=192)이에요: 림 높이 3.05m, 백보드 1.8×1.05m, 선수 2m.
+   공(지름 17)과 림(지름 26)은 머리와 손이 큰 캐릭터에 맞춰 키웠고, 둘의 비율은 실제와 비슷해요.
+   장면은 1.25초 동안 움직이고, 결정적인 순간(--hit)에 장면 이름과 충격선이 터져요. 그 뒤에 'CLUTCH!'와 꽃가루가 이어져요.
+   움직임을 줄이면 결정적인 순간의 한 장면으로 멈춰 있어요(아래 기본 위치가 그 장면이에요). */
+.clRes[data-move] {
+  animation-duration: 2.7s;
+}
+.clRes[data-move]::before {
+  animation: mv-flash 0.45s ease-out both;
+}
+.clRes[data-move] .clRays {
+  animation:
+    cl-spin 6s linear infinite,
+    mv-in 0.4s ease-out both;
+}
+.clRes[data-move] .clResCore {
+  animation: none;
+}
+.clRes[data-move] .clResT,
+.clRes[data-move] .clResS {
+  animation: cl-title 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+.clRes[data-move] .clConf {
+  animation-delay: var(--d);
+}
+.mv {
+  position: relative;
+  width: min(320px, calc(100vw - 40px));
+  margin: 0 auto 14px;
+}
+.mvScene {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+}
+.mvTag {
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  padding: 3px 12px 2px;
+  border-radius: var(--r-sm);
+  background: #ffd25a;
+  color: #2a1a02;
+  font-family: var(--f-display);
+  font-size: var(--text-xl);
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  translate: -50% 0;
+  rotate: -4deg;
+  box-shadow:
+    0 3px 0 #a8730a,
+    0 0 18px rgba(255, 210, 90, 0.7);
+  animation: mv-tag 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.5) both;
+}
+.mv[data-outcome="lose"] .mvTag {
+  background: #aab8cc;
+  color: #172235;
+  box-shadow: 0 3px 0 #53647b;
+}
+.mvFailBall {
+  transform: translate(68px, 98px);
+}
+.mvResultFace {
+  opacity: 0;
+}
+.clRes[data-revealed] .mvResultFace {
+  opacity: 1;
+}
+.mvFailDunker {
+  animation: mv-dunker 1.25s ease-out both;
+}
+.mvFailDunkBall {
+  animation: mv-fail-dunk 1.25s linear both;
+}
+.mvFailPassBall {
+  animation: mv-fail-pass 1.25s linear both;
+}
+.mvFailDriver {
+  animation: mv-fail-driver 1.25s ease-out both;
+}
+.mvFailDriveBall {
+  animation: mv-fail-drive-ball 1.25s linear both;
+}
+.mvFailFace {
+  opacity: 0;
+  animation: mv-fail-face 1.25s steps(1, end) both;
+}
+.mv[data-outcome="lose"][data-move="lockdown"] .mvBallClank,
+.mv[data-outcome="lose"][data-move="block"] .mvBallBlock {
+  animation: mv-fail-score 1.25s linear both;
+}
+.mv[data-outcome="lose"][data-move="steal"] .mvBallSteal {
+  animation: mv-fail-steal 1.25s linear both;
+}
+.mv[data-outcome="lose"][data-move="steal"] .mvX,
+.mv[data-outcome="lose"][data-move="block"] .mvBurst,
+.mv[data-outcome="lose"][data-move="steal"] .mvBurst {
+  animation: none;
+  opacity: 0;
+}
+.mv[data-outcome="lose"][data-move="charge"] .mvRefWatch,
+.mv[data-outcome="lose"][data-move="charge"] .mvRun {
+  animation: none;
+  opacity: 1;
+}
+.mv[data-outcome="lose"][data-move="charge"] .mvRefCall,
+.mv[data-outcome="lose"][data-move="charge"] .mvProtest,
+.mv[data-outcome="lose"][data-move="charge"] .mvWhistleB,
+.mv[data-outcome="lose"][data-move="charge"] .mvWhistleH,
+.mv[data-outcome="lose"][data-move="charge"] .mvWave {
+  animation: none;
+  opacity: 0;
+}
+.mv[data-outcome="lose"][data-move="charge"] .mvCharger {
+  animation: mv-fail-charge-run 1.25s ease-out both;
+}
+.mv[data-outcome="lose"][data-move="charge"] .mvBallLoose {
+  animation: mv-fail-charge-ball 1.25s linear both;
+}
+.mv[data-move="lockdown"] .mvTag,
+.mv[data-move="block"] .mvTag,
+.mv[data-move="steal"] .mvTag,
+.mv[data-move="charge"] .mvTag {
+  background: #7fd3ff;
+  color: #04203a;
+  box-shadow:
+    0 3px 0 #2a7fb0,
+    0 0 18px rgba(127, 211, 255, 0.7);
+}
+.mvFloor {
+  stroke: rgba(255, 226, 140, 0.28);
+  stroke-width: 1;
+}
+.mvArc3 {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.55);
+  stroke-width: 1.2;
+  stroke-dasharray: 3 3;
+}
+.mvBallB {
+  fill: #e8772e;
+}
+.mvBallL {
+  fill: none;
+  stroke: #4a2410;
+  stroke-width: 0.7;
+}
+.mvGlass {
+  fill: rgba(255, 255, 255, 0.1);
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 1.3;
+}
+.mvGlassSq {
+  fill: none;
+  stroke: #ff7a4d;
+  stroke-width: 1.1;
+}
+.mvRim {
+  fill: none;
+  stroke: #ff5a1f;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+.mvNet {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 0.7;
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+}
+.mvTrail {
+  fill: none;
+  stroke: #ffd25a;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  opacity: 0.3;
+  filter: drop-shadow(0 0 3px rgba(255, 210, 90, 0.9));
+  animation: mv-draw 0.95s linear both;
+}
+.mvTrailDrive {
+  animation-duration: 1.05s;
+}
+.mvBurst,
+.mvSpark {
+  fill: none;
+  stroke: #fff6c8;
+  stroke-width: 2;
+  stroke-linecap: round;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: mv-pop 0.55s calc(var(--hit) - 0.05s) ease-out both;
+}
+.mvQ {
+  fill: #ffd25a;
+  font: 700 var(--text-lg) var(--f-body);
+}
+.mvGaze {
+  fill: none;
+  stroke: #9fd4ff;
+  stroke-width: 1.4;
+  stroke-dasharray: 3 3;
+  stroke-linecap: round;
+  animation: mv-march 0.5s linear infinite;
+}
+.mvCatch {
+  fill: none;
+  stroke: #ffd25a;
+  stroke-width: 1.8;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: mv-pop 0.55s calc(var(--hit) - 0.05s) ease-out both;
+}
+.mvWhoosh,
+.mvSpeed {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.8);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+.mvLane {
+  stroke: rgba(255, 255, 255, 0.5);
+  stroke-width: 1.4;
+  stroke-dasharray: 4 4;
+}
+.mvX {
+  fill: none;
+  stroke: #ff5a4a;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: mv-tag 0.35s var(--hit) cubic-bezier(0.2, 0.9, 0.3, 1.5) both;
+}
+.mvWhistleB {
+  fill: #d9dee6;
+}
+.mvWhistleH {
+  fill: #2a3649;
+}
+.mvWave {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  animation:
+    mv-in 0.01s calc(var(--hit) + 0.05s) both,
+    mv-blink 0.25s steps(1) calc(var(--hit) + 0.1s) infinite;
+}
+.mvFall,
+.mvBite,
+.mvFlop,
+.mvCharger {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+/* 슛·3점슛: 결과 전까지 같은 금빛 궤적을 따라 림으로 날아가고, 공개 순간 성공·실패로 갈라져요. */
+.mvShooter {
+  animation: mv-shooter 1.25s ease-in both;
+}
+.mvBallShot {
+  translate: 196px 66px;
+  animation: mv-shot 0.8s linear both;
+}
+.mv[data-move="three"] .mvBallShot {
+  animation-name: mv-three;
+}
+.mv[data-move="shot"] .mvShooter,
+.mv[data-move="three"] .mvShooter {
+  animation-duration: 0.8s;
+}
+.mv[data-move="shot"] .mvTrail,
+.mv[data-move="three"] .mvTrail {
+  animation-duration: 0.8s;
+}
+.mv[data-move="shot"] .mvSpark,
+.mv[data-move="three"] .mvSpark {
+  animation-delay: 0.7s;
+}
+.clRes[data-revealed] .mv[data-move="shot"] .mvBallShot,
+.clRes[data-revealed] .mv[data-move="three"] .mvBallShot {
+  animation: mv-shot-make 0.45s ease-in both;
+}
+.clRes[data-revealed] .mv[data-outcome="lose"][data-move="shot"] .mvBallShot,
+.clRes[data-revealed] .mv[data-outcome="lose"][data-move="three"] .mvBallShot {
+  animation-name: mv-shot-miss;
+}
+.clRes[data-revealed] .mv[data-outcome="win"][data-move="shot"] .mvNet,
+.clRes[data-revealed] .mv[data-outcome="win"][data-move="three"] .mvNet {
+  animation: mv-swish 0.45s ease-out both;
+}
+.mv[data-move="drive"] .mvNet {
+  animation: mv-swish 1.25s ease-out both;
+  animation-delay: 0.25s;
+}
+/* 덩크: 달려와 뛰어올라 한 손으로 내리꽂고 림에 매달려요. 림이 휘청이고 백보드가 떨려요. */
+.mvDunker {
+  translate: 155px 127px;
+  animation: mv-dunker 1.25s cubic-bezier(0.4, 0, 0.6, 1) both;
+}
+.mvBallDunk {
+  translate: 170px 66px;
+  animation: mv-dunk 1.25s cubic-bezier(0.4, 0, 0.6, 1) both;
+}
+.mv[data-move="dunk"] .mvRimfx {
+  animation: mv-rimshake 1.25s linear both;
+}
+.mv[data-move="dunk"] .mvBoard {
+  animation: mv-boardshake 1.25s linear both;
+}
+.mv[data-move="dunk"] .mvNet {
+  animation: mv-netpull 1.25s ease-out both;
+}
+/* 돌파: 낮게 드리블하며 수비 둘 사이를 파고들어 골밑에서 뛰어올라 넣어요. 지나칠 때마다 수비가 휘청 넘어져요. */
+.mvDriver {
+  translate: 174px -42px;
+  animation: mv-driver 1.25s linear both;
+}
+.mvDribble {
+  opacity: 0;
+  animation: mv-dribble 1.25s both;
+}
+.mvLayup {
+  animation: mv-layup 1.25s both;
+}
+.mvBallDrive {
+  translate: 192px 40px;
+  animation: mv-drive 1.25s linear both;
+}
+.mvFall1 {
+  rotate: -24deg;
+  animation: mv-fall-1 1.25s ease-out both;
+}
+.mvFall2 {
+  rotate: 22deg;
+  animation: mv-fall-2 1.25s ease-out both;
+}
+.mvFall .mvQ {
+  animation: mv-in 0.2s 0.5s both;
+}
+.mvFall2 .mvQ {
+  animation-delay: 0.72s;
+}
+.mv[data-move="drive"] .mvSpeed {
+  animation: mv-speed 0.6s ease-out both;
+}
+/* 노룩 패스: 왼쪽 동료를 보며 왼손으로 패스하는 척(펌프 두 번) → 오른쪽 길목을 막던 수비가 끊으러 왼쪽으로 몸을 던짐
+   → 고개는 왼쪽에 둔 채 비워진 오른쪽으로 찔러 줌. 자세 그림은 40%에 바꿔 끼워요. */
+.mvFake {
+  opacity: 0;
+  animation: mv-fake 1.25s both;
+}
+.mvReal {
+  animation: mv-real 1.25s both;
+}
+.mvFeint {
+  fill: none;
+  stroke: #9fd4ff;
+  stroke-width: 1.6;
+  stroke-dasharray: 4 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  animation: mv-feint 1.25s both;
+}
+.mvBite {
+  translate: -96px 0;
+  rotate: -12deg;
+  animation: mv-bite 1.25s ease-out both;
+}
+.mvBite .mvQ {
+  animation: mv-in 0.2s 0.8s both;
+}
+.mvBallPass {
+  translate: 214px 114px;
+  animation: mv-pass 1.25s linear both;
+}
+.mvWhoosh {
+  animation: mv-whoosh 1.25s linear both;
+}
+/* 끝까지 막기: 붙어서 손을 뻗은 수비에 상대 슛이 짧아져 림 앞쪽을 맞고 튕겨 나가요. */
+.mvContest {
+  animation: mv-contest 1.25s ease-out both;
+}
+.mvBallClank {
+  translate: 184px 45px;
+  animation: mv-clank 1.25s linear both;
+}
+.mv[data-move="lockdown"] .mvRimfx {
+  animation: mv-rimhit 1.25s linear both;
+}
+/* 블록슛: 슛을 쏘는 순간 붙어서 뛰어오른 손바닥이 공을 쳐 내요. 공이 돌며 화면 밖으로 날아가요. */
+.mvJump {
+  translate: 0 -40px;
+  animation: mv-jump 1.25s ease-out both;
+}
+.mvBallBlock {
+  translate: 104px 72px;
+  animation: mv-block 1.25s linear both;
+}
+/* 가로채기: 패스 길목에 몸을 던져 공을 낚아채요. 끊긴 길목에 X가 그어져요. */
+.mvLunge {
+  translate: 2px -4px;
+  animation: mv-lunge 1.25s ease-out both;
+}
+.mvLunge .mvSpeed {
+  animation: mv-in 0.25s 0.5s both;
+}
+.mvBallSteal {
+  translate: 146px 110px;
+  animation: mv-steal 1.25s linear both;
+}
+/* 차징 유도: 팔짱 끼고 버틴 내게 상대가 오른쪽에서 돌진해 부딪히면(44%) 나는 뒤로 벌러덩 넘어지고(46%에 넘어지는 자세로 바꿔요),
+   상대는 공을 놓친 채 두 팔을 들고 억울해해요. 심판은 지켜보다 휘슬을 불고, 60%에 한 손을 뒷머리에 얹고 다른 손으로 방향을 가리키는 공격자 파울 신호를 줘요. */
+.mvFlop {
+  translate: -12px 0;
+  rotate: -82deg;
+  animation: mv-flop 1.25s linear both;
+}
+.mvStand,
+.mvRun,
+.mvRefWatch {
+  opacity: 0;
+}
+.mvStand,
+.mvRun {
+  animation: mv-stand 1.25s both;
+}
+.mvDown,
+.mvProtest {
+  animation: mv-down 1.25s both;
+}
+.mvCharger {
+  translate: 4px 0;
+  animation: mv-charger 1.25s ease-out both;
+}
+.mvBallLoose {
+  translate: 226px 183.5px;
+  animation: mv-loose 1.25s linear both;
+}
+.mvRefWatch {
+  animation: mv-ref-watch 1.25s both;
+}
+.mvRefCall {
+  animation: mv-ref-call 1.25s both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mv *,
+  .mvTag,
+  .clRes[data-move] .clResT,
+  .clRes[data-move] .clResS,
+  .clRes[data-move] .clRays {
+    animation: none;
+  }
+  .clRes[data-revealed] .mv[data-move="shot"] .mvBallShot,
+  .clRes[data-revealed] .mv[data-move="three"] .mvBallShot,
+  .clRes[data-revealed] .mv[data-move="shot"] .mvNet,
+  .clRes[data-revealed] .mv[data-move="three"] .mvNet {
+    animation: none;
+  }
+  .clRes[data-revealed] .mvFailFace {
+    opacity: 1;
+  }
+}
+/* 결승 클러치: 금테 전광판과 결승 이름 배너 */
+.clArt[data-finals] {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 214, 102, 0.5), transparent 62%),
+    linear-gradient(180deg, #2a2210, #120e06);
+  box-shadow:
+    0 0 0 2px #d9a62e,
+    0 0 22px rgba(255, 196, 64, 0.45);
+  animation: cl-gold-pulse 1.6s ease-in-out infinite;
+}
+.clArt[data-finals] .clBoard {
+  border-color: #c99a2e;
+}
+.clArt[data-finals] .clScore {
+  color: #ffe08a;
+  text-shadow: 0 0 14px rgba(255, 210, 90, 0.7);
+}
+.clBanner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+  margin: -2px 2px 10px;
+}
+.clBannerT {
+  min-width: 0;
+  font-weight: 800;
+  font-size: var(--text-md);
+  color: #ffe9a3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.clBannerS {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #d9a62e;
+}
+/* 트로피·메달 그림 */
+.trCup {
+  fill: #f2c14e;
+}
+.trEar {
+  fill: none;
+  stroke: #f2c14e;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.trBase {
+  fill: #b8860b;
+}
+.trShine {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.65);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.mdRibbon {
+  fill: #c8102e;
+}
+.mdRing {
+  fill: none;
+  stroke: #b8860b;
+  stroke-width: 2.5;
+}
+.mdStar {
+  fill: #fff3c4;
+}
+/* 결승 클러치 이펙트: 어두운 경기장에 엇갈리는 스포트라이트, 떠오르는 트로피, 관중석 카메라 플래시 */
+.clFlashFinals {
+  overflow: hidden;
+  /* 국가대표 결승은 대회 진행 팝업 위에 떠서, 아래 제목이 비치지 않게 거의 불투명하게 덮어요. */
+  background: radial-gradient(circle at 50% 55%, rgb(74, 54, 10), rgb(6, 6, 12) 62%);
+  animation-duration: 2.3s;
+}
+.clFlashFinals::before {
+  background: #fff4cc;
+}
+.clSpot {
+  position: absolute;
+  top: -10%;
+  width: 46vmax;
+  height: 130vh;
+  background: linear-gradient(180deg, rgba(255, 244, 200, 0.55), rgba(255, 220, 120, 0.08) 75%, transparent);
+  clip-path: polygon(45% 0, 55% 0, 100% 100%, 0 100%);
+  transform-origin: 50% 0;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.clSpotL {
+  left: 2%;
+  animation: cl-sweep-l 2.3s ease-in-out both;
+}
+.clSpotR {
+  right: 2%;
+  animation: cl-sweep-r 2.3s ease-in-out both;
+}
+.clCam {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 18px 8px rgba(255, 255, 255, 0.85);
+  opacity: 0;
+  animation: cl-cam 0.32s var(--d) ease-out both;
+  pointer-events: none;
+}
+.clFlashFinals .clFlashCore {
+  /* 결승 이름과 상황이 길어서, 칸이 글자 길이만큼 늘지 않고 화면 안에서 줄을 바꿔요. */
+  grid-template-columns: minmax(0, 1fr);
+  width: min(640px, calc(100vw - 32px));
+  text-align: center;
+  animation: cl-rise 0.7s 0.15s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.clTrophy {
+  width: 112px;
+  height: 126px;
+  filter: drop-shadow(0 0 26px rgba(255, 210, 90, 0.95));
+  animation: cl-float 1.4s 0.8s ease-in-out infinite alternate;
+}
+.clFlashFinals .clFlashT {
+  /* 'FINALS CLUTCH'는 한 줄로 가운데에 둬요. 글자 크기는 화면 너비에 맞춰 줄어서 휴대폰에서도 넘치지 않아요. */
+  justify-self: center;
+  white-space: nowrap;
+  font-size: clamp(32px, 10vw, 56px);
+  background: linear-gradient(180deg, #fff7d6 10%, #ffd25a 55%, #c98a12);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 3px 0 #7a520a) drop-shadow(0 0 16px rgba(255, 200, 60, 0.7));
+}
+.clFlashFinals .clFlashS {
+  text-align: center;
+  text-wrap: balance;
+  line-height: 1.5;
+  color: #ffe9a3;
+}
+/* 결승 클러치 결과: 성공은 트로피가 솟고 축포가 터지는 우승 세리머니, 실패는 빛바랜 트로피와 준우승 */
+.clRes[data-finals] {
+  background: radial-gradient(circle at 50% 50%, rgb(30, 40, 62), rgb(6, 8, 14) 70%);
+  animation-duration: 3s;
+}
+.clRes[data-finals][data-win] {
+  background: radial-gradient(circle at 50% 45%, rgb(150, 102, 10), rgb(24, 16, 2) 66%);
+}
+.clRes[data-finals][data-win] .clRays {
+  background: repeating-conic-gradient(rgba(255, 226, 120, 0.42) 0deg 6deg, transparent 6deg 15deg);
+  animation-duration: 9s;
+}
+.clRes[data-finals] .clConf {
+  animation-duration: 2.4s;
+}
+.clFw {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 150px;
+  height: 150px;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(#ffd25a 0deg 4deg, transparent 4deg 18deg);
+  mask-image: radial-gradient(circle, transparent 18%, #000 22%, #000 46%, transparent 50%);
+  opacity: 0;
+  animation: cl-burst 0.9s var(--d) ease-out both;
+  pointer-events: none;
+}
+.clFw:nth-of-type(2n) {
+  background: repeating-conic-gradient(#ffffff 0deg 4deg, transparent 4deg 18deg);
+}
+.clFw:nth-of-type(3n) {
+  background: repeating-conic-gradient(#ff7a4a 0deg 4deg, transparent 4deg 18deg);
+}
+.clResTrophy {
+  display: block;
+  width: 96px;
+  height: 108px;
+  margin: 0 auto 6px;
+  filter: drop-shadow(0 0 28px rgba(255, 214, 90, 0.95));
+  animation: cl-lift 0.8s 0.1s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.clRes:not([data-win]) .clResTrophy {
+  filter: grayscale(0.85) brightness(0.6);
+  animation: cl-drop 0.5s 0.1s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+.clRes[data-finals][data-win] .clResT {
+  background: linear-gradient(180deg, #fffbe6 10%, #ffd25a 55%, #c98a12);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 4px 0 #7a520a) drop-shadow(0 0 20px rgba(255, 200, 60, 0.85));
+}
+@media (prefers-reduced-motion: reduce) {
+  .clRays,
+  .clConf,
+  .clArt[data-finals],
+  .clSpot,
+  .clCam,
+  .clTrophy,
+  .clFw,
+  .clResTrophy,
+  .clRes:not([data-win]) .clResTrophy,
+  .clFlashFinals .clFlashCore,
+  .clCrack,
+  .clResCore,
+  .clRes[data-win]::before,
+  .clClock,
+  .clFlashCore,
+  .clFire,
+  .clFireO,
+  .clFireI,
+  .clBolt,
+  .clFlashT,
+  .clFlashS,
+  .clFlash::before {
+    animation: none;
+  }
+  .scArt,
+  .scFlag,
+  .rvMe,
+  .rvRival,
+  .rvVs,
+  .rvAnger,
+  .rvBubble {
+    animation: none;
+  }
+}
+.ownedCat {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--paint);
+}
+.ownedFx {
+  grid-column: 1/-1;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.metaRow [data-warn] b {
+  color: var(--bad);
+}
+.natlog {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.natlog > li {
+  border-radius: var(--r-sm);
+  background: var(--panel2);
+  border-left: 3px solid var(--line);
+}
+.natlog > li[data-joined] {
+  border-left-color: var(--paint);
+}
+.natlog > li[data-medal] {
+  border-left-color: var(--gold);
+}
+.natlog summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+.natlog summary::-webkit-details-marker {
+  display: none;
+}
+.natlog .ny {
+  flex: none;
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-size: var(--text-base);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.natlog .nb {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.natlog .nb b {
+  font-size: var(--text-base);
+}
+.natlog .nb span {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.natlog details > :global(.hint) {
+  padding: 0 12px;
+}
+.natgames {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--text-sm);
+}
+.natgames li {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto auto;
+  gap: 8px;
+  padding: 4px 0;
+  border-top: 1px solid var(--line);
+}
+.natgames .sc {
+  font-family: var(--f-num);
+  font-variant-numeric: tabular-nums;
+  color: var(--bad);
+}
+.natgames li[data-win] .sc {
+  color: var(--good);
+}
+.natgames .pt {
+  color: var(--muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tabc {
+    animation: none;
+  }
+}
+.tabs {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  width: 100%;
+  max-width: calc(var(--t-max) + 32px);
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 6px 4px calc(6px + var(--safe-b));
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.08);
+}
+:global(.tab) .ti {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+:global(.tab) .tl {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.tdot {
+  position: absolute;
+  top: 8px;
+  left: calc(50% + 8px);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bad);
+  box-shadow: 0 0 0 2px var(--panel);
+}
+.runBar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--dock) + 28px + var(--safe-b));
+  z-index: 25;
+  width: calc(100% - 32px);
+  max-width: var(--t-max);
+  margin-inline: auto;
+  padding: 11px 16px;
+  min-height: var(--cta);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+}
+body:has(main.grid) {
+  padding-bottom: calc(var(--dock) + 24px + var(--safe-b));
+}
+body:has(:is(:global(.advance), .runBar)) {
+  padding-bottom: calc(var(--dock) + var(--cta) + 52px + var(--safe-b));
+}
+/* 홈 탭에서만 선수 카드·능력치·훈련 초점을 보여줘요. */
+main.grid:not([data-tab="season"]) :is(:global(.court), .sb, .attrs) {
+  display: none;
+}
+main.grid:not([data-tab="season"]) .colL {
+  display: contents;
+}
+:global(.advance).pending {
+  background: var(--ink);
+  color: var(--panel);
+}
+/* 시즌 중 결정 결과: 아래 막대가 다 줄면(animationend) 시즌이 이어져요. 막대는 transform만 움직여서 화면 합성 단계에서 부드럽게 줄어요. */
+:global(.advance).outcome {
+  background: var(--ink);
+  color: var(--panel);
+  overflow: hidden;
+}
+:global(.advance).outcome:hover {
+  filter: none;
+}
+/* 성공·실패는 다크 모드에서도 흰 글씨가 잘 보이는 진한 초록·빨강으로 고정해요. */
+:global(.advance).outcome[data-tone="good"] {
+  background: #1c7c45;
+  color: #fff;
+}
+:global(.advance).outcome[data-tone="bad"] {
+  background: #bc3a2c;
+  color: #fff;
+}
+:global(.advance).outcome:is([data-tone="good"], [data-tone="bad"]) .outcomeTimer {
+  background: rgba(255, 255, 255, 0.8);
+}
+:global(.advance).outcome :global(.s) {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.outcomeTimer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: var(--accent);
+  transform-origin: left;
+  will-change: transform;
+  pointer-events: none;
+  animation: outcome-hold 3.2s linear both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .outcomeTimer {
+    animation-name: outcome-still;
+  }
+}
+/* 시즌 중 진행 막대 */
+.runBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: var(--r);
+  background: var(--ink);
+  color: var(--panel);
+}
+.runInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.runInfo :global(.t) {
+  font-family: var(--f-display);
+  font-size: var(--text-xl);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.runInfo :global(.s) {
+  font-size: var(--text-xs);
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.runTrack {
+  height: 4px;
+  margin-top: 5px;
+  border-radius: var(--r-xs);
+  background: color-mix(in srgb, var(--panel) 22%, transparent);
+  overflow: hidden;
+}
+.runFill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+.runCtrl {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+.runBtn {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--panel) 28%, transparent);
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.runBtn svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+.runBtn.play {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.runSpeed {
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-size: var(--text-lg);
+}
+.runBtn:active {
+  transform: scale(0.94);
+}
+@media (max-width: 380px) {
+  .runBtn {
+    width: 38px;
+    height: 38px;
+  }
+  .runCtrl {
+    gap: 4px;
+  }
+}
+.rounds,
+.plan {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+:global(.games) .gn {
+  font-family: var(--f-num);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+:global(.games) .gwl {
+  font-weight: 700;
+  color: var(--bad);
+}
+:global(.games) li[data-win="true"] .gwl {
+  color: var(--good);
+}
+.gclutch {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: var(--r-full);
+  font-style: normal;
+  font-size: var(--text-xxs);
+  font-weight: 800;
+  color: var(--gold);
+  border: 1px solid currentColor;
+}
+:global(.games) .gme {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rounds li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  background: var(--panel2);
+  font-size: var(--text-md);
+}
+.rounds li + li {
+  margin-top: 6px;
+}
+/* 라운드마다 내 기록 한 줄 */
+.rounds .rme {
+  grid-column: 1 / -1;
+  margin-top: -4px;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.poLine {
+  margin: 0;
+  font-size: var(--text-md);
+  color: var(--muted);
+}
+.poLine b {
+  color: var(--ink);
+}
+.rounds b {
+  color: var(--bad);
+}
+.rounds li[data-win="true"] b {
+  color: var(--good);
+}
+.plan {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  counter-reset: plan;
+}
+.plan li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--text-base);
+  color: var(--muted);
+}
+.plan li::before {
+  counter-increment: plan;
+  content: counter(plan);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex: none;
+  border: 1px solid var(--line);
+  font-family: var(--f-num);
+  font-size: var(--text-sm);
+}
+.plan li[data-state="done"]::before {
+  background: var(--ink);
+  color: var(--panel);
+  border-color: var(--ink);
+}
+.plan li[data-state="now"] {
+  color: var(--ink);
+  font-weight: 700;
+}
+.plan li[data-state="now"]::before {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.focusGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.investHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+.investHead h3 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+.investGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 4px;
+}
+@media (max-width: 480px) {
+  .investGrid {
+    grid-template-columns: 1fr;
+  }
+}
+/* 내용이 길어도 시트 맨 아래에 붙어 있는 주 버튼 자리. 시트의 좌우·아래 여백까지 덮어요. */
+.sheetDock {
+  position: sticky;
+  bottom: calc(-24px - var(--safe-b));
+  z-index: 2;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  margin: 8px -22px calc(-24px - var(--safe-b));
+  padding: 12px 22px calc(14px + var(--safe-b));
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+}
+.sheetDock:has(.dockInvest) {
+  padding-top: 2px;
+}
+.sheetDock :global(.sheet-go) {
+  margin-top: 0;
+}
+/* 시작 버튼 위 한 줄: 고른 투자 수와 보유 자금. 누르면 투자 칸으로 옮겨요. */
+.dockInvest {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 2px;
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font-size: var(--text-md);
+  font-weight: 700;
+  cursor: pointer;
+}
+.dockInvest b {
+  margin-left: 2px;
+  color: var(--ink);
+  font-family: var(--f-num);
+  font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums;
+}
+.dockInvest i {
+  margin-left: 4px;
+  color: var(--accent);
+  font-style: normal;
+}
+.chChip {
+  align-self: center;
+  font-size: var(--text-xxs);
+  font-weight: 700;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-radius: var(--r-full);
+  padding: 1px 8px;
+}
+@keyframes rise {
+  from {
+    transform: translateY(6px);
+    opacity: 0.6;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes rv-in-l {
+  from {
+    opacity: 0;
+    translate: -24px 0;
+  }
+}
+@keyframes rv-in-r {
+  from {
+    opacity: 0;
+    translate: 24px 0;
+  }
+}
+@keyframes rv-jab {
+  0%,
+  60%,
+  100% {
+    transform: none;
+  }
+  70% {
+    transform: translateX(-5px) rotate(-2deg);
+  }
+  85% {
+    transform: translateX(-2px);
+  }
+}
+@keyframes rv-pop {
+  from {
+    opacity: 0;
+    scale: 0.4;
+  }
+}
+@keyframes sc-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+@keyframes sc-wave {
+  50% {
+    transform: skewY(-4deg) scaleX(0.94);
+  }
+}
+@keyframes cl-blink {
+  to {
+    opacity: 0.35;
+  }
+}
+@keyframes cl-flash-bg {
+  0% {
+    opacity: 0;
+  }
+  10%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes cl-white {
+  0% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes cl-shake {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  20% {
+    translate: -6px 2px;
+  }
+  40% {
+    translate: 5px -3px;
+  }
+  60% {
+    translate: -4px 3px;
+  }
+  80% {
+    translate: 3px -1px;
+  }
+}
+@keyframes cl-fire-in {
+  from {
+    opacity: 0;
+    scale: 0.3;
+  }
+}
+@keyframes cl-flicker {
+  from {
+    scale: 1 1;
+  }
+  to {
+    scale: 0.94 1.06;
+  }
+}
+@keyframes cl-bolt {
+  0% {
+    opacity: 1;
+  }
+  30% {
+    opacity: 0.2;
+  }
+  45% {
+    opacity: 1;
+  }
+}
+@keyframes cl-title {
+  from {
+    opacity: 0;
+    scale: 1.6;
+  }
+}
+@keyframes cl-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+@keyframes cl-fall {
+  from {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  to {
+    translate: 0 110vh;
+    rotate: 540deg;
+  }
+}
+@keyframes cl-crack {
+  from {
+    stroke-dashoffset: 400;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes cl-drop {
+  from {
+    opacity: 0;
+    translate: 0 -60px;
+  }
+}
+@keyframes mv-flash {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes mv-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes mv-tag {
+  from {
+    opacity: 0;
+    scale: 1.9;
+  }
+}
+@keyframes mv-dunker {
+  0% {
+    translate: 232px 192px;
+  }
+  18% {
+    translate: 212px 192px;
+  }
+  34% {
+    translate: 176px 128px;
+  }
+  40% {
+    translate: 162px 116px;
+  }
+  48% {
+    translate: 155px 126px;
+  }
+  54% {
+    translate: 155px 132px;
+  }
+  62% {
+    translate: 155px 124px;
+  }
+  70% {
+    translate: 155px 128px;
+  }
+  100% {
+    translate: 155px 127px;
+  }
+}
+@keyframes mv-fail-dunk {
+  0% { transform: translate(124px, 95px); }
+  50% { transform: translate(164px, 43px); }
+  72% { transform: translate(148px, 72px); }
+  100% { transform: translate(116px, 141px); }
+}
+@keyframes mv-fail-pass {
+  0% { transform: translate(88px, 128px); }
+  65% { transform: translate(139px, 120px); }
+  100% { transform: translate(151px, 155px); }
+}
+@keyframes mv-fail-driver {
+  0% { transform: translate(35px, 192px); }
+  55% { transform: translate(112px, 192px); }
+  70%, 100% { transform: translate(119px, 192px); }
+}
+@keyframes mv-fail-drive-ball {
+  0% { transform: translate(56px, 158px); }
+  24% { transform: translate(80px, 182px); }
+  40% { transform: translate(105px, 153px); }
+  57% { transform: translate(142px, 147px); }
+  100% { transform: translate(166px, 155px); }
+}
+@keyframes mv-fail-face {
+  0%, 59% { opacity: 0; }
+  60%, 100% { opacity: 1; }
+}
+@keyframes mv-fail-score {
+  0% { translate: 70px 98px; }
+  32% { translate: 135px 20px; }
+  60% { translate: 196px 52px; }
+  100% { translate: 196px 96px; }
+}
+@keyframes mv-fail-steal {
+  0% { translate: 66px 132px; }
+  48% { translate: 140px 128px; }
+  100% { translate: 212px 132px; }
+}
+@keyframes mv-fail-charge-run {
+  0% { translate: 84px 0; }
+  44% { translate: 0 0; }
+  100% { translate: -34px 0; }
+}
+@keyframes mv-fail-charge-ball {
+  0% { translate: 246px 160px; }
+  44% { translate: 162px 160px; }
+  100% { translate: 132px 154px; }
+}
+@keyframes mv-draw {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0.9;
+  }
+  70% {
+    stroke-dashoffset: 0;
+    opacity: 0.9;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.3;
+  }
+}
+@keyframes mv-pop {
+  0% {
+    opacity: 0;
+    scale: 0.4;
+  }
+  30% {
+    opacity: 1;
+    scale: 1.15;
+  }
+  60% {
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.1;
+  }
+}
+@keyframes mv-march {
+  to {
+    stroke-dashoffset: 12;
+  }
+}
+@keyframes mv-blink {
+  50% {
+    opacity: 0.2;
+  }
+}
+@keyframes mv-shooter {
+  0% {
+    translate: 0 -14px;
+  }
+  30%, 100% {
+    translate: 0 0;
+  }
+}
+@keyframes mv-shot {
+  0% {
+    translate: 68px 98px;
+  }
+  17% {
+    translate: 89.3px 56.5px;
+  }
+  33% {
+    translate: 110.7px 28.6px;
+  }
+  50% {
+    translate: 132px 14.2px;
+  }
+  67% {
+    translate: 153.3px 13.3px;
+  }
+  83% {
+    translate: 174.7px 25.9px;
+  }
+  92% {
+    translate: 185.8px 37.8px;
+  }
+  100% {
+    translate: 196px 52px;
+  }
+}
+@keyframes mv-three {
+  0% {
+    translate: 42px 98px;
+  }
+  17% {
+    translate: 67.7px 55.4px;
+  }
+  33% {
+    translate: 93.3px 26.8px;
+  }
+  50% {
+    translate: 119px 12.1px;
+  }
+  67% {
+    translate: 144.7px 11.4px;
+  }
+  83% {
+    translate: 170.3px 24.7px;
+  }
+  92% {
+    translate: 183.7px 37.2px;
+  }
+  100% {
+    translate: 196px 52px;
+  }
+}
+@keyframes mv-shot-make {
+  0% { translate: 196px 52px; opacity: 1; }
+  75% { translate: 196px 84px; opacity: 1; }
+  100% { translate: 196px 96px; opacity: 0; }
+}
+@keyframes mv-shot-miss {
+  0% { translate: 196px 52px; opacity: 1; }
+  25% { translate: 181px 49px; }
+  100% { translate: 145px 124px; opacity: 1; }
+}
+@keyframes mv-swish {
+  0%, 60% {
+    scale: 1 1;
+  }
+  68% {
+    scale: 1.12 1.3;
+  }
+  76% {
+    scale: 0.94 0.88;
+  }
+  84% {
+    scale: 1.03 1.08;
+  }
+  92%, 100% {
+    scale: 1 1;
+  }
+}
+@keyframes mv-dunk {
+  0% {
+    translate: 248px 112px;
+  }
+  18% {
+    translate: 228px 112px;
+  }
+  34% {
+    translate: 192px 48px;
+  }
+  40% {
+    translate: 178px 36px;
+  }
+  48% {
+    translate: 171px 46px;
+  }
+  56% {
+    translate: 170px 62px;
+  }
+  64% {
+    translate: 170px 76px;
+  }
+  76% {
+    translate: 170px 110px;
+  }
+  88% {
+    translate: 172px 183.5px;
+  }
+  94% {
+    translate: 174px 174px;
+  }
+  100% {
+    translate: 176px 183.5px;
+  }
+}
+@keyframes mv-rimshake {
+  0%, 46% {
+    translate: 0 0;
+  }
+  52% {
+    translate: 0 4px;
+  }
+  58% {
+    translate: 0 -2px;
+  }
+  64% {
+    translate: 0 2px;
+  }
+  72% {
+    translate: 0 -1px;
+  }
+  80%, 100% {
+    translate: 0 0;
+  }
+}
+@keyframes mv-boardshake {
+  0%, 46% {
+    translate: 0 0;
+  }
+  50% {
+    translate: -2px 0;
+  }
+  55% {
+    translate: 2px 0;
+  }
+  60% {
+    translate: -1.2px 0;
+  }
+  66% {
+    translate: 0.8px 0;
+  }
+  72%, 100% {
+    translate: 0 0;
+  }
+}
+@keyframes mv-netpull {
+  0%, 48% {
+    scale: 1 1;
+  }
+  56% {
+    scale: 0.9 1.35;
+  }
+  66% {
+    scale: 1.04 0.9;
+  }
+  76% {
+    scale: 1 1.06;
+  }
+  86%, 100% {
+    scale: 1 1;
+  }
+}
+@keyframes mv-driver {
+  0% {
+    translate: 4px 0px;
+  }
+  12% {
+    translate: 30px 0px;
+  }
+  24% {
+    translate: 58px 0px;
+  }
+  36% {
+    translate: 88px 0px;
+  }
+  48% {
+    translate: 118px 0px;
+  }
+  58% {
+    translate: 146px 0px;
+  }
+  64% {
+    translate: 160px -16px;
+  }
+  72% {
+    translate: 170px -40px;
+  }
+  78% {
+    translate: 174px -42px;
+  }
+  86% {
+    translate: 178px -24px;
+  }
+  100% {
+    translate: 182px 0px;
+  }
+}
+@keyframes mv-dribble {
+  0%, 61% {
+    opacity: 1;
+  }
+  62%, 100% {
+    opacity: 0;
+  }
+}
+@keyframes mv-layup {
+  0%, 61% {
+    opacity: 0;
+  }
+  62%, 100% {
+    opacity: 1;
+  }
+}
+@keyframes mv-drive {
+  0% {
+    translate: 22px 166px;
+  }
+  6% {
+    translate: 35px 183.5px;
+  }
+  12% {
+    translate: 48px 166px;
+  }
+  18% {
+    translate: 62px 183.5px;
+  }
+  24% {
+    translate: 76px 166px;
+  }
+  30% {
+    translate: 91px 183.5px;
+  }
+  36% {
+    translate: 106px 166px;
+  }
+  42% {
+    translate: 121px 183.5px;
+  }
+  48% {
+    translate: 136px 166px;
+  }
+  53% {
+    translate: 150px 183.5px;
+  }
+  58% {
+    translate: 164px 168px;
+  }
+  64% {
+    translate: 176px 96px;
+  }
+  72% {
+    translate: 186px 72px;
+  }
+  78% {
+    translate: 192px 40px;
+  }
+  84% {
+    translate: 196px 50px;
+  }
+  90% {
+    translate: 196px 68px;
+    opacity: 1;
+  }
+  100% {
+    translate: 196px 86px;
+    opacity: 0;
+  }
+}
+@keyframes mv-fall-1 {
+  0%, 30% {
+    rotate: 0deg;
+  }
+  42% {
+    rotate: -20deg;
+  }
+  100% {
+    rotate: -24deg;
+  }
+}
+@keyframes mv-fall-2 {
+  0%, 46% {
+    rotate: 0deg;
+  }
+  58% {
+    rotate: 18deg;
+  }
+  100% {
+    rotate: 22deg;
+  }
+}
+@keyframes mv-speed {
+  from {
+    opacity: 1;
+    translate: 10px 0;
+  }
+  to {
+    opacity: 0;
+    translate: -8px 0;
+  }
+}
+@keyframes mv-fake {
+  0%, 39% {
+    opacity: 1;
+  }
+  40%, 100% {
+    opacity: 0;
+  }
+}
+@keyframes mv-real {
+  0%, 39% {
+    opacity: 0;
+  }
+  40%, 100% {
+    opacity: 1;
+  }
+}
+@keyframes mv-feint {
+  0% {
+    opacity: 0;
+  }
+  6%, 34% {
+    opacity: 1;
+  }
+  44%, 100% {
+    opacity: 0;
+  }
+}
+@keyframes mv-bite {
+  0%, 22% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  36% {
+    translate: -92px -4px;
+    rotate: -16deg;
+  }
+  42%, 100% {
+    translate: -96px 0;
+    rotate: -12deg;
+  }
+}
+@keyframes mv-pass {
+  0% {
+    translate: 104px 142px;
+  }
+  12% {
+    translate: 95px 140px;
+  }
+  20% {
+    translate: 102px 142px;
+  }
+  28% {
+    translate: 95px 140px;
+  }
+  36% {
+    translate: 98px 141px;
+  }
+  42% {
+    translate: 140px 146px;
+  }
+  46% {
+    translate: 158px 144px;
+  }
+  58%, 100% {
+    translate: 214px 114px;
+  }
+}
+@keyframes mv-whoosh {
+  0%, 44% {
+    opacity: 0;
+  }
+  47%, 56% {
+    opacity: 1;
+  }
+  62%, 100% {
+    opacity: 0;
+  }
+}
+@keyframes mv-contest {
+  0% {
+    translate: 0 0;
+  }
+  22% {
+    translate: 0 -14px;
+  }
+  50%, 100% {
+    translate: 0 0;
+  }
+}
+@keyframes mv-clank {
+  0% {
+    translate: 76px 98px;
+  }
+  10% {
+    translate: 94px 60.2px;
+  }
+  20% {
+    translate: 112px 34px;
+  }
+  30% {
+    translate: 130px 19.4px;
+  }
+  40% {
+    translate: 148px 16.3px;
+  }
+  50% {
+    translate: 166px 24.9px;
+  }
+  55% {
+    translate: 175.4px 33.9px;
+  }
+  60% {
+    translate: 184px 45px;
+  }
+  68% {
+    translate: 172px 26px;
+  }
+  78% {
+    translate: 160px 18px;
+  }
+  88% {
+    translate: 150px 34px;
+    opacity: 1;
+  }
+  100% {
+    translate: 142px 80px;
+    opacity: 0;
+  }
+}
+@keyframes mv-rimhit {
+  0%, 58% {
+    translate: 0 0;
+  }
+  62% {
+    translate: 0 2px;
+  }
+  68% {
+    translate: 0 -1.5px;
+  }
+  74% {
+    translate: 0 0.8px;
+  }
+  80%, 100% {
+    translate: 0 0;
+  }
+}
+@keyframes mv-jump {
+  0% {
+    translate: 0 0;
+  }
+  40%, 55% {
+    translate: 0 -40px;
+  }
+  100% {
+    translate: 0 -8px;
+  }
+}
+@keyframes mv-block {
+  0% {
+    translate: 62px 98px;
+    rotate: 0deg;
+  }
+  20% {
+    translate: 80px 84px;
+  }
+  45% {
+    translate: 104px 72px;
+    rotate: 0deg;
+  }
+  55% {
+    translate: 86px 50px;
+  }
+  70% {
+    translate: 56px 48px;
+  }
+  85% {
+    translate: 26px 80px;
+  }
+  100% {
+    translate: -10px 140px;
+    rotate: -900deg;
+  }
+}
+@keyframes mv-lunge {
+  0% {
+    translate: -34px 8px;
+  }
+  40% {
+    translate: 0 0;
+  }
+  50%, 100% {
+    translate: 2px -4px;
+  }
+}
+@keyframes mv-steal {
+  0% {
+    translate: 66px 132px;
+  }
+  42% {
+    translate: 128px 132px;
+  }
+  48% {
+    translate: 140px 124px;
+  }
+  56%, 100% {
+    translate: 146px 110px;
+  }
+}
+@keyframes mv-flop {
+  0%, 40% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  44% {
+    translate: 0 0;
+    rotate: -3deg;
+  }
+  50% {
+    translate: -4px -6px;
+    rotate: -18deg;
+  }
+  58% {
+    translate: -10px 0;
+    rotate: -70deg;
+  }
+  62% {
+    translate: -11px 0;
+    rotate: -86deg;
+  }
+  66% {
+    translate: -11px -3px;
+    rotate: -76deg;
+  }
+  72%, 100% {
+    translate: -12px 0;
+    rotate: -82deg;
+  }
+}
+@keyframes mv-stand {
+  0%, 45% {
+    opacity: 1;
+  }
+  46%, 100% {
+    opacity: 0;
+  }
+}
+@keyframes mv-down {
+  0%, 45% {
+    opacity: 0;
+  }
+  46%, 100% {
+    opacity: 1;
+  }
+}
+@keyframes mv-charger {
+  0% {
+    translate: 84px 0;
+  }
+  44% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 8px 0;
+  }
+  62%, 100% {
+    translate: 4px 0;
+  }
+}
+@keyframes mv-loose {
+  0% {
+    translate: 246px 160px;
+  }
+  44% {
+    translate: 162px 160px;
+  }
+  50% {
+    translate: 170px 128px;
+  }
+  58% {
+    translate: 186px 116px;
+  }
+  66% {
+    translate: 200px 183.5px;
+  }
+  76% {
+    translate: 210px 162px;
+  }
+  86% {
+    translate: 218px 183.5px;
+  }
+  92% {
+    translate: 222px 176px;
+  }
+  100% {
+    translate: 226px 183.5px;
+  }
+}
+@keyframes mv-ref-watch {
+  0%, 59% {
+    opacity: 1;
+  }
+  60%, 100% {
+    opacity: 0;
+  }
+}
+@keyframes mv-ref-call {
+  0%, 59% {
+    opacity: 0;
+  }
+  60%, 100% {
+    opacity: 1;
+  }
+}
+@keyframes cl-gold-pulse {
+  50% {
+    box-shadow:
+      0 0 0 2px #ffd25a,
+      0 0 34px rgba(255, 210, 90, 0.7);
+  }
+}
+@keyframes cl-sweep-l {
+  from {
+    rotate: -38deg;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  to {
+    rotate: 18deg;
+  }
+}
+@keyframes cl-sweep-r {
+  from {
+    rotate: 38deg;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  to {
+    rotate: -18deg;
+  }
+}
+@keyframes cl-cam {
+  0% {
+    opacity: 0;
+    scale: 0.3;
+  }
+  30% {
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.4;
+  }
+}
+@keyframes cl-rise {
+  from {
+    opacity: 0;
+    translate: 0 50px;
+    scale: 0.7;
+  }
+}
+@keyframes cl-float {
+  to {
+    translate: 0 -6px;
+  }
+}
+@keyframes cl-burst {
+  0% {
+    opacity: 0;
+    scale: 0.1;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.3;
+  }
+}
+@keyframes cl-lift {
+  from {
+    opacity: 0;
+    translate: 0 70px;
+    scale: 0.6;
+  }
+  70% {
+    translate: 0 -10px;
+  }
+}
+@keyframes outcome-hold {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+@keyframes outcome-still {
+  to {
+    opacity: 1;
+  }
+}

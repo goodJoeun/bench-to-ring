@@ -1,0 +1,352 @@
+/* retired 화면의 모양. 예전 전역 CSS(app/styles)에서 규칙 순서 그대로 옮겼어요. 다른 화면과 같이 쓰는 클래스는 :global로 남겨 둬요. */
+/* 은퇴 화면 커리어 요약의 수상: 팀·개인·국가대표 줄 */
+.awRows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+}
+.awRows > div {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+.awRows dt {
+  padding-top: 4px;
+  font-size: var(--text-xs);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.awRows dd {
+  margin: 0;
+}
+/* retired */
+.titles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--panel2);
+  border-left: 3px solid var(--gold);
+}
+.titleRow[data-kind="amateur"] {
+  border-left-color: var(--line);
+}
+.titleRow[data-kind="nat"] {
+  border-left-color: var(--paint);
+}
+.titleRow :global(.ty) {
+  flex: none;
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-size: var(--text-base);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.titleRow .tb {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.titleRow .tb b {
+  font-size: var(--text-base);
+}
+.titleRow .tb span {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.titleRow :global(.aw) {
+  flex: none;
+}
+:global(.board) .st {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+:global(.board) .st[data-ranked] {
+  color: var(--ink);
+  font-weight: 700;
+}
+.lb {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+.lb li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--text-md);
+}
+.lb li:last-child {
+  border-bottom: 0;
+}
+.lb .lr {
+  font-family: var(--f-num);
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.lb .ln {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lb :global(.lt) {
+  font-size: var(--text-xxs);
+  color: var(--muted);
+  margin-left: 6px;
+}
+.lb :global(.me) {
+  font-size: var(--text-xxs);
+  font-weight: 700;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-radius: var(--r-full);
+  padding: 1px 7px;
+  margin-left: 6px;
+}
+.lb .lv {
+  font-family: var(--f-num);
+  font-weight: 700;
+  font-size: var(--text-base);
+  font-variant-numeric: tabular-nums;
+}
+.lb li[data-mine] {
+  background: var(--panel2);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.lb li[data-mine] .ln {
+  font-weight: 700;
+}
+.lb li[data-mine] .lr {
+  color: var(--accent);
+}
+.lb li.lgap {
+  display: block;
+  text-align: center;
+  color: var(--muted);
+  padding: 0;
+  line-height: 1.4;
+}
+.ret {
+  max-width: var(--t-max);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ret :global(.court) {
+  min-height: 250px;
+}
+.ret :global(.plate) :global(.name) {
+  font-size: var(--text-4xl);
+}
+.shareRow {
+  margin-top: 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.shareRow :global(.hint) {
+  margin: 0;
+  text-align: center;
+}
+/* 엔딩의 '기록 카드 공유': 눈에 잘 띄게 강조색으로 꽉 채워요. */
+.shareCta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 52px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--f-display);
+  font-size: var(--text-xl);
+  cursor: pointer;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.shareCta svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+.shareCta:hover {
+  filter: brightness(1.06);
+}
+.shareCta:active {
+  transform: scale(0.98);
+}
+/* 기록 카드 시트: 카드 미리보기와 저장·공유 단추 */
+.cardPreview {
+  display: grid;
+  place-items: center;
+  align-self: center;
+  width: min(100%, 380px, calc((88dvh - 300px) * 0.75));
+  margin-top: 10px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: #0a0f1a;
+  flex: none;
+}
+.cardPreview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.shareActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+.shareActions :global(.sheet-go) {
+  grid-column: 1/-1;
+  margin-top: 0;
+}
+.shareActions :global(.btn) {
+  justify-content: center;
+  min-height: 48px;
+}
+.shareActions > :global(.btn):last-child:nth-child(2) {
+  grid-column: 1/-1;
+}
+/* 은퇴 화면의 닮은 꼴 선수 */
+.comps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (max-width: 560px) {
+  .comps {
+    grid-template-columns: 1fr;
+  }
+}
+.comp {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  background: var(--panel2);
+}
+.compHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.compName {
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: var(--text-3xl);
+  line-height: 1.2;
+}
+.compName a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--line);
+}
+.compName a:hover,
+.compName a:focus-visible {
+  text-decoration-color: currentColor;
+}
+.compName .ext {
+  margin-left: 4px;
+  font-family: var(--f-num);
+  font-size: 0.6em;
+  vertical-align: 0.35em;
+  color: var(--muted);
+}
+.compScore {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.compScore b {
+  font-family: var(--f-num);
+  font-size: var(--text-2xl);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.compPos {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--muted);
+}
+.compBlurb {
+  margin: 0;
+  font-size: var(--text-base);
+}
+/* 은퇴 화면은 커리어 회고와 새 커리어 시작을 반씩 나눠 고정해요. */
+.endBar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(12px + var(--safe-b));
+  z-index: 25;
+  width: calc(100% - 32px);
+  max-width: var(--t-max);
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.endBar :global(.start) {
+  position: static;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 16px 10px;
+  font-size: clamp(17px, 5vw, 22px);
+  white-space: nowrap;
+}
+.endBar :global(.start):global(.sub) {
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow:
+    inset 0 0 0 1px var(--line),
+    0 8px 24px rgba(0, 0, 0, 0.22);
+}
+.lb li {
+  container-type: inline-size;
+}
+.ret :global(.plate) :global(.name) {
+  font-size: clamp(
+    15px,
+    min(368cqi / var(--nw, 1), 184cqi / var(--lw, 1)),
+    var(--fs, 24px)
+  );
+}
+.ret :global(.plate) :global(.name) {
+  --fs: 30px;
+}
+.lb .ln {
+  font-size: clamp(11px, (100cqi - 140px) * 1.84 / var(--nw, 1), 13.5px);
+}

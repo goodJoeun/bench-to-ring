@@ -1,7 +1,6 @@
 /* 눌렀을 때 손끝에 반응이 오게 */
 .advance:active,
 .start:active,
-.cand:active,
 .btn:active,
 .sheet-go:active {
   transform: scale(0.98);
@@ -15,25 +14,6 @@ body {
 input,
 select {
   font-size: var(--text-lg);
-}
-
-.tabs {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 30;
-  width: 100%;
-  max-width: calc(var(--t-max) + 32px);
-  margin-inline: auto;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  padding: 6px 4px calc(6px + var(--safe-b));
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-bottom: 0;
-  border-radius: var(--r-lg) var(--r-lg) 0 0;
-  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.08);
 }
 .tab {
   position: relative;
@@ -53,34 +33,12 @@ select {
   font-weight: 700;
   letter-spacing: -0.01em;
 }
-.tab .ti {
-  width: 24px;
-  height: 24px;
-  fill: currentColor;
-}
-.tab .tl {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
 .tab[aria-selected="true"] {
   color: var(--accent);
 }
-.tdot {
-  position: absolute;
-  top: 8px;
-  left: calc(50% + 8px);
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--bad);
-  box-shadow: 0 0 0 2px var(--panel);
-}
 
 /* 시즌 진행 버튼과 시즌 중 진행 막대는 탭 바 위에 고정 */
-.advance,
-.run-bar {
+.advance {
   position: fixed;
   left: 0;
   right: 0;
@@ -105,175 +63,10 @@ select {
 .advance > span:first-child {
   min-width: 0;
 }
-body:has(main.grid) {
-  padding-bottom: calc(var(--dock) + 24px + var(--safe-b));
-}
-body:has(:is(.advance, .run-bar)) {
-  padding-bottom: calc(var(--dock) + var(--cta) + 52px + var(--safe-b));
-}
-
-/* 홈 탭에서만 선수 카드·능력치·훈련 초점을 보여줘요. */
-main.grid:not([data-tab="season"]) :is(.court, .sb, .attrs) {
-  display: none;
-}
-main.grid:not([data-tab="season"]) .col-l {
-  display: contents;
-}
-.advance.pending {
-  background: var(--ink);
-  color: var(--panel);
-}
-/* 시즌 중 결정 결과: 아래 막대가 다 줄면(animationend) 시즌이 이어져요. 막대는 transform만 움직여서 화면 합성 단계에서 부드럽게 줄어요. */
-.advance.outcome {
-  background: var(--ink);
-  color: var(--panel);
-  overflow: hidden;
-}
-.advance.outcome:hover {
-  filter: none;
-}
-/* 성공·실패는 다크 모드에서도 흰 글씨가 잘 보이는 진한 초록·빨강으로 고정해요. */
-.advance.outcome[data-tone="good"] {
-  background: #1c7c45;
-  color: #fff;
-}
-.advance.outcome[data-tone="bad"] {
-  background: #bc3a2c;
-  color: #fff;
-}
-.advance.outcome:is([data-tone="good"], [data-tone="bad"]) .outcome-timer {
-  background: rgba(255, 255, 255, 0.8);
-}
-.advance.outcome .s {
-  white-space: normal;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-.outcome-timer {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 4px;
-  background: var(--accent);
-  transform-origin: left;
-  will-change: transform;
-  pointer-events: none;
-  animation: outcome-hold 3.2s linear both;
-}
-@keyframes outcome-hold {
-  from {
-    transform: scaleX(1);
-  }
-  to {
-    transform: scaleX(0);
-  }
-}
 /* 움직임을 줄인 설정에서도 같은 시간만큼 기다렸다 이어가도록, 막대는 그대로 두고 애니메이션 시간만 재요. */
-@keyframes outcome-still {
-  to {
-    opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .outcome-timer {
-    animation-name: outcome-still;
-  }
-}
-
-/* 시즌 중 진행 막대 */
-.run-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-radius: var(--r);
-  background: var(--ink);
-  color: var(--panel);
-}
-.run-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.run-info .t {
-  font-family: var(--f-display);
-  font-size: var(--text-xl);
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.run-info .s {
-  font-size: var(--text-xs);
-  opacity: 0.85;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.run-track {
-  height: 4px;
-  margin-top: 5px;
-  border-radius: var(--r-xs);
-  background: color-mix(in srgb, var(--panel) 22%, transparent);
-  overflow: hidden;
-}
-.run-fill {
-  height: 100%;
-  background: var(--accent);
-  transition: width 0.3s ease;
-}
-.run-ctrl {
-  display: flex;
-  gap: 6px;
-  flex: none;
-}
-.run-btn {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  padding: 0;
-  border: 1px solid color-mix(in srgb, var(--panel) 28%, transparent);
-  border-radius: 50%;
-  background: none;
-  color: inherit;
-  cursor: pointer;
-}
-.run-btn svg {
-  width: 20px;
-  height: 20px;
-  fill: currentColor;
-}
-.run-btn.play {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-ink);
-}
-.run-speed {
-  font-family: var(--f-num);
-  font-weight: 700;
-  font-size: var(--text-lg);
-}
-.run-btn:active {
-  transform: scale(0.94);
-}
-@media (max-width: 380px) {
-  .run-btn {
-    width: 38px;
-    height: 38px;
-  }
-  .run-ctrl {
-    gap: 4px;
-  }
-}
 
 /* 시즌 중 홈 탭: 최근 경기, 플레이오프 라운드, 팀 없는 시즌 일정 */
-.games,
-.rounds,
-.plan {
+.games {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -290,18 +83,6 @@ main.grid:not([data-tab="season"]) .col-l {
 .games li:last-child {
   border-bottom: 0;
 }
-.games .gn {
-  font-family: var(--f-num);
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
-.games .gwl {
-  font-weight: 700;
-  color: var(--bad);
-}
-.games li[data-win="true"] .gwl {
-  color: var(--good);
-}
 .gopp {
   min-width: 0;
   overflow: hidden;
@@ -315,95 +96,8 @@ main.grid:not([data-tab="season"]) .col-l {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
-.gclutch {
-  margin-left: 6px;
-  padding: 1px 7px;
-  border-radius: var(--r-full);
-  font-style: normal;
-  font-size: var(--text-xxs);
-  font-weight: 800;
-  color: var(--gold);
-  border: 1px solid currentColor;
-}
-.games .gme {
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
 .games li:first-child {
   animation: fade 0.3s ease both;
-}
-.rounds li {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 10px;
-  padding: 8px 12px;
-  border-radius: var(--r-sm);
-  background: var(--panel2);
-  font-size: var(--text-md);
-}
-.rounds li + li {
-  margin-top: 6px;
-}
-/* 라운드마다 내 기록 한 줄 */
-.rounds .rme {
-  grid-column: 1 / -1;
-  margin-top: -4px;
-  font-size: var(--text-sm);
-  color: var(--muted);
-}
-.po-line {
-  margin: 0;
-  font-size: var(--text-md);
-  color: var(--muted);
-}
-.po-line b {
-  color: var(--ink);
-}
-.rounds b {
-  color: var(--bad);
-}
-.rounds li[data-win="true"] b {
-  color: var(--good);
-}
-.plan {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  counter-reset: plan;
-}
-.plan li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: var(--text-base);
-  color: var(--muted);
-}
-.plan li::before {
-  counter-increment: plan;
-  content: counter(plan);
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  flex: none;
-  border: 1px solid var(--line);
-  font-family: var(--f-num);
-  font-size: var(--text-sm);
-}
-.plan li[data-state="done"]::before {
-  background: var(--ink);
-  color: var(--panel);
-  border-color: var(--ink);
-}
-.plan li[data-state="now"] {
-  color: var(--ink);
-  font-weight: 700;
-}
-.plan li[data-state="now"]::before {
-  border-color: var(--accent);
-  color: var(--accent);
 }
 
 /* 선수 생성·은퇴 화면의 시작 버튼은 화면 아래에 고정 */
@@ -421,36 +115,6 @@ main.grid:not([data-tab="season"]) .col-l {
 }
 body:has(.start) {
   padding-bottom: calc(96px + var(--safe-b));
-}
-/* 은퇴 화면은 커리어 회고와 새 커리어 시작을 반씩 나눠 고정해요. */
-.end-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: calc(12px + var(--safe-b));
-  z-index: 25;
-  width: calc(100% - 32px);
-  max-width: var(--t-max);
-  margin-inline: auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-.end-bar .start {
-  position: static;
-  width: auto;
-  max-width: none;
-  margin: 0;
-  padding: 16px 10px;
-  font-size: clamp(17px, 5vw, 22px);
-  white-space: nowrap;
-}
-.end-bar .start.sub {
-  background: var(--panel);
-  color: var(--ink);
-  box-shadow:
-    inset 0 0 0 1px var(--line),
-    0 8px 24px rgba(0, 0, 0, 0.22);
 }
 .foot {
   margin-top: 20px;

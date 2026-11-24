@@ -3,6 +3,7 @@
 import { INVEST_OFFER, INVEST_SLOTS, STUDENT_ALLOWANCE, canAffordInvest, canInvest, chosenInvest, investCost, investLineup, investTotal, money, type Career } from "@/game";
 import { gameActions } from "@/shared/store/game-store";
 import { Choice, Funds } from "@/shared/ui/ui";
+import styles from "./career.module.css";
 
 /** 시즌 계획 시트 안의 시즌 투자 고르기. 이번 시즌에 나온 투자 중 두 가지까지, 보유 자금 안에서 골라요. */
 export function InvestPicker({ career: c }: { career: Career }) {
@@ -16,7 +17,7 @@ export function InvestPicker({ career: c }: { career: Career }) {
 
   return (
     <section className="invest" aria-labelledby="invest-title">
-      <div className="invest-head">
+      <div className={styles.investHead}>
         <h3 id="invest-title">시즌 투자</h3>
         <Funds amount={c.earnings} />
       </div>
@@ -25,7 +26,7 @@ export function InvestPicker({ career: c }: { career: Career }) {
         오르면 오른 연봉을 한 번 받은 다음 시즌부터 비용도 올라요.
         {student && ` 학생 선수는 시즌마다 용돈·후원금 ${money(STUDENT_ALLOWANCE)}이 들어와요.`}
       </p>
-      <div className="choices invest-grid">
+      <div className={`choices ${styles.investGrid}`}>
         {investLineup(c).map((i) => {
           const cost = investCost(c, i.key);
           const on = chosen.includes(i.key);

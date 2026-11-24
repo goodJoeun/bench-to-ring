@@ -34,6 +34,7 @@ import { SceneArt } from "./SceneArt";
 import { Sheet } from "@/shared/ui/Sheet";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 import { Choice } from "@/shared/ui/ui";
+import styles from "./career.module.css";
 
 /** 팀이 걸린 선택지(입학, 계약 제안)에는 그 팀 엠블럼을 붙여요. 협상 중인 같은 팀 선택지에는 붙이지 않아요. */
 function optionBadge(a: Action): React.ReactNode {
@@ -242,7 +243,7 @@ export function ActionPanel({ career: c, playing, speed, busy, outcome, onAdvanc
     const kind = decision.board?.finals ? "결승전" : run ? "시즌 중 결정" : "오프시즌 결정";
     return (
       <>
-        <button type="button" className="advance pending" onClick={() => setHiddenKey(null)}>
+        <button type="button" className={`advance ${styles.pending}`} onClick={() => setHiddenKey(null)}>
           <span>
             <span className="t">{kind}</span>
             <span className="s">
@@ -310,7 +311,7 @@ export function ActionPanel({ career: c, playing, speed, busy, outcome, onAdvanc
           <span className="sheet-kicker">{sub}</span>
           <h2 id="plan-title">{c.year} 시즌 계획</h2>
           <p className="sheet-desc">집중 훈련한 능력치는 약 1.5배 빠르게 자라요. 시즌 중에는 바꿀 수 없어요.</p>
-          <div className="choices focus-grid" role="radiogroup" aria-label="훈련 초점">
+          <div className={`choices ${styles.focusGrid}`} role="radiogroup" aria-label="훈련 초점">
             {FOCUS.map(([k, name]) => (
               <Choice
                 key={k}
@@ -323,9 +324,9 @@ export function ActionPanel({ career: c, playing, speed, busy, outcome, onAdvanc
             ))}
           </div>
           <InvestPicker career={c} />
-          <div className="sheet-dock">
+          <div className={styles.sheetDock}>
             {canInvest(c) && (
-              <button type="button" className="dock-invest" onClick={scrollToInvest}>
+              <button type="button" className={styles.dockInvest} onClick={scrollToInvest}>
                 <span>
                   시즌 투자 <b>{invest}/{INVEST_SLOTS}</b>
                 </span>
@@ -361,7 +362,7 @@ function OutcomeCard({ outcome }: { outcome: Outcome }) {
   const close = () => gameActions.dismissOutcome(outcome.id);
   return (
     <div role="status" aria-live="polite">
-      <button type="button" className="advance outcome" data-tone={outcome.tone} onClick={close}>
+      <button type="button" className={`advance ${styles.outcome}`} data-tone={outcome.tone} onClick={close}>
         <span>
           <span className="t">{outcome.label}</span>
           <span className="s">{outcome.msg}</span>
@@ -371,7 +372,8 @@ function OutcomeCard({ outcome }: { outcome: Outcome }) {
         <span className="go" aria-hidden="true">
           ▶
         </span>
-        <span className="outcome-timer" aria-hidden="true" onAnimationEnd={close} />
+        {/* 텍스트만 보기에서도 이 막대는 움직여야 시즌이 이어져요. 27-text-only.css가 outcome-timer 이름으로 빼 줘요. */}
+        <span className={`${styles.outcomeTimer} outcome-timer`} aria-hidden="true" onAnimationEnd={close} />
       </button>
     </div>
   );
@@ -384,18 +386,18 @@ function RunBar({ run, playing, speed }: { run: SeasonRun; playing: boolean; spe
     ? `${run.year} 시즌 · ${run.step}/${run.plan.length}`
     : `${run.w}승 ${run.l}패${run.out > 0 ? ` · ${run.outWhy} 결장 ${run.out}경기 남음` : ""}`;
   return (
-    <div className="run-bar" role="group" aria-label="시즌 진행">
-      <div className="run-info">
+    <div className={styles.runBar} role="group" aria-label="시즌 진행">
+      <div className={styles.runInfo}>
         <span className="t">{label}</span>
         <span className="s">{status}</span>
-        <div className="run-track" role="progressbar" aria-label="시즌 진행률" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct * 100)}>
-          <div className="run-fill" style={{ width: `${pct * 100}%` }} />
+        <div className={styles.runTrack} role="progressbar" aria-label="시즌 진행률" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct * 100)}>
+          <div className={styles.runFill} style={{ width: `${pct * 100}%` }} />
         </div>
       </div>
-      <div className="run-ctrl">
+      <div className={styles.runCtrl}>
         <button
           type="button"
-          className="run-btn play"
+          className={`${styles.runBtn} ${styles.play}`}
           aria-label={playing ? "일시정지" : "재생"}
           aria-pressed={playing}
           onClick={() => gameActions.setPlaying(!playing)}
@@ -404,10 +406,10 @@ function RunBar({ run, playing, speed }: { run: SeasonRun; playing: boolean; spe
             {playing ? <path d="M6 5h4v14H6zm8 0h4v14h-4z" /> : <path d="M7 4.5v15L19.5 12z" />}
           </svg>
         </button>
-        <button type="button" className="run-btn" aria-label={`진행 속도 ${speed}배, 눌러서 바꾸기`} onClick={() => gameActions.cycleSpeed()}>
-          <span className="run-speed">{speed}x</span>
+        <button type="button" className={styles.runBtn} aria-label={`진행 속도 ${speed}배, 눌러서 바꾸기`} onClick={() => gameActions.cycleSpeed()}>
+          <span className={styles.runSpeed}>{speed}x</span>
         </button>
-        <button type="button" className="run-btn" aria-label="결정이 나올 때까지 건너뛰기" onClick={() => gameActions.skip()}>
+        <button type="button" className={styles.runBtn} aria-label="결정이 나올 때까지 건너뛰기" onClick={() => gameActions.skip()}>
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4 5v14l8-7zm8 0v14l8-7z" />
             <path d="M20 5h2v14h-2z" />

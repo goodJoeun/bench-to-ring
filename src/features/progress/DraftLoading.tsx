@@ -7,6 +7,7 @@ import { NO_TEAM_COLOR } from "@/shared/lib/format";
 import { useReveal } from "@/shared/lib/hooks";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 import { Popup, PopupFooter, PopupHero } from "./Popup";
+import styles from "./progress.module.css";
 
 /** 다음 지명을 보여주기 전 기다리는 시간(ms) */
 const OPENING_MS = 1800;
@@ -62,21 +63,21 @@ export function DraftLoading({ career: c, show }: { career: Career; show: DraftS
         status={status}
         busy={!done && !called}
       />
-      {next && revealed > 0 && revealed === show.roundSize && <p className="draft-note">1라운드가 끝났어요. 2라운드를 시작해요.</p>}
-      <ol className="draft-picks">
+      {next && revealed > 0 && revealed === show.roundSize && <p className={styles.draftNote}>1라운드가 끝났어요. 2라운드를 시작해요.</p>}
+      <ol className={styles.draftPicks}>
         {recent.map((p) => (
           <li key={p.no} data-mine={p.mine || undefined} style={{ "--tc": p.color } as React.CSSProperties}>
-            <span className="dp-no">{p.no}</span>
+            <span className={styles.dpNo}>{p.no}</span>
             <span className="dp-team">
               <TeamBadge name={p.team} color={p.color} size={18} />
               {p.team}
             </span>
-            <span className="dp-who">{p.who}</span>
+            <span className={styles.dpWho}>{p.who}</span>
           </li>
         ))}
       </ol>
       <PopupFooter done={done} onSkip={() => setStage("result")} onConfirm={() => gameActions.finishDraft()}>
-        <p className="tour-story">
+        <p className={styles.tourStory}>
           {called && slot ? (
             <>
               <b>

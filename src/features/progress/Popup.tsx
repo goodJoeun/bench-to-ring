@@ -3,6 +3,7 @@
 import { playerLook, type Player } from "@/game";
 import { useAutoFocus } from "@/shared/lib/hooks";
 import { Sprite } from "@/shared/ui/sprite/Sprite";
+import styles from "./progress.module.css";
 
 interface PopupProps {
   /** 제목 요소 id. 없으면 label로 이름을 붙여요. */
@@ -19,7 +20,7 @@ interface PopupProps {
 export function Popup({ labelledBy, label, className, children }: PopupProps) {
   return (
     <div className="sim" role="dialog" aria-modal="true" aria-labelledby={labelledBy} aria-label={labelledBy ? undefined : label}>
-      <div className={className ? `sim-card ${className}` : "sim-card"}>{children}</div>
+      <div className={className ? `${styles.simCard} ${className}` : styles.simCard}>{children}</div>
     </div>
   );
 }
@@ -46,15 +47,15 @@ export function PopupHero({ player, color, team, title, titleId, status, busy, c
   return (
     <>
       <div className="sim-court" aria-hidden="true">
-        <Sprite look={playerLook(player)} color={color} label="" className="sprite sim-sprite" />
-        <span className="sim-shadow" />
+        <Sprite look={playerLook(player)} color={color} label="" className={`sprite ${styles.simSprite}`} />
+        <span className={styles.simShadow} />
       </div>
       {children}
       <span className="sim-team">{team}</span>
       <h2 id={titleId}>{title}</h2>
       <p className="sim-phase" role="status" aria-live="polite">
         {status}
-        {busy && <span className="dots" aria-hidden="true" />}
+        {busy && <span className={styles.dots} aria-hidden="true" />}
       </p>
     </>
   );
@@ -76,7 +77,7 @@ export function PopupFooter({ done, onSkip, onConfirm, children, skipLabel = "�
   const goRef = useAutoFocus<HTMLButtonElement>(done);
   if (!done)
     return (
-      <button type="button" className="sim-skip" onClick={onSkip}>
+      <button type="button" className={styles.simSkip} onClick={onSkip}>
         {skipLabel}
       </button>
     );

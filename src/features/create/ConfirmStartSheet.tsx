@@ -3,6 +3,7 @@
 import { POS, lookLabel, ovrOf } from "@/game";
 import { draftStart, gameActions, type CreationDraft } from "@/shared/store/game-store";
 import { Sheet } from "@/shared/ui/Sheet";
+import styles from "./create.module.css";
 
 export function ConfirmStartSheet({ draft, onClose }: { draft: CreationDraft; onClose: () => void }) {
   const { pos, nat, school, cand } = draftStart(draft);
@@ -18,7 +19,7 @@ export function ConfirmStartSheet({ draft, onClose }: { draft: CreationDraft; on
           ? "오늘 이 포지션은 누구나 같은 선수로 시작해요. 프로 무대를 밟고 은퇴하면 선수 이름과 기록이 온라인 랭킹과 오늘의 챌린지 랭킹에 공개돼요. 내일까지 은퇴해야 챌린지 랭킹에 올라가요."
           : "시작하면 캐릭터, 국적, 포지션과 후보는 바꿀 수 없어요. 프로 무대를 밟고 은퇴하면 선수 이름과 기록이 온라인 랭킹에 공개돼요."}
       </p>
-      <dl className="confirm-sum">
+      <dl className={styles.confirmSum}>
         <div>
           <dt>캐릭터</dt>
           <dd>{lookLabel(draft.look) || "기본"}</dd>

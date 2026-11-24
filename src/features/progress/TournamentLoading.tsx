@@ -8,6 +8,7 @@ import { useReveal } from "@/shared/lib/hooks";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 import { LiveGameView } from "./LiveGameView";
 import { Popup, PopupFooter, PopupHero } from "./Popup";
+import styles from "./progress.module.css";
 
 /** 경기 결과를 하나씩 띄우는 간격(ms) */
 const GAME_MS = 650;
@@ -77,19 +78,19 @@ export function TournamentLoading({ career: c }: { career: Career }) {
           status={stage === "result" ? `최종 성적 · ${t.label}` : visible.length ? `${w}승 ${visible.length - w}패` : "대회 개막"}
           busy={stage !== "result"}
         />
-        <ol className="tour-games">
+        <ol className={styles.tourGames}>
           {visible.map((g, i) => (
             <li key={i} data-win={g.win || undefined}>
-              <span className="tg-stage">{g.stage}</span>
+              <span className={styles.tgStage}>{g.stage}</span>
               <span className="tg-opp">
                 <TeamBadge name={g.opp} kind="nat" size={18} />
                 vs {g.opp}
               </span>
-              <span className="tg-score">
+              <span className={styles.tgScore}>
                 {g.us}-{g.them}
               </span>
-              <span className="tg-wl">{g.win ? "승" : "패"}</span>
-              {g.pts !== undefined && <span className="tg-pts">{g.pts}점</span>}
+              <span className={styles.tgWl}>{g.win ? "승" : "패"}</span>
+              {g.pts !== undefined && <span className={styles.tgPts}>{g.pts}점</span>}
             </li>
           ))}
         </ol>
@@ -99,7 +100,7 @@ export function TournamentLoading({ career: c }: { career: Career }) {
           onSkip={() => (stage === "games" ? afterGames() : setStage("result"))}
           onConfirm={() => gameActions.finishTournament()}
         >
-          <p className="tour-story" data-medal={t.medal ?? undefined}>
+          <p className={styles.tourStory} data-medal={t.medal ?? undefined}>
             {t.medal && <b>{t.medal}메달 </b>}
             {t.story}
           </p>

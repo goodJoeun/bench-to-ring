@@ -1,0 +1,90 @@
+/* guide 화면의 모양. 예전 전역 CSS(app/styles)에서 규칙 순서 그대로 옮겼어요. 다른 화면과 같이 쓰는 클래스는 :global로 남겨 둬요. */
+/* 플레이 가이드: 한 시트 안의 카드 여덟 장 */
+.gd {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.gd li {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 11px 12px;
+  border-radius: var(--r-md);
+  background: var(--panel2);
+  min-width: 0;
+}
+.gd b {
+  font-size: var(--text-md);
+  color: var(--accent);
+}
+.gd li[data-wide] {
+  grid-column: 1/-1;
+}
+.gd li > span {
+  font-size: var(--text-md);
+  line-height: 1.5;
+}
+.gdLeagues {
+  display: block;
+  margin-top: 3px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--muted);
+}
+.gdFoot {
+  margin: 10px 0 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  line-height: 1.5;
+}
+@media (max-width: 420px) {
+  .gd {
+    gap: 6px;
+  }
+  .gd li {
+    padding: 9px 10px;
+  }
+  .gd b {
+    font-size: var(--text-md);
+  }
+  .gd li > span {
+    font-size: var(--text-sm);
+    line-height: 1.45;
+  }
+}
+/* 챌린지 도움말: 도전하는 순서 */
+.chSteps {
+  list-style: none;
+  counter-reset: ch-step;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.chSteps li {
+  counter-increment: ch-step;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--text-base);
+  line-height: 1.45;
+}
+.chSteps li::before {
+  content: counter(ch-step);
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--f-num);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+}

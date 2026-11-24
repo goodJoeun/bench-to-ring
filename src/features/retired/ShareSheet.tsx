@@ -6,6 +6,7 @@ import { gameActions } from "@/shared/store/game-store";
 import { Sheet } from "@/shared/ui/Sheet";
 import { SITE_NAME, SITE_URL } from "@/shared/lib/site";
 import { CARD_H, CARD_W, drawCard } from "./careerCard";
+import styles from "./retired.module.css";
 
 type CardState = { url: string; file: File } | "loading" | "error";
 
@@ -91,7 +92,7 @@ export function ShareSheet({ career: c, onClose }: { career: Career; onClose: ()
     <Sheet labelledBy="share-title" onClose={onClose}>
       <span className="sheet-kicker">은퇴 기록</span>
       <h2 id="share-title">기록 카드</h2>
-      <div className="card-preview" style={{ aspectRatio: `${CARD_W} / ${CARD_H}` }}>
+      <div className={styles.cardPreview} style={{ aspectRatio: `${CARD_W} / ${CARD_H}` }}>
         {ready ? (
           // 방금 그린 카드(blob 주소)라 next/image가 필요 없어요.
           // eslint-disable-next-line @next/next/no-img-element
@@ -100,7 +101,7 @@ export function ShareSheet({ career: c, onClose }: { career: Career; onClose: ()
           <span className="hint">{card === "error" ? "카드를 그리지 못했어요" : "카드를 그리고 있어요…"}</span>
         )}
       </div>
-      <div className="share-actions">
+      <div className={styles.shareActions}>
         <button type="button" className="sheet-go" disabled={!ready} onClick={() => void share()}>
           카드 공유하기
         </button>

@@ -1,7 +1,8 @@
 /*
  * 전역 스타일. 한 파일이던 globals.css를 규칙 순서 그대로 나눠 불러와요.
- * 뒤에 오는 규칙이 앞 규칙을 덮는 곳이 있어서, 순서를 바꾸면 화면이 달라질 수 있어요.
- * 바꾼 뒤에는 npm run test:visual로 화면을 비교해요.
+ * 화면마다 쓰는 모양은 각 기능 폴더와 shared/ui의 *.module.css로 옮겼어요. 여기에는 토큰과 기본 요소,
+ * 여러 화면이 같이 쓰는 클래스(.btn, .hint, .sheet-go 등), 코드·테스트가 이름으로 찾는 클래스가 남아 있어요.
+ * 뒤에 오는 규칙이 앞 규칙을 덮는 곳이 있어서, 순서를 바꾸면 화면이 달라질 수 있어요. 바꾼 뒤에는 npm run test:visual로 화면을 비교해요.
  */
 @import "./styles/00-tokens.css"; /* 색·글꼴·글자 크기·모서리 토큰과 다크 테마 */
 @import "./styles/01-base.css"; /* 기본 요소, 공통 글자(.label .hint .empty) */
@@ -10,16 +11,12 @@
 @import "./styles/04-career-card.css"; /* 게임 화면 격자, 코트 카드, 이름판, 엠블럼, 능력치, 히든 스탯, 스타성 */
 @import "./styles/05-career-panels.css"; /* 탭 내용, 시즌 결과, 자금, 수상, 표, 명예의 전당 표, 불러오는 중 */
 @import "./styles/06-forms-shop.css"; /* 버튼과 입력칸, 보유 아이템 탭, 상점 아이콘 */
-@import "./styles/07-decision-art.css"; /* 라이벌 도발과 결정 장면 그림 */
-@import "./styles/08-clutch.css"; /* 클러치 전광판, 이펙트, 결과 */
-@import "./styles/09-clutch-plays.css"; /* 클러치 플레이 장면 (슛·덩크·돌파·패스·수비) */
 @import "./styles/10-clutch-finals.css"; /* 결승 클러치 전광판, 이펙트, 우승 세리머니 */
 @import "./styles/11-create.css"; /* 표지와 선수 만들기 */
 @import "./styles/12-retired.css"; /* 은퇴 화면, 기록 표, 국가대표 기록, 기록 카드 */
 @import "./styles/13-feedback-notice.css"; /* 시트 닫기 단추, 의견 보내기, 공지, 홈 아래 게임 소개 */
 @import "./styles/14-progress.css"; /* 진행 팝업 (대회·드래프트) */
 @import "./styles/15-season-end.css"; /* 시즌 결산 화면과 커뮤니티 반응 */
-@import "./styles/16-similar-players.css"; /* 은퇴 화면의 닮은 꼴 선수 */
 @import "./styles/17-farewell.css"; /* 커리어 회고 */
 @import "./styles/18-cheer.css"; /* 축하 팝업 (우승·입단·업적)과 회고 닫기 단추 */
 @import "./styles/19-live-game.css"; /* 결승 문자 중계 */

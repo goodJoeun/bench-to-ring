@@ -1,0 +1,69 @@
+/* hall-of-fame 화면의 모양. 예전 전역 CSS(app/styles)에서 규칙 순서 그대로 옮겼어요. 다른 화면과 같이 쓰는 클래스는 :global로 남겨 둬요. */
+/* 명예의 전당 표: 휴대폰에서는 포지션을 이름 옆으로 옮기고 레거시를 빼서, 가로로 밀지 않아도 실적이 보여요. */
+.hallPos {
+  display: none;
+}
+@media (max-width: 560px) {
+  .hallTable {
+    min-width: 0;
+  }
+  .hallTable :is(th, td) {
+    padding-inline: 5px;
+    letter-spacing: 0;
+  }
+  .hallTable td:global(.t) {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .hallTable .hallWide {
+    display: none;
+  }
+  .hallPos {
+    display: inline;
+    color: var(--muted);
+  }
+}
+.b5 {
+  background: var(--panel2);
+  border-radius: var(--r-sm);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.b5 :global(.p) {
+  font-family: var(--f-num);
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.b5 :global(.nm) {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.hallName {
+  display: block;
+  width: 100%;
+  margin-block: -8px;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.b5 {
+  container-type: inline-size;
+}
+.b5 :global(.nm) {
+  font-size: clamp(
+    12px,
+    min(368cqi / var(--nw, 1), 184cqi / var(--lw, 1)),
+    15px
+  );
+}

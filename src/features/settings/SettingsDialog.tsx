@@ -6,6 +6,7 @@ import { Sheet } from "@/shared/ui/Sheet";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 import { applyTextOnly, useTextOnlyChosen } from "@/shared/lib/text-only";
 import { applyTheme, readTheme, type Theme } from "@/shared/lib/theme";
+import styles from "./settings.module.css";
 
 const THEMES: { key: Theme; name: string; sub: string }[] = [
   { key: "system", name: "시스템", sub: "기기 설정 따라" },
@@ -48,7 +49,7 @@ export function SettingsDialog({ onClose, onGuide, onCareerSettings }: SettingsD
 
       <section className="set-sec" aria-labelledby="set-theme">
         <h3 id="set-theme">화면 테마</h3>
-        <div className="theme-seg" role="group" aria-labelledby="set-theme">
+        <div className={styles.themeSeg} role="group" aria-labelledby="set-theme">
           {THEMES.map((t) => (
             <button type="button" key={t.key} aria-pressed={theme === t.key} onClick={() => pickTheme(t.key)}>
               <b>{t.name}</b>
@@ -60,7 +61,7 @@ export function SettingsDialog({ onClose, onGuide, onCareerSettings }: SettingsD
 
       <section className="set-sec" aria-labelledby="set-display">
         <h3 id="set-display">화면 표시</h3>
-        <div className="theme-seg" data-cols="2" role="group" aria-labelledby="set-display">
+        <div className={styles.themeSeg} data-cols="2" role="group" aria-labelledby="set-display">
           {DISPLAYS.map((d) => (
             <button type="button" key={d.name} aria-pressed={textOnly === d.textOnly} onClick={() => applyTextOnly(d.textOnly)}>
               <b>{d.name}</b>
@@ -70,7 +71,7 @@ export function SettingsDialog({ onClose, onGuide, onCareerSettings }: SettingsD
         </div>
       </section>
 
-      <div className="set-links">
+      <div className={styles.setLinks}>
         <button type="button" className="btn" onClick={onGuide}>
           플레이 가이드
         </button>
@@ -101,7 +102,7 @@ export function SettingsDialog({ onClose, onGuide, onCareerSettings }: SettingsD
             </button>
           ))}
         </div>
-        <p className="team-count">
+        <p className={styles.teamCount}>
           {LEAGUES[league].name} · {teams.length}개 {LEAGUES[league].pro ? "구단" : "학교"}
         </p>
         <ul className="team-list" id="team-list" role="tabpanel" aria-labelledby={`lg-${league}`}>

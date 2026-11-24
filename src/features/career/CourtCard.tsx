@@ -2,6 +2,7 @@ import { LEAGUES, POS, militaryUnit, money, stageLabel, type Career } from "@/ga
 import { NO_TEAM_COLOR, nameFit } from "@/shared/lib/format";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
 import { CourtStage } from "@/shared/ui/ui";
+import styles from "./career.module.css";
 
 export function CourtCard({ career: c }: { career: Career }) {
   const p = c.p;
@@ -18,13 +19,13 @@ export function CourtCard({ career: c }: { career: Career }) {
       ) : (
         t && <TeamBadge className="plate-badge" name={t.name} kind={t.lg} color={t.color} size={46} />
       )}
-      <div className="plate-top">
+      <div className={styles.plateTop}>
         <span className="num">#{p.num}</span>
         <span className="pos">
           {p.pos} · {POS[p.pos].name}
         </span>
         {c.challenge && (
-          <span className="ch-chip">
+          <span className={styles.chChip}>
             챌린지 {c.challenge.day.slice(5, 7)}.{c.challenge.day.slice(8)} {c.challenge.pos}
           </span>
         )}
@@ -37,12 +38,12 @@ export function CourtCard({ career: c }: { career: Career }) {
         {stageLabel(c)} · {p.nat}
         {c.contract && ` · 연봉 ${money(c.contract.salary)}, ${c.contract.years}년 남음`}
       </div>
-      <div className="health">
+      <div className={styles.health}>
         <span className="label">건강</span>
         <div className="track">
           <div className={`fill ${hpClass}`} style={{ width: `${hp}%` }} />
         </div>
-        <span className="hv">{hp}</span>
+        <span className={styles.hv}>{hp}</span>
       </div>
     </CourtStage>
   );

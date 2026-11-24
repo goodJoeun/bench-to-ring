@@ -8,7 +8,7 @@ for (const [feature, scenes] of Object.entries(SCENES)) {
         await open(page, scene);
         await scene.act?.(page);
         await settle(page);
-        await expect(page).toHaveScreenshot(`${feature}-${scene.name}.png`);
+        await expect(page).toHaveScreenshot(`${feature}-${scene.name}.png`, scene.flakyPixels ? { maxDiffPixels: scene.flakyPixels } : {});
       });
     }
   });

@@ -4,6 +4,7 @@ import { nameFit } from "@/shared/lib/format";
 import { Sprite } from "@/shared/ui/sprite/Sprite";
 import { RankMark } from "./RankingList";
 import { jerseyOf, lookOf } from "../../shared/ui/sprite/look";
+import styles from "./rankings.module.css";
 
 /** 스탯 랭킹 칩 이름과 단위 */
 export const STAT_LABELS: Record<StatKey, { name: string; unit: string }> = {
@@ -21,7 +22,7 @@ export function StatList({ rows, stat, mine }: { rows: StatEntry[]; stat: StatKe
   const { unit } = STAT_LABELS[stat];
   const don = stat === "don";
   return (
-    <ol className="rk-list rk-stat">
+    <ol className={`rk-list ${styles.rkStat}`}>
       {rows.map((e) => (
         <li key={e.id} data-mine={mine.has(e.id) || undefined}>
           <RankMark rank={e.rank} />
@@ -35,7 +36,7 @@ export function StatList({ rows, stat, mine }: { rows: StatEntry[]; stat: StatKe
               {e.pos} · {fmtNum(e.gp)}경기{!don && e.gp > 0 && ` · 경기당 ${(e.value / e.gp).toFixed(1)}`}
             </span>
           </span>
-          <span className="rk-val">
+          <span className={styles.rkVal}>
             {don ? money(e.value) : fmtNum(e.value)}
             {unit && <small>{unit}</small>}
           </span>

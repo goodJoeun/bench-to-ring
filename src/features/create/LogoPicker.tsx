@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { NATIONS, hsSchools } from "@/game";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
+import styles from "./create.module.css";
 
 /** 고를 항목: 값, 보여줄 이름, 로고 대신 쓸 대표색. 값이 ""인 항목은 무작위예요. */
 type PickOption = readonly [value: string, label: string, color?: string];
@@ -10,8 +11,8 @@ type PickOption = readonly [value: string, label: string, color?: string];
 function PickLabel({ option: [value, label, color], kind }: { option: PickOption; kind?: "hs" }) {
   return (
     <>
-      {value ? <TeamBadge name={value} kind={kind} color={color} size={22} /> : <span className="lpick-any" aria-hidden="true">?</span>}
-      <span className="lpick-name">{label}</span>
+      {value ? <TeamBadge name={value} kind={kind} color={color} size={22} /> : <span className={styles.lpickAny} aria-hidden="true">?</span>}
+      <span className={styles.lpickName}>{label}</span>
     </>
   );
 }
@@ -103,11 +104,11 @@ function LogoPicker({
   };
 
   return (
-    <div className="lpick" ref={rootRef}>
+    <div className={styles.lpick} ref={rootRef}>
       <button
         type="button"
         id={buttonId}
-        className="lpick-btn"
+        className={styles.lpickBtn}
         role="combobox"
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -122,7 +123,7 @@ function LogoPicker({
       {open && (
         // 항목을 눌러도 버튼에서 초점이 빠지지 않게 해요.
         <ul
-          className="lpick-list"
+          className={styles.lpickList}
           id={`${id}-list`}
           role="listbox"
           aria-labelledby={labelledBy}

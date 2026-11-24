@@ -10,6 +10,7 @@ import { StatTiles } from "@/shared/ui/ui";
 import { jerseyOf, lookOf } from "../../shared/ui/sprite/look";
 import { RankMark } from "./RankingList";
 import { RankNeighbors } from "./RankNeighbors";
+import styles from "./rankings.module.css";
 
 interface MyRecordsProps {
   /** 이 브라우저에서 은퇴한 선수들 */
@@ -37,7 +38,7 @@ export function MyRecords({ hall, mine, pending, endings, near, onNear }: MyReco
   const nearElsewhere = near && online.has(near) && !hall.some((s) => s.id === near) ? near : null;
   if (!hall.length && !nearElsewhere)
     return (
-      <div className="rk-empty">
+      <div className={styles.rkEmpty}>
         <b>아직 은퇴한 선수가 없어요</b>
         <span>프로 무대를 밟은 선수가 은퇴하면 여기에 쌓이고, 온라인 랭킹에도 저절로 올라가요.</span>
         <Link className="btn" href="/">
@@ -58,10 +59,10 @@ export function MyRecords({ hall, mine, pending, endings, near, onNear }: MyReco
       />
       <p className="hint">마음에 들지 않는 기록은 휴지통 단추로 지울 수 있어요. 이 브라우저와 온라인 랭킹에서 함께 지워져요.</p>
       {nearElsewhere && (
-        <section className="rk-near-solo" aria-labelledby="rk-near-solo-title">
-          <div className="rk-near-head">
+        <section className={styles.rkNearSolo} aria-labelledby="rk-near-solo-title">
+          <div className={styles.rkNearHead}>
             <b id="rk-near-solo-title">내 최고 기록 주변</b>
-            <button type="button" className="rk-near-btn" onClick={() => onNear(null)}>
+            <button type="button" className={styles.rkNearBtn} onClick={() => onNear(null)}>
               접기 <span aria-hidden="true">▴</span>
             </button>
           </div>
@@ -91,11 +92,11 @@ export function MyRecords({ hall, mine, pending, endings, near, onNear }: MyReco
                   <span className="sub">
                     {s.pos} · OVR {s.peak} · {s.legacy} · {s.retYear}년 은퇴
                   </span>
-                  <span className="rk-on" data-on={o ? "" : undefined}>
+                  <span className={styles.rkOn} data-on={o ? "" : undefined}>
                     {status}
                   </span>
                   {o && (
-                    <button type="button" className="rk-near-btn" aria-expanded={nearOpen} onClick={() => onNear(nearOpen ? null : s.id)}>
+                    <button type="button" className={styles.rkNearBtn} aria-expanded={nearOpen} onClick={() => onNear(nearOpen ? null : s.id)}>
                       {nearOpen ? "주변 순위 접기" : "주변 순위 보기"}
                       <span aria-hidden="true">{nearOpen ? "▴" : "▾"}</span>
                     </button>
@@ -111,7 +112,7 @@ export function MyRecords({ hall, mine, pending, endings, near, onNear }: MyReco
                 </span>
               </li>
               {nearOpen && (
-                <li className="rk-near-wrap">
+                <li className={styles.rkNearWrap}>
                   <RankNeighbors careerId={s.id} />
                 </li>
               )}

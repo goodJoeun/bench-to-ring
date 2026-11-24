@@ -1,6 +1,7 @@
 "use client";
 
 import { Sheet } from "@/shared/ui/Sheet";
+import styles from "./guide.module.css";
 
 /* 챌린지 모드 도움말. 첫 화면의 오늘의 챌린지 카드와 랭킹의 챌린지 탭에서 열어요. */
 
@@ -32,12 +33,12 @@ export function ChallengeGuide({ onClose }: { onClose: () => void }) {
       <p className="sheet-desc">
         일반 모드는 선수를 직접 고르지만, 챌린지는 오늘 정해진 선수로 누구나 똑같이 시작해요. 같은 조건에서 누가 더 잘 키우는지 겨뤄요.
       </p>
-      <ol className="ch-steps">
+      <ol className={styles.chSteps}>
         {STEPS.map((s) => (
           <li key={s}>{s}</li>
         ))}
       </ol>
-      <ul className="gd">
+      <ul className={styles.gd}>
         {CARDS.map(([title, text]) => (
           <li key={title} data-wide>
             <b>{title}</b>

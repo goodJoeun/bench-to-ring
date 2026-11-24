@@ -10,6 +10,7 @@ import {
 import { loadAchievements, loadLifeView } from "@/game/career/storage";
 import { AchievedBadge } from "@/shared/ui/badge/Medal";
 import { Sheet } from "@/shared/ui/Sheet";
+import styles from "./achievements.module.css";
 
 const GROUPS = Object.keys(ACHIEVEMENT_GROUPS) as AchievementGroup[];
 /** 탭: 전체 또는 업적 분류 하나 */
@@ -48,7 +49,7 @@ export function AchievementsDialog({ onClose }: { onClose: () => void }) {
         {done} / {ACHIEVEMENTS.length} 달성
       </h2>
       <div
-        className="achv-bar"
+        className={styles.achvBar}
         role="progressbar"
         aria-label="업적 달성"
         aria-valuemin={0}
@@ -64,7 +65,7 @@ export function AchievementsDialog({ onClose }: { onClose: () => void }) {
         모든 커리어를 더해요. 역대 랭킹은 은퇴 기록이 온라인 랭킹에 올라가 받은
         순위로 따요.
       </p>
-      <div className="achv-tabs" role="tablist" aria-label="업적 분류">
+      <div className={styles.achvTabs} role="tablist" aria-label="업적 분류">
         {(["all", ...GROUPS] as Tab[]).map((g) => (
           <button
             type="button"
@@ -102,15 +103,15 @@ export function AchievementsDialog({ onClose }: { onClose: () => void }) {
                       {r ? (
                         <>
                           <span>{a.desc}</span>
-                          <span className="achv-by">
+                          <span className={styles.achvBy}>
                             {r.name} · {dayOf(r.at)}
                           </span>
                         </>
                       ) : (
                         <>
-                          <span className="achv-hint">{a.hint}</span>
+                          <span className={styles.achvHint}>{a.hint}</span>
                           {a.goal && (
-                            <span className="achv-by">
+                            <span className={styles.achvBy}>
                               지금 {fmtNum(Math.min(a.goal.of(life), a.goal.n))}{" "}
                               / {fmtNum(a.goal.n)}
                               {a.goal.unit}

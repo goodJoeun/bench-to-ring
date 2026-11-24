@@ -2,6 +2,7 @@
 
 import { ENLIST_DEADLINE, INVEST_SLOTS, LEAGUES, STAR_UNLOCKS, type LeagueKey } from "@/game";
 import { Sheet } from "@/shared/ui/Sheet";
+import styles from "./guide.module.css";
 
 /* 플레이 가이드: 꼭 알아야 할 것만 카드 열 장으로. 오버롤 수치는 보여주지 않아요. */
 
@@ -24,7 +25,7 @@ export function GuideDialog({ onClose }: { onClose: () => void }) {
       "진로",
       <>
         리그 수준에 가까운 실력이어야 제안이 와요. 국적마다 자국 리그가 달라요(B리그·PBA·CBA·NBL·LNB·ACB·ABA·CEBL). 미국·캐나다 선수는 다른 나라 리그의 외국선수로도 뛰어요.
-        <span className="gd-leagues">{LEAGUE_ORDER.map((k) => LEAGUES[k].short).join(" → ")}</span>
+        <span className={styles.gdLeagues}>{LEAGUE_ORDER.map((k) => LEAGUES[k].short).join(" → ")}</span>
       </>,
     ],
     ["병역", `23~${ENLIST_DEADLINE}세에 상무나 현역으로 가요. 아시안게임 금·올림픽 메달이면 병역 특례를 받아요.`],
@@ -48,7 +49,7 @@ export function GuideDialog({ onClose }: { onClose: () => void }) {
     <Sheet labelledBy="guide-title" onClose={onClose}>
       <span className="sheet-kicker">플레이 가이드</span>
       <h2 id="guide-title">이것만 알면 돼요</h2>
-      <ul className="gd">
+      <ul className={styles.gd}>
         {cards.map(([title, text]) => (
           <li key={title} data-wide={WIDE.includes(title) || undefined}>
             <b>{title}</b>
@@ -56,7 +57,7 @@ export function GuideDialog({ onClose }: { onClose: () => void }) {
           </li>
         ))}
       </ul>
-      <p className="gd-foot">30세부터 은퇴할 수 있고, 프로 경력이 있으면 명예의 전당에 올라요. 진행은 자동 저장돼요.</p>
+      <p className={styles.gdFoot}>30세부터 은퇴할 수 있고, 프로 경력이 있으면 명예의 전당에 올라요. 진행은 자동 저장돼요.</p>
       <button type="button" className="sheet-go" onClick={onClose}>
         확인
       </button>

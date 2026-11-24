@@ -9,6 +9,7 @@ import { DeleteRecordButton, DeleteRecordSheet } from "@/shared/ui/DeleteRecordS
 import { Sprite } from "@/shared/ui/sprite/Sprite";
 import { Panel } from "@/shared/ui/ui";
 import { jerseyOf, lookOf } from "@/shared/ui/sprite/look";
+import styles from "./create.module.css";
 
 /** 첫 화면에 보여줄 최근 은퇴 선수 수. 나머지는 랭킹 → 나의 기록에서 봐요. */
 const SHOWN = 5;
@@ -26,7 +27,7 @@ export function MyEndings({ hall, endings }: { hall: CareerSummary[]; endings: s
   return (
     <Panel title="내 은퇴 선수">
       <p className="hint">은퇴한 선수의 엔딩과 커리어 회고를 다시 볼 수 있어요. 마음에 들지 않는 기록은 지울 수 있어요.</p>
-      <ol className="rk-list my-end">
+      <ol className={`rk-list ${styles.myEnd}`}>
         {list.slice(0, SHOWN).map((s) => (
           <li key={s.id}>
             <Sprite look={lookOf(s.id, s.look)} color={jerseyOf(s.teams.at(-1))} scale={2} className="rk-mini" label={`${s.name} 캐릭터`} />

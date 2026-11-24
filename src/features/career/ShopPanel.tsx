@@ -23,6 +23,7 @@ import {
 import { gameActions } from "@/shared/store/game-store";
 import { Sheet } from "@/shared/ui/Sheet";
 import { Choice, Funds, Panel } from "@/shared/ui/ui";
+import styles from "./career.module.css";
 
 type Pending = { k: "buy"; key: ShopKey } | { k: "donate"; amount: number };
 
@@ -38,7 +39,7 @@ function OwnedItems({ owned }: { owned: ShopItem[] }) {
   const current = tabs.includes(tab) ? tab : "전체";
   const shown = current === "전체" ? owned : owned.filter((i) => i.cat === current);
   return (
-    <div className="owned">
+    <div className={styles.owned}>
       <h3>보유 중인 아이템 {owned.length}개</h3>
       {owned.length ? (
         <>
@@ -57,17 +58,17 @@ function OwnedItems({ owned }: { owned: ShopItem[] }) {
               </button>
             ))}
           </div>
-          <ul className="owned-list" role="tabpanel" id="owned-panel" aria-labelledby={`owned-tab-${current}`}>
+          <ul className={styles.ownedList} role="tabpanel" id="owned-panel" aria-labelledby={`owned-tab-${current}`}>
             {shown.map((i) => (
               <li key={i.key}>
                 <b>
-                  <span className="shop-ico" aria-hidden="true">
+                  <span className={styles.shopIco} aria-hidden="true">
                     {i.icon}
                   </span>
                   {i.name}
                 </b>
-                <span className="owned-cat">{i.cat}</span>
-                <span className="owned-fx">{i.effect}</span>
+                <span className={styles.ownedCat}>{i.cat}</span>
+                <span className={styles.ownedFx}>{i.effect}</span>
               </li>
             ))}
           </ul>
@@ -101,7 +102,7 @@ export function ShopPanel({ career: c }: { career: Career }) {
       {c.run ? (
         <p className="hint">상점은 시즌이 끝나면 새 상품으로 다시 열려요.</p>
       ) : !usable && !browsing ? (
-        <div className="shop-closed">
+        <div className={styles.shopClosed}>
           <p className="hint">아직 살 수 있는 상품이 없어요. 가장 싼 상품은 {money(cheapest)}이에요.</p>
           <button type="button" className="btn" onClick={() => setBrowsing(true)}>
             상품 둘러보기
@@ -109,18 +110,18 @@ export function ShopPanel({ career: c }: { career: Career }) {
         </div>
       ) : (
         <>
-          <div className="shop-head">
+          <div className={styles.shopHead}>
             <h3>{c.year} 시즌 상점</h3>
             <span className="hint">시즌마다 진열 상품이 바뀌어요</span>
           </div>
-          <div className="choices invest-grid">
+          <div className={`choices ${styles.investGrid}`}>
             {lineup.map((i) => {
               const done = boughtThisSeason(c, i.key) || (!i.repeat && owns(c, i.key));
               return (
                 <Choice
                   key={i.key}
                   icon={
-                    <span className="shop-ico" aria-hidden="true">
+                    <span className={styles.shopIco} aria-hidden="true">
                       {i.icon}
                     </span>
                   }
@@ -136,7 +137,7 @@ export function ShopPanel({ career: c }: { career: Career }) {
           </div>
           <div className="donate">
             <span className="label">유소년 농구 기부</span>
-            <div className="row-btns">
+            <div className={styles.rowBtns}>
               {DONATIONS.map((d) => {
                 const done = donatedThisSeason(c, d);
                 return (
