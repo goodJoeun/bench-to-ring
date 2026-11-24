@@ -33,6 +33,8 @@ npm run dev
 | `npm run dev` | 개발 서버 실행 |
 | `npm run build` / `npm start` | 프로덕션 빌드와 실행 |
 | `npm test` | 게임 엔진 테스트 (커리어 300개를 은퇴까지 자동 플레이, 시즌 중 결정은 무작위) |
+| `npm run test:visual:update` | 주요 화면 45개를 데스크톱·모바일, 라이트·다크로 찍어 내 컴퓨터에 기준 이미지로 저장하기 (처음 한 번은 `npx playwright install chromium`) |
+| `npm run test:visual` | 프로덕션 빌드로 화면을 찍어 기준 이미지와 비교하기. CSS를 고치기 전에 기준을 만들고, 고친 뒤 돌려요. 차이는 `npx playwright show-report`로 봐요 |
 | `npm run balance` | 밸런스 리포트 (커리어 600개의 나이별 오버롤, NBA 진출률, MVP 비율) |
 | `npm run typecheck` | 타입 검사 |
 | `npm run lint` | 린트 |

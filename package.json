@@ -12,6 +12,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:visual": "playwright test",
+    "test:visual:update": "playwright test --update-snapshots",
     "balance": "vitest run --config vitest.balance.mts --reporter=verbose",
     "logos": "node scripts/logos.mjs",
     "flags": "node scripts/flags.mjs",
@@ -40,6 +42,7 @@
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.16",
     "@next/env": "16.4.6",
+    "@playwright/test": "1.65.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

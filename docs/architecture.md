@@ -151,6 +151,8 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 
 밸런스 측정은 `scripts/balance.ts`에 있어요 (`npm run balance`).
 
+화면 비교 테스트는 `e2e/`에 있어요 (`npm run test:visual`). 시드를 고정한 커리어(`careers.ts`)와 가짜 랭킹 API(`api.ts`)로 주요 화면(`visual.spec.ts`)을 찍어 기준 이미지와 견줘요. 실제 DB에는 닿지 않아요. 기준 이미지는 OS와 폰트마다 달라서 저장소에 올리지 않고 `e2e/__screenshots__/`에 둬요. 새 컴퓨터에서는 CSS를 고치기 전에 `npm run test:visual:update`로 먼저 만들어요.
+
 ## 새 파일 둘 곳
 
 1. 게임 규칙이나 계산이면 → `game/`의 알맞은 관심사 폴더. 화면에서 쓰면 `game/index.ts`에서 내보내요.

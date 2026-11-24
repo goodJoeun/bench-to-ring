@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
+# 화면 비교 기준 이미지는 OS·폰트마다 달라서 내 컴퓨터에만 둬요.
+/e2e/__screenshots__/
 
 # next.js
 /.next/
