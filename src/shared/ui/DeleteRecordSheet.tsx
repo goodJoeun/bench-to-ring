@@ -3,6 +3,7 @@
 import type { CareerSummary } from "@/game";
 import { gameActions } from "@/shared/store/game-store";
 import { Sheet } from "./Sheet";
+import styles from "./DeleteRecordSheet.module.css";
 
 /**
  * 은퇴 선수 기록 지우기 확인. 첫 화면의 '내 은퇴 선수'와 랭킹의 '나의 기록'이 함께 써요.
@@ -19,7 +20,7 @@ export function DeleteRecordSheet({ career: s, onClose }: { career: CareerSummar
       <h2 id="del-title">
         {s.name} #{s.num} 기록을 지울까요?
       </h2>
-      <p className="del-who">
+      <p className={styles.who}>
         {s.pos} · OVR {s.peak} · {s.legacy} · {s.retYear}년 은퇴
       </p>
       <p className="sheet-desc">

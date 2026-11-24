@@ -174,7 +174,7 @@ function DecisionSheet({ career: c, decision, kind, remaining, onHide }: { caree
 /** 시작 버튼이 아래에 붙어 있어도 투자를 지나치지 않게, 고른 개수를 보여주고 누르면 투자 칸으로 옮겨요. */
 function scrollToInvest() {
   const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  document.querySelector(".sheet .invest")?.scrollIntoView({ behavior: calm ? "auto" : "smooth", block: "start" });
+  document.querySelector('[aria-modal="true"] .invest')?.scrollIntoView({ behavior: calm ? "auto" : "smooth", block: "start" });
 }
 
 /** 훈련 초점 설명: 능력치는 지금 수치와 포지션 핵심 여부. 집중 훈련 배율은 시트 설명에 한 번만 적어요. */

@@ -5,6 +5,7 @@ import type { BoardEntry } from "@/shared/leaderboard/types";
 import { Sheet } from "./Sheet";
 import { Sprite } from "./sprite/Sprite";
 import { jerseyOf, lookOf } from "./sprite/look";
+import styles from "./CareerCardSheet.module.css";
 
 /** 커리어 카드에 보여주는 값. 순위표 한 줄에 이미 들어 있어서 따로 불러오지 않아요. 랭킹 점수는 보여주지 않아요. */
 export type CareerCard = Pick<
@@ -61,22 +62,22 @@ export function CareerCardSheet({ career: e, ranks, mine = false, onClose }: Car
   ).filter(([, n]) => n > 0);
   return (
     <Sheet labelledBy="career-card-title" onClose={onClose}>
-      <div className="cc-head">
-        <Sprite look={lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={4} className="cc-sprite" label={`${e.name} 캐릭터`} />
-        <div className="cc-who">
+      <div className={styles.head}>
+        <Sprite look={lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={4} className={styles.sprite} label={`${e.name} 캐릭터`} />
+        <div className={styles.who}>
           <span className="sheet-kicker">{ranks}</span>
           <h2 id="career-card-title">
-            {e.name} <span className="cc-num">#{e.num}</span>
+            {e.name} <span className={styles.num}>#{e.num}</span>
             {mine && <span className="me">나</span>}
           </h2>
-          <span className="cc-sub">
+          <span className={styles.sub}>
             {e.pos}
             {e.team && ` · ${e.team}`}
           </span>
         </div>
       </div>
-      <p className="cc-legacy">{e.legacy}</p>
-      <dl className="cc-stats">
+      <p className={styles.legacy}>{e.legacy}</p>
+      <dl className={styles.stats}>
         {stats.map(([k, v]) => (
           <div key={k}>
             <dt>{k}</dt>
@@ -85,7 +86,7 @@ export function CareerCardSheet({ career: e, ranks, mine = false, onClose }: Car
         ))}
       </dl>
       {awards.length > 0 && (
-        <ul className="cc-awards" aria-label="큰 상">
+        <ul className={styles.awards} aria-label="큰 상">
           {awards.map(([k, n]) => (
             <li key={k}>
               {k} <b>{n}</b>

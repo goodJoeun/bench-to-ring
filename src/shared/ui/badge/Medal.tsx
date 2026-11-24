@@ -1,4 +1,5 @@
 import { useTextOnly } from "@/shared/lib/text-only";
+import styles from "./Medal.module.css";
 
 /** 업적 메달: 빨강·파랑 리본에 걸린 금메달과 별. 업적 달성 축하 팝업과 딴 업적 카드의 훈장이 같이 써요. '텍스트만 보기'에서는 그리지 않아요. */
 export function Medal({ className }: { className?: string }) {
@@ -17,11 +18,11 @@ export function Medal({ className }: { className?: string }) {
   );
 }
 
-/** 딴 업적 카드의 오른쪽 위에 다는 훈장. 화면 낭독기에는 '달성'으로 읽혀요. */
+/** 딴 업적 카드의 오른쪽 위에 다는 훈장. 화면 낭독기에는 '달성'으로 읽혀요. 업적 목록과 텍스트만 보기 CSS가 achv-badge 이름으로 꾸며요. */
 export function AchievedBadge() {
   return (
-    <span className="achv-badge">
-      <Medal className="achv-badge-medal" />
+    <span className={`${styles.badge} achv-badge`}>
+      <Medal className={styles.medal} />
       <span className="sr-only">달성</span>
     </span>
   );

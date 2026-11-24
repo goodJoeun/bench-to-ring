@@ -1,0 +1,50 @@
+/* 알림: 탭 바와 진행 버튼 위에 잠깐 떠요. 시트나 진행 팝업이 열려 있으면 화면 위쪽에 떠요. */
+.zone {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--dock) + var(--cta) + 48px + var(--safe-b));
+  z-index: 80;
+  display: flex;
+  justify-content: center;
+  padding-inline: 20px;
+  pointer-events: none;
+}
+/* 시트나 전체 화면 진행 중에 오는 알림(업적, 랭킹)은 아래쪽 버튼을 가리지 않게 위에 띄워요. 시트와 진행 팝업은 둘 다 aria-modal이에요. */
+html:has([aria-modal="true"]) .zone {
+  bottom: auto;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: calc(var(--t-max) - 40px);
+  padding: 14px 18px;
+  border-radius: var(--r-md);
+  background: rgba(25, 31, 40, 0.95);
+  color: #fff;
+  font-size: var(--text-base);
+  font-weight: 500;
+  line-height: 1.4;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  animation: toast-in 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.toast svg {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  fill: #4cd964;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

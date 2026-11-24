@@ -105,30 +105,10 @@ main.grid {
   letter-spacing: 0.06em;
   white-space: nowrap;
 }
-/* 구단·학교 엠블럼 (자체 디자인) */
-.badge {
-  flex: none;
-  display: inline-block;
-  vertical-align: middle;
-  overflow: visible;
-}
-/* 실제 로고는 밝은 배경용으로 만든 게 많아요. 어두운 테마와 파란 진행 팝업에서는 밝은 타일 위에 올려요. */
-/* 국기: 원형으로 잘라 얇은 테두리를 둘러요(흰 바탕 국기도 경계가 보이게). .badge의 overflow:visible이 남으면 이미지가 원형으로 잘리지 않아서 숨겨요. */
-.badge.flag {
-  border-radius: 50%;
-  object-fit: cover;
-  overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
-}
+/* 엠블럼 기본 모양은 shared/ui/badge/TeamBadge.module.css에 있어요. 파란 진행 팝업 위 국기는 흰 테두리를 두르고,
+   실제 로고는 밝은 배경용으로 만든 게 많아서 어두운 테마와 파란 진행 팝업에서는 밝은 타일 위에 올려요. */
 :is(.sim, .se) .badge.flag {
   box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.7);
-}
-.badge.logo {
-  object-fit: contain;
-  box-sizing: border-box;
-  border-radius: 24%;
-  background: var(--logo-tile, transparent);
-  padding: var(--logo-pad, 0);
 }
 .sim,
 .se {
@@ -144,16 +124,6 @@ main.grid {
 :root[data-theme="dark"] {
   --logo-tile: #e9edf3;
   --logo-pad: 2px;
-}
-.badge-mono {
-  font-family: var(--f-display);
-  font-weight: 400;
-  letter-spacing: -0.02em;
-}
-.badge-mono.latin {
-  font-family: var(--f-num);
-  font-weight: 700;
-  letter-spacing: 0;
 }
 .plate-badge {
   position: absolute;

@@ -4,6 +4,10 @@ import { FLAG_ATLAS, LOGO_ATLAS, type AtlasSheet } from "./atlas.generated";
 import { emblemOf, type Emblem, type EmblemKind } from "./emblem";
 import { FLAGS } from "./flags.generated";
 import { LOGOS } from "./logos.generated";
+import styles from "./TeamBadge.module.css";
+
+/** 모듈 클래스에 더해, 다른 화면 CSS가 자리에 맞게 꾸밀 때 쓰는 전역 이름(badge, flag)도 달아요. */
+const classOf = (...names: (string | undefined)[]) => names.filter(Boolean).join(" ");
 
 /** 리그마다 다른 엠블럼 바탕 모양 (viewBox 0 0 40 44) */
 export const SHAPES: Record<EmblemKind, string> = {
@@ -141,7 +145,7 @@ export function TeamBadge({ name, kind, color, size = 28, className, decorative 
       <AtlasIcon
         sheet={FLAG_ATLAS}
         index={FLAG_ATLAS.at[nation]}
-        className={className ? `badge flag ${className}` : "badge flag"}
+        className={classOf(styles.badge, styles.flag, "badge flag", className)}
         width={size}
         height={size}
         label={decorative ? undefined : `${nation} 국기`}
@@ -151,7 +155,7 @@ export function TeamBadge({ name, kind, color, size = 28, className, decorative 
   const logoName = LOGOS[name] ? name : nation;
   const logo = LOGOS[logoName];
   if (logo) {
-    const logoClass = className ? `badge logo ${className}` : "badge logo";
+    const logoClass = classOf(styles.badge, styles.logo, "badge", className);
     const logoHeight = (size * 44) / 40;
     if (size <= ATLAS_LOGO_MAX)
       return (
@@ -186,7 +190,7 @@ export function TeamBadge({ name, kind, color, size = 28, className, decorative 
   const font = monoSize(e);
   return (
     <svg
-      className={className ? `badge ${className}` : "badge"}
+      className={classOf(styles.badge, "badge", className)}
       viewBox="0 0 40 44"
       width={size}
       height={(size * 44) / 40}
@@ -211,7 +215,7 @@ export function TeamBadge({ name, kind, color, size = 28, className, decorative 
         dominantBaseline="central"
         fill={e.ink}
         fontSize={font}
-        className={e.latin ? "badge-mono latin" : "badge-mono"}
+        className={e.latin ? `${styles.mono} ${styles.latin}` : styles.mono}
         stroke={e.edge}
         strokeWidth={0.6}
         paintOrder="stroke"

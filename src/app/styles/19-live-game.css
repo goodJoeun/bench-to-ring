@@ -227,12 +227,8 @@
   .sim-card.cheer-achv .cheer-title,
   .achv-rays,
   .achv-medal,
-  .achv-banner,
-  .achv-badge {
+  .achv-banner {
     animation: none;
-  }
-  .achv-badge::after {
-    display: none;
   }
   .cheer-confetti,
   .achv-flash,

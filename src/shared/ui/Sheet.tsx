@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useEscapeKey } from "../lib/hooks";
+import styles from "./Sheet.module.css";
 
 /** 시트가 저절로 뜬 직후 입력을 받지 않는 시간(ms). 다른 단추를 누르려던 손가락이 선택지에 닿지 않게 해요. */
 const TAP_GUARD_MS = 500;
@@ -49,7 +50,7 @@ export function Sheet({ labelledBy, onClose, guardKey, children }: SheetProps) {
     const onKey = (e: KeyboardEvent) => {
       const el = ref.current;
       if (e.key !== "Tab" || !el) return;
-      const sheets = document.querySelectorAll(".sheet");
+      const sheets = document.querySelectorAll(`.${CSS.escape(styles.sheet)}`);
       if (sheets[sheets.length - 1] !== el) return;
       const items = [...el.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((x) => x.getClientRects().length > 0);
       if (!items.length) return;
@@ -92,17 +93,17 @@ export function Sheet({ labelledBy, onClose, guardKey, children }: SheetProps) {
 
   return (
     <>
-      <div className="scrim" aria-hidden="true" onClick={guarded ? undefined : onClose} />
+      <div className={styles.scrim} aria-hidden="true" onClick={guarded ? undefined : onClose} />
       <div
         ref={ref}
-        className="sheet"
+        className={styles.sheet}
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
         data-guarded={guarded || undefined}
         onClickCapture={blockClick}
       >
-        {onClose && <span className="grabber" aria-hidden="true" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag} />}
+        {onClose && <span className={styles.grabber} aria-hidden="true" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag} />}
         {children}
       </div>
     </>

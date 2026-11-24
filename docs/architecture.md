@@ -97,9 +97,9 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 
 | 폴더 | 내용 |
 |---|---|
-| `ui/` | `ui.tsx`(Panel, StatTiles, Choice…), `Sheet.tsx`, `Toast.tsx`, `DeleteRecordSheet.tsx`(첫 화면 '내 은퇴 선수'와 랭킹 '나의 기록'이 함께 쓰는 기록 지우기 단추·확인 창) |
+| `ui/` | `ui.tsx`(Panel, StatTiles, Choice…), `Sheet.tsx`, `Toast.tsx`, `CareerCardSheet.tsx`, `DeleteRecordSheet.tsx`(첫 화면 '내 은퇴 선수'와 랭킹 '나의 기록'이 함께 쓰는 기록 지우기 단추·확인 창). 모양은 옆의 `*.module.css`(CSS Module)에 있어요 |
 | `ui/sprite/` | Canvas 선수 캐릭터 `Sprite.tsx`, 표지 그림 `coverArt.ts`, 기록의 캐릭터·유니폼 `look.ts` |
-| `ui/badge/` | `TeamBadge.tsx`(국기·로고·엠블럼), `Medal.tsx`(업적 메달과 딴 업적 카드의 훈장), `emblem.ts`, 만든 파일 `logos.generated.ts`·`flags.generated.ts` |
+| `ui/badge/` | `TeamBadge.tsx`(국기·로고·엠블럼), `Medal.tsx`(업적 메달과 딴 업적 카드의 훈장), `emblem.ts`, 만든 파일 `logos.generated.ts`·`flags.generated.ts`. 모양은 옆의 `*.module.css`에 있어요 |
 | `lib/` | 공통 문구와 색 `format.ts`, 훅 `hooks.ts`, 사이트 정보 `site.ts`, 테마 `theme.ts`, 텍스트만 보기 `text-only.ts`(커리어 진행 중에만 적용해요. `Game`의 `useTextOnlyPlay()`가 `<html data-text-only>`를 붙이고 떼며, 그림 컴포넌트는 `useTextOnly()`로 안 그리고, 남은 꾸밈·애니메이션은 `globals.css` 맨 아래 `[data-text-only]` 규칙이 꺼요) |
 | `store/` | `game-store.ts`: 화면과 엔진을 잇는 상태 저장소 (useSyncExternalStore). 게임 상태만 둬요 |
 | `query/` | TanStack Query: 함께 쓰는 클라이언트 `query-client.ts`, 레이아웃에서 감싸는 `QueryProvider.tsx`, 쿼리 결과를 화면 상태로 나누는 `load-state.ts` |
@@ -163,4 +163,7 @@ Next.js App Router의 파일 규칙(`page.tsx`, `layout.tsx`, `route.ts`, `openg
 
 ## 남은 일
 
-- 전역 스타일(`app/styles/`, 9천 줄 넘음)은 아직 모든 화면이 같이 불러요. 규칙 순서는 그대로 두고 파일만 나눴어요(빌드한 CSS가 나누기 전과 같아요). 공용 UI부터 기능 폴더마다 CSS Module로 옮기고, 옮길 때마다 `npm run test:visual`로 화면을 비교해요.
+- 전역 스타일(`app/styles/`)은 아직 모든 화면이 같이 불러요. 공용 UI 중 시트·알림·자금·선택지·팀 엠블럼·업적 훈장·커리어 카드·기록 지우기는 CSS Module로 옮겼어요. 다음은 기능 폴더마다 CSS Module을 두는 일이에요.
+  - 모듈 CSS는 전역 CSS 뒤에 붙고, 페이지를 옮겨 다니면 늦게 붙기도 해요. 그래서 옮긴 규칙과 같은 요소에 같은 우선순위로 닿는 전역 규칙이 없을 때만 옮겨요. 아직 남긴 것: `Segmented`(선수 만들기의 `.pos-seg`가 같은 요소를 덧칠해요), 기록 지우기 단추 `.rk-del`(공용 `.btn` 위에 덧칠해요), `Panel`·`StatTiles`·`CourtStage`·`Loading`(기능 화면이 같은 클래스를 직접 써요).
+  - `TeamBadge`와 업적 훈장은 모듈 클래스와 함께 `badge`·`flag`·`achv-badge` 전역 이름도 달아요. 진행 팝업·시즌 결산·텍스트만 보기처럼 자리에 맞게 꾸미는 전역 규칙이 이 이름을 써요. 그 기능을 옮길 때 같이 정리해요.
+  - 옮긴 뒤에는 `npm run test:visual`로 화면을 비교해요. 모듈 클래스 이름은 빌드할 때 바뀌니, 코드에서 요소를 찾을 때는 클래스 대신 `styles.x`나 `aria-modal` 같은 속성을 써요.

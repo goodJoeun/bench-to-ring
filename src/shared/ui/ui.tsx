@@ -1,7 +1,9 @@
 import { money, playerLook, type Player } from "@/game";
+import choiceCss from "./Choice.module.css";
+import fundsCss from "./Funds.module.css";
 import { Sprite } from "./sprite/Sprite";
 
-/* 여러 화면에서 같이 쓰는 작은 화면 조각. 모양은 globals.css의 같은 클래스 이름을 따라가요. */
+/* 여러 화면에서 같이 쓰는 작은 화면 조각. Funds와 Choice는 같은 이름의 CSS Module, 나머지는 전역 CSS(app/styles)의 같은 클래스 이름을 따라가요. */
 
 const cls = (base: string, extra?: string) => (extra ? `${base} ${extra}` : base);
 
@@ -29,10 +31,10 @@ export function Panel({ title, kicker, className, children, ref }: PanelProps) {
 /** 보유 자금을 큰 숫자로 보여줘요. 시즌 투자·상점처럼 돈을 쓰는 곳 위에 둬요. note는 옆에 작게 붙여요. */
 export function Funds({ amount, note }: { amount: number; note?: React.ReactNode }) {
   return (
-    <div className="funds">
-      <span className="funds-k">보유 자금</span>
-      <b className="funds-v">{money(amount)}</b>
-      {note && <span className="funds-note">{note}</span>}
+    <div className={fundsCss.funds}>
+      <span className={fundsCss.k}>보유 자금</span>
+      <b className={fundsCss.v}>{money(amount)}</b>
+      {note && <span className={fundsCss.note}>{note}</span>}
     </div>
   );
 }
@@ -110,13 +112,13 @@ type ChoiceProps = {
 /** 시트 안의 큰 선택 버튼 */
 export function Choice({ label, tag, sub, icon, detail, ...rest }: ChoiceProps) {
   return (
-    <button type="button" className="choice" {...rest}>
-      <span className="cl">
+    <button type="button" className={choiceCss.choice} {...rest}>
+      <span className={choiceCss.cl}>
         {icon}
         <b>{label}</b>
-        {tag && <span className="ct">{tag}</span>}
+        {tag && <span className={choiceCss.ct}>{tag}</span>}
       </span>
-      {sub && <span className="cs">{sub}</span>}
+      {sub && <span className={choiceCss.cs}>{sub}</span>}
       {detail}
     </button>
   );

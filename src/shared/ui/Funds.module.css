@@ -1,0 +1,25 @@
+/* 보유 자금: 돈을 쓰기 전에 바로 보이게 숫자를 크게 보여줘요. */
+.funds {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+}
+.k {
+  font-size: var(--text-xs);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.v {
+  font-family: var(--f-num);
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.note {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}

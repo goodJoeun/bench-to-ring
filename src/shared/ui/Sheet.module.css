@@ -1,0 +1,84 @@
+/* 화면 아래에서 올라오는 선택 시트(시즌 계획, 오프시즌 결정 등)와 뒤 배경. 시트 안 글자와 단추(.sheet-kicker, .sheet-go 등)는 기능마다 달라서 전역 CSS(app/styles/21-sheet.css)에 있어요. */
+html:has(.sheet) {
+  overflow: hidden;
+}
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(6, 10, 20, 0.5);
+  animation: fade 0.25s ease both;
+}
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 61;
+  width: 100%;
+  max-width: calc(var(--t-max) + 32px);
+  max-height: 88dvh;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px 22px calc(24px + var(--safe-b));
+  background: var(--panel);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.25);
+  animation: sheet-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.grabber {
+  position: relative;
+  align-self: center;
+  width: 40px;
+  height: 4px;
+  border-radius: var(--r-xs);
+  background: var(--line);
+  margin-bottom: 12px;
+  flex: none;
+  cursor: grab;
+  touch-action: none;
+}
+/* 끌어서 닫는 손잡이의 눌리는 영역 */
+.grabber::after {
+  content: "";
+  position: absolute;
+  inset: -10px -40px -12px;
+}
+/* 꼭 골라야 하는 시트는 손잡이가 없으니 그 자리만큼 위 여백을 둬요. */
+.sheet:not(:has(> .grabber)) {
+  padding-top: 22px;
+}
+.sheet h2 {
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: var(--text-3xl);
+  line-height: 1.25;
+  margin: 0;
+  text-wrap: balance;
+}
+/* 저절로 뜬 시트는 잠깐 눌리지 않아요. 눌린 듯한 반응도 보이지 않게 해요. */
+.sheet[data-guarded] button {
+  pointer-events: none;
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

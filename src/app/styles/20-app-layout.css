@@ -1,7 +1,6 @@
 /* 눌렀을 때 손끝에 반응이 오게 */
 .advance:active,
 .start:active,
-.choice:active,
 .cand:active,
 .btn:active,
 .sheet-go:active {

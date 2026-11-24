@@ -1,0 +1,7 @@
+/* 기록 지우기 시트의 지울 선수 줄. 여는 단추(.rk-del)는 공용 .btn 위에 덧칠해서 전역 CSS에 남겨 둬요. */
+.who {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--ink);
+}

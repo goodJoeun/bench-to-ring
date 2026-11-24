@@ -1,0 +1,31 @@
+/* 구단·학교 로고, 국기, 자체 엠블럼(자체 디자인). 다른 화면 CSS가 자리에 맞게 꾸밀 수 있게 badge·flag 클래스 이름도 함께 달아 둬요(TeamBadge.tsx). */
+.badge {
+  flex: none;
+  display: inline-block;
+  vertical-align: middle;
+  overflow: visible;
+}
+/* 국기: 원형으로 잘라 얇은 테두리를 둘러요(흰 바탕 국기도 경계가 보이게). .badge의 overflow:visible이 남으면 이미지가 원형으로 잘리지 않아서 숨겨요. */
+.badge.flag {
+  border-radius: 50%;
+  object-fit: cover;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+.badge.logo {
+  object-fit: contain;
+  box-sizing: border-box;
+  border-radius: 24%;
+  background: var(--logo-tile, transparent);
+  padding: var(--logo-pad, 0);
+}
+.mono {
+  font-family: var(--f-display);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+.mono.latin {
+  font-family: var(--f-num);
+  font-weight: 700;
+  letter-spacing: 0;
+}
