@@ -45,11 +45,17 @@ export function jersey(ctx: Ctx, color: string, tug = 0, number?: number) {
   shape(ctx, "M56 24L71 16L83 18L68 19Z M96 24L100 17L100 23Z M53 41L61 44L70 44L65 46Z", shade(color, 0.15));
   shape(ctx, "M57 20L60 19L63 20L62 24L59 25L57 23Z", trim);
   if (number !== undefined) {
+    ctx.save();
+    ctx.translate(80, 35);
+    // 좌우 반전해 그린 선수도 번호는 바로 읽히게 글자만 다시 뒤집어요.
+    const m = ctx.getTransform();
+    if (m.a * m.d - m.b * m.c < 0) ctx.scale(-1, 1);
     ctx.font = 'bold 21px "Arial Narrow", sans-serif';
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = trim;
-    ctx.fillText(String(number), 80, 35);
+    ctx.fillText(String(number), 0, 0);
+    ctx.restore();
   }
   // 직조 라벨과 옆선.
   shape(ctx, "M54 60L61 61L61 64L54 63Z", trim);

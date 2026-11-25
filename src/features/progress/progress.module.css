@@ -483,8 +483,8 @@
   display: block;
   width: 100%;
 }
-/* 우승 세레모니 그림: 금테 두른 경기장 판 */
-.champArt {
+/* 우승 세레모니·트로피 받기 그림: 금테 두른 판 */
+.ceremonyArt {
   position: relative;
   overflow: hidden;
   border-radius: var(--r-md);
@@ -494,7 +494,7 @@
     0 0 26px rgba(255, 214, 107, 0.35);
   animation: rise 0.4s ease-out both;
 }
-.champArt canvas {
+.ceremonyArt canvas {
   display: block;
   width: 100%;
 }
@@ -835,7 +835,7 @@
   .cheerLeaguePlate,
   .cheerRing,
   .cheerRingSpark,
-  .champArt,
+  .ceremonyArt,
   .simCard.cheerAchv :global(.cheer-title),
   .achvRays,
   .achvMedal,

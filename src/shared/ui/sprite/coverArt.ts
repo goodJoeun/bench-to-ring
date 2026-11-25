@@ -292,9 +292,9 @@ function drawSittingLegs(ctx: Ctx, skin: string, o: Outfit): void {
   }
 }
 
-function drawTop(ctx: Ctx, o: Outfit, tug: number): void {
+function drawTop(ctx: Ctx, o: Outfit, tug: number, num?: number): void {
   const { color } = o;
-  if (o.kind === "jersey") return jersey(ctx, color, tug);
+  if (o.kind === "jersey") return jersey(ctx, color, tug, num);
   if (o.kind === "ref") {
     // 심판복: 흰 셔츠에 검은 세로 줄무늬, 검은 깃
     const shirt: Pt[] = [
@@ -395,6 +395,8 @@ export interface PosedExtra {
   outfit?: Outfit["kind"];
   bow?: number;
   tilt?: number;
+  /** 유니폼 가슴의 등번호. 앞으로 든 팔이 번호를 가려요. */
+  num?: number;
 }
 
 /**
@@ -405,10 +407,10 @@ export function drawPosed(ctx: Ctx, look: Look, color: string, lh: Pt, rh: Pt, m
   const p: Pose = { ...BASE, bow: extra.bow ?? 0, tilt: extra.tilt ?? 0 };
   [p.le, p.lh] = arm(SHOULDER.l, lh);
   [p.re, p.rh] = arm(SHOULDER.r, rh);
-  drawFigure(ctx, look, { kind: extra.outfit ?? "jersey", color }, false, p, mood);
+  drawFigure(ctx, look, { kind: extra.outfit ?? "jersey", color }, false, p, mood, extra.num);
 }
 
-function drawFigure(ctx: Ctx, look: Look, o: Outfit, sitting: boolean, p: Pose, mood: Mood): void {
+function drawFigure(ctx: Ctx, look: Look, o: Outfit, sitting: boolean, p: Pose, mood: Mood, num?: number): void {
   const { skin } = look;
   if (sitting) drawSittingLegs(ctx, skin, o);
   else drawStandingLegs(ctx, skin, o, p);
@@ -421,7 +423,7 @@ function drawFigure(ctx: Ctx, look: Look, o: Outfit, sitting: boolean, p: Pose, 
     [SHOULDER.r, p.re, p.rh],
   ];
   for (const [s, e, h] of arms) if (!inFront(h)) drawArm(ctx, skin, o, s, e, h);
-  drawTop(ctx, o, p.tug);
+  drawTop(ctx, o, p.tug, num);
   // 고개를 숙이면 머리가 내려오고 얼굴이 납작해 보여요. 기울이면 목을 축으로 돌아요.
   ctx.save();
   ctx.translate(p.tilt * 24, p.bow * 14);

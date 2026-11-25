@@ -1821,6 +1821,36 @@ function confetto(ctx: Ctx, x: number, y: number, spin: number, flip: number, co
   ctx.restore();
 }
 
+/** 움직이는 장면 속 한 사람의 자리: 가운데 x, 크기, 발끝, 좌우 반전, 뛰는 높이(px)와 박자 어긋남 */
+interface Spot {
+  x: number;
+  s: number;
+  feet: number;
+  flip: boolean;
+  hop?: number;
+  ph?: number;
+}
+
+/** 박자에 맞춰 뛰어오른 높이(px). on(0~1)만큼만 뛰어요. */
+const airOf = (o: Spot, t: number, on: number) => (o.hop ?? 0) * beat(t, o.ph ?? 0) * on;
+
+/** 캐릭터 판의 점이 캔버스에서 오는 자리. up만큼 뛰어올라 있을 때예요. */
+const onCanvas = (o: Spot, [bx, by]: Pt, up = 0): Pt => [o.x + (bx - 80) * o.s * (o.flip ? -1 : 1), o.feet - up - 231 * o.s + by * o.s];
+
+/** 한 사람을 손 위치대로 세우고, num이 있으면 유니폼 가슴에 등번호를 달아요(앞으로 든 팔이 번호를 가려요). */
+function standAt(p: Paint, o: Spot, up: number, hands: [Pt, Pt], mood: Mood, num: number | null, extra: FigureOpt = {}): void {
+  figureAt(p, o.x, hands, mood, { ...extra, scale: o.s, feet: o.feet - up, flip: o.flip, num: num ?? undefined });
+}
+
+/** 발밑 그림자: 뛰어오르면(up) 작고 옅어져요. */
+function floorShadow(ctx: Ctx, o: Spot, up: number): void {
+  const k = 1 - (up / 14) * 0.35;
+  ctx.save();
+  ctx.globalAlpha = 0.32 * k;
+  ellipse(ctx, o.x, o.feet - 1, 30 * o.s * k, 5 * o.s * k, "#0B0F1C");
+  ctx.restore();
+}
+
 /**
  * 우승 세레모니의 배경: 결정 장면의 경기장(seed로 앵글·조명이 바뀌어요)에 금빛 조명 두 줄기가 우리 팀 쪽으로 모여요.
  * 움직이지 않아서 화면 쪽에서 한 번만 그려 두고 매번 그 위에 drawParty를 그려요.
@@ -1862,17 +1892,14 @@ export function drawParty(p: Paint, t: number, young = false): void {
     ctx.restore();
   }
 
-  /** 한 사람: 가운데에서 떨어진 거리, 크기, 발끝, 좌우 반전, 뛰는 높이(px)와 박자 어긋남 */
-  type Spot = { x: number; s: number; feet: number; flip: boolean; hop: number; ph: number };
-  const spot = (dx: number, s: number, feet: number, flip: boolean, hop: number, ph: number): Spot => ({ x: cx + dx * kx, s, feet, flip, hop, ph });
+  const spot = (dx: number, s: number, feet: number, flip: boolean, hop: number, ph: number): Required<Spot> => ({ x: cx + dx * kx, s, feet, flip, hop, ph });
   const C = spot(-106, 0.44, 132, false, 11, 0.25);
   const D = spot(106, 0.44, 132, true, 11, 0.75);
   const A = spot(-56, 0.49, 139, false, 7, 0);
   const B = spot(56, 0.49, 139, true, 4, 0.5);
   const ME = spot(0, 0.53, 147, false, 0, 0);
-  const air = (o: Spot) => o.hop * beat(t, o.ph) * erupt;
-  /** 판 위의 점이 캔버스에서 오는 자리 */
-  const at = (o: Spot, [bx, by]: Pt): Pt => [o.x + (bx - 80) * o.s * (o.flip ? -1 : 1), o.feet - air(o) - 231 * o.s + by * o.s];
+  const air = (o: Spot) => airOf(o, t, erupt);
+  const at = (o: Spot, b: Pt): Pt => onCanvas(o, b, air(o));
 
   // 내 손: 허리춤에서 두 손으로 든 컵을 오른손으로 머리 옆까지 들어 올리고, 왼손은 주먹을 쥐고 흔들어요.
   const myL = mixPt([64, 140], mixPt([34, 80], [24, 56], beat(t, 0.1)), lift);
@@ -1883,20 +1910,10 @@ export function drawParty(p: Paint, t: number, young = false): void {
   // 컵 뒤로 번지는 금빛
   glow(ctx, grip[0], grip[1] - 22, 74, "#FFE27A", (0.32 + 0.1 * Math.sin(t * 4)) * (0.35 + 0.65 * lift));
 
-  // 바닥 그림자: 뛰어오르면 작고 옅어져요.
-  for (const o of [C, D, A, B, ME]) {
-    const k = 1 - (air(o) / 14) * 0.35;
-    ctx.save();
-    ctx.globalAlpha = 0.32 * k;
-    ellipse(ctx, o.x, o.feet - 1, 30 * o.s * k, 5 * o.s * k, "#0B0F1C");
-    ctx.restore();
-  }
+  for (const o of [C, D, A, B, ME]) floorShadow(ctx, o, air(o));
 
-  const stand = (o: Spot, hands: [Pt, Pt], mood: Mood, mate: { look: Look; num: number } | null) => {
-    figureAt(p, o.x, hands, mood, { scale: o.s, feet: o.feet - air(o), flip: o.flip, look: mate?.look });
-    const [nx, ny] = at(o, [80, 128]);
-    text(ctx, String(mate ? mate.num : p.num), nx, ny, 30 * o.s, shade(color, 0.8), 900);
-  };
+  const stand = (o: Spot, hands: [Pt, Pt], mood: Mood, mate: { look: Look; num: number } | null) =>
+    standAt(p, o, air(o), hands, mood, mate ? mate.num : p.num, { look: mate?.look });
   const cheerMood: Mood = erupt > 0.5 ? "beam" : "smile";
   /** 박수 치던 손(박자 어긋남 ph)이 환호하는 손(l, r)으로 바뀌어요. */
   const rally = (ph: number, l: Pt, r: Pt): [Pt, Pt] => {
@@ -1978,15 +1995,257 @@ export function drawParty(p: Paint, t: number, young = false): void {
   }
 
   // 내리는 꽃가루: 대포가 터진 뒤부터 위에서 계속 내려와요.
-  if (shot > 0) {
-    RAIN.forEach(([u, v], i) => {
-      const fall = shot * (30 + v * 26) - v * 110;
-      if (fall < 0) return;
-      const y = -8 + (fall % (H + 16));
-      const x = u * w + Math.sin(t * 1.7 + i) * 7;
-      confetto(ctx, x, y, t * 2.6 + i, Math.cos(t * 6 + i * 1.3), colors[i % colors.length], i % 6 === 0);
-    });
+  confettiRain(ctx, w, t, shot, colors);
+}
+
+/** 위에서 계속 내리는 꽃가루. since는 내리기 시작한 뒤 지난 초(0보다 작으면 아직), t는 흔들림에 쓰는 시각이에요. */
+function confettiRain(ctx: Ctx, w: number, t: number, since: number, colors: string[]): void {
+  if (since <= 0) return;
+  RAIN.forEach(([u, v], i) => {
+    const fall = since * (30 + v * 26) - v * 110;
+    if (fall < 0) return;
+    const y = -8 + (fall % (SCENE_H + 16));
+    const x = u * w + Math.sin(t * 1.7 + i) * 7;
+    confetto(ctx, x, y, t * 2.6 + i, Math.cos(t * 6 + i * 1.3), colors[i % colors.length], i % 6 === 0);
+  });
+}
+
+/* ---------- 개인 수상: 트로피 받기 (축하 팝업) ---------- */
+
+/** 트로피를 받는 상: 시즌 MVP(NBA MVP와 다른 리그의 정규리그 MVP)와 파이널 MVP. 트로피 모양과 무대가 달라요. */
+export type AwardKind = "mvp" | "fmvp";
+
+/** 트로피를 받는 그림의 높이 */
+export const AWARD_H = SCENE_H;
+
+/** 금빛 공: 왼쪽 위에서 빛을 받고 이음선이 있어요. */
+function goldBall(ctx: Ctx, x: number, y: number, r: number): void {
+  ellipse(ctx, x, y, r, r, "#D99A22");
+  ellipse(ctx, x - r * 0.1, y - r * 0.1, r * 0.88, r * 0.88, "#F5C443");
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.strokeStyle = "#B9831A";
+  ctx.lineWidth = r * 0.11;
+  ctx.beginPath();
+  ctx.moveTo(x - r, y);
+  ctx.quadraticCurveTo(x, y + r * 0.2, x + r, y);
+  ctx.moveTo(x, y - r);
+  ctx.quadraticCurveTo(x - r * 0.13, y, x, y + r);
+  ctx.moveTo(x - r * 0.6, y - r * 0.8);
+  ctx.bezierCurveTo(x + r * 0.07, y - r * 0.33, x + r * 0.07, y + r * 0.27, x - r * 0.67, y + r * 0.73);
+  ctx.moveTo(x + r * 0.6, y - r * 0.8);
+  ctx.bezierCurveTo(x + r * 0.13, y - r * 0.27, x + r * 0.27, y + r * 0.33, x + r * 0.73, y + r * 0.67);
+  ctx.stroke();
+  ctx.restore();
+  ellipse(ctx, x - r * 0.42, y - r * 0.45, r * 0.26, r * 0.18, "#FFF6C8");
+}
+
+/** 시즌 MVP 트로피: 나무 받침 위 금빛 기둥에 금빛 공을 올렸어요. (x, y)가 받침 바닥 가운데이고, 높이는 69에 k를 곱한 만큼이에요. */
+function mvpTrophy(ctx: Ctx, x: number, y: number, k = 1): void {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(k, k);
+  rrect(ctx, -15, -12, 30, 12, 2, "#5A3A22");
+  rrect(ctx, -15, -12, 30, 3, 1.5, "#7A5234");
+  rrect(ctx, -8, -8, 16, 5, 1, "#E2A93B");
+  rrect(ctx, -11, -16, 22, 4, 1.5, "#C98F1C");
+  poly(ctx, [[-6, -16], [6, -16], [3.5, -40], [-3.5, -40]], "#F5C443");
+  poly(ctx, [[-4.5, -17], [-2.6, -17], [-1.6, -39], [-2.6, -39]], "#FFF1A8");
+  ellipse(ctx, 0, -41, 8, 2.6, "#C98F1C");
+  goldBall(ctx, 0, -55, 14);
+  ctx.restore();
+}
+
+/**
+ * 파이널 MVP 트로피: 검은 받침과 은빛 기둥 위에 금테 림과 은빛 그물을 얹고, 그 림에 금빛 공이 막 들어가 앉았어요.
+ * (x, y)가 받침 바닥 가운데이고, 높이는 63에 k를 곱한 만큼이에요.
+ */
+function fmvpTrophy(ctx: Ctx, x: number, y: number, k = 1): void {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(k, k);
+  rrect(ctx, -16, -12, 32, 12, 2, "#1E2230");
+  rrect(ctx, -16, -9, 32, 3, 1, "#C9D1DC");
+  rrect(ctx, -9, -16, 18, 4, 1.5, "#9AA3AE");
+  poly(ctx, [[-4, -16], [4, -16], [2.5, -27], [-2.5, -27]], "#C9D1DC");
+  const rim = -44;
+  ctx.strokeStyle = "#C98F1C";
+  ctx.lineWidth = 2.6;
+  ctx.beginPath();
+  ctx.ellipse(0, rim, 14, 4, 0, Math.PI, Math.PI * 2);
+  ctx.stroke();
+  goldBall(ctx, 0, rim - 8, 11);
+  // 그물: 림에서 기둥 머리로 모이는 은빛 줄
+  for (let i = 0; i <= 5; i++) {
+    const top: Pt = [-14 + (28 * i) / 5, rim + 1];
+    if (i < 5) line(ctx, [top, [-3 + (6 * (i + 1)) / 5, -27]], "#DDE3EA", 1.3);
+    if (i > 0) line(ctx, [top, [-3 + (6 * (i - 1)) / 5, -27]], "#DDE3EA", 1.3);
   }
+  ctx.strokeStyle = "#F5C443";
+  ctx.beginPath();
+  ctx.ellipse(0, rim, 14, 4, 0, 0, Math.PI);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** 상마다 트로피: 그리기, 손으로 쥐는 기둥 높이(받침 바닥에서), 전체 높이 */
+const TROPHIES: Record<AwardKind, { draw: (ctx: Ctx, x: number, y: number, k: number) => void; grip: number; h: number }> = {
+  mvp: { draw: mvpTrophy, grip: 28, h: 69 },
+  fmvp: { draw: fmvpTrophy, grip: 21, h: 63 },
+};
+
+/** 내 선수가 오른손을 뻗어 트로피를 받기까지(초) */
+const REACH: [number, number] = [0.1, 0.35];
+/** 시상자가 내민 트로피가 내 손으로 옮겨 오는 동안(초) */
+const HANDOVER: [number, number] = [0.35, 0.95];
+/** 받은 트로피를 높이 들어 올리는 동안(초). 다 들면 반짝이가 사방으로 터져요. */
+const RAISE: [number, number] = [1.0, 1.5];
+/** 시상자가 한 걸음 물러나 박수 치는 동안(초) */
+const STEP_BACK: [number, number] = [0.95, 1.35];
+const SHINE_SEC = 0.7;
+
+/** 무대: 시즌 MVP는 기자회견 무대, 파이널 MVP는 결승이 끝난 경기장의 시상대예요. 내 선수와 시상자, 동료 둘의 자리 */
+function awardStage(p: Paint, kind: AwardKind) {
+  const kx = Math.max(0.78, Math.min(1, (p.w - 24) / 336));
+  const at = (dx: number, s: number, feet: number, flip: boolean, hop = 0, ph = 0): Spot => ({ x: p.cx + dx * kx, s, feet, flip, hop, ph });
+  return kind === "mvp"
+    ? { me: at(-30, 0.55, 146, false), giver: at(34, 0.53, 144, true), mates: [at(-122, 0.42, 126, false), at(124, 0.42, 126, true)], stepX: 20 * kx }
+    : { me: at(-28, 0.5, 136, false), giver: at(30, 0.48, 135, true), mates: [at(-124, 0.44, 132, false, 9, 0.25), at(126, 0.44, 132, true, 9, 0.75)], stepX: 20 * kx };
+}
+
+/**
+ * 트로피를 받는 그림의 배경. 움직이지 않아서 화면 쪽에서 한 번만 그려 두고 매번 그 위에 drawAward를 그려요.
+ * 시즌 MVP: 어두운 남색 무대 막에 큰 MVP 글자, 내 자리를 비추는 스포트라이트.
+ * 파이널 MVP: 우승 세레모니와 같은 경기장(같은 seed면 같은 앵글)에 금테 두른 시상대와 조명.
+ */
+export function drawAwardBg(p: Paint, kind: AwardKind): void {
+  const { ctx, cx } = p;
+  const { me } = awardStage(p, kind);
+  if (kind === "mvp") {
+    stageBg(p, me.x, ["#0E1B3A", "#183064"]);
+    text(ctx, "MVP", cx + 8, 36, 46, "rgba(255,255,255,0.12)", 900);
+    return;
+  }
+  arenaBg(p);
+  ctx.save();
+  ctx.globalAlpha = 0.18;
+  poly(ctx, [[me.x - 14, 0], [me.x + 14, 0], [me.x + 62, SCENE_H], [me.x - 62, SCENE_H]], "#FFF4C2");
+  ctx.restore();
+  rrect(ctx, cx - 96, 133, 192, 20, 3, "#1B2033");
+  rrect(ctx, cx - 96, 133, 192, 3, 1.5, "#F5C443");
+  text(ctx, "FINALS MVP", cx, 143, 8, "rgba(245,196,67,0.9)", 900);
+}
+
+/**
+ * 트로피 받기: 정장 차림 시상자가 두 손으로 내민 트로피를 내 선수가 받아(HANDOVER) 오른손으로 높이 들어 올려요(RAISE).
+ * 들어 올리는 순간 트로피에서 반짝이가 사방으로 터지고 금빛이 번져요. 시상자는 한 걸음 물러나 박수를 쳐요.
+ * 시즌 MVP는 왼손을 가슴에 얹고 감격해 울며, 기자들 카메라 플래시가 계속 터지고 뒤에서 동료 둘이 박수를 쳐요.
+ * 파이널 MVP는 왼손 주먹을 흔들며 환하게 웃고, 꽃가루가 계속 내리는 가운데 동료 둘이 뛰어올라요. t는 그림이 뜬 뒤 지난 초예요.
+ */
+export function drawAward(p: Paint, kind: AwardKind, t: number, young = false): void {
+  const { ctx, w, color } = p;
+  const { me, giver, mates, stepX } = awardStage(p, kind);
+  const trophy = TROPHIES[kind];
+  const tk = kind === "mvp" ? 0.56 : 0.6;
+  const reach = smooth(t, REACH);
+  const pass = smooth(t, HANDOVER);
+  const raise = smooth(t, RAISE);
+  const back = smooth(t, STEP_BACK);
+  const [, , mL, mR] = squad(p.seed, p.num, young);
+
+  // 플래시: 시즌 MVP는 기자석, 파이널 MVP는 관중석
+  const fk = t % PARTY_FLASH_LOOP;
+  const flashes = kind === "mvp" ? SIGN_FLASHES.map(([fx, fy, when]): [number, number, number] => [fx, fy * 0.62, when * 0.9]) : PARTY_FLASHES;
+  for (const [fx, fy, when] of flashes) {
+    const a = 1 - (fk - when) / 0.28;
+    if (fk < when || a <= 0) continue;
+    ctx.save();
+    ctx.globalAlpha = a;
+    flash(ctx, fx * w, fy, (kind === "mvp" ? 5 : 4) + 4 * a);
+    ctx.restore();
+  }
+
+  // 내 손: 쉬던 손을 시상자 쪽으로 뻗어 트로피를 받고, 오른손으로 머리 옆까지 들어 올려요.
+  const reachL = mixPt([42, 152], [100, 124], reach);
+  const reachR = mixPt([118, 152], [126, 118], reach);
+  // 시즌 MVP는 왼손을 가슴(심장 쪽)에 얹어요.
+  const endL: Pt = kind === "mvp" ? [66, 110] : mixPt([34, 80], [24, 56], beat(t, 0.1));
+  const myL = mixPt(reachL, endL, raise);
+  // 트로피 받침이 머리에 얹히지 않게 머리 옆 조금 바깥으로 들어요.
+  const myR = mixPt(reachR, [118, 50 + 3 * Math.sin(t * 5)], raise);
+  const myGrip = onCanvas(me, mixPt(mixPt(myL, myR, 0.5), myR, raise));
+
+  // 시상자 손: 트로피를 두 손으로 내밀었다가, 물러나며 박수를 쳐요.
+  const g: Spot = { ...giver, x: giver.x + stepX * back };
+  const [clapL, clapR] = clapHands(t, 0.3);
+  const giverHands: [Pt, Pt] = [mixPt([100, 122], clapL, back), mixPt([124, 122], clapR, back)];
+  const giverGrip = onCanvas(giver, [112, 122]);
+  const grip = mixPt(giverGrip, myGrip, pass);
+  const top: Pt = [grip[0], grip[1] + (trophy.grip - trophy.h * 0.62) * tk];
+
+  // 트로피 뒤로 번지는 금빛
+  glow(ctx, top[0], top[1], 70, "#FFE27A", (0.3 + 0.1 * Math.sin(t * 4)) * (0.25 + 0.75 * raise));
+
+  // 동료 둘: 시즌 MVP는 뒤에서 박수, 파이널 MVP는 두 팔을 들고 뛰어요.
+  const on = kind === "fmvp" ? smooth(t, [0.2, 0.5]) : 0;
+  for (const o of [...mates, g, me]) floorShadow(ctx, o, airOf(o, t, on));
+  mates.forEach((o, i) => {
+    const mate = i ? mR : mL;
+    const b = beat(t, o.ph ?? 0);
+    const hands: [Pt, Pt] =
+      kind === "mvp" ? clapHands(t, 0.45 * i) : [mixPt(clapHands(t, 0.2)[0], mixPt([30, 76], [22, 54], b), on), mixPt(clapHands(t, 0.2)[1], mixPt([130, 76], [138, 54], b), on)];
+    standAt(p, o, airOf(o, t, on), hands, kind === "mvp" ? "smile" : "beam", mate.num, { look: mate.look });
+  });
+
+  standAt(p, g, 0, giverHands, "smile", null, { look: OFFICIAL, color: OFFICIAL_SUIT, outfit: "suit" });
+  standAt(p, me, 0, [myL, myR], raise > 0.6 ? (kind === "mvp" ? "moved" : "beam") : "smile", p.num);
+
+  // 트로피와 그것을 쥔 손(손이 트로피 앞에 와요)
+  trophy.draw(ctx, grip[0], grip[1] + trophy.grip * tk, tk);
+  const hand = (o: Spot, b: Pt, skin: string) => {
+    const [hx, hy] = onCanvas(o, b);
+    ellipse(ctx, hx, hy, 8 * o.s, 8.5 * o.s, skin);
+  };
+  if (pass < 0.5) {
+    hand(giver, giverHands[0], OFFICIAL.skin);
+    hand(giver, giverHands[1], OFFICIAL.skin);
+  } else {
+    if (raise < 0.5) hand(me, myL, p.look.skin);
+    hand(me, myR, p.look.skin);
+  }
+
+  // 들어 올린 순간 사방으로 퍼지는 반짝이와 금빛 고리
+  const shine = t - RAISE[1];
+  if (shine > 0 && shine < SHINE_SEC) {
+    const k = shine / SHINE_SEC;
+    ctx.save();
+    ctx.globalAlpha = 1 - k;
+    ctx.strokeStyle = "#FFE27A";
+    ctx.lineWidth = 3 * (1 - k) + 0.5;
+    ctx.beginPath();
+    ctx.arc(top[0], top[1], 8 + 46 * k, 0, Math.PI * 2);
+    ctx.stroke();
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2 + 0.3;
+      const d = 12 + 52 * Math.sqrt(k);
+      sparkle(ctx, top[0] + Math.cos(a) * d, top[1] + Math.sin(a) * d * 0.8, (i % 2 ? 4 : 6) * (1 - k * 0.5), i % 3 ? "#FFE27A" : "#FFFFFF");
+    }
+    ctx.restore();
+  }
+  if (raise > 0) {
+    ctx.save();
+    ctx.globalAlpha = raise;
+    const tw = (k: number) => 0.55 + 0.45 * Math.sin(t * 6 + k);
+    sparkle(ctx, top[0] - 22, top[1] - 6, 7 * tw(0), "#FFFFFF");
+    sparkle(ctx, top[0] + 20, top[1] - 12, 6 * tw(2), "#FFF4C2");
+    sparkle(ctx, top[0] + 24, top[1] + 18, 5 * tw(4), "#FFFFFF");
+    ctx.restore();
+  }
+
+  // 파이널 MVP: 우승 세레모니에서 이어지는 꽃가루가 처음부터 내리고 있어요.
+  if (kind === "fmvp") confettiRain(ctx, w, t, t + 4, [color, "#F5C443", "#FFFFFF", shade(color, 0.5), "#FFE58A"]);
 }
 
 /** 화면을 살짝 기울여 찍는 장면 */
