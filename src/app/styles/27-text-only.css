@@ -8,7 +8,6 @@
 :root[data-text-only]
   :is(
     .ball,
-    .court > .key,
     .radar,
     .sim-court,
     .fw-road,

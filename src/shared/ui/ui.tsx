@@ -1,6 +1,7 @@
 import { money, playerLook, type Player } from "@/game";
 import choiceCss from "./Choice.module.css";
 import fundsCss from "./Funds.module.css";
+import { CourtBackdrop } from "./CourtBackdrop";
 import { Sprite } from "./sprite/Sprite";
 
 /* 여러 화면에서 같이 쓰는 작은 화면 조각. Funds와 Choice는 같은 이름의 CSS Module, 나머지는 전역 CSS(app/styles)의 같은 클래스 이름을 따라가요. */
@@ -170,8 +171,8 @@ interface CourtStageProps {
 export function CourtStage({ player, color, children }: CourtStageProps) {
   return (
     <section className="court" style={{ "--team": color } as React.CSSProperties}>
-      <div className="key" aria-hidden="true" />
-      <Sprite look={playerLook(player)} color={color} label={`${player.name} 캐릭터`} />
+      <CourtBackdrop color={color} />
+      <Sprite look={playerLook(player)} number={player.num} color={color} label={`${player.name} 캐릭터`} />
       <div className="plate">{children}</div>
     </section>
   );

@@ -5,6 +5,8 @@
  */
 import type { Look, SceneKey } from "@/game";
 import { shade, type Mood } from "@/shared/ui/sprite/Sprite";
+import { basketball as ball } from "@/shared/ui/sprite/athleteArt";
+import { hardwood } from "@/shared/ui/sprite/courtArt";
 import { drawPosed, ellipse, line, poly, rrect, sparkle, type PosedExtra } from "@/shared/ui/sprite/coverArt";
 
 type Ctx = CanvasRenderingContext2D;
@@ -94,7 +96,9 @@ const HANDS = {
   heart: [[72, 108], [88, 108]],
   point: [[42, 152], [164, 100]],
   salute: [[42, 152], [102, 46]],
-  mic: [[42, 152], [96, 96]],
+  mic: [[42, 152], [99, 111]],
+  write: [[46, 146], [101, 141]],
+  unwell: [[50, 148], [69, 121]],
   bag: [[42, 152], [128, 136]],
   dribble: [[42, 152], [122, 146]],
   dunk: [[30, 84], [128, 48]],
@@ -192,24 +196,6 @@ const bp = (x: number, bx: number, by: number): Pt => [x + (bx - 80) * S, FEET -
 const headTop = (x: number, s = S): Pt => [x, FEET - 231 * s + 18 * s];
 
 /* ---------- 소품 ---------- */
-
-function ball(ctx: Ctx, x: number, y: number, r = 9): void {
-  ellipse(ctx, x, y, r, r, "#E8742A");
-  ctx.strokeStyle = "#7A3410";
-  ctx.lineWidth = 1.3;
-  ctx.beginPath();
-  ctx.moveTo(x - r, y);
-  ctx.lineTo(x + r, y);
-  ctx.moveTo(x, y - r);
-  ctx.lineTo(x, y + r);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(x - r * 1.25, y, r * 0.95, -0.9, 0.9);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(x + r * 1.25, y, r * 0.95, Math.PI - 0.9, Math.PI + 0.9);
-  ctx.stroke();
-}
 
 /** 골대: 쿠션 댄 기둥과 팔, 유리 백보드, 림, 마름모 그물. (x, y)가 림 가운데예요. */
 function hoop(ctx: Ctx, x: number, y: number, pole = true): void {
@@ -310,20 +296,19 @@ function gymBg(p: Paint, night = false): void {
   const { ctx, w } = p;
   band(p, 0, 104, grad(ctx, 0, 104, night ? ["#2A3350", "#3A4566"] : ["#DCE4EE", "#C7D2E0"]));
   for (let x = ((p.cx - 150) % 120) - 120; x < w; x += 120) {
-    rrect(ctx, x, 14, 70, 40, 3, night ? "#121A33" : "#F4F9FF");
+    rrect(ctx, x - 2, 12, 74, 45, 1, night ? "#252d43" : "#a3afbb");
+    rrect(ctx, x, 14, 70, 40, 1, night ? "#121A33" : "#e8f2f4");
+    if (!night) poly(ctx, [[x, 45], [x + 70, 24], [x + 70, 54], [x, 54]], "#c9dadd");
+    rrect(ctx, x, 31, 70, 2, 0, night ? "#343e54" : "#a8bbc5");
     rrect(ctx, x + 34, 14, 2, 40, 1, night ? "#3A4566" : "#C7D2E0");
     if (night) for (const [sx, sy] of scatter(3, x + 7)) sparkle(ctx, x + 6 + sx * 58, 18 + sy * 30, 1.8, "#FFF4C2");
   }
-  band(p, 100, 104, night ? "#1E2640" : "#9FB0C4");
-  band(p, 104, SCENE_H, grad(ctx, 104, SCENE_H, night ? ["#7A5233", "#5E3E26"] : ["#D9A066", "#C4864A"]));
-  ctx.strokeStyle = night ? "rgba(0,0,0,0.18)" : "rgba(120,70,30,0.22)";
-  ctx.lineWidth = 1;
-  for (let y = 112; y < SCENE_H; y += 9) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(w, y);
-    ctx.stroke();
+  band(p, 76, 101, night ? "#293449" : "#768d98");
+  for (let x = (p.cx % 35) - 35; x < w; x += 35) {
+    rrect(ctx, x + 1, 78, 32, 22, 2, night ? "#334158" : "#829da5");
   }
+  band(p, 100, 104, night ? "#1E2640" : "#546873");
+  hardwood(ctx, w, 104, SCENE_H, night);
   ctx.strokeStyle = "rgba(255,255,255,0.55)";
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -335,6 +320,12 @@ function gymBg(p: Paint, night = false): void {
 function wallBg(p: Paint, wall: [string, string], floor: [string, string], floorY = 112): void {
   band(p, 0, floorY, grad(p.ctx, 0, floorY, wall));
   band(p, floorY, SCENE_H, grad(p.ctx, floorY, SCENE_H, floor));
+  band(p, floorY - 4, floorY, shade(wall[1], -0.17));
+  const reach = p.cx - 45;
+  poly(p.ctx, [[reach - 130, 0], [reach - 56, 0], [reach + 30, floorY], [reach - 73, floorY]], "rgba(255,248,221,0.09)");
+  for (let x = (p.cx % 64) - 128; x < p.w + 64; x += 64) {
+    line(p.ctx, [[x, floorY + 1], [x + (x - p.cx) * 0.35, SCENE_H]], "rgba(30,35,48,0.11)", 0.8);
+  }
 }
 
 /** 바깥: 하늘, 먼 건물, 땅 */
@@ -344,6 +335,11 @@ function skyBg(p: Paint, sky: [string, string], ground: [string, string], city =
   for (let x = ((p.cx - 200) % 46) - 46, i = 0; x < w; x += 46, i++) {
     const h = 26 + ((i * 37) % 30);
     rrect(ctx, x, 112 - h, 38, h + 2, 2, city);
+    rrect(ctx, x + 5, 108 - h, 15, 5, 0, shade(city, -0.09));
+    rrect(ctx, x + 30, 113 - h, 8, h - 1, 0, shade(city, -0.12));
+    for (let y = 119 - h; y < 105; y += 8) {
+      for (let col = 0; col < 3; col++) rrect(ctx, x + 4 + col * 8, y, 5, 2, 0, shade(city, 0.23));
+    }
   }
   band(p, 110, SCENE_H, grad(ctx, 110, SCENE_H, ground));
 }
@@ -365,11 +361,21 @@ function arenaBg(p: Paint, bright = true, crowd?: (x: number) => string[]): void
   };
   band(p, 0, SCENE_H, grad(ctx, 0, SCENE_H, ["#101830", "#1C2646"]));
 
+  const courtside = (edge: number) => {
+    const haze = ctx.createLinearGradient(0, 22, 0, edge);
+    haze.addColorStop(0, "rgba(21,34,60,0.54)");
+    haze.addColorStop(0.66, "rgba(32,46,65,0.36)");
+    haze.addColorStop(1, "rgba(37,48,63,0.18)");
+    band(p, 18, edge, haze);
+    band(p, edge - 2, edge, "#586174");
+    hardwood(ctx, w, edge, SCENE_H);
+  };
+
   if (angle === 0) {
     // 정면 관중석: 고른 네 줄
     for (let row = 0; row < 4; row++)
       for (let x = (row % 2) * 7 - 6, i = 0; x < w; x += 14, i++) spectator(ctx, x, 46 + row * 15, 5.4, fan(x, i, row), -0.35 + row * 0.08, i + row);
-    woodFloor(p, 104);
+    courtside(104);
     if (bright)
       for (let x = ((cx - 120) % 160) - 160; x < w; x += 160) {
         ctx.save();
@@ -402,7 +408,7 @@ function arenaBg(p: Paint, bright = true, crowd?: (x: number) => string[]): void
       rrect(ctx, x + 4, 97, 56, 8, 2, i % 2 ? p.color : shade(tint, -0.25));
       for (let d = 0; d < 3; d++) rrect(ctx, x + 12 + d * 14, 100, 9, 2, 1, "rgba(255,255,255,0.85)");
     }
-    woodFloor(p, 108);
+    courtside(108);
     band(p, 113, 117, "rgba(255,255,255,0.1)");
     if (bright) {
       for (let x = ((cx - 40) % 80) - 80; x < w; x += 80) ellipse(ctx, x + 40, 11, 6, 3, "#FFF7D6");
@@ -425,7 +431,7 @@ function arenaBg(p: Paint, bright = true, crowd?: (x: number) => string[]): void
         }
     }
     band(p, 74, 82, "#0B0F1C");
-    band(p, 82, SCENE_H, grad(ctx, 82, SCENE_H, ["#B98250", "#D9A066"]));
+    courtside(82);
     ctx.strokeStyle = "rgba(255,255,255,0.6)";
     ctx.lineWidth = 2;
     for (const bx of [-1.2, 1.2]) {
@@ -461,7 +467,7 @@ function arenaBg(p: Paint, bright = true, crowd?: (x: number) => string[]): void
         const y = 54 + row * 11 + (x - cx) * 0.06;
         if (y > 46 && y < 102) spectator(ctx, x, y, 4.8, fan(x, i, row), -0.4 + row * 0.07, i + row);
       }
-    woodFloor(p, 104);
+    courtside(104);
     if (bright) {
       ctx.save();
       ctx.globalAlpha = 0.14;
@@ -580,25 +586,16 @@ function spectator(ctx: Ctx, x: number, y: number, r: number, shirt: string, dar
   ctx.fill();
 }
 
-/** 경기장 나무 바닥: y부터 아래로. 위에 얇은 경계선을 둬요. */
-function woodFloor(p: Paint, y: number): void {
-  band(p, y, y + 4, "#2A3558");
-  band(p, y + 4, SCENE_H, grad(p.ctx, y + 4, SCENE_H, ["#C99158", "#AF7840"]));
-}
-
 /** 무대: 어두운 막과 스포트라이트 */
 function stageBg(p: Paint, spot: number, top: [string, string] = ["#2B1846", "#3E2163"]): void {
   const { ctx, w } = p;
   band(p, 0, SCENE_H, grad(ctx, 0, SCENE_H, top));
-  ctx.strokeStyle = "rgba(0,0,0,0.18)";
-  ctx.lineWidth = 6;
-  for (let x = 10; x < w; x += 26) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, 112);
-    ctx.stroke();
+  for (let x = (p.cx % 32) - 32; x < w; x += 32) {
+    poly(ctx, [[x, 0], [x + 10, 0], [x + 16, 112], [x - 2, 112]], shade(top[0], -0.33));
+    poly(ctx, [[x + 13, 0], [x + 16, 0], [x + 24, 112], [x + 18, 112]], shade(top[1], 0.08));
   }
-  band(p, 112, SCENE_H, grad(ctx, 112, SCENE_H, ["#5A3A24", "#3E2817"]));
+  band(p, 3, 6, "#292a36");
+  hardwood(ctx, w, 112, SCENE_H, true);
   ctx.save();
   ctx.globalAlpha = 0.28;
   poly(ctx, [[spot - 18, 0], [spot + 18, 0], [spot + 70, SCENE_H], [spot - 70, SCENE_H]], "#FFF4C2");
@@ -727,28 +724,45 @@ const scenes: Record<SceneKey, Scene> = {
   },
 
   study(p) {
-    const { ctx, cx } = p;
-    wallBg(p, ["#F2EBDD", "#E6DCC8"], ["#B58B5F", "#9C7650"]);
-    // 칠판과 시험 날짜
-    rrect(ctx, cx - 150, 12, 300, 66, 4, "#8A5A2E");
-    rrect(ctx, cx - 146, 16, 292, 58, 2, "#2F5A44");
-    text(ctx, "D-1", cx + 92, 40, 20, "#F4F4F4");
-    ctx.strokeStyle = "rgba(255,255,255,0.6)";
-    ctx.lineWidth = 1.6;
-    ctx.beginPath();
-    ctx.moveTo(cx - 120, 34);
-    ctx.lineTo(cx - 70, 34);
-    ctx.moveTo(cx - 120, 48);
-    ctx.lineTo(cx - 84, 48);
-    ctx.stroke();
-    figure(p, cx - 30, "think", "nervous", { outfit: "tee" });
-    const [hx, hy] = headTop(cx - 30);
-    sweat(ctx, hx + 28, hy + 10);
-    desk(p, cx - 110, cx + 120, 112, "#C9925C", "#A87444");
-    // 책 더미와 시험지
-    for (const [i, c] of ["#E8505B", "#4FB3E8", "#F5C443", "#7BD389"].entries()) rrect(ctx, cx + 54 - i * 2, 104 - i * 8, 46, 8, 2, c);
-    paper(ctx, cx - 70, 104, 36, 26, -0.15);
-    text(ctx, "A+?", cx - 70, 104, 11, "#C8372D");
+    const { ctx, cx, w } = p;
+    wallBg(p, ["#f2dfbc", "#ceb897"], ["#aa8363", "#80634f"]);
+    // 오후 햇빛이 왼쪽 창에서 칠판과 책상 위로 비쳐요.
+    const left = cx - 104;
+    const right = cx + 158;
+    rrect(ctx, left, 10, right - left, 68, 2, "#725642");
+    rrect(ctx, left + 3, 13, right - left - 6, 59, 1, "#314d4d");
+    poly(ctx, [[left + 3, 13], [left + 113, 13], [left + 65, 72], [left + 3, 72]], "#425e59");
+    rrect(ctx, left - 2, 73, right - left + 4, 4, 1, "#b49670");
+    rrect(ctx, right - 32, 69, 12, 3, 1, "#e9e5cb");
+    text(ctx, "D−1", right - 42, 35, 17, "#f0ead2");
+    line(ctx, [[right - 64, 46], [right - 24, 44]], "#ddc28d", 1.2);
+    for (let x = left - 74; x > -76; x -= 74) {
+      rrect(ctx, x, 13, 61, 54, 1, "#a69376");
+      rrect(ctx, x + 3, 16, 55, 47, 0, "#dce6de");
+      poly(ctx, [[x + 3, 54], [x + 58, 33], [x + 58, 63], [x + 3, 63]], "#b8ccc9");
+      rrect(ctx, x + 29, 16, 3, 47, 0, "#f0e1c3");
+    }
+    const h = figure(p, cx - 34, "write", "nervous", { outfit: "tee", bow: 0.23, tilt: -0.06, scale: 0.88, feet: 183 });
+    // 앞쪽 책상이 하반신을 가려 상반신과 펼쳐 놓은 문제집이 함께 보여요.
+    band(p, 109, SCENE_H, "#846047");
+    poly(ctx, [[0, 123], [w, 103], [w, 127], [0, 150]], "#c4996c");
+    line(ctx, [[0, 147], [w, 125]], "#e2b57e", 2);
+    const book = cx - 7;
+    poly(ctx, [[book - 54, 111], [book - 16, 106], [book, 110], [book + 32, 101], [book + 49, 119], [book + 4, 132], [book - 48, 127]], "#6a5548");
+    poly(ctx, [[book - 54, 109], [book - 18, 104], [book, 108], [book + 4, 129], [book - 46, 124]], "#f6eacb");
+    poly(ctx, [[book, 108], [book + 32, 99], [book + 48, 117], [book + 4, 129]], "#fff4d9");
+    for (let i = 0; i < 4; i++) {
+      line(ctx, [[book - 44 + i, 111 + i * 3], [book - 13 + i, 109 + i * 3]], "#b3a78e", 0.9);
+      line(ctx, [[book + 8 + i, 109 + i * 3], [book + 29 + i, 104 + i * 3]], "#a49b88", 0.9);
+    }
+    line(ctx, [[h.r[0] - 4, h.r[1] - 5], [h.r[0] + 7, h.r[1] + 8]], "#9a5636", 2.5);
+    line(ctx, [[h.r[0] + 7, h.r[1] + 8], [h.r[0] + 9, h.r[1] + 10]], "#4a4140", 1.3);
+    for (const [i, cover] of ["#486077", "#95664c", "#596e60"].entries()) {
+      const x = cx + 73 - i * 2;
+      const y = 107 - i * 6;
+      rrect(ctx, x, y, 41, 6, 1, cover);
+      rrect(ctx, x + 5, y + 1, 35, 3, 0, "#e1d5b7");
+    }
   },
 
   track(p) {
@@ -796,38 +810,61 @@ const scenes: Record<SceneKey, Scene> = {
   },
 
   studio(p) {
-    const { ctx, cx } = p;
-    wallBg(p, ["#272C38", "#323846"], ["#1E222B", "#181B22"]);
-    // ON AIR 불
-    rrect(ctx, cx - 150, 14, 60, 20, 4, "#E8505B");
-    text(ctx, "ON AIR", cx - 120, 24, 10, "#FFFFFF", 900);
-    // 조명 판
-    for (const x of [cx - 60, cx + 20]) rrect(ctx, x, 6, 40, 10, 3, "#FFF7D6");
-    // 카메라와 삼각대
-    line(ctx, [[cx + 108, 76], [cx + 92, 140]], "#5B6472", 3);
-    line(ctx, [[cx + 108, 76], [cx + 124, 140]], "#5B6472", 3);
-    line(ctx, [[cx + 108, 76], [cx + 108, 140]], "#5B6472", 3);
-    rrect(ctx, cx + 84, 52, 48, 28, 5, "#151821");
-    rrect(ctx, cx + 70, 58, 18, 16, 3, "#0B0D12");
-    ellipse(ctx, cx + 72, 66, 6, 6, "#4FB3E8");
-    ellipse(ctx, cx + 126, 58, 3, 3, "#E8505B");
-    const h = figure(p, cx - 30, "mic", "smile", { outfit: "tee" });
-    rrect(ctx, h.r[0] - 2.5, h.r[1] - 12, 5, 13, 2, "#2A2A2A");
-    ellipse(ctx, h.r[0], h.r[1] - 14, 5, 5.5, "#5B6472");
+    const { ctx, cx, w } = p;
+    wallBg(p, ["#262a42", "#49445a"], ["#594959", "#302e40"]);
+    // 세트 뒤 흡음판과 조명 레일.
+    for (let x = (cx % 52) - 52; x < w; x += 52) {
+      rrect(ctx, x, 35, 47, 67, 1, "#363649");
+      rrect(ctx, x + 2, 36, 2, 65, 0, "#545064");
+    }
+    band(p, 11, 14, "#191d2e");
+    for (const x of [cx - 94, cx + 45]) {
+      poly(ctx, [[x, 13], [x + 17, 13], [x + 45, 98], [x - 41, 111]], "rgba(255,222,175,0.10)");
+      rrect(ctx, x - 3, 6, 24, 8, 2, "#1e2332");
+      rrect(ctx, x, 12, 18, 3, 1, "#ffdfb4");
+    }
+    rrect(ctx, cx - 147, 34, 48, 16, 2, "#6a3443");
+    text(ctx, "ON AIR", cx - 123, 42, 9, "#ffe2d1");
+    const h = figure(p, cx - 26, "mic", "smile", { outfit: "tee", scale: 0.9, feet: 191 });
+    const [mx, my] = h.r;
+    line(ctx, [[mx + 2, my + 3], [mx - 2, my - 9]], "#262735", 4);
+    ellipse(ctx, mx - 3, my - 12, 4.6, 5.6, "#4d5160");
+    line(ctx, [[mx - 6, my - 12], [mx, my - 14]], "#b1b0aa", 1.2);
+    // 전경의 방송 카메라. 뷰파인더와 렌즈 후드가 출연자를 향해요.
+    const cam = cx + 91;
+    for (const offset of [-26, 4, 32]) {
+      line(ctx, [[cam, 93], [cam + offset, 153]], "#191f2c", 5);
+      line(ctx, [[cam, 98], [cam + offset * 0.8, 140]], "#5e6270", 1.2);
+    }
+    rrect(ctx, cam - 10, 86, 21, 13, 3, "#202432");
+    rrect(ctx, cam - 21, 55, 51, 33, 3, "#202737");
+    poly(ctx, [[cam - 20, 60], [cam - 29, 61], [cam - 40, 55], [cam - 40, 84], [cam - 29, 77], [cam - 20, 79]], "#141c2a");
+    rrect(ctx, cam - 40, 59, 3, 20, 1, "#6596ab");
+    rrect(ctx, cam - 9, 49, 21, 7, 2, "#1b2130");
+    rrect(ctx, cam - 6, 52, 15, 3, 1, "#73717e");
+    rrect(ctx, cam + 1, 63, 21, 14, 1, "#475365");
+    rrect(ctx, cam + 4, 65, 15, 9, 1, "#98aaac");
+    ellipse(ctx, cam + 23, 59, 2, 2, "#f47461");
   },
 
   press(p) {
     const { ctx, cx, w } = p;
     // 후원사 로고 벽
-    band(p, 0, SCENE_H, "#EEF1F6");
-    for (let y = 8, r = 0; y < 110; y += 26, r++)
-      for (let x = ((cx - 13 * r) % 52) - 52; x < w; x += 52) rrect(ctx, x, y, 30, 14, 3, r % 2 ? shade(p.color, 0.55) : "#CBD3DF");
-    flash(ctx, cx - 120, 36, 10);
-    flash(ctx, cx + 128, 52, 8);
-    figure(p, cx, "rest", "nervous", { outfit: "tee" });
+    wallBg(p, ["#3d495e", "#657080"], ["#414856", "#343945"]);
+    const banner = shade(p.color, -0.45);
+    for (let y = 8, row = 0; y < 101; y += 21, row++) {
+      for (let x = (cx % 56) - 56; x < w; x += 56) {
+        const light = (Math.round((x - cx) / 56) + row) % 2 === 0;
+        rrect(ctx, x, y, 55, 20, 0, light ? "#cdd3d3" : banner);
+        const mark = light ? "#85919b" : shade(banner, 0.34);
+        poly(ctx, [[x + 15,y + 13],[x + 23,y + 6],[x + 29,y + 6],[x + 21,y + 13]], mark);
+        rrect(ctx, x + 29, y + 10, 10, 2, 0, mark);
+      }
+    }
+    figure(p, cx - 6, "rest", "nervous", { outfit: "tee", scale: 0.83, feet: 180 });
     desk(p, cx - 150, cx + 150, 112, "#232A3B", "#2F3648");
     // 마이크 다발
-    for (const [dx, c] of [[-26, "#E8505B"], [-10, "#2F5DB0"], [8, "#F5C443"], [24, "#1F7A4D"]] as const) {
+    for (const [dx, c] of [[-54, "#a85858"], [-28, "#496e8e"], [28, "#b99852"], [53, "#507563"]] as const) {
       line(ctx, [[cx + dx * 0.4, 112], [cx + dx, 92]], "#1A1D24", 3);
       rrect(ctx, cx + dx - 5, 84, 10, 12, 4, "#1A1D24");
       rrect(ctx, cx + dx - 6, 94, 12, 6, 2, c);
@@ -835,32 +872,43 @@ const scenes: Record<SceneKey, Scene> = {
   },
 
   phone(p) {
-    const { ctx, cx } = p;
-    wallBg(p, ["#DDE6F5", "#C8D6EE"], ["#AFC0DC", "#9DB0D0"]);
-    for (const [sx, sy] of scatter(8, 11)) {
-      ctx.save();
-      ctx.globalAlpha = 0.35;
-      ellipse(ctx, cx - 160 + sx * 320, 10 + sy * 90, 8 + sy * 10, 8 + sy * 10, "#FFFFFF");
-      ctx.restore();
+    const { ctx, cx, w } = p;
+    band(p, 0, SCENE_H, grad(ctx, 0, SCENE_H, ["#202a44", "#555165"]));
+    // 유리 너머의 번화가. 불 켜진 층과 가로등이 낮은 채도로 멀어져요.
+    const lights = ["#dcac86", "#8eb9bd", "#cd898b"];
+    for (let x = (cx % 28) - 28, i = 0; x < w; x += 28, i++) {
+      const top = 41 + (i * 29) % 45;
+      rrect(ctx, x, top, 26, 116 - top, 0, i % 2 ? "#303748" : "#363b50");
+      for (let row = 0; row < 3; row++) {
+        if ((i + row) % 3 !== 1) rrect(ctx, x + 5 + (row % 2) * 7, top + 5 + row * 7, 5, 2, 0, lights[(i + row) % 3]);
+      }
     }
-    // 큰 휴대폰 화면: 알림과 댓글
-    rrect(ctx, cx + 30, 10, 88, 132, 14, "#1A1D24");
-    rrect(ctx, cx + 35, 16, 78, 120, 10, "#F8FAFC");
-    rrect(ctx, cx + 60, 19, 28, 4, 2, "#1A1D24");
-    for (const [i, c] of ["#E8505B", "#4FB3E8", "#F5C443"].entries()) {
-      const y = 34 + i * 30;
-      ellipse(ctx, cx + 47, y + 6, 6, 6, c);
-      rrect(ctx, cx + 57, y, 50, 5, 2, "#C9D1DC");
-      rrect(ctx, cx + 57, y + 9, 34, 5, 2, "#DDE3EA");
+    band(p, 108, SCENE_H, "#353847");
+    for (const x of [cx - 108, cx + 129]) {
+      glow(ctx, x, 98, 19, "#edb58d", 0.25);
+      rrect(ctx, x, 96, 6, 2, 1, "#f2c89e");
+      rrect(ctx, x - 2, 109, 10, 1, 0, "#a78679");
     }
-    ellipse(ctx, cx + 112, 14, 9, 9, "#E8505B");
-    text(ctx, "99+", cx + 112, 14, 7, "#FFFFFF", 900);
-    heart(ctx, cx + 136, 54, 7, "#E8505B");
-    speech(ctx, cx + 140, 96, 26, 16, "#FFFFFF");
-    text(ctx, "!?", cx + 140, 96, 10, "#232A3B", 900);
-    figure(p, cx - 60, "think", "nervous", { outfit: "tee" });
-    const [hx, hy] = headTop(cx - 60);
-    sweat(ctx, hx + 28, hy + 10);
+    // 선수가 손에 든 전화와 화면에 올라온 글을 한 컷에 보여줘요.
+    const h = figure(p, cx - 40, "hold", "nervous", { outfit: "tee", scale: 0.91, feet: 187, bow: 0.23 });
+    const x = (h.l[0] + h.r[0]) / 2;
+    rrect(ctx, x - 8, h.r[1] - 15, 16, 21, 3, "#829399");
+    rrect(ctx, x - 5, h.r[1] - 12, 3, 4, 1, "#323a4a");
+    ctx.save();
+    ctx.translate(cx + 68, 73);
+    ctx.rotate(0.07);
+    rrect(ctx, -34, -62, 68, 125, 8, "#232837");
+    rrect(ctx, -31, -59, 62, 118, 6, "#eae7de");
+    rrect(ctx, -10, -56, 20, 3, 2, "#464a57");
+    for (let i = 0; i < 3; i++) {
+      const y = -37 + i * 30;
+      ellipse(ctx, -20, y, 4, 4, ["#a76f64", "#658892", "#b2986b"][i]);
+      rrect(ctx, -11, y - 3, 30, 3, 1, "#626979");
+      rrect(ctx, -11, y + 4, 21, 2, 1, "#b2b1ae");
+      rrect(ctx, -24, y + 13, 46, 1, 0, "#cccbc5");
+    }
+    rrect(ctx, -8, 52, 16, 2, 1, "#949795");
+    ctx.restore();
   },
 
   deal(p) {
@@ -978,8 +1026,8 @@ const scenes: Record<SceneKey, Scene> = {
 
   love(p) {
     const { ctx, cx } = p;
-    band(p, 0, SCENE_H, grad(ctx, 0, SCENE_H, ["#FFD6E3", "#FFC2D4"]));
-    for (const [sx, sy] of scatter(14, 5)) {
+    skyBg(p, ["#e4b6b0", "#f5d9c0"], ["#c59883", "#a88177"], "#b49b9d");
+    for (const [sx, sy] of scatter(6, 5)) {
       ctx.save();
       ctx.globalAlpha = 0.5;
       heart(ctx, cx - 180 + sx * 360, 10 + sy * 120, 4 + sy * 6, "#FF8FAE");
@@ -999,7 +1047,7 @@ const scenes: Record<SceneKey, Scene> = {
 
   heartbreak(p) {
     const { ctx, cx, w } = p;
-    band(p, 0, SCENE_H, grad(ctx, 0, SCENE_H, ["#5D6C84", "#7C8AA1"]));
+    skyBg(p, ["#546176", "#98a7b2"], ["#637383", "#505f71"], "#70808f");
     ctx.strokeStyle = "rgba(220,235,255,0.5)";
     ctx.lineWidth = 1.4;
     for (const [sx, sy] of scatter(40, 3)) {
@@ -1019,6 +1067,11 @@ const scenes: Record<SceneKey, Scene> = {
   wedding(p) {
     const { ctx, cx } = p;
     band(p, 0, SCENE_H, grad(ctx, 0, SCENE_H, ["#FFF6EC", "#F6E6D6"]));
+    for (let x = (cx % 62) - 62; x < p.w; x += 62) {
+      poly(ctx, [[x, 0], [x + 18, 0], [x + 8, 85], [x + 14, 112], [x, 112]], "#e9d6bd");
+    }
+    band(p, 111, SCENE_H, "#d1b99f");
+    poly(ctx, [[cx - 43, 111], [cx + 7, 111], [cx + 44, 150], [cx - 82, 150]], "#f1e8d8");
     // 꽃 아치
     ctx.strokeStyle = "#C9B79C";
     ctx.lineWidth = 6;
@@ -1080,41 +1133,42 @@ const scenes: Record<SceneKey, Scene> = {
   },
 
   sick(p) {
-    const { ctx, cx } = p;
-    // 원정 숙소의 밤: 창밖 달, 스탠드 불빛, 침대
-    wallBg(p, ["#3A3F66", "#4A4F78"], ["#5A4A5E", "#4A3C4E"]);
-    rrect(ctx, cx - 150, 14, 64, 52, 3, "#2A2E4E");
-    rrect(ctx, cx - 146, 18, 56, 44, 2, "#151936");
-    ellipse(ctx, cx - 104, 32, 8, 8, "#FFF4C2");
-    ellipse(ctx, cx - 100, 29, 7, 7, "#151936");
-    glow(ctx, cx + 140, 70, 60, "#FFE9A8", 0.45);
-    rrect(ctx, cx + 136, 62, 10, 30, 2, "#C9B79C");
-    poly(ctx, [[cx + 128, 62], [cx + 154, 62], [cx + 148, 46], [cx + 134, 46]], "#F7E2B0");
-    rrect(ctx, cx + 30, 104, 120, 30, 6, "#F4F4F4");
-    rrect(ctx, cx + 30, 112, 120, 22, 6, "#8FA8D8");
-    rrect(ctx, cx + 34, 96, 34, 14, 6, "#FFFFFF");
-    const x = cx - 40;
-    figure(p, x, "rest", "glum", { outfit: "tee", bow: 0.15 });
-    // 달아오른 볼과 머리 위 얼음주머니
-    ctx.save();
-    ctx.globalAlpha = 0.55;
-    for (const bx of [64, 96]) {
-      const [ex, ey] = bp(x, bx, 68);
-      ellipse(ctx, ex, ey, 5, 3, "#FF6B6B");
+    const { ctx, cx, w } = p;
+    wallBg(p, ["#243044", "#515062"], ["#584b50", "#413b44"]);
+    const win = cx - 147;
+    rrect(ctx, win - 4, 8, 97, 68, 2, "#1b2535");
+    rrect(ctx, win, 12, 89, 58, 0, "#354963");
+    ellipse(ctx, win + 65, 24, 6, 6, "#e9d9ad");
+    ellipse(ctx, win + 68, 22, 5.5, 5.5, "#354963");
+    for (let i = 0; i < 8; i++) {
+      const top = 44 + (i * 7) % 15;
+      rrect(ctx, win + i * 11, top, 11, 70 - top, 0, "#243445");
+      if (i % 3 !== 1) rrect(ctx, win + i * 11 + 4, top + 4, 2, 2, 0, "#c7ae82");
     }
-    ctx.restore();
-    const [hx, hy] = headTop(x);
-    rrect(ctx, hx - 16, hy - 6, 32, 12, 6, "#7EC8EE");
-    rrect(ctx, hx - 12, hy - 4, 10, 3, 1.5, "#CFEFFF");
-    // 큰 체온계와 열 표시
-    rrect(ctx, cx + 4, 18, 14, 70, 7, "#FFFFFF");
-    rrect(ctx, cx + 8, 28, 6, 54, 3, "#E7EBF0");
-    rrect(ctx, cx + 8, 36, 6, 46, 3, "#E8505B");
-    ellipse(ctx, cx + 11, 90, 10, 10, "#E8505B");
-    for (let y = 30; y < 80; y += 8) rrect(ctx, cx + 15, y, 4, 1.4, 0.5, "#9AA3AE");
-    speech(ctx, cx + 48, 26, 48, 20, "#FFFFFF");
-    text(ctx, "38.5°", cx + 48, 26, 11, "#E8505B", 900);
-    for (const [dx, dy] of [[28, 14], [34, 4]]) line(ctx, [[hx + dx - 4, hy + dy], [hx + dx + 4, hy + dy - 2]], "#FF8F8F", 2);
+    rrect(ctx, win + 42, 12, 3, 58, 0, "#65707b");
+    rrect(ctx, win - 6, 70, 101, 4, 1, "#7b7880");
+    // 침대 머리판과 옆 탁자. 스탠드 빛이 침구에 닿아요.
+    const lamp = cx + 94;
+    glow(ctx, lamp, 56, 79, "#efbd82", 0.53);
+    rrect(ctx, cx - 98, 78, 155, 39, 4, "#58474b");
+    rrect(ctx, cx - 95, 80, 149, 3, 1, "#91716b");
+    rrect(ctx, lamp - 27, 91, 59, 39, 2, "#5b4644");
+    rrect(ctx, lamp - 29, 89, 63, 4, 1, "#bd9670");
+    line(ctx, [[lamp, 61], [lamp, 87]], "#bdae91", 2.6);
+    ellipse(ctx, lamp, 87, 10, 2, "#d1bb95");
+    poly(ctx, [[lamp - 12, 39], [lamp + 12, 39], [lamp + 21, 61], [lamp - 21, 61]], "#e5bb82");
+    poly(ctx, [[lamp - 10, 40], [lamp + 6, 40], [lamp + 10, 60], [lamp - 17, 60]], "#f8daa1");
+    ellipse(ctx, lamp, 61, 21, 2, "#ffebc1");
+    poly(ctx, [[cx - 119, 115], [cx - 81, 93], [cx - 38, 94], [cx - 62, 115]], "#e6dccc");
+    figure(p, cx - 28, "unwell", "glum", { outfit: "tee", scale: 0.88, feet: 183, bow: 0.45, tilt: 0.12 });
+    poly(ctx, [[0, 129], [cx - 74, 118], [cx - 48, 107], [cx - 12, 116], [cx + 30, 110], [cx + 81, 138], [Math.min(w, cx + 92), 150], [0, 150]], "#8395a6");
+    poly(ctx, [[cx - 75, 119], [cx - 48, 108], [cx - 12, 117], [cx + 29, 111], [cx + 43, 119], [cx - 19, 127]], "#b7c3c7");
+    poly(ctx, [[cx - 52, 122], [cx - 20, 127], [cx + 25, 119], [cx - 12, 137]], "#677c91");
+    // 탁자 위 디지털 체온계 화면.
+    rrect(ctx, lamp - 54, 76, 42, 14, 3, "#c6c4bc");
+    rrect(ctx, lamp - 51, 78, 31, 10, 1, "#2c4143");
+    text(ctx, "38.5°", lamp - 35, 83, 9, "#ffe7af");
+    ellipse(ctx, lamp - 16, 83, 1.5, 1.5, "#a85d54");
   },
 
   tired(p) {
@@ -1122,7 +1176,10 @@ const scenes: Record<SceneKey, Scene> = {
     // 원정 경기장 라커룸: 줄지은 사물함과 벤치
     wallBg(p, ["#C9D3DF", "#B7C3D2"], ["#7A8494", "#6A7484"]);
     for (let x = ((cx - 20) % 34) - 34, i = 0; x < w; x += 34, i++) {
-      rrect(ctx, x, 10, 32, 98, 2, i % 2 ? "#5A7BA8" : "#4F6F9C");
+      rrect(ctx, x, 10, 32, 98, 2, i % 2 ? "#576c80" : "#495f72");
+      poly(ctx, [[x + 2, 12], [x + 30, 12], [x + 30, 29], [x + 2, 44]], "rgba(216,229,228,0.12)");
+      rrect(ctx, x + 3, 100, 25, 2, 0, "#374956");
+      rrect(ctx, x + 22, 49, 6, 15, 1, "#384757");
       for (let v = 0; v < 3; v++) rrect(ctx, x + 8, 18 + v * 5, 16, 2, 1, "rgba(0,0,0,0.25)");
       ellipse(ctx, x + 26, 60, 2, 2, "#C9D1DC");
     }
@@ -1141,13 +1198,14 @@ const scenes: Record<SceneKey, Scene> = {
     rrect(ctx, cx - 150, 128, 300, 8, 3, "#C28448");
     rrect(ctx, cx - 140, 136, 6, 12, 1, "#93602F");
     rrect(ctx, cx + 134, 136, 6, 12, 1, "#93602F");
-    // 방전된 배터리와 Zz
-    rrect(ctx, cx + 40, 30, 54, 26, 4, "#232A3B");
-    rrect(ctx, cx + 94, 38, 5, 10, 1, "#232A3B");
-    rrect(ctx, cx + 44, 34, 46, 18, 2, "#F4F4F4");
-    rrect(ctx, cx + 46, 36, 9, 14, 1, "#E8505B");
-    text(ctx, "Z", cx + 112, 30, 16, "#5B6472", 900);
-    text(ctx, "z", cx + 126, 20, 12, "#5B6472", 900);
+    // 벤치에 내려놓은 원정 가방과 물병.
+    const bag = cx + 49;
+    line(ctx, [[bag - 10, 113], [bag - 5, 103], [bag + 8, 103], [bag + 13, 113]], "#394253", 3);
+    rrect(ctx, bag - 22, 110, 48, 19, 5, "#394859");
+    poly(ctx, [[bag - 19, 113], [bag + 16, 111], [bag + 22, 115], [bag - 17, 117]], "#63778a");
+    rrect(ctx, bag + 6, 113, 4, 15, 1, "#243343");
+    rrect(ctx, bag + 34, 109, 9, 20, 2, "#adc3c8");
+    rrect(ctx, bag + 36, 105, 5, 5, 1, "#465969");
     const [hx, hy] = headTop(x);
     sweat(ctx, hx + 28, hy + 12);
   },
@@ -1155,6 +1213,10 @@ const scenes: Record<SceneKey, Scene> = {
   wellness(p) {
     const { ctx, cx } = p;
     wallBg(p, ["#EAF4E4", "#D8EBD0"], ["#C9B79C", "#B8A486"]);
+    rrect(ctx, cx - 135, 16, 72, 52, 2, "#b6bdad");
+    rrect(ctx, cx - 132, 19, 66, 46, 0, "#d9e6dc");
+    poly(ctx, [[cx - 132, 50], [cx - 66, 31], [cx - 66, 65], [cx - 132, 65]], "#b5cdc2");
+    rrect(ctx, cx - 101, 19, 3, 46, 0, "#eee8d8");
     // 창으로 드는 햇빛과 화분
     ctx.save();
     ctx.globalAlpha = 0.4;
@@ -1178,6 +1240,15 @@ const scenes: Record<SceneKey, Scene> = {
     rrect(ctx, cx + 82, 72, 12, 26, 4, "#7EC8EE");
     rrect(ctx, cx + 84, 66, 8, 7, 2, "#2F5DB0");
     figure(p, cx - 40, "cheer", "smile", { outfit: "tee" });
+  },
+
+  pickup(p) {
+    const { ctx, cx } = p;
+    gymBg(p);
+    hoop(ctx, cx + 104, 49);
+    figure(p, cx + 31, "cheer", "focus", { look: MATE, color: "#88544e", scale: 0.51, feet: 132 });
+    const h = figure(p, cx - 40, "dribble", "focus", { tilt: -0.07 });
+    ball(ctx, h.r[0] + 3, h.r[1] + 21, 9);
   },
 
   street(p) {
@@ -1210,8 +1281,9 @@ const scenes: Record<SceneKey, Scene> = {
     const { ctx, cx, w } = p;
     // 공항 큰 창과 이륙하는 비행기
     band(p, 0, SCENE_H, "#DCE3EC");
-    rrect(ctx, 0, 10, w, 92, 0, "#9ED3F2");
-    for (let x = ((cx - 30) % 90) - 90; x < w; x += 90) rrect(ctx, x, 10, 5, 92, 0, "#AEB8C6");
+    band(p, 10, 102, grad(ctx, 10, 102, ["#8eb9d1", "#e0e2ce"]));
+    band(p, 85, 102, "#8f9da2");
+    for (let x = (cx % 53) - 53; x < w; x += 53) rrect(ctx, x, 93, 22, 1.5, 0, "#dcdace");
     ctx.save();
     ctx.translate(cx + 70, 46);
     ctx.rotate(-0.22);
@@ -1221,6 +1293,11 @@ const scenes: Record<SceneKey, Scene> = {
     poly(ctx, [[-36, -4], [-28, -4], [-38, -18], [-44, -18]], "#E8505B");
     for (let i = 0; i < 5; i++) ellipse(ctx, 8 + i * 6, -1, 1.6, 1.6, "#4FB3E8");
     ctx.restore();
+    for (let x = ((cx - 30) % 90) - 90; x < w; x += 90) {
+      rrect(ctx, x, 10, 4, 92, 0, "#7b8b98");
+      rrect(ctx, x + 4, 10, 2, 92, 0, "#dae0df");
+      poly(ctx, [[x + 7, 10], [x + 23, 10], [x + 87, 67], [x + 87, 83]], "rgba(255,255,255,0.10)");
+    }
     band(p, 102, 110, "#AEB8C6");
     band(p, 110, SCENE_H, grad(ctx, 110, SCENE_H, ["#C5CEDA", "#B4BECC"]));
     const h = figure(p, cx - 40, "bag", "beam", { outfit: "tee" });
@@ -1371,7 +1448,7 @@ const scenes: Record<SceneKey, Scene> = {
         spectator(ctx, x, 64 + row * 14, 5.4, i % 3 ? c : "#F4F4F4", -0.3 + row * 0.1, i + row);
       }
     band(p, 104, 108, "#2A3558");
-    band(p, 108, SCENE_H, grad(ctx, 108, SCENE_H, ["#C99158", "#AF7840"]));
+    hardwood(ctx, w, 108, SCENE_H);
     // 머리 위로 둥글게 펼친 응원 머플러
     const h = figure(p, cx - 30, "cheer", "beam");
     for (let i = 0; i < 6; i++) {
@@ -1511,7 +1588,7 @@ const scenes: Record<SceneKey, Scene> = {
     band(p, 0, 112, grad(ctx, 0, 112, ["#F6A869", "#F9D49B"]));
     ellipse(ctx, cx + 120, 104, 34, 34, "#FFE6B0");
     band(p, 104, 112, "#C77D52");
-    band(p, 112, SCENE_H, grad(ctx, 112, SCENE_H, ["#B8703F", "#9C5B31"]));
+    hardwood(ctx, p.w, 112, SCENE_H);
     // 액자에 걸린 내 유니폼과 등번호
     frameOnWall(ctx, cx + 60, 52, 74, 70, "#FFF6EC");
     poly(ctx, [[cx + 38, 26], [cx + 50, 24], [cx + 60, 32], [cx + 70, 24], [cx + 82, 26], [cx + 80, 78], [cx + 40, 78]], p.color);
@@ -1538,9 +1615,10 @@ function clinicRoom(p: Paint, mark: string, growth: boolean): void {
   rrect(ctx, cx - 145, 29, 20, 8, 1, "#E8505B");
   rrect(ctx, cx + 30, 14, 96, 74, 4, "#C9D1DC");
   rrect(ctx, cx + 34, 18, 88, 66, 2, "#1A2238");
-  rrect(ctx, cx + 70, 22, 16, 26, 6, "#E7EBF0");
-  ellipse(ctx, cx + 78, 50, 13, 6, "#E7EBF0");
-  rrect(ctx, cx + 71, 56, 14, 24, 5, "#E7EBF0");
+  for (let y = 24; y < 81; y += 7) rrect(ctx, cx + 38, y, 6, 1, 0, "#566f7f");
+  poly(ctx, [[cx + 70, 20], [cx + 83, 20], [cx + 81, 38], [cx + 89, 45], [cx + 88, 49], [cx + 82, 52], [cx + 76, 49], [cx + 70, 52], [cx + 65, 48], [cx + 71, 37]], "#c3d9db");
+  poly(ctx, [[cx + 66, 54], [cx + 75, 55], [cx + 87, 53], [cx + 86, 59], [cx + 81, 65], [cx + 80, 82], [cx + 72, 82], [cx + 73, 65]], "#c3d9db");
+  line(ctx, [[cx + 86, 81], [cx + 88, 65], [cx + 92, 58]], "#839daa", 2);
   if (growth) for (const y of [42, 62]) rrect(ctx, cx + 68, y, 20, 2, 1, "#1A2238");
   ctx.strokeStyle = mark;
   ctx.lineWidth = 2;
@@ -1559,7 +1637,13 @@ function office(p: Paint, dim = false): void {
   wallBg(p, dim ? ["#B9C2CF", "#A9B3C2"] : ["#E6EBF2", "#D5DDE8"], ["#8A94A3", "#7A8494"]);
   rrect(ctx, cx - 160, 12, 110, 80, 3, "#8A94A3");
   rrect(ctx, cx - 156, 16, 102, 72, 2, dim ? "#F2A86A" : "#A9DBF7");
-  for (const [x, h] of [[-152, 30], [-136, 46], [-118, 24], [-100, 52], [-80, 36]]) rrect(ctx, cx + x, 88 - h, 14, h, 1, dim ? "#5A4A5E" : "#7F98B5");
+  for (const [x, h] of [[-152, 30], [-136, 46], [-118, 24], [-100, 52], [-80, 36]]) {
+    rrect(ctx, cx + x, 88 - h, 14, h, 1, dim ? "#5A4A5E" : "#7F98B5");
+    for (let y = 92 - h; y < 85; y += 7) rrect(ctx, cx + x + 3, y, 7, 2, 0, dim ? "#ab907e" : "#aebec7");
+  }
+  for (let i = 0; i < 4; i++) rrect(ctx, cx - 156, 16 + i * 5, 102, 2, 0, dim ? "#a88e80" : "#b5c1c6");
+  rrect(ctx, cx - 106, 16, 3, 72, 0, "#8999a4");
+  rrect(ctx, cx - 162, 90, 114, 3, 1, "#6d7884");
 }
 
 /** 거실: 따뜻한 벽, 창, 액자, 소파 */
@@ -1572,8 +1656,14 @@ function living(p: Paint): void {
   rrect(ctx, cx - 92, 12, 12, 64, 3, "#E8A0A0");
   frameOnWall(ctx, cx + 70, 30, 38, 30, "#CDEBFA");
   frameOnWall(ctx, cx + 116, 40, 28, 34, "#FDE7B0");
+  poly(ctx, [[cx + 54, 42], [cx + 64, 28], [cx + 72, 33], [cx + 82, 24], [cx + 86, 42]], "#879c99");
+  ellipse(ctx, cx + 118, 36, 5, 5, "#d2a170");
+  poly(ctx, [[cx + 105, 53], [cx + 115, 44], [cx + 127, 49], [cx + 127, 54]], "#a89a82");
   rrect(ctx, cx + 30, 86, 120, 30, 10, "#7A9CC6");
   rrect(ctx, cx + 24, 100, 132, 26, 10, "#6A8CB6");
+  rrect(ctx, cx + 35, 103, 48, 10, 4, "#89a7bd");
+  rrect(ctx, cx + 86, 103, 53, 10, 4, "#819db5");
+  poly(ctx, [[cx + 40, 98], [cx + 46, 83], [cx + 63, 88], [cx + 61, 100]], "#b7987c");
   rrect(ctx, cx + 30, 124, 8, 14, 2, "#5E3E22");
   rrect(ctx, cx + 142, 124, 8, 14, 2, "#5E3E22");
 }

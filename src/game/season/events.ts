@@ -1343,7 +1343,7 @@ const SEASON_EVENTS: LifeEvent[] = [
   },
   {
     id: "s-pickup",
-    scene: "street",
+    scene: "pickup",
     when: (c) => offCourt(c) && isFree(c),
     make: () => ({
       title: "실내 체육관 픽업 게임",

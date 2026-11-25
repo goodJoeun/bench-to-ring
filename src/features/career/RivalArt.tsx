@@ -5,6 +5,7 @@ import { playerLook, type Career, type Look } from "@/game";
 import { useTextOnly } from "@/shared/lib/text-only";
 import type { Mood } from "@/shared/ui/sprite/Sprite";
 import { drawPosed } from "@/shared/ui/sprite/coverArt";
+import { CourtBackdrop } from "@/shared/ui/CourtBackdrop";
 import { rivalOf } from "./rival";
 import styles from "./career.module.css";
 
@@ -38,6 +39,7 @@ export function RivalArt({ career: c }: { career: Career }) {
   const { look, color: rivalColor } = rivalOf(c, mine);
   return (
     <div className={styles.rv} aria-hidden="true">
+      <CourtBackdrop color={mine} shadow={false} />
       <Figure look={playerLook(c.p)} color={mine} lh={[42, 152]} rh={[118, 152]} mood="focus" className={styles.rvMe} />
       <span className={styles.rvVs}>VS</span>
       <span className={styles.rvAnger}>💢</span>

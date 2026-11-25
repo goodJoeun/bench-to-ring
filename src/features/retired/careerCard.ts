@@ -386,7 +386,7 @@ export async function drawCard(c: Career): Promise<Blob> {
   ctx.beginPath();
   ctx.ellipse(mid, by + box - 34, 80, 14, 0, 0, Math.PI * 2);
   ctx.fill();
-  drawSprite(ctx, d.look, d.color, 12, mid - 8 * 12, by + box - 24 * 12 - 30);
+  drawSprite(ctx, d.look, d.color, 12, mid - 8 * 12, by + box - 24 * 12 - 30, d.num);
 
   // 왼쪽: 최고 오버롤, 포지션, 국적, 등번호
   const lx = 64;

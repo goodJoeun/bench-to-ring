@@ -633,7 +633,9 @@ main.grid {
     linear-gradient(180deg, var(--panel2), color-mix(in srgb, var(--wood1) 45%, var(--panel2)));
   overflow: hidden;
 }
-.rv canvas {
+.rvMe,
+.rvRival {
+  position: relative;
   width: 128px;
   height: auto;
   margin-bottom: -6px;

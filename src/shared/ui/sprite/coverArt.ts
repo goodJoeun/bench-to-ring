@@ -1,3 +1,4 @@
+import { bareArm, courtLegs, jersey, shorts, sleeve, travelShirt, trouserLegs } from "./athleteArt";
 import type { Look } from "@/game";
 import { drawHead, shade, type Mood } from "@/shared/ui/sprite/Sprite";
 
@@ -126,6 +127,10 @@ function arm(s: Pt, target: Pt): [Pt, Pt] {
   const my = s[1] + uy * a;
   const e1: Pt = [mx - uy * k, my + ux * k];
   const e2: Pt = [mx + uy * k, my - ux * k];
+  // 턱이나 가슴 앞에 손을 댈 때는 팔꿈치를 내려 소매가 얼굴을 가리지 않게 해요.
+  if (target[1] >= 72 && target[1] <= 124 && Math.abs(target[0] - 80) < 24) {
+    return [e1[1] >= e2[1] ? e1 : e2, hand];
+  }
   return [Math.abs(e1[0] - 80) >= Math.abs(e2[0] - 80) ? e1 : e2, hand];
 }
 
@@ -250,16 +255,14 @@ const OUTFIT: Record<StageKey, Outfit> = {
 const REF_INK = "#1B1D22";
 
 function drawArm(ctx: Ctx, skin: string, o: Outfit, s: Pt, e: Pt, h: Pt): void {
+  bareArm(ctx, skin, s, e, h);
+  if (o.kind === "jersey") return;
   if (o.kind === "suit") {
-    // 소매는 손목까지, 그 끝에 셔츠 소맷부리
-    const wrist: Pt = [lerp(h[0], e[0], 0.22), lerp(h[1], e[1], 0.22)];
-    line(ctx, [s, e, wrist], o.color, 18);
-    ellipse(ctx, wrist[0], wrist[1], 6.5, 6.5, "#F4F4F4");
-  } else {
-    line(ctx, [s, e, h], skin, 15);
-    if (o.kind === "tee" || o.kind === "ref") line(ctx, [s, [lerp(s[0], e[0], 0.42), lerp(s[1], e[1], 0.42)]], o.kind === "ref" ? REF_INK : o.color, 21);
+    sleeve(ctx, s, e, o.color);
+    sleeve(ctx, e, [lerp(h[0], e[0], 0.18), lerp(h[1], e[1], 0.18)], o.color, true);
+    return;
   }
-  ellipse(ctx, h[0], h[1], 8, 8.5, skin);
+  sleeve(ctx, s, [lerp(s[0], e[0], 0.54), lerp(s[1], e[1], 0.54)], o.kind === "ref" ? REF_INK : o.color);
 }
 
 /** 팔이 몸 앞에 오는지: 손이 몸통 앞에 있거나 어깨 위로 올라가면 몸 앞에 그려요. */
@@ -267,25 +270,14 @@ const inFront = (h: Pt) => (h[0] > 50 && h[0] < 110) || h[1] < 95;
 
 /** 서 있는 다리와 신발. 걸음(step)만큼 한쪽 발을 들어요. */
 function drawStandingLegs(ctx: Ctx, skin: string, o: Outfit, p: Pose): void {
-  for (const [lx, lift] of [
-    [58, Math.max(0, p.step)],
-    [86, Math.max(0, -p.step)],
-  ] as const) {
-    ctx.save();
-    ctx.translate(p.x, -lift * 7);
-    if (o.kind === "jersey") {
-      rrect(ctx, lx, 176, 16, 40, 6, skin);
-      rrect(ctx, lx - 1, 202, 18, 14, 3, "#F4F4F4");
-      rrect(ctx, lx - 1, 206, 18, 3, 1, o.color);
-    } else {
-      const pants = o.kind === "suit" ? shade(o.color, -0.1) : o.kind === "ref" ? REF_INK : "#6A86B5";
-      rrect(ctx, lx - 2, 150, 20, 68, 5, pants);
-    }
-    const dark = o.kind === "suit" || o.kind === "ref";
-    rrect(ctx, lx - 8, 213, 26, 16, 7, dark ? "#17181C" : "#F4F4F4");
-    rrect(ctx, lx - 9, 224, 28, 7, 3, dark ? "#000000" : "#2A2A2A");
-    ctx.restore();
+  ctx.save();
+  ctx.translate(p.x, 0);
+  if (o.kind === "jersey") courtLegs(ctx, skin, o.color, p.step);
+  else {
+    const pants = o.kind === "suit" ? shade(o.color, -0.1) : o.kind === "ref" ? REF_INK : "#4b5c72";
+    trouserLegs(ctx, pants, o.kind !== "tee", p.step);
   }
+  ctx.restore();
 }
 
 /** 벤치에 앉은 다리: 허벅지는 앞으로 짧게 보이고, 무릎 아래가 바닥까지 내려와요. */
@@ -300,71 +292,9 @@ function drawSittingLegs(ctx: Ctx, skin: string, o: Outfit): void {
   }
 }
 
-function drawShorts(ctx: Ctx, color: string): void {
-  poly(
-    ctx,
-    [
-      [47, 146],
-      [113, 146],
-      [117, 189],
-      [84, 189],
-      [80, 177],
-      [76, 189],
-      [43, 189],
-    ],
-    shade(color, -0.22),
-  );
-  const trim = shade(color, 0.75);
-  line(
-    ctx,
-    [
-      [48, 152],
-      [45, 186],
-    ],
-    trim,
-    3,
-  );
-  line(
-    ctx,
-    [
-      [112, 152],
-      [115, 186],
-    ],
-    trim,
-    3,
-  );
-}
-
 function drawTop(ctx: Ctx, o: Outfit, tug: number): void {
   const { color } = o;
-  if (o.kind === "jersey") {
-    const b = 151 + tug;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(53, 90);
-    ctx.lineTo(67, 88);
-    ctx.quadraticCurveTo(80, 106, 93, 88);
-    ctx.lineTo(107, 90);
-    ctx.quadraticCurveTo(103, 112, 116, 124);
-    ctx.lineTo(114, b);
-    ctx.lineTo(46, b);
-    ctx.lineTo(44, 124);
-    ctx.quadraticCurveTo(57, 112, 53, 90);
-    ctx.fill();
-    const trim = shade(color, 0.75);
-    ctx.strokeStyle = trim;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(67, 88);
-    ctx.quadraticCurveTo(80, 106, 93, 88);
-    ctx.moveTo(107, 90);
-    ctx.quadraticCurveTo(103, 112, 116, 124);
-    ctx.moveTo(53, 90);
-    ctx.quadraticCurveTo(57, 112, 44, 124);
-    ctx.stroke();
-    rrect(ctx, 45, b - 6, 70, 7, 2, shade(color, -0.35));
-    return;
-  }
+  if (o.kind === "jersey") return jersey(ctx, color, tug);
   if (o.kind === "ref") {
     // 심판복: 흰 셔츠에 검은 세로 줄무늬, 검은 깃
     const shirt: Pt[] = [
@@ -395,31 +325,7 @@ function drawTop(ctx: Ctx, o: Outfit, tug: number): void {
     );
     return;
   }
-  if (o.kind === "tee") {
-    poly(
-      ctx,
-      [
-        [50, 92],
-        [68, 88],
-        [92, 88],
-        [110, 92],
-        [113, 158],
-        [47, 158],
-      ],
-      color,
-    );
-    line(
-      ctx,
-      [
-        [68, 89],
-        [80, 97],
-        [92, 89],
-      ],
-      shade(color, -0.18),
-      3,
-    );
-    return;
-  }
+  if (o.kind === "tee") return travelShirt(ctx, color);
   // 양복: 재킷, 흰 셔츠와 빨간 넥타이, 깃
   poly(
     ctx,
@@ -454,6 +360,10 @@ function drawTop(ctx: Ctx, o: Outfit, tug: number): void {
     "#C8372D",
   );
   const lapel = shade(color, 0.18);
+  poly(ctx, [[108, 99], [114, 146], [107, 158], [87, 161], [99, 150], [96, 147], [106, 141]], shade(color, -0.27));
+  poly(ctx, [[48, 133], [62, 138], [56, 140], [48, 137]], shade(color, -0.21));
+  line(ctx, [[91, 141], [105, 139]], shade(color, -0.36), 2);
+  line(ctx, [[80, 130], [77, 157], [73, 162]], shade(color, -0.25), 1.4);
   poly(
     ctx,
     [
@@ -505,7 +415,7 @@ function drawFigure(ctx: Ctx, look: Look, o: Outfit, sitting: boolean, p: Pose, 
 
   ctx.save();
   ctx.translate(p.x, p.y);
-  if (o.kind === "jersey") drawShorts(ctx, o.color);
+  if (o.kind === "jersey") shorts(ctx, o.color);
   const arms: [Pt, Pt, Pt][] = [
     [SHOULDER.l, p.le, p.lh],
     [SHOULDER.r, p.re, p.rh],

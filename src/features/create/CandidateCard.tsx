@@ -2,6 +2,7 @@
 
 import { ATTR_KEYS, SHORT, archetypeOf, bodyOf, isCoreAttr, ovrOf, type Candidate, type Look, type PosKey } from "@/game";
 import { gameActions } from "@/shared/store/game-store";
+import { CourtBackdrop } from "@/shared/ui/CourtBackdrop";
 import { Sprite } from "@/shared/ui/sprite/Sprite";
 import { ArchetypeTip } from "./ArchetypeTip";
 import styles from "./create.module.css";
@@ -35,7 +36,7 @@ export function CandidateCard({
       onClick={fixed ? undefined : () => gameActions.editDraft({ selected: index })}
     >
       <span className={styles.floor}>
-        <span className="key" />
+        <CourtBackdrop color={jersey} compact />
         <Sprite look={look} color={jersey} scale={4} label={`${cand.arch} 후보 캐릭터`} />
         {fixed ? (
           <span className="pick">오늘의 선수</span>

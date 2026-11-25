@@ -137,6 +137,9 @@ function migrateAttrs(c: Career): void {
 /** 예전 저장 파일에 빠진 필드를 채워요. */
 function normalize(c: Career): Career {
   c.queue ??= [];
+  for (const q of c.queue) {
+    if ("scene" in q && q.scene === "street" && q.title === "실내 체육관 픽업 게임") q.scene = "pickup";
+  }
   c.news ??= [];
   c.posAsked ??= {};
   c.awardLog ??= [];

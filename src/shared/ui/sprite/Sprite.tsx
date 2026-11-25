@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { bareArm, basketball, courtLegs, jersey, rgb, shade, shorts } from "./athleteArt";
+export { shade } from "./athleteArt";
 import type { Look, LookKey } from "@/game";
 import { useTextOnly } from "@/shared/lib/text-only";
 
@@ -13,17 +15,6 @@ import { useTextOnly } from "@/shared/lib/text-only";
 const U = 10;
 
 type Ctx = CanvasRenderingContext2D;
-
-function rgb(hex: string): [number, number, number] {
-  const n = parseInt(hex.slice(1), 16);
-  return [n >> 16, (n >> 8) & 255, n & 255];
-}
-
-export function shade(hex: string, amount: number): string {
-  const f = (v: number) => Math.max(0, Math.min(255, Math.round(amount < 0 ? v * (1 + amount) : v + (255 - v) * amount)));
-  const [r, g, b] = rgb(hex).map(f);
-  return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
-}
 
 /** 밝은 머리색(금발, 탈색, 회색)인지 */
 function isLight(hex: string): boolean {
@@ -279,7 +270,16 @@ const FACE: Record<LookKey, { eye: "round" | "almond"; nose: "wide" | "narrow" |
   asian: { eye: "almond", nose: "small", lips: false },
 };
 
-const faceClip = (c: Ctx) => c.ellipse(80, 52, 27, 31, 0, 0, Math.PI * 2);
+function faceClip(c: Ctx) {
+  c.moveTo(53, 49);
+  c.bezierCurveTo(52, 13, 108, 11, 107, 49);
+  c.quadraticCurveTo(107, 64, 99, 73);
+  c.lineTo(87, 82);
+  c.quadraticCurveTo(80, 86, 72, 81);
+  c.lineTo(60, 71);
+  c.quadraticCurveTo(53, 63, 53, 49);
+  c.closePath();
+}
 
 function drawBeard(ctx: Ctx, look: Look): void {
   const { hair, beard } = look;
@@ -561,102 +561,23 @@ function drawMood(ctx: Ctx, mood: Mood): void {
   }
 }
 
-function drawBody(ctx: Ctx, skin: string, color: string): void {
-  const shorts = shade(color, -0.22);
-  const trim = shade(color, 0.75);
-
-  // 다리, 양말, 신발
-  for (const lx of [58, 86]) {
-    roundRect(ctx, lx, 176, 16, 40, 6, skin);
-    roundRect(ctx, lx - 1, 202, 18, 14, 3, "#F4F4F4");
-    roundRect(ctx, lx - 1, 206, 18, 3, 1, color);
-  }
-  roundRect(ctx, 50, 213, 26, 16, 7, "#F4F4F4");
-  roundRect(ctx, 84, 213, 26, 16, 7, "#F4F4F4");
-  roundRect(ctx, 49, 224, 28, 7, 3, "#2A2A2A");
-  roundRect(ctx, 83, 224, 28, 7, 3, "#2A2A2A");
-
-  // 반바지 (가운데가 갈라져요)
-  fill(ctx, shorts, (c) => {
-    c.moveTo(47, 146);
-    c.lineTo(113, 146);
-    c.lineTo(117, 189);
-    c.lineTo(84, 189);
-    c.lineTo(80, 177);
-    c.lineTo(76, 189);
-    c.lineTo(43, 189);
-    c.closePath();
-  });
-  stroke(ctx, trim, 3, (c) => {
-    c.moveTo(48, 152);
-    c.lineTo(45, 186);
-    c.moveTo(112, 152);
-    c.lineTo(115, 186);
-  });
-
-  // 팔. 오른손은 공을 튀겨요.
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  stroke(ctx, skin, 15, (c) => {
-    c.moveTo(51, 100);
-    c.lineTo(41, 128);
-    c.lineTo(42, 150);
-  });
-  stroke(ctx, skin, 15, (c) => {
-    c.moveTo(109, 100);
-    c.lineTo(121, 124);
-    c.lineTo(126, 140);
-  });
-  ellipse(ctx, 42, 155, 8, 8.5, skin);
-
-  // 공
-  const bx = 131;
-  const by = 160;
-  ellipse(ctx, bx, by, 15, 15, "#E26A1E");
-  stroke(ctx, "#5A2A10", 1.8, (c) => {
-    c.moveTo(bx - 15, by);
-    c.lineTo(bx + 15, by);
-    c.moveTo(bx, by - 15);
-    c.lineTo(bx, by + 15);
-    c.moveTo(bx - 10, by - 11);
-    c.quadraticCurveTo(bx - 3, by, bx - 10, by + 11);
-    c.moveTo(bx + 10, by - 11);
-    c.quadraticCurveTo(bx + 3, by, bx + 10, by + 11);
-  });
-  ellipse(ctx, 127, 143, 8, 8.5, skin);
-
-  // 민소매 유니폼
-  fill(ctx, color, (c) => {
-    c.moveTo(53, 90);
-    c.lineTo(67, 88);
-    c.quadraticCurveTo(80, 106, 93, 88);
-    c.lineTo(107, 90);
-    c.quadraticCurveTo(103, 112, 116, 124);
-    c.lineTo(114, 151);
-    c.lineTo(46, 151);
-    c.lineTo(44, 124);
-    c.quadraticCurveTo(57, 112, 53, 90);
-    c.closePath();
-  });
-  stroke(ctx, trim, 3, (c) => {
-    c.moveTo(67, 88);
-    c.quadraticCurveTo(80, 106, 93, 88);
-    c.moveTo(107, 90);
-    c.quadraticCurveTo(103, 112, 116, 124);
-    c.moveTo(53, 90);
-    c.quadraticCurveTo(57, 112, 44, 124);
-  });
-  roundRect(ctx, 45, 145, 70, 7, 2, shade(color, -0.35));
+function drawBody(ctx: Ctx, skin: string, color: string, number?: number): void {
+  courtLegs(ctx, skin, color);
+  shorts(ctx, color);
+  bareArm(ctx, skin, [51, 100], [42, 125], [46, 150]);
+  basketball(ctx, 132, 157, 15);
+  bareArm(ctx, skin, [109, 100], [116, 123], [127, 140]);
+  jersey(ctx, color, 0, number);
 }
 
 /** 선수를 캔버스의 (x, y)에 16x24칸(한 칸 scale 픽셀) 크기로 그려요. 유니폼은 color 색이에요. 화면의 Sprite와 기록 카드가 같이 써요. */
-export function drawSprite(ctx: Ctx, look: Look, color: string, scale: number, x = 0, y = 0): void {
+export function drawSprite(ctx: Ctx, look: Look, color: string, scale: number, x = 0, y = 0, number?: number): void {
   const { skin } = look;
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(scale / U, scale / U);
 
-  drawBody(ctx, skin, color);
+  drawBody(ctx, skin, color, number);
   drawHead(ctx, look);
 
   ctx.restore();
@@ -665,12 +586,25 @@ export function drawSprite(ctx: Ctx, look: Look, color: string, scale: number, x
 /** 머리(목·귀·얼굴·머리카락·헤어밴드)를 160x240 단위 판의 제자리에 그려요. 표지 그림이 몸을 따로 그릴 때도 써요. */
 export function drawHead(ctx: Ctx, look: Look, mood: Mood = "smile"): void {
   const { skin } = look;
+  ctx.save();
+  ctx.translate(80, 93);
+  ctx.scale(0.69, 0.73);
+  ctx.translate(-80, -93);
   drawHairBack(ctx, look);
   // 목과 귀, 얼굴
   roundRect(ctx, 71, 74, 18, 22, 6, shade(skin, -0.12));
   ellipse(ctx, 53, 57, 5, 7.5, shade(skin, -0.05));
   ellipse(ctx, 107, 57, 5, 7.5, shade(skin, -0.05));
-  ellipse(ctx, 80, 52, 27, 31, skin);
+  fill(ctx, skin, faceClip);
+  fill(ctx, shade(skin, -0.13), (c) => {
+    c.moveTo(106, 49);
+    c.quadraticCurveTo(108, 67, 93, 77);
+    c.quadraticCurveTo(85, 86, 77, 82);
+    c.lineTo(89, 76);
+    c.lineTo(98, 66);
+    c.lineTo(95, 64);
+    c.quadraticCurveTo(105, 61, 106, 49);
+  });
   drawHairFront(ctx, look);
   if (look.band)
     fill(ctx, look.band, (c) => {
@@ -681,6 +615,7 @@ export function drawHead(ctx: Ctx, look: Look, mood: Mood = "smile"): void {
       c.closePath();
     });
   drawFace(ctx, look, mood);
+  ctx.restore();
 }
 
 interface SpriteProps {
@@ -689,6 +624,7 @@ interface SpriteProps {
   color: string;
   /** 16x24칸 그림의 한 칸 크기 (화면 크기는 CSS가 정해요) */
   scale?: number;
+  number?: number;
   label: string;
   className?: string;
 }
@@ -702,7 +638,7 @@ export function Sprite(props: SpriteProps) {
   return <SpriteCanvas {...props} />;
 }
 
-function SpriteCanvas({ look, color, scale = 6, label, className = "sprite" }: SpriteProps) {
+function SpriteCanvas({ look, color, scale = 6, label, number, className = "sprite" }: SpriteProps) {
   const ref = useRef<HTMLCanvasElement>(null);
   // 캐릭터 객체가 새로 만들어져도 생김새가 같으면 다시 그리지 않아요.
   const key = JSON.stringify(look);
@@ -713,8 +649,8 @@ function SpriteCanvas({ look, color, scale = 6, label, className = "sprite" }: S
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, 16 * scale * DENSITY, 24 * scale * DENSITY);
     ctx.scale(DENSITY, DENSITY);
-    drawSprite(ctx, JSON.parse(key) as Look, color, scale);
-  }, [key, color, scale]);
+    drawSprite(ctx, JSON.parse(key) as Look, color, scale, 0, 0, number);
+  }, [key, color, scale, number]);
 
   return <canvas ref={ref} className={className} width={16 * scale * DENSITY} height={24 * scale * DENSITY} role="img" aria-label={label} />;
 }

@@ -1,103 +1,71 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { reducedMotion } from "@/shared/lib/hooks";
-import { drawStage, STAGE_SEC, VIEW, type StageKey } from "../../shared/ui/sprite/coverArt";
+import { CareerEffects, type CoverStage } from "./CareerEffects";
+import { CoverPlayer } from "./CoverPlayer";
 import styles from "./create.module.css";
 
-/*
- * 표지 그림: 진화 그림처럼 선수가 왼쪽에서 오른쪽으로 자라요.
- * 고교 벤치 → 프로 데뷔 → 챔피언결정전 우승 → NBA 진출 → NBA MVP 수상.
- * 1번부터 5번까지 차례로 초점이 오고, 초점이 온 단계는 짧은 움짤처럼 움직여요. 단계 이름을 누르면 그 단계로 넘어가요.
- */
-
-const STAGES: { key: StageKey; title: string; alt: string }[] = [
+const STAGE_MS = 3400;
+const STAGES = [
   { key: "bench", title: "고교\n벤치", alt: "벤치에 앉아 고개를 숙이는 고교 선수" },
-  { key: "debut", title: "프로\n데뷔", alt: "유니폼을 가다듬고 교체로 들어가는 신인" },
-  { key: "champ", title: "챔피언결정전\n우승", alt: "우승하고 골대 그물을 자르는 선수" },
+  { key: "debut", title: "프로\n데뷔", alt: "유니폼을 가다듬고 코트를 바라보는 신인" },
+  { key: "champ", title: "챔피언결정전\n우승", alt: "우승하고 골대 그물을 잘라 들어 올리는 선수" },
   { key: "nba", title: "NBA\n진출", alt: "NBA 유니폼을 펼쳐 들고 사진을 찍는 선수" },
   { key: "mvp", title: "NBA MVP\n수상", alt: "양복을 입고 MVP 트로피를 들어 올리는 선수" },
-];
-
-/** 캔버스 해상도: 그림 한 단위를 이만큼의 픽셀로 그려요. */
-const DENSITY = 2.4;
-/** 움짤 느낌이 나게 초당 이만큼만 새로 그려요. */
-const FPS = 24;
-
-function paint(canvas: HTMLCanvasElement | null, stage: StageKey, t: number): void {
-  const ctx = canvas?.getContext("2d");
-  if (!ctx) return;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.clearRect(0, 0, canvas!.width, canvas!.height);
-  ctx.setTransform(DENSITY, 0, 0, DENSITY, VIEW.left * DENSITY, VIEW.top * DENSITY);
-  drawStage(ctx, stage, t);
-}
+] satisfies { key: CoverStage; title: string; alt: string }[];
 
 export function CareerPath() {
-  const canvases = useRef<(HTMLCanvasElement | null)[]>([]);
+  const figure = useRef<HTMLElement>(null);
   const [focus, setFocus] = useState(0);
-  /** 1번 단계가 시작된 시각. 단계 이름을 누르면 그 단계가 지금 시작되도록 옮겨요. */
-  const start = useRef(0);
+  const [replay, setReplay] = useState(0);
+  const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
-    // 움직임을 줄인 설정에서는 모든 단계를 마지막 장면으로 멈춰 그려요.
-    if (reducedMotion()) {
-      STAGES.forEach((s, i) => paint(canvases.current[i], s.key, STAGE_SEC));
-      return;
-    }
-    STAGES.forEach((s, i) => paint(canvases.current[i], s.key, 0));
-    start.current = performance.now();
-    let shown = -1;
-    let frame = -1;
-    let raf = 0;
-    const tick = (now: number) => {
-      // 첫 프레임 시각이 시작 시각보다 살짝 앞설 수 있어 0 아래로 내려가지 않게 해요.
-      const sec = Math.max(0, (now - start.current) / 1000);
-      const i = Math.floor(sec / STAGE_SEC) % STAGES.length;
-      const t = sec % STAGE_SEC;
-      if (i !== shown) {
-        // 초점이 떠난 단계는 첫 장면으로 돌려놔요.
-        if (shown >= 0) paint(canvases.current[shown], STAGES[shown].key, 0);
-        shown = i;
-        frame = -1;
-        setFocus(i);
-      }
-      const f = Math.floor(t * FPS);
-      if (f !== frame) {
-        frame = f;
-        paint(canvases.current[i], STAGES[i].key, f / FPS);
-      }
-      raf = requestAnimationFrame(tick);
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let onScreen = false;
+    const sync = () => setPlaying(onScreen && !document.hidden && !motion.matches);
+    const observer = new IntersectionObserver(([entry]) => {
+      onScreen = entry.isIntersecting;
+      sync();
+    });
+    if (figure.current) observer.observe(figure.current);
+    motion.addEventListener("change", sync);
+    document.addEventListener("visibilitychange", sync);
+    return () => {
+      observer.disconnect();
+      motion.removeEventListener("change", sync);
+      document.removeEventListener("visibilitychange", sync);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
   }, []);
 
-  /** 이벤트 시각(timeStamp)은 performance.now()와 같은 시계예요. */
-  const jump = (i: number, now: number) => {
-    start.current = now - i * STAGE_SEC * 1000;
+  useEffect(() => {
+    if (!playing) return;
+    const timer = window.setTimeout(() => setFocus((i) => (i + 1) % STAGES.length), STAGE_MS);
+    return () => window.clearTimeout(timer);
+  }, [focus, replay, playing]);
+
+  const jump = (i: number) => {
+    setFocus(i);
+    if (i === focus) setReplay((n) => n + 1);
   };
 
   return (
-    <figure className={styles.evo} aria-label="고교 벤치에서 프로 데뷔, 챔피언결정전 우승, NBA 진출, NBA MVP 수상까지 자라는 선수">
+    <figure ref={figure} className={styles.evo} aria-label="고교 벤치에서 프로 데뷔, 챔피언결정전 우승, NBA 진출, NBA MVP 수상까지 자라는 선수">
       <div className={styles.evoStage} aria-hidden="true">
-        {STAGES.map((s, i) => (
-          <div key={s.key} className={styles.evoFig} data-focus={focus === i || undefined} style={{ "--i": i } as React.CSSProperties}>
-            <canvas
-              ref={(el) => {
-                canvases.current[i] = el;
-              }}
-              className={styles.evoArt}
-              width={VIEW.w * DENSITY}
-              height={VIEW.h * DENSITY}
-            />
-          </div>
-        ))}
+        {STAGES.map((s, i) => {
+          const active = playing && focus === i;
+          return (
+            <div key={s.key} className={styles.evoFig} data-focus={focus === i || undefined} style={{ "--i": i } as React.CSSProperties}>
+              <CoverPlayer stage={s.key} active={active} replay={active ? replay : 0} />
+              {active && <CareerEffects key={`effect-${replay}`} stage={s.key} />}
+            </div>
+          );
+        })}
       </div>
       <ol className={styles.evoCaps}>
         {STAGES.map((s, i) => (
           <li key={s.key} data-focus={focus === i || undefined} style={{ "--i": i } as React.CSSProperties}>
-            <button type="button" aria-label={s.alt} aria-current={focus === i ? "step" : undefined} onClick={(e) => jump(i, e.timeStamp)}>
+            <button type="button" aria-label={s.alt} aria-current={focus === i ? "step" : undefined} onClick={() => jump(i)}>
               <span className={styles.evoN}>{i + 1}</span>
               <span className={styles.evoT}>{s.title}</span>
             </button>

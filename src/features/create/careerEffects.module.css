@@ -1,0 +1,107 @@
+.effects {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.sigh {
+  color: var(--muted);
+  animation: exhale 1.05s ease-out 1.35s both;
+}
+
+@keyframes exhale {
+  0% { opacity: 0; transform: translate(-3px, -2px); }
+  28% { opacity: 0.85; }
+  100% { opacity: 0; transform: translate(8px, 4px); }
+}
+
+.whistle {
+  color: var(--accent);
+  animation: court-call 0.9s ease-out 1.45s both;
+}
+
+@keyframes court-call {
+  0% { opacity: 0; transform: translate(-3px, 3px); }
+  20%, 60% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translate(2px, -2px); }
+}
+
+.confetti {
+  animation: float-down 1.55s ease-in 1.35s both;
+}
+
+@keyframes float-down {
+  0% { opacity: 0; transform: translate(-3px, -4px); }
+  15% { opacity: 1; }
+  55% { opacity: 1; transform: translate(4px, 15px) rotate(2deg); }
+  100% { opacity: 0; transform: translate(-2px, 48px); }
+}
+
+.gold path {
+  transform-box: fill-box;
+  transform-origin: center;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+
+.pressFlash::before,
+.pressFlash::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  --source-x: 13%;
+  --source-y: 37%;
+  background:
+    radial-gradient(ellipse 22% 2% at var(--source-x) var(--source-y), white, transparent),
+    radial-gradient(ellipse 33% 24% at var(--source-x) var(--source-y), white 5%, #e0f3fff2 13%, #bedfffa3 28%, transparent 85%),
+    radial-gradient(ellipse 70% 44% at var(--source-x) var(--source-y), #eaf7ffb3, transparent);
+  animation: expose 330ms linear 1.55s both;
+}
+
+.pressFlash::after {
+  --source-x: 87%;
+  --source-y: 23%;
+  animation-delay: 2.28s;
+}
+
+@keyframes expose {
+  0%, 100% { opacity: 0; }
+  7%, 21% { opacity: 1; }
+  48% { opacity: 0.35; }
+}
+
+.halo {
+  z-index: -1;
+  inset: -13% -12% 0;
+  width: auto;
+  height: auto;
+  background: radial-gradient(ellipse 46% 35% at 53% 36%, #ffe2a082 8%, #f5c55e5c 40%, #e9ac4229 68%, transparent);
+  animation: award-light 2.6s ease-in-out 0.8s both;
+}
+
+@keyframes award-light {
+  0%, 100% { opacity: 0; }
+  45%, 78% { opacity: 0.85; }
+}
+
+.gold path {
+  fill: #fff5bc;
+  stroke: #c68726;
+  stroke-width: 1.3;
+  animation: glint 1.1s ease-in-out 1.6s both;
+}
+
+.gold .smallGlint {
+  animation-delay: 1.92s;
+}
+
+@keyframes glint {
+  0%, 100% { opacity: 0; transform: scale(0.3); }
+  34%, 48% { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .effects { display: none; }
+}

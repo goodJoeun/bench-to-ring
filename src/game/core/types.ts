@@ -665,6 +665,7 @@ export type SceneKey =
   | "tired"
   | "wellness"
   | "street"
+  | "pickup"
   | "travel"
   | "kids"
   | "clash"
