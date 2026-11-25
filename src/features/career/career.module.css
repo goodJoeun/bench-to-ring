@@ -621,6 +621,8 @@ main.grid {
 }
 /* 라이벌 도발 삽화: 나(왼쪽)와 나를 가리키며 비웃는 라이벌(오른쪽), 말풍선 */
 .rv {
+  /* 시트 내용이 길어도 눌리지 않게 해요. 시트가 대신 스크롤돼요. */
+  flex-shrink: 0;
   position: relative;
   display: flex;
   justify-content: center;
@@ -684,6 +686,8 @@ main.grid {
 }
 /* 결정 장면 그림: 상황에 맞는 배경·소품 속의 내 캐릭터. 캔버스는 시트 너비를 따라가요. */
 .scArt {
+  /* 시트 내용이 길어도 눌리지 않게 해요. 시트가 대신 스크롤돼요. */
+  flex-shrink: 0;
   position: relative;
   height: 150px;
   margin: 4px -8px 6px;
@@ -711,6 +715,8 @@ main.grid {
 }
 /* 클러치 전광판: 양 팀 엠블럼·이름·동점 점수와 가운데 4Q 0:24 */
 .clArt {
+  /* 시트 내용이 길어도 눌리지 않게 해요. 시트가 대신 스크롤돼요. */
+  flex-shrink: 0;
   margin: 4px -8px 8px;
   padding: 12px;
   border-radius: var(--r-md);
