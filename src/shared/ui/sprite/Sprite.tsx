@@ -49,7 +49,7 @@ function stroke(ctx: Ctx, color: string, width: number, path: (ctx: Ctx) => void
   ctx.stroke();
 }
 
-function fill(ctx: Ctx, color: string, path: (ctx: Ctx) => void, alpha = 1): void {
+function fill(ctx: Ctx, color: string | CanvasGradient, path: (ctx: Ctx) => void, alpha = 1): void {
   ctx.globalAlpha = alpha;
   ctx.fillStyle = color;
   ctx.beginPath();
@@ -281,6 +281,40 @@ function faceClip(c: Ctx) {
   c.closePath();
 }
 
+/** 왼쪽 위에서 받은 빛이 관자놀이와 턱 쪽으로 약해져요. 머리와 표정은 이 위에 그려요. */
+function drawFacePlanes(ctx: Ctx, skin: string): void {
+  const light = ctx.createLinearGradient(57, 42, 103, 69);
+  light.addColorStop(0, shade(skin, 0.13));
+  light.addColorStop(0.44, skin);
+  light.addColorStop(0.78, shade(skin, -0.09));
+  light.addColorStop(1, shade(skin, -0.23));
+  fill(ctx, light, faceClip);
+
+  ctx.save();
+  ctx.beginPath();
+  faceClip(ctx);
+  ctx.clip();
+  // 광대 위는 빛을 받고, 반대쪽 볼 아래로는 턱까지 넓은 그늘이 이어져요.
+  fill(ctx, shade(skin, 0.24), (c) => {
+    c.moveTo(57, 62);
+    c.quadraticCurveTo(64, 63, 71, 60);
+    c.quadraticCurveTo(68, 65, 60, 67);
+    c.closePath();
+  }, 0.56);
+  fill(ctx, shade(skin, -0.33), (c) => {
+    c.moveTo(109, 43);
+    c.lineTo(104, 48);
+    c.quadraticCurveTo(103, 58, 98, 62);
+    c.lineTo(90, 66);
+    c.quadraticCurveTo(97, 65, 96, 69);
+    c.quadraticCurveTo(91, 77, 79, 82);
+    c.lineTo(90, 85);
+    c.lineTo(110, 72);
+    c.closePath();
+  }, 0.53);
+  ctx.restore();
+}
+
 function drawBeard(ctx: Ctx, look: Look): void {
   const { hair, beard } = look;
   if (beard === "none") return;
@@ -415,6 +449,14 @@ function drawFace(ctx: Ctx, look: Look, mood: Mood): void {
   }
 
   // 코
+  const halfWidth = { wide: 7, mid: 5.2, small: 3.8, narrow: 3 }[f.nose];
+  fill(ctx, shade(skin, -0.25), (c) => {
+    c.moveTo(81, 54);
+    c.quadraticCurveTo(82, 61, 80 + halfWidth, 65.5);
+    c.quadraticCurveTo(83, 69, 79, 68);
+    c.quadraticCurveTo(82.5, 65, 81, 61);
+    c.closePath();
+  }, 0.65);
   const nose = shade(skin, -0.2);
   switch (f.nose) {
     case "wide":
@@ -440,6 +482,10 @@ function drawFace(ctx: Ctx, look: Look, mood: Mood): void {
       ellipse(ctx, 80, 65.5, 3.8, 2.2, nose);
       break;
   }
+  stroke(ctx, shade(skin, 0.24), 1.4, (c) => {
+    c.moveTo(79.5, 59);
+    c.quadraticCurveTo(79.5, 62, 78.5, 64.5);
+  });
 
   drawBeard(ctx, look);
 
@@ -593,18 +639,18 @@ export function drawHead(ctx: Ctx, look: Look, mood: Mood = "smile"): void {
   drawHairBack(ctx, look);
   // 목과 귀, 얼굴
   roundRect(ctx, 71, 74, 18, 22, 6, shade(skin, -0.12));
-  ellipse(ctx, 53, 57, 5, 7.5, shade(skin, -0.05));
-  ellipse(ctx, 107, 57, 5, 7.5, shade(skin, -0.05));
-  fill(ctx, skin, faceClip);
-  fill(ctx, shade(skin, -0.13), (c) => {
-    c.moveTo(106, 49);
-    c.quadraticCurveTo(108, 67, 93, 77);
-    c.quadraticCurveTo(85, 86, 77, 82);
-    c.lineTo(89, 76);
-    c.lineTo(98, 66);
-    c.lineTo(95, 64);
-    c.quadraticCurveTo(105, 61, 106, 49);
+  fill(ctx, shade(skin, -0.30), (c) => {
+    c.moveTo(71, 77);
+    c.lineTo(89, 77);
+    c.lineTo(89, 84);
+    c.quadraticCurveTo(82, 90, 72, 87);
+    c.closePath();
   });
+  ellipse(ctx, 53, 57, 5, 7.5, shade(skin, -0.05));
+  ellipse(ctx, 107, 57, 5, 7.5, shade(skin, -0.17));
+  ellipse(ctx, 52, 57, 1.8, 3.3, shade(skin, -0.20), -0.22);
+  ellipse(ctx, 108, 57, 1.8, 3.3, shade(skin, -0.30), 0.22);
+  drawFacePlanes(ctx, skin);
   drawHairFront(ctx, look);
   if (look.band)
     fill(ctx, look.band, (c) => {
