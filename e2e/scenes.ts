@@ -23,6 +23,13 @@ const tap = async (page: Page, name: string | RegExp) => {
   await page.getByRole("button", { name }).first().click();
 };
 
+/**
+ * 진행 팝업(드래프트·국가대표 대회)의 최종 결과를 기다려요. 화면 테스트는 움직임을 줄인 기기라, 목록을 한 번에 띄우고 잠깐 뒤
+ * (대회 0.65초, 드래프트 1.5초) 스스로 결과로 넘어가요. '결과 바로 보기'를 누르면 그 사이 단추가 사라지는 경주가 생기고,
+ * 누르고 넘어갔는지에 따라 '확인' 단추의 초점 테두리도 달라져서 누르지 않고 기다려요.
+ */
+const toResult = (page: Page, popup: string) => page.locator(`.sim ${popup}`).getByRole("button", { name: "확인" }).waitFor();
+
 /** 처음부터 n번째 선수 만들기 단계까지 가요. */
 const toStep = (n: number) => async (page: Page) => {
   await tap(page, "커리어 시작하기");
@@ -104,7 +111,7 @@ export const SCENES: Record<string, Scene[]> = {
       at: "draft",
       act: async (page) => {
         await chooseOption(page, optionIndex("draft", (a) => a.k === "draft"));
-        await tap(page, "결과 바로 보기");
+        await toResult(page, ".draft");
       },
     },
     {
@@ -112,7 +119,7 @@ export const SCENES: Record<string, Scene[]> = {
       at: "national",
       act: async (page) => {
         await chooseOption(page, optionIndex("national", (a) => a.k === "national" && a.join));
-        await tap(page, "결과 바로 보기");
+        await toResult(page, ".tour");
       },
     },
     // 움직임을 줄인 기기는 결승 중계를 건너뛰고 결과부터 보여줘요.
