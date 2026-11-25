@@ -483,6 +483,21 @@
   display: block;
   width: 100%;
 }
+/* 우승 세레모니 그림: 금테 두른 경기장 판 */
+.champArt {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  background: #101830;
+  box-shadow:
+    0 0 0 2px rgba(255, 214, 107, 0.7),
+    0 0 26px rgba(255, 214, 107, 0.35);
+  animation: rise 0.4s ease-out both;
+}
+.champArt canvas {
+  display: block;
+  width: 100%;
+}
 .simCard.cheerSign :global(.cheer-title) {
   color: #fff;
 }
@@ -820,6 +835,7 @@
   .cheerLeaguePlate,
   .cheerRing,
   .cheerRingSpark,
+  .champArt,
   .simCard.cheerAchv :global(.cheer-title),
   .achvRays,
   .achvMedal,

@@ -121,11 +121,15 @@ interface FigureOpt extends PosedExtra {
 
 /** 캐릭터를 x(가운데)에 세우고, 캔버스 위 두 손 위치를 돌려줘요. */
 function figure(p: Paint, x: number, hands: HandKey, mood: Mood, o: FigureOpt = {}): { l: Pt; r: Pt; head: Pt } {
+  return figureAt(p, x, HANDS[hands], mood, o);
+}
+
+/** figure와 같되 두 손 위치(캐릭터 판 기준)를 바로 받아요. 손이 매 순간 움직이는 장면에서 써요. */
+function figureAt(p: Paint, x: number, [l, r]: readonly [Pt, Pt], mood: Mood, o: FigureOpt = {}): { l: Pt; r: Pt; head: Pt } {
   const { ctx } = p;
   const s = o.scale ?? S;
   const top = (o.feet ?? FEET) - 231 * s;
   const dir = o.flip ? -1 : 1;
-  const [l, r] = HANDS[hands];
   ctx.save();
   ctx.translate(x, top);
   ctx.scale(s * dir, s);
@@ -282,6 +286,32 @@ function anger(ctx: Ctx, x: number, y: number, r = 7): void {
     ctx.quadraticCurveTo(x + sx * r * 0.3, y + sy * r * 0.3, x + sx * r, y + sy * r * 0.25);
     ctx.stroke();
   }
+}
+
+/** 손잡이 달린 금빛 우승컵. (x, y)가 받침 바닥 가운데이고, 높이는 62에 k를 곱한 만큼이에요. */
+function cup(ctx: Ctx, x: number, y: number, k = 1): void {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(k, k);
+  rrect(ctx, -14, -10, 28, 10, 2, "#C98F1C");
+  poly(ctx, [[-5, -10], [5, -10], [7, -24], [-7, -24]], "#E2A93B");
+  ctx.fillStyle = "#F5C443";
+  ctx.beginPath();
+  ctx.moveTo(-22, -62);
+  ctx.lineTo(22, -62);
+  ctx.quadraticCurveTo(22, -26, 0, -24);
+  ctx.quadraticCurveTo(-22, -26, -22, -62);
+  ctx.fill();
+  ctx.strokeStyle = "#E2A93B";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(-22, -50, 9, Math.PI * 0.5, Math.PI * 1.5);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(22, -50, 9, -Math.PI * 0.5, Math.PI * 0.5);
+  ctx.stroke();
+  rrect(ctx, -12, -58, 5, 26, 2, "#FFF1A8");
+  ctx.restore();
 }
 
 function frameOnWall(ctx: Ctx, x: number, y: number, w: number, h: number, inner: string): void {
@@ -1466,27 +1496,7 @@ const scenes: Record<SceneKey, Scene> = {
     // 받침대 위 우승 트로피
     rrect(ctx, cx + 56, 108, 48, 38, 4, "#232A3B");
     rrect(ctx, cx + 52, 104, 56, 8, 3, "#3A4256");
-    ctx.save();
-    ctx.translate(cx + 80, 104);
-    rrect(ctx, -14, -10, 28, 10, 2, "#C98F1C");
-    poly(ctx, [[-5, -10], [5, -10], [7, -24], [-7, -24]], "#E2A93B");
-    ctx.fillStyle = "#F5C443";
-    ctx.beginPath();
-    ctx.moveTo(-22, -62);
-    ctx.lineTo(22, -62);
-    ctx.quadraticCurveTo(22, -26, 0, -24);
-    ctx.quadraticCurveTo(-22, -26, -22, -62);
-    ctx.fill();
-    ctx.strokeStyle = "#E2A93B";
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(-22, -50, 9, Math.PI * 0.5, Math.PI * 1.5);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(22, -50, 9, -Math.PI * 0.5, Math.PI * 0.5);
-    ctx.stroke();
-    rrect(ctx, -12, -58, 5, 26, 2, "#FFF1A8");
-    ctx.restore();
+    cup(ctx, cx + 80, 104);
     for (const [x, y, r] of [[cx + 50, 40, 6], [cx + 112, 52, 5], [cx + 96, 30, 4]]) sparkle(ctx, x, y, r, "#FFFFFF");
     withBall(p, cx - 50, camOf(p), "focus");
   },
@@ -1731,6 +1741,251 @@ export function drawSigning(p: Paint, t: number): void {
     ctx.fillStyle = "#FFFFFF";
     ctx.fillRect(0, 0, w, H);
     ctx.restore();
+  }
+}
+
+/* ---------- 우승 세레모니 (축하 팝업) ---------- */
+
+/** 우승 세레모니 그림의 높이. 결정 장면의 경기장 배경을 그대로 써서 높이도 같아요. */
+export const PARTY_H = SCENE_H;
+
+/** 같이 우승한 동료 후보. seed로 네 명을 골라요. */
+const SQUAD: Look[] = [
+  { kind: "black", skin: "#6E4128", hair: "#161210", style: "afro", beard: "goatee", eyes: "#2A1A10" },
+  { kind: "white", skin: "#F4D5BE", hair: "#C99A4E", style: "swept", beard: "stubble", eyes: "#4C7DB8" },
+  { kind: "hispanic", skin: "#C98F62", hair: "#1B1B1B", style: "fade", beard: "mustache", eyes: "#4A2E1A" },
+  { kind: "black", skin: "#3F2617", hair: "#161210", style: "braids", beard: "none", eyes: "#2A1A10", band: "#FFFFFF" },
+  { kind: "asian", skin: "#F6DABA", hair: "#111111", style: "spiky", beard: "none", eyes: "#2A1A10" },
+  { kind: "black", skin: "#8A5634", hair: "#161210", style: "bald", beard: "full", eyes: "#3A2416" },
+  { kind: "white", skin: "#EBC3A3", hair: "#A4522A", style: "buzz", beard: "none", eyes: "#5B8A5A" },
+];
+const SQUAD_NUMS = [0, 3, 5, 7, 8, 11, 13, 21, 23, 24, 30, 33];
+
+/** 동료 네 명의 생김새와 등번호. 고교·대학(young)이면 수염을 깎아요. */
+function squad(seed: number, mine: number, young: boolean): { look: Look; num: number }[] {
+  const nums = SQUAD_NUMS.filter((n) => n !== mine);
+  return [0, 1, 2, 3].map((i) => {
+    // 3은 SQUAD 수(7)와 서로소라 네 명이 겹치지 않아요.
+    const look = SQUAD[(seed + i * 3) % SQUAD.length];
+    return { look: young ? { ...look, beard: "none" } : look, num: nums[(seed + i * 5) % nums.length] };
+  });
+}
+
+/** 트로피를 들어 올리는 동안(초). 다 들어 올리는 순간 동료들이 뛰어오르고 꽃가루 대포가 터져요. */
+const LIFT: [number, number] = [0.25, 0.85];
+/** 동료들이 박수에서 환호로 바뀌는 동안(초) */
+const ERUPT: [number, number] = [0.7, 1.0];
+/** 1초에 뛰어오르는 횟수 */
+const BEAT = 1.9;
+/** 박자에 맞춰 0(바닥)과 1(가장 높이) 사이를 오가요. ph는 박자 어긋남(0~1)이에요. */
+const beat = (t: number, ph: number) => Math.abs(Math.sin(Math.PI * (t * BEAT + ph)));
+const mixPt = (a: Pt, b: Pt, k: number): Pt => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+const smooth = (t: number, [a, b]: [number, number]) => {
+  const v = Math.max(0, Math.min(1, (t - a) / (b - a)));
+  return v * v * (3 - 2 * v);
+};
+
+/** 동료들이 뛰기 전 박수 치는 손: 가슴 앞에서 두 손을 모았다 벌려요. */
+function clapHands(t: number, ph: number): [Pt, Pt] {
+  const open = 7 * Math.abs(Math.sin((t + ph) * 13));
+  return [
+    [72 - open, 112],
+    [88 + open, 112],
+  ];
+}
+
+/** 관중석 카메라 플래시: 너비 비율, 높이, 한 바퀴(PARTY_FLASH_LOOP초) 안에서 터지는 때 */
+const PARTY_FLASHES: [number, number, number][] = [
+  [0.07, 52, 0.15],
+  [0.93, 40, 0.5],
+  [0.22, 30, 0.95],
+  [0.8, 74, 1.3],
+  [0.12, 86, 1.65],
+  [0.9, 88, 1.95],
+];
+const PARTY_FLASH_LOOP = 2.2;
+
+/** 꽃가루: 정해진 자리에서 내려와 화면 아래로 빠지면 다시 위에서 내려와요. */
+const RAIN = scatter(46, 77);
+/** 꽃가루 대포 조각: 쏘는 각도와 빠르기 비율 */
+const BURST = scatter(24, 131);
+
+function confetto(ctx: Ctx, x: number, y: number, spin: number, flip: number, color: string, ribbon: boolean): void {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(spin);
+  // 뒤집히며 떨어지는 종이: 세로로 납작해졌다 펴져요.
+  ctx.scale(1, 0.25 + 0.75 * Math.abs(flip));
+  if (ribbon) line(ctx, [[-6, -2], [-2, 2], [2, -2], [6, 2]], color, 1.8);
+  else rrect(ctx, -3, -2, 6, 4, 1, color);
+  ctx.restore();
+}
+
+/**
+ * 우승 세레모니의 배경: 결정 장면의 경기장(seed로 앵글·조명이 바뀌어요)에 금빛 조명 두 줄기가 우리 팀 쪽으로 모여요.
+ * 움직이지 않아서 화면 쪽에서 한 번만 그려 두고 매번 그 위에 drawParty를 그려요.
+ */
+export function drawPartyBg(p: Paint): void {
+  const { ctx, cx } = p;
+  arenaBg(p);
+  ctx.save();
+  ctx.globalAlpha = 0.17;
+  for (const side of [-1, 1]) poly(ctx, [[cx + side * 160, 0], [cx + side * 124, 0], [cx + side * 18, SCENE_H], [cx + side * 104, SCENE_H]], "#FFE9A8");
+  ctx.globalAlpha = 0.3;
+  ellipse(ctx, cx, 141, 150, 11, "#FFE9A8");
+  ctx.restore();
+}
+
+/**
+ * 우승 세레모니: 가운데의 내 선수가 우승컵을 한 손으로 높이 들어 올리고, 같은 유니폼의 동료 넷이 둘러싸요.
+ * 들어 올리기 전에는 다 같이 박수를 치다가, 컵이 머리 위로 올라가는 순간 동료들이 두 팔을 들고 박자에 맞춰 뛰어오르고
+ * 양쪽 꽃가루 대포가 터져요. 그 뒤로 꽃가루가 계속 내리고 관중석에서 카메라 플래시가 터져요. t는 그림이 뜬 뒤 지난 초예요.
+ * 가까운 동료 하나는 감격해 울고, 하나는 컵에 손을 뻗고, 바깥쪽 하나는 수건을 머리 위로 돌려요.
+ */
+export function drawParty(p: Paint, t: number, young = false): void {
+  const { ctx, w, cx, color } = p;
+  const H = SCENE_H;
+  const lift = smooth(t, LIFT);
+  const erupt = smooth(t, ERUPT);
+  const [mA, mB, mC, mD] = squad(p.seed, p.num, young);
+  // 좁은 화면이면 동료들 사이를 좁혀요.
+  const kx = Math.max(0.78, Math.min(1, (w - 24) / 336));
+
+  // 관중석 플래시
+  const fk = t % PARTY_FLASH_LOOP;
+  for (const [fx, fy, when] of PARTY_FLASHES) {
+    const a = 1 - (fk - when) / 0.28;
+    if (fk < when || a <= 0) continue;
+    ctx.save();
+    ctx.globalAlpha = a;
+    flash(ctx, fx * w, fy, 4 + 4 * a);
+    ctx.restore();
+  }
+
+  /** 한 사람: 가운데에서 떨어진 거리, 크기, 발끝, 좌우 반전, 뛰는 높이(px)와 박자 어긋남 */
+  type Spot = { x: number; s: number; feet: number; flip: boolean; hop: number; ph: number };
+  const spot = (dx: number, s: number, feet: number, flip: boolean, hop: number, ph: number): Spot => ({ x: cx + dx * kx, s, feet, flip, hop, ph });
+  const C = spot(-106, 0.44, 132, false, 11, 0.25);
+  const D = spot(106, 0.44, 132, true, 11, 0.75);
+  const A = spot(-56, 0.49, 139, false, 7, 0);
+  const B = spot(56, 0.49, 139, true, 4, 0.5);
+  const ME = spot(0, 0.53, 147, false, 0, 0);
+  const air = (o: Spot) => o.hop * beat(t, o.ph) * erupt;
+  /** 판 위의 점이 캔버스에서 오는 자리 */
+  const at = (o: Spot, [bx, by]: Pt): Pt => [o.x + (bx - 80) * o.s * (o.flip ? -1 : 1), o.feet - air(o) - 231 * o.s + by * o.s];
+
+  // 내 손: 허리춤에서 두 손으로 든 컵을 오른손으로 머리 옆까지 들어 올리고, 왼손은 주먹을 쥐고 흔들어요.
+  const myL = mixPt([64, 140], mixPt([34, 80], [24, 56], beat(t, 0.1)), lift);
+  const myR = mixPt([96, 140], [112, 47 + 3 * Math.sin(t * 5)], lift);
+  const grip = at(ME, mixPt([80, 140], myR, lift));
+  const cupK = 0.56;
+
+  // 컵 뒤로 번지는 금빛
+  glow(ctx, grip[0], grip[1] - 22, 74, "#FFE27A", (0.32 + 0.1 * Math.sin(t * 4)) * (0.35 + 0.65 * lift));
+
+  // 바닥 그림자: 뛰어오르면 작고 옅어져요.
+  for (const o of [C, D, A, B, ME]) {
+    const k = 1 - (air(o) / 14) * 0.35;
+    ctx.save();
+    ctx.globalAlpha = 0.32 * k;
+    ellipse(ctx, o.x, o.feet - 1, 30 * o.s * k, 5 * o.s * k, "#0B0F1C");
+    ctx.restore();
+  }
+
+  const stand = (o: Spot, hands: [Pt, Pt], mood: Mood, mate: { look: Look; num: number } | null) => {
+    figureAt(p, o.x, hands, mood, { scale: o.s, feet: o.feet - air(o), flip: o.flip, look: mate?.look });
+    const [nx, ny] = at(o, [80, 128]);
+    text(ctx, String(mate ? mate.num : p.num), nx, ny, 30 * o.s, shade(color, 0.8), 900);
+  };
+  const cheerMood: Mood = erupt > 0.5 ? "beam" : "smile";
+  /** 박수 치던 손(박자 어긋남 ph)이 환호하는 손(l, r)으로 바뀌어요. */
+  const rally = (ph: number, l: Pt, r: Pt): [Pt, Pt] => {
+    const [cl, cr] = clapHands(t, ph);
+    return [mixPt(cl, l, erupt), mixPt(cr, r, erupt)];
+  };
+
+  // 바깥쪽 둘(뒤): 왼쪽은 수건을 머리 위로 돌리고, 오른쪽은 두 주먹을 번갈아 치켜들어요.
+  const towel = t * 9;
+  const cHands = rally(0.2, [38 + 9 * Math.cos(towel), 58 + 5 * Math.sin(towel)], mixPt([112, 80], [116, 48], beat(t, C.ph)));
+  stand(C, cHands, cheerMood, mC);
+  {
+    const h = at(C, cHands[0]);
+    const swing: Pt = [Math.cos(towel) * 15, Math.sin(towel) * 6 - 5];
+    const end = mixPt([h[0] + 2, h[1] + 13], [h[0] + swing[0], h[1] + swing[1]], erupt);
+    const mid: Pt = [(h[0] + end[0]) / 2 + Math.cos(towel + 1.6) * 3, (h[1] + end[1]) / 2 + Math.sin(towel + 1.6) * 3];
+    line(ctx, [h, mid, end], "#F4F4F4", 5);
+    line(ctx, [mixPt(h, mid, 0.5), mid, mixPt(mid, end, 0.6)], shade(color, 0.35), 1.4);
+  }
+  const dBeat = beat(t, D.ph);
+  stand(D, rally(0.6, mixPt([34, 84], [24, 54], dBeat), mixPt([136, 54], [126, 84], dBeat)), cheerMood, mD);
+
+  // 가까운 둘: 왼쪽은 두 팔을 번쩍 들고 감격해 울고, 오른쪽은 안쪽 손을 컵 쪽으로 뻗어요.
+  const aBeat = beat(t, A.ph);
+  stand(A, rally(0.4, mixPt([30, 76], [22, 54], aBeat), mixPt([130, 76], [138, 54], aBeat)), erupt > 0.5 ? "moved" : "smile", mA);
+  stand(B, rally(0.8, mixPt([34, 84], [26, 58], beat(t, B.ph)), [126, 50 + 2 * Math.sin(t * 6)]), cheerMood, mB);
+
+  // 나: 컵 손잡이 아래 기둥을 쥔 손은 컵 위에 다시 그려요.
+  stand(ME, [myL, myR], lift > 0.6 ? "beam" : "smile", null);
+  cup(ctx, grip[0], grip[1] + 14 * cupK, cupK);
+  const hand = 8 * ME.s;
+  if (lift < 0.5) {
+    const [lx, ly] = at(ME, myL);
+    ellipse(ctx, lx, ly, hand, hand * 1.06, p.look.skin);
+  }
+  const [rx, ry] = at(ME, myR);
+  ellipse(ctx, rx, ry, hand, hand * 1.06, p.look.skin);
+  if (lift > 0) {
+    ctx.save();
+    ctx.globalAlpha = lift;
+    const tw = (k: number) => 0.55 + 0.45 * Math.sin(t * 6 + k);
+    sparkle(ctx, grip[0] - 20, grip[1] - 34, 7 * tw(0), "#FFFFFF");
+    sparkle(ctx, grip[0] + 18, grip[1] - 40, 6 * tw(2), "#FFF4C2");
+    sparkle(ctx, grip[0] + 24, grip[1] - 12, 5 * tw(4), "#FFFFFF");
+    ctx.restore();
+  }
+
+  const colors = [color, "#F5C443", "#FFFFFF", shade(color, 0.5), "#FFE58A"];
+
+  // 꽃가루 대포: 컵이 올라간 순간 양쪽 아래 구석에서 안쪽 위로 쏘아 올려요. 꼭대기를 지나면 천천히 팔랑이며 내려와요.
+  const shot = t - LIFT[1];
+  if (shot > 0 && shot < 2.4) {
+    const fade = Math.min(1, (2.4 - shot) / 0.5);
+    if (shot < 0.18) {
+      ctx.save();
+      ctx.globalAlpha = 1 - shot / 0.18;
+      for (const x of [4, w - 4]) {
+        glow(ctx, x, H - 6, 40, "#FFF4C2", 0.9);
+        sparkle(ctx, x, H - 8, 14, "#FFFFFF");
+      }
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.globalAlpha = fade;
+    BURST.forEach(([u, v], i) => {
+      const side = i % 2 ? -1 : 1;
+      const ang = (55 + u * 27) * (Math.PI / 180);
+      const speed = 205 + v * 90;
+      const [vx, vy] = [Math.cos(ang) * speed * side, -Math.sin(ang) * speed];
+      const g = 300;
+      const apex = -vy / g;
+      const up = Math.min(shot, apex);
+      const down = Math.max(0, shot - apex);
+      const x = (side > 0 ? 6 : w - 6) + vx * up + vx * 0.25 * down + Math.sin(shot * 5 + i) * 5 * Math.min(1, down);
+      const y = H - 6 + vy * up + 0.5 * g * up * up + 34 * down;
+      confetto(ctx, x, y, shot * 7 + i, Math.cos(shot * 9 + i), colors[i % colors.length], i % 5 === 0);
+    });
+    ctx.restore();
+  }
+
+  // 내리는 꽃가루: 대포가 터진 뒤부터 위에서 계속 내려와요.
+  if (shot > 0) {
+    RAIN.forEach(([u, v], i) => {
+      const fall = shot * (30 + v * 26) - v * 110;
+      if (fall < 0) return;
+      const y = -8 + (fall % (H + 16));
+      const x = u * w + Math.sin(t * 1.7 + i) * 7;
+      confetto(ctx, x, y, t * 2.6 + i, Math.cos(t * 6 + i * 1.3), colors[i % colors.length], i % 6 === 0);
+    });
   }
 }
 

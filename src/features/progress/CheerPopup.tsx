@@ -8,6 +8,7 @@ import { LeagueLogo, hasLeagueLogo } from "@/shared/ui/badge/LeagueLogo";
 import { Medal } from "@/shared/ui/badge/Medal";
 import { Sprite } from "@/shared/ui/sprite/Sprite";
 import { AwardName } from "@/shared/ui/ui";
+import { ChampionArt } from "./ChampionArt";
 import { ChampionRing } from "./ChampionRing";
 import { Popup } from "./Popup";
 import { SigningArt } from "./SigningArt";
@@ -61,7 +62,8 @@ function AchievementMedal() {
 
 /**
  * 축하 팝업: 우승, 국가대표 금메달, NBA 첫 입성, NBA MVP, 파이널 MVP, 업적 달성.
- * 리그 우승은 금테 두른 판의 리그 로고 옆에 프로는 우승 반지, 고교·대학은 트로피를 보여줘요.
+ * 리그 우승은 금테 두른 판의 리그 로고 옆에 프로는 우승 반지, 고교·대학은 트로피를 보여주고,
+ * 그 아래에 동료들과 우승컵을 들어 올리는 세레모니 그림(ChampionArt)을 띄워요. 다른 축하는 선수 캐릭터 혼자 서요.
  * 업적 달성은 다른 축하와 한눈에 구별되게 보라 바탕에 메달·빛줄기·별 조각을 터뜨려요.
  * 다른 팀에 입단(이적)하면 꽃가루 대신 입단 기자회견 그림(로고 배경판 앞 악수와 카메라 플래시)을 보여줘요.
  * 한 번에 한 장씩, '계속'을 누르면 다음 축하로 넘어가요.
@@ -120,10 +122,14 @@ export function CheerPopup({ career: c, cheer }: { career: Career; cheer: Cheer 
               <path d={TROPHY} />
             </svg>
           )}
-          <div className={`sim-court ${styles.cheerCourt}`} aria-hidden="true">
-            <Sprite look={playerLook(c.p)} color={color} label="" className={`sprite ${styles.simSprite}`} />
-            <span className={styles.simShadow} />
-          </div>
+          {cheer.kind === "title" ? (
+            <ChampionArt career={c} cheer={cheer} color={color} />
+          ) : (
+            <div className={`sim-court ${styles.cheerCourt}`} aria-hidden="true">
+              <Sprite look={playerLook(c.p)} color={color} label="" className={`sprite ${styles.simSprite}`} />
+              <span className={styles.simShadow} />
+            </div>
+          )}
           <span className="sim-team" style={nameFit(`${KICKER[cheer.kind]} · ${c.p.name} #${c.p.num}`)}>
             {KICKER[cheer.kind]} · {c.p.name} #{c.p.num}
           </span>
