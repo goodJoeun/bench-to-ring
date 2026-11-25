@@ -1,7 +1,7 @@
 import { money, playerLook, type Player } from "@/game";
 import choiceCss from "./Choice.module.css";
 import fundsCss from "./Funds.module.css";
-import { CourtBackdrop } from "./CourtBackdrop";
+import { CourtBackdrop, type LegacyBackdrop } from "./CourtBackdrop";
 import { Sprite } from "./sprite/Sprite";
 
 /* 여러 화면에서 같이 쓰는 작은 화면 조각. Funds와 Choice는 같은 이름의 CSS Module, 나머지는 전역 CSS(app/styles)의 같은 클래스 이름을 따라가요. */
@@ -165,13 +165,15 @@ interface CourtStageProps {
   color: string;
   /** 선수 옆 이름판 내용 */
   children: React.ReactNode;
+  /** 은퇴 엔딩: 레거시만큼 화려한 배경. 화려함 단계는 data-grand로도 남겨 테두리·이름판을 꾸며요. */
+  legacy?: LegacyBackdrop;
 }
 
 /** 코트 위 선수 캐릭터와 이름판 */
-export function CourtStage({ player, color, children }: CourtStageProps) {
+export function CourtStage({ player, color, children, legacy }: CourtStageProps) {
   return (
-    <section className="court" style={{ "--team": color } as React.CSSProperties}>
-      <CourtBackdrop color={color} />
+    <section className="court" style={{ "--team": color } as React.CSSProperties} data-grand={legacy?.level}>
+      <CourtBackdrop color={color} legacy={legacy} />
       <Sprite look={playerLook(player)} number={player.num} color={color} label={`${player.name} 캐릭터`} />
       <div className="plate">{children}</div>
     </section>

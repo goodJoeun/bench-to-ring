@@ -162,6 +162,20 @@
 .ret :global(.plate) :global(.name) {
   font-size: var(--text-4xl);
 }
+/* 레거시가 높은 엔딩(배경 단계 5 명예의 전당부터): 금테를 두르고, 이름판 너머로 배경의 금빛이 은은히 비쳐요. GOAT(7)는 금빛으로 빛나요. */
+.ret :global(.court):is([data-grand="5"], [data-grand="6"], [data-grand="7"]) {
+  border-color: #e2b54a;
+  box-shadow: 0 0 0 1px #e2b54a;
+}
+.ret :global(.court):is([data-grand="5"], [data-grand="6"], [data-grand="7"]) :global(.plate) {
+  background: color-mix(in srgb, var(--panel) 86%, transparent);
+  backdrop-filter: blur(6px);
+}
+.ret :global(.court)[data-grand="7"] {
+  box-shadow:
+    0 0 0 2px #f5c443,
+    0 0 28px rgba(245, 196, 67, 0.45);
+}
 .shareRow {
   margin-top: 12px;
   flex-direction: column;

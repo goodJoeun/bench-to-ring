@@ -5,6 +5,7 @@ import { achievementById, awardGroups, fmtNum, money, titleHistory, type AwardCo
 import { gameActions } from "@/shared/store/game-store";
 import { militaryShort, nameFit } from "@/shared/lib/format";
 import { jerseyOf } from "@/shared/ui/sprite/look";
+import { legacyGrandeur } from "./grandeur";
 import { RecordBoards } from "./RecordBoards";
 import { SimilarPlayers } from "./SimilarPlayers";
 import { ShareSheet } from "./ShareSheet";
@@ -89,7 +90,7 @@ export function RetiredScreen({ career: c, hall, past = false }: { career: Caree
   ];
   return (
     <main className={styles.ret}>
-      <CourtStage player={p} color={jerseyOf(lastTeam)}>
+      <CourtStage player={p} color={jerseyOf(lastTeam)} legacy={{ level: legacyGrandeur(s), num: p.num, rings: s.rings }}>
         {lastTeam && <TeamBadge className="plate-badge" name={lastTeam} size={52} />}
         <span className="label">
           {s.retYear}년 · {s.retAge}세 은퇴
