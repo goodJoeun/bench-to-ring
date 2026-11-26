@@ -166,7 +166,7 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
 
               {id === "look" && (
                 <div className={styles.field}>
-                  <LookPicker look={draft.look} build={look.build} jersey={draft.jersey} looks={draft.looks} jerseys={draft.jerseys} />
+                  <LookPicker look={draft.look} bulk={look.bulk} jersey={draft.jersey} looks={draft.looks} jerseys={draft.jerseys} />
                   <p className="hint">유니폼은 고교 시절 색이에요. 프로에 가면 소속팀 색을 입어요.</p>
                 </div>
               )}
@@ -184,9 +184,8 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
                     {posHint(draft.pos)}
                     {byPos && " · 은퇴 수는 온라인 랭킹에 오른 모든 선수 기준이에요."}
                   </p>
-                  <span className={`label ${styles.buildLabel}`}>체형</span>
                   <BuildPicker draft={draft} pos={draft.pos} />
-                  <p className="hint">체형은 캐릭터 그림에만 쓰여요. 능력치와 키는 포지션과 플레이 스타일로 정해져요.</p>
+                  <p className="hint">막대를 밀어 체형을 정해요. 체형은 캐릭터 그림에만 쓰이고, 능력치와 키는 포지션과 플레이 스타일로 정해져요.</p>
                 </div>
               )}
 
@@ -198,7 +197,6 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
                   <div className={`${styles.cands} one`}>
                     <CandidateCard cand={ch.cand} pos={ch.pos} look={look} jersey={draft.jersey} index={0} selected fixed />
                   </div>
-                  <span className={`label ${styles.buildLabel}`}>체형</span>
                   <BuildPicker draft={draft} pos={ch.pos} />
                   <p className="hint">
                     국적 {ch.nat} · {ch.school}. 능력치와 키는 물론, 뛰어봐야 알 수 있는 잠재력과 숨겨진 성장 특성까지 모두 같아요. 은퇴하면

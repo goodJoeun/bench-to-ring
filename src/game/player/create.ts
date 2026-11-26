@@ -1,5 +1,5 @@
 import { ATTR_KEYS, POS, START_YEAR } from "../core/data";
-import { ARCHETYPES, TRAIT_KEYS, randomLook } from "./players";
+import { ARCHETYPES, TRAIT_KEYS, clampBulk, randomLook } from "./players";
 import { hsSchools } from "../world/leagues";
 import { addNews, makeTeam, pickTeam, setTeam } from "../career/log";
 import { chance, pick, ri, rnd, shuffle, triangular } from "../core/random";
@@ -113,6 +113,8 @@ export function archetypeOf(pos: PosKey, name: string): Archetype | undefined {
 
 export function createCareer(input: NewCareerInput, cand: Candidate, id = String(Date.now())): Career {
   const { skin, hair, ...face } = input.look ?? randomLook();
+  // 체형 값은 포지션의 범위 안으로 맞춰 저장해요.
+  if (face.bulk !== undefined) face.bulk = clampBulk(face.bulk, input.pos);
   const c: Career = {
     v: 2,
     id,

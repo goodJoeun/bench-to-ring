@@ -1,7 +1,7 @@
 "use client";
 
-import { BUILDS, POS, lookLabel, ovrOf } from "@/game";
-import { draftBuild, draftStart, gameActions, type CreationDraft } from "@/shared/store/game-store";
+import { BUILDS, POS, buildOfBulk, lookLabel, ovrOf } from "@/game";
+import { draftBulk, draftStart, gameActions, type CreationDraft } from "@/shared/store/game-store";
 import { Sheet } from "@/shared/ui/Sheet";
 import styles from "./create.module.css";
 
@@ -23,7 +23,7 @@ export function ConfirmStartSheet({ draft, onClose }: { draft: CreationDraft; on
         <div>
           <dt>캐릭터</dt>
           <dd>
-            {lookLabel(draft.look) || "기본"} · {BUILDS[draftBuild(draft)].name}
+            {lookLabel(draft.look) || "기본"} · {BUILDS[buildOfBulk(draftBulk(draft))].name} 체형({draftBulk(draft)})
           </dd>
         </div>
         <div>

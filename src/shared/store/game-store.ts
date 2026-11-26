@@ -3,7 +3,9 @@ import {
   HOME_NATION,
   INVEST_SLOTS,
   LOOKS,
+  BUILDS,
   POS_BUILD,
+  clampBulk,
   achievementById,
   buy,
   canRetire,
@@ -37,7 +39,6 @@ import {
   type DailyChallenge,
   type FocusKey,
   type InvestKey,
-  type Build,
   type Look,
   type NewsItem,
   type PosKey,
@@ -66,8 +67,8 @@ export interface CreationDraft {
   num: string;
   /** 고른 캐릭터 */
   look: Look;
-  /** 고른 체형. null이면 포지션에 어울리는 체형이에요(draftBuild). 포지션을 바꾸면 다시 null이 돼요. */
-  build: Build | null;
+  /** 고른 체형 값(0 날렵 ~ 100 두꺼움). null이면 포지션에 어울리는 체형이에요(draftBulk). 포지션을 바꾸면 다시 null이 돼요. */
+  bulk: number | null;
   /** 고른 캐릭터에 입혀 본 유니폼 색. 생성 화면에서만 써요. */
   jersey: string;
   /** 고를 수 있게 늘어놓은 캐릭터 (무작위 조합)와 저마다 입혀 본 유니폼 색 */
@@ -91,11 +92,14 @@ export interface CreationDraft {
   challenge: DailyChallenge | null;
 }
 
-/** 고른 체형. 고르지 않았으면 포지션(챌린지면 오늘의 포지션)에 어울리는 체형이에요. */
-export const draftBuild = (d: CreationDraft): Build => d.build ?? POS_BUILD[d.challenge?.pos ?? d.pos];
+/** 체형을 맞출 포지션: 챌린지면 오늘의 포지션, 아니면 고른 포지션 */
+export const draftPos = (d: CreationDraft): PosKey => d.challenge?.pos ?? d.pos;
+
+/** 고른 체형 값. 고르지 않았으면 포지션에 어울리는 체형의 값이고, 늘 포지션의 범위 안이에요. */
+export const draftBulk = (d: CreationDraft): number => clampBulk(d.bulk ?? BUILDS[POS_BUILD[draftPos(d)]].bulk, draftPos(d));
 
 /** 고른 캐릭터에 고른 체형을 입힌 모습 */
-export const draftLook = (d: CreationDraft): Look => ({ ...d.look, build: draftBuild(d) });
+export const draftLook = (d: CreationDraft): Look => ({ ...d.look, bulk: draftBulk(d) });
 
 /** 이 입력으로 시작하면 되는 선수: 챌린지 모드면 오늘의 챌린지 선수, 아니면 고른 포지션·국적·학교·후보예요. */
 export function draftStart(d: CreationDraft): { pos: PosKey; nat: string; school: string; cand: Candidate | undefined } {
@@ -203,7 +207,7 @@ const emptyDraft = (): CreationDraft => ({
   // 저장소를 읽기 전(서버 렌더링)에는 무작위 없이 정해 둬요. 화면에 나오기 전에 freshDraft가 새로 뽑아요.
   look: toLook({ kind: "asian", skin: LOOKS.asian.skins[1], hair: LOOKS.asian.hairs[0] }),
   jersey: "#2453A6",
-  build: null,
+  bulk: null,
   looks: [],
   jerseys: [],
   nat: HOME_NATION,
@@ -412,11 +416,13 @@ export const gameActions = {
     const d = snapshot.draft;
     if (pos === d.pos) return;
     const candidates = d.pool[pos] ?? generateCandidates(pos);
-    set({ draft: { ...d, pos, build: null, candidates, pool: { ...d.pool, [pos]: candidates }, selected: 0, rerolls: REROLLS } });
+    set({ draft: { ...d, pos, bulk: null, candidates, pool: { ...d.pool, [pos]: candidates }, selected: 0, rerolls: REROLLS } });
   },
-  /** 체형을 골라요. 그림에만 쓰고 능력치와는 상관없어요. */
-  chooseBuild(build: Build) {
-    set({ draft: { ...snapshot.draft, build } });
+  /** 체형 값을 정해요. 포지션의 범위(POS_BULK) 밖이면 범위 끝으로 맞춰요. 그림에만 쓰고 능력치와는 상관없어요. */
+  chooseBulk(bulk: number) {
+    const d = snapshot.draft;
+    const v = clampBulk(bulk, draftPos(d));
+    if (v !== d.bulk) set({ draft: { ...d, bulk: v } });
   },
   reroll() {
     const d = snapshot.draft;
@@ -426,11 +432,11 @@ export const gameActions = {
   },
   /** 오늘(한국 시간) 그 포지션의 챌린지 선수로 선수 만들기를 시작해요. 이름·등번호·캐릭터만 골라요. */
   enterChallenge(pos: PosKey) {
-    set({ draft: { ...snapshot.draft, build: null, challenge: dailyChallenge(kstDay(Date.now()), pos) } });
+    set({ draft: { ...snapshot.draft, bulk: null, challenge: dailyChallenge(kstDay(Date.now()), pos) } });
   },
   /** 챌린지 모드를 나가 일반 선수 만들기로 돌아가요. */
   leaveChallenge() {
-    if (snapshot.draft.challenge) set({ draft: { ...snapshot.draft, build: null, challenge: null } });
+    if (snapshot.draft.challenge) set({ draft: { ...snapshot.draft, bulk: null, challenge: null } });
   },
   startCareer() {
     const d = snapshot.draft;

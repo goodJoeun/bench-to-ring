@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { bareArm, basketball, courtLegs, frameOf, fx, jersey, rgb, shade, shorts, type Frame } from "./athleteArt";
 export { shade } from "./athleteArt";
-import type { Look, LookKey } from "@/game";
+import { bulkOf, type Look, type LookKey } from "@/game";
 import { useTextOnly } from "@/shared/lib/text-only";
 
 /*
@@ -634,7 +634,7 @@ export function drawSprite(ctx: Ctx, look: Look, color: string, scale: number, x
   ctx.translate(x, y);
   ctx.scale(scale / U, scale / U);
 
-  drawBody(ctx, skin, color, frameOf(look.build), number);
+  drawBody(ctx, skin, color, frameOf(bulkOf(look)), number);
   drawHead(ctx, look);
 
   ctx.restore();

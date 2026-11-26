@@ -16,7 +16,12 @@ import {
   LEAGUES,
   NATIONS,
   LOOKS,
+  BUILDS,
+  buildOfBulk,
+  bulkOf,
+  clampBulk,
   POS_BUILD,
+  POS_BULK,
   LOOK_KEYS,
   lookFromSkin,
   owesService,
@@ -664,7 +669,7 @@ describe("커리어 시작", () => {
     for (const look of randomLooks(24)) {
       const c = createCareer({ name: "캐릭터", num: 1, nat: "스페인", look, pos: "SF", path: "domestic" }, generateCandidates("SF")[0], "look");
       // 체형을 고르지 않았으면 포지션에 어울리는 체형이에요.
-      expect(playerLook(c.p)).toEqual({ ...look, build: "forward" });
+      expect(playerLook(c.p)).toEqual({ ...look, bulk: BUILDS.forward.bulk });
       expect(c.p.nat).toBe("스페인");
       expect(owesService(c)).toBe(false);
     }
@@ -672,14 +677,46 @@ describe("커리어 시작", () => {
     expect(LOOK_KEYS).toContain(random.p.face?.kind);
   });
 
-  it("고른 체형으로 시작하고, 체형이 없는 예전 선수·기록은 포지션으로 체형을 정해요", () => {
+  it("고른 체형 값으로 시작하고, 예전 세 가지 체형과 체형이 없는 선수·기록도 체형 값으로 바꿔요", () => {
     setRandom(seeded(19));
-    const look = { ...randomLooks(1)[0], build: "guard" as const };
+    const look = { ...randomLooks(1)[0], bulk: 88 };
     const c = createCareer({ name: "체형", num: 3, look, pos: "C", path: "domestic" }, generateCandidates("C")[0], "build");
-    expect(playerLook(c.p).build).toBe("guard");
-    for (const pos of POS_KEYS) expect(toLook({ skin: "#C68E63", hair: "#1B1B1B" }, pos).build).toBe(POS_BUILD[pos]);
+    expect(playerLook(c.p).bulk).toBe(88);
+    // 예전에 저장한 세 가지 체형은 그 체형의 값이에요. 포지션 범위 밖이면 범위 끝으로 맞춰요.
+    expect(toLook({ skin: "#C68E63", hair: "#1B1B1B", build: "guard" }, "PG").bulk).toBe(BUILDS.guard.bulk);
+    expect(toLook({ skin: "#C68E63", hair: "#1B1B1B", build: "guard" }, "C").bulk).toBe(POS_BULK.C[0]);
+    // 체형이 없으면 포지션에 어울리는 체형이에요. 포지션도 모르면 값을 비워 두고, 그릴 때 포워드형이에요.
+    for (const pos of POS_KEYS) expect(toLook({ skin: "#C68E63", hair: "#1B1B1B" }, pos).bulk).toBe(BUILDS[POS_BUILD[pos]].bulk);
     expect(POS_BUILD).toMatchObject({ PG: "guard", SG: "guard", SF: "forward", PF: "big", C: "big" });
-    expect(toLook({ skin: "#C68E63", hair: "#1B1B1B" }).build).toBeUndefined();
+    expect(toLook({ skin: "#C68E63", hair: "#1B1B1B" }).bulk).toBeUndefined();
+    expect(bulkOf({})).toBe(BUILDS.forward.bulk);
+    // 값은 0~100 정수이고, 가장 가까운 대표 값의 체형 이름으로 불러요.
+    expect([clampBulk(-5), clampBulk(140), clampBulk(33.6)]).toEqual([0, 100, 34]);
+    expect([clampBulk(10, "C"), clampBulk(95, "PG"), clampBulk(60, "SF")]).toEqual([POS_BULK.C[0], POS_BULK.PG[1], 60]);
+    expect([buildOfBulk(0), buildOfBulk(31), buildOfBulk(32), buildOfBulk(63), buildOfBulk(64), buildOfBulk(100)]).toEqual([
+      "guard",
+      "guard",
+      "forward",
+      "forward",
+      "big",
+      "big",
+    ]);
+  });
+
+  it("포지션마다 체형 범위가 있고, 범위 밖의 체형으로 시작하면 범위 끝으로 맞춰요", () => {
+    setRandom(seeded(20));
+    for (const pos of POS_KEYS) {
+      const [lo, hi] = POS_BULK[pos];
+      expect(lo).toBeLessThan(hi);
+      expect(BUILDS[POS_BUILD[pos]].bulk).toBeGreaterThanOrEqual(lo);
+      expect(BUILDS[POS_BUILD[pos]].bulk).toBeLessThanOrEqual(hi);
+    }
+    // 이웃 포지션끼리는 범위가 겹쳐요.
+    for (let i = 1; i < POS_KEYS.length; i++) expect(POS_BULK[POS_KEYS[i]][0]).toBeLessThan(POS_BULK[POS_KEYS[i - 1]][1]);
+    const thin = createCareer({ name: "앙상", num: 5, look: { ...randomLooks(1)[0], bulk: 0 }, pos: "C", path: "domestic" }, generateCandidates("C")[0], "thin");
+    expect(playerLook(thin.p).bulk).toBe(POS_BULK.C[0]);
+    const heavy = createCareer({ name: "육중", num: 6, look: { ...randomLooks(1)[0], bulk: 100 }, pos: "PG", path: "domestic" }, generateCandidates("PG")[0], "heavy");
+    expect(playerLook(heavy.p).bulk).toBe(POS_BULK.PG[1]);
   });
 
   it("캐릭터는 바탕마다 정해진 범위에서 조합하고, 섞어 뽑으면 네 바탕이 고르게 나와요", () => {

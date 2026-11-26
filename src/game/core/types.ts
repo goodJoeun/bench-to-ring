@@ -182,7 +182,7 @@ export type HairStyle =
 
 export type BeardStyle = "none" | "stubble" | "goatee" | "mustache" | "full";
 
-/** 체형: 가드형(날렵한 몸), 포워드형(탄탄한 몸), 빅맨형(두꺼운 몸) */
+/** 체형 이름: 가드형(날렵한 몸), 포워드형(탄탄한 몸), 빅맨형(두꺼운 몸). 체형 값(bulk)을 세 구간으로 나눈 이름이에요. */
 export type Build = "guard" | "forward" | "big";
 
 /** 캐릭터 생김새 가운데 피부색·머리색을 뺀 것 */
@@ -194,7 +194,9 @@ export interface Face {
   eyes: string;
   /** 헤어밴드 색. 없으면 안 써요. */
   band?: string;
-  /** 체형. 없으면 포워드형으로 그려요. 고르기 전에 만든 선수·기록은 포지션으로 정해요(toLook). */
+  /** 체형 0(날렵)~100(두꺼움). 없으면 build로 정하고, 그것도 없으면 포워드형이에요(bulkOf). */
+  bulk?: number;
+  /** 예전에 저장한 세 가지 체형. 지금은 bulk로 저장하고, 읽을 때 그 체형의 값으로 바꿔요(toLook). */
   build?: Build;
 }
 

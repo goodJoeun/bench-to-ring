@@ -1,29 +1,27 @@
 /** 공유 선수 그림. 캐릭터 판은 160×240, 어깨와 손은 장면의 자세 좌표를 써요. */
-import type { Build } from "@/game";
-
 type Ctx = CanvasRenderingContext2D;
 type Point = [number, number];
 
 /**
  * 체형. k는 몸통(유니폼·반바지·다리 간격) 너비를 가운데(x=80)에서 줄이는 비율, limb는 팔다리 굵기 비율이에요.
- * 머리 크기는 그대로이고, 가드형으로 갈수록 어깨가 좁고 팔다리가 가늘어요. 빅맨형도 처음 그림(1)보다 조금 좁아요.
+ * 머리 크기는 그대로이고, 체형 값이 작을수록 어깨가 좁고 팔다리가 가늘어요.
  */
 export interface Frame {
   k: number;
   limb: number;
 }
 
-const FRAMES: Record<Build, Frame> = {
-  guard: { k: 0.68, limb: 0.8 },
-  forward: { k: 0.8, limb: 0.9 },
-  big: { k: 0.92, limb: 1 },
-};
-
 /** 처음 그림 그대로의 몸 (체형을 넘기지 않은 그림) */
 const FULL: Frame = { k: 1, limb: 1 };
 
-/** 체형을 정하지 않은 캐릭터(장면의 다른 선수, 체형이 없는 예전 기록)는 포워드형이에요. */
-export const frameOf = (build: Build = "forward"): Frame => FRAMES[build];
+/**
+ * 체형 값(0 날렵 ~ 100 두꺼움)의 몸. 너비는 처음 그림의 62%~100%, 팔다리 굵기는 75%~105%로 고르게 늘어요.
+ * 가드형(16)·포워드형(47)·빅맨형(79)은 너비 68%·80%·92%예요.
+ */
+export function frameOf(bulk: number): Frame {
+  const t = Math.min(1, Math.max(0, bulk / 100));
+  return { k: 0.62 + 0.38 * t, limb: 0.75 + 0.3 * t };
+}
 
 /** 처음 그림의 x좌표를 이 체형의 x좌표로 (가운데 쪽으로 모아요) */
 export const fx = (f: Frame, x: number): number => 80 + (x - 80) * f.k;

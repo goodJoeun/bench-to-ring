@@ -1,5 +1,5 @@
 import { bareArm, courtLegs, frameOf, fx, jersey, narrow, shorts, sleeve, travelShirt, trouserLegs, type Frame } from "./athleteArt";
-import type { Look } from "@/game";
+import { bulkOf, type Look } from "@/game";
 import { drawHead, shade, type Mood } from "@/shared/ui/sprite/Sprite";
 
 /*
@@ -419,7 +419,7 @@ export interface PosedExtra {
  */
 export function drawPosed(ctx: Ctx, look: Look, color: string, lh: Pt, rh: Pt, mood: Mood, extra: PosedExtra = {}): void {
   const p: Pose = { ...BASE, bow: extra.bow ?? 0, tilt: extra.tilt ?? 0 };
-  const sh = shoulders(frameOf(look.build));
+  const sh = shoulders(frameOf(bulkOf(look)));
   [p.le, p.lh] = arm(sh.l, lh);
   [p.re, p.rh] = arm(sh.r, rh);
   drawFigure(ctx, look, { kind: extra.outfit ?? "jersey", color }, false, p, mood, extra.num);
@@ -427,7 +427,7 @@ export function drawPosed(ctx: Ctx, look: Look, color: string, lh: Pt, rh: Pt, m
 
 function drawFigure(ctx: Ctx, look: Look, o: Outfit, sitting: boolean, p: Pose, mood: Mood, num?: number): void {
   const { skin } = look;
-  const f = frameOf(look.build);
+  const f = frameOf(bulkOf(look));
   const sh = shoulders(f);
   if (sitting) drawSittingLegs(ctx, skin, o, f);
   else drawStandingLegs(ctx, skin, o, f, p);
@@ -719,7 +719,7 @@ const FLASHES: [number, number, number][] = [
 /** 한 단계 장면을 그려요. 캔버스는 VIEW 범위가 160x240 판 단위가 되게 맞춰 두고 불러요. */
 export function drawStage(ctx: Ctx, stage: StageKey, t: number, base: Look = COVER_LOOK): void {
   const look = { ...base, ...HAIR[stage] };
-  const p = pose(stage, t, frameOf(look.build));
+  const p = pose(stage, t, frameOf(bulkOf(look)));
   const mood = moodAt(stage, t, p);
   const { skin } = look;
   switch (stage) {

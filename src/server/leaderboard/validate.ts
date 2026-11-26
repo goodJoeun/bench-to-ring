@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AWARDS, BEARDS, BUILD_KEYS, HAIR_STYLES, LEAGUES, LOOK_KEYS, NAME_MAX, PERSONAL_AWARDS, POS_KEYS, RULESET_VERSION, START_YEAR, legacyOf, legacyOfV1, playedNba, type AwardKey, type CareerSummary, type ChallengeTag, type LeagueKey, type BeardStyle, type Build, type HairStyle, type LeagueShare, type LookKey, type PosKey } from "@/game";
+import { AWARDS, BEARDS, BUILD_KEYS, BULK_MAX, BULK_MIN, HAIR_STYLES, LEAGUES, LOOK_KEYS, NAME_MAX, PERSONAL_AWARDS, POS_KEYS, RULESET_VERSION, START_YEAR, legacyOf, legacyOfV1, playedNba, type AwardKey, type CareerSummary, type ChallengeTag, type LeagueKey, type BeardStyle, type Build, type HairStyle, type LeagueShare, type LookKey, type PosKey } from "@/game";
 import { RETIRE_AGE } from "@/game/season/offseason";
 import { DAY_COUNT, challengeOpen, isDay, kstDay, shiftDay } from "@/shared/leaderboard/days";
 import { STAT_KEYS, type BoardDay, type BoardScope, type StatKey } from "@/shared/leaderboard/types";
@@ -66,6 +66,7 @@ const summarySchema = z.object({
       beard: z.enum(Object.keys(BEARDS) as [BeardStyle, ...BeardStyle[]]).optional(),
       eyes: hexColor.optional(),
       band: hexColor.optional(),
+      bulk: z.int().min(BULK_MIN).max(BULK_MAX).optional(),
       build: z.enum(BUILD_KEYS as [Build, ...Build[]]).optional(),
     })
     .optional(),

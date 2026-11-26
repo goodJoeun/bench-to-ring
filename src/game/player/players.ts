@@ -1,5 +1,5 @@
 import { chance, pick, shuffle } from "../core/random";
-import type { Archetype, BeardStyle, Build, HairStyle, Look, LookKey, LookRecord, Player, PosKey, Trait } from "../core/types";
+import type { Archetype, BeardStyle, Build, Face, HairStyle, Look, LookKey, LookRecord, Player, PosKey, Trait } from "../core/types";
 
 /* 선수 생성 데이터: 플레이 유형, 숨은 특성, 외모 */
 
@@ -315,16 +315,47 @@ export const BEARDS: Record<BeardStyle, string> = {
   full: "턱수염",
 };
 
-export const BUILDS: Record<Build, { name: string; desc: string }> = {
-  guard: { name: "가드형", desc: "날렵한 몸" },
-  forward: { name: "포워드형", desc: "탄탄한 몸" },
-  big: { name: "빅맨형", desc: "두꺼운 몸" },
+/** 체형 이름과 그 체형의 대표 값(bulk, 0~100). 슬라이더의 바로 고르기 단추와 예전 기록의 체형이 이 값을 써요. */
+export const BUILDS: Record<Build, { name: string; desc: string; bulk: number }> = {
+  guard: { name: "가드형", desc: "날렵한 몸", bulk: 16 },
+  forward: { name: "포워드형", desc: "탄탄한 몸", bulk: 47 },
+  big: { name: "빅맨형", desc: "두꺼운 몸", bulk: 79 },
 };
 
 export const BUILD_KEYS = Object.keys(BUILDS) as Build[];
 
+/** 체형 값의 범위 */
+export const BULK_MIN = 0;
+export const BULK_MAX = 100;
+
 /** 포지션에 어울리는 체형. 체형을 고르지 않으면 이걸로 정해요. */
 export const POS_BUILD: Record<PosKey, Build> = { PG: "guard", SG: "guard", SF: "forward", PF: "big", C: "big" };
+
+/**
+ * 포지션마다 고를 수 있는 체형 값 범위. 너무 비현실적인 체형(앙상한 센터, 육중한 포인트가드)은 고를 수 없어요.
+ * 이웃 포지션끼리는 범위가 겹치고, 포지션 추천 체형(POS_BUILD)의 값은 늘 범위 안이에요.
+ */
+export const POS_BULK: Record<PosKey, [number, number]> = {
+  PG: [0, 35],
+  SG: [5, 45],
+  SF: [25, 65],
+  PF: [50, 90],
+  C: [60, 100],
+};
+
+/** 체형 값을 범위 안의 정수로. 포지션을 주면 그 포지션의 범위 안으로 맞춰요. */
+export function clampBulk(v: number, pos?: PosKey): number {
+  const [lo, hi] = pos ? POS_BULK[pos] : [BULK_MIN, BULK_MAX];
+  return Math.round(Math.min(hi, Math.max(lo, v)));
+}
+
+/** 그릴 체형 값: 고른 값, 예전 세 가지 체형, 둘 다 없으면 포워드형 */
+export const bulkOf = (f: Partial<Pick<Face, "bulk" | "build">>): number => f.bulk ?? BUILDS[f.build ?? "forward"].bulk;
+
+/** 체형 값이 어느 체형 이름에 드는지 (가장 가까운 대표 값) */
+export function buildOfBulk(bulk: number): Build {
+  return BUILD_KEYS.reduce((a, b) => (Math.abs(BUILDS[b].bulk - bulk) < Math.abs(BUILDS[a].bulk - bulk) ? b : a));
+}
 
 const BANDS = ["#FFFFFF", "#1B1B1B", "#D7263D", "#F2A900"];
 
@@ -359,9 +390,16 @@ export function lookFromSkin(skin: string): LookKey {
   return i === 0 ? "white" : i === 1 ? "asian" : i === 2 ? "hispanic" : i >= 3 ? "black" : "asian";
 }
 
+/** 저장된 체형 값. 예전 세 가지 체형은 그 값으로, 없으면 포지션 추천 값으로 정하고, 포지션을 알면 그 범위 안으로 맞춰요. */
+function lookBulk(l: LookRecord, pos?: PosKey): number | undefined {
+  const v = l.bulk ?? (l.build ? BUILDS[l.build].bulk : pos && BUILDS[POS_BUILD[pos]].bulk);
+  return v === undefined || !pos ? v : clampBulk(v, pos);
+}
+
 /**
  * 저장된 색과 얼굴(없을 수 있어요)로 그릴 캐릭터를 만들어요. 예전 선수·기록은 바탕에 맞는 기본 모양이에요.
- * 체형을 고르기 전에 만든 선수·기록은 포지션을 알면 그 포지션에 어울리는 체형이에요.
+ * 예전 세 가지 체형(build)은 그 체형의 값으로 바꾸고, 체형이 없는 선수·기록은 포지션을 알면 그 포지션에 어울리는 체형이에요.
+ * 포지션을 알면 체형 값을 그 포지션의 범위(POS_BULK) 안으로 맞춰요.
  */
 export function toLook(l: LookRecord, pos?: PosKey): Look {
   const kind = l.kind ?? lookFromSkin(l.skin);
@@ -373,7 +411,7 @@ export function toLook(l: LookRecord, pos?: PosKey): Look {
     beard: l.beard ?? "none",
     eyes: l.eyes ?? LOOKS[kind].eyes[0],
     band: l.band,
-    build: l.build ?? (pos && POS_BUILD[pos]),
+    bulk: lookBulk(l, pos),
   };
 }
 
