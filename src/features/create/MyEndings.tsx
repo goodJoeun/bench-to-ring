@@ -30,7 +30,7 @@ export function MyEndings({ hall, endings }: { hall: CareerSummary[]; endings: s
       <ol className={`rk-list ${styles.myEnd}`}>
         {list.slice(0, SHOWN).map((s) => (
           <li key={s.id}>
-            <Sprite look={lookOf(s.id, s.look)} color={jerseyOf(s.teams.at(-1))} scale={2} className="rk-mini" label={`${s.name} 캐릭터`} />
+            <Sprite look={lookOf(s.id, s.look, s.pos)} color={jerseyOf(s.teams.at(-1))} scale={2} className="rk-mini" label={`${s.name} 캐릭터`} />
             <span className="rk-who">
               <b style={nameFit(`${s.name} #${s.num}`)}>
                 {s.name} <span className="num">#{s.num}</span>

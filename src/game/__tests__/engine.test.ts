@@ -16,6 +16,7 @@ import {
   LEAGUES,
   NATIONS,
   LOOKS,
+  POS_BUILD,
   LOOK_KEYS,
   lookFromSkin,
   owesService,
@@ -662,12 +663,23 @@ describe("커리어 시작", () => {
     setRandom(seeded(17));
     for (const look of randomLooks(24)) {
       const c = createCareer({ name: "캐릭터", num: 1, nat: "스페인", look, pos: "SF", path: "domestic" }, generateCandidates("SF")[0], "look");
-      expect(playerLook(c.p)).toEqual(look);
+      // 체형을 고르지 않았으면 포지션에 어울리는 체형이에요.
+      expect(playerLook(c.p)).toEqual({ ...look, build: "forward" });
       expect(c.p.nat).toBe("스페인");
       expect(owesService(c)).toBe(false);
     }
     const random = createCareer({ name: "무작위", num: 2, pos: "PG", path: "domestic" }, generateCandidates("PG")[0], "rnd");
     expect(LOOK_KEYS).toContain(random.p.face?.kind);
+  });
+
+  it("고른 체형으로 시작하고, 체형이 없는 예전 선수·기록은 포지션으로 체형을 정해요", () => {
+    setRandom(seeded(19));
+    const look = { ...randomLooks(1)[0], build: "guard" as const };
+    const c = createCareer({ name: "체형", num: 3, look, pos: "C", path: "domestic" }, generateCandidates("C")[0], "build");
+    expect(playerLook(c.p).build).toBe("guard");
+    for (const pos of POS_KEYS) expect(toLook({ skin: "#C68E63", hair: "#1B1B1B" }, pos).build).toBe(POS_BUILD[pos]);
+    expect(POS_BUILD).toMatchObject({ PG: "guard", SG: "guard", SF: "forward", PF: "big", C: "big" });
+    expect(toLook({ skin: "#C68E63", hair: "#1B1B1B" }).build).toBeUndefined();
   });
 
   it("캐릭터는 바탕마다 정해진 범위에서 조합하고, 섞어 뽑으면 네 바탕이 고르게 나와요", () => {

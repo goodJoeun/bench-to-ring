@@ -75,7 +75,7 @@ export function RankRow({ e, rank, mine, onOpen }: { e: BoardEntry; rank: number
   return (
     <li data-mine={mine || undefined}>
       <RankMark rank={rank} />
-      <Sprite look={lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={2} className="rk-mini" label={`${e.name} 캐릭터`} />
+      <Sprite look={lookOf(e.id, e.look, e.pos)} color={jerseyOf(e.team)} scale={2} className="rk-mini" label={`${e.name} 캐릭터`} />
       <span className="rk-who">
         <b style={nameFit(`${e.name} #${e.num}`)}>
           {e.name} <span className="num">#{e.num}</span>
@@ -107,7 +107,7 @@ function Podium({ e, place, rank, mine, onOpen }: { e: BoardEntry; place: 1 | 2 
           </span>
         ))}
       </span>
-      <Sprite look={lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={3} className={styles.rkSprite} label={`${e.name} 캐릭터`} />
+      <Sprite look={lookOf(e.id, e.look, e.pos)} color={jerseyOf(e.team)} scale={3} className={styles.rkSprite} label={`${e.name} 캐릭터`} />
       <b className="nm" style={nameFit(e.name)}>
         {e.name}
         {mine && <span className="me">나</span>}

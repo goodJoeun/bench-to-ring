@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { bareArm, basketball, courtLegs, jersey, rgb, shade, shorts } from "./athleteArt";
+import { bareArm, basketball, courtLegs, frameOf, fx, jersey, rgb, shade, shorts, type Frame } from "./athleteArt";
 export { shade } from "./athleteArt";
 import type { Look, LookKey } from "@/game";
 import { useTextOnly } from "@/shared/lib/text-only";
@@ -616,13 +616,15 @@ function drawMood(ctx: Ctx, mood: Mood): void {
   }
 }
 
-function drawBody(ctx: Ctx, skin: string, color: string, number?: number): void {
-  courtLegs(ctx, skin, color);
-  shorts(ctx, color);
-  bareArm(ctx, skin, [51, 100], [42, 125], [46, 150]);
-  basketball(ctx, 132, 157, 15);
-  bareArm(ctx, skin, [109, 100], [116, 123], [127, 140]);
-  jersey(ctx, color, 0, number);
+/** 체형(f)에 맞춰 어깨·팔·다리 간격을 모으고, 공은 오른손 바로 아래에서 튀어요. */
+function drawBody(ctx: Ctx, skin: string, color: string, f: Frame, number?: number): void {
+  const X = (x: number) => fx(f, x);
+  courtLegs(ctx, skin, color, 0, f);
+  shorts(ctx, color, f);
+  bareArm(ctx, skin, [X(51), 100], [X(42), 125], [X(46), 150], f.limb);
+  basketball(ctx, X(127) + 5, 157, 15);
+  bareArm(ctx, skin, [X(109), 100], [X(116), 123], [X(127), 140], f.limb);
+  jersey(ctx, color, 0, number, f);
 }
 
 /** 선수를 캔버스의 (x, y)에 16x24칸(한 칸 scale 픽셀) 크기로 그려요. 유니폼은 color 색이에요. 화면의 Sprite와 기록 카드가 같이 써요. */
@@ -632,7 +634,7 @@ export function drawSprite(ctx: Ctx, look: Look, color: string, scale: number, x
   ctx.translate(x, y);
   ctx.scale(scale / U, scale / U);
 
-  drawBody(ctx, skin, color, number);
+  drawBody(ctx, skin, color, frameOf(look.build), number);
   drawHead(ctx, look);
 
   ctx.restore();

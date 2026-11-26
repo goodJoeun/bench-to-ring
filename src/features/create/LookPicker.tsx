@@ -1,6 +1,6 @@
 "use client";
 
-import { lookLabel, type Look } from "@/game";
+import { lookLabel, type Build, type Look } from "@/game";
 import { gameActions } from "@/shared/store/game-store";
 import { Sprite } from "@/shared/ui/sprite/Sprite";
 import styles from "./create.module.css";
@@ -11,11 +11,14 @@ import styles from "./create.module.css";
  */
 export function LookPicker({
   look,
+  build,
   jersey,
   looks,
   jerseys,
 }: {
   look: Look;
+  /** 모든 칸에 입혀 그릴 체형 (체형은 포지션 단계에서 골라요) */
+  build: Build | undefined;
   jersey: string;
   looks: Look[];
   jerseys: string[];
@@ -38,7 +41,7 @@ export function LookPicker({
               onClick={() => gameActions.chooseLook(i)}
             >
               <Sprite
-                look={l}
+                look={{ ...l, build }}
                 color={jerseys[i]}
                 scale={5}
                 className={styles.lookArt}

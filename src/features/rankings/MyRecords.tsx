@@ -84,7 +84,7 @@ export function MyRecords({ hall, mine, pending, endings, near, onNear }: MyReco
             <Fragment key={s.id}>
               <li>
                 <RankMark rank={rank} />
-                <Sprite look={lookOf(s.id, s.look)} color={jerseyOf(s.teams.at(-1))} scale={2} className="rk-mini" label={`${s.name} 캐릭터`} />
+                <Sprite look={lookOf(s.id, s.look, s.pos)} color={jerseyOf(s.teams.at(-1))} scale={2} className="rk-mini" label={`${s.name} 캐릭터`} />
                 <span className="rk-who">
                   <b style={nameFit(`${s.name} #${s.num}`)}>
                     {s.name} <span className="num">#{s.num}</span>

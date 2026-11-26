@@ -3,6 +3,7 @@ import {
   HOME_NATION,
   INVEST_SLOTS,
   LOOKS,
+  POS_BUILD,
   achievementById,
   buy,
   canRetire,
@@ -36,6 +37,7 @@ import {
   type DailyChallenge,
   type FocusKey,
   type InvestKey,
+  type Build,
   type Look,
   type NewsItem,
   type PosKey,
@@ -64,6 +66,8 @@ export interface CreationDraft {
   num: string;
   /** 고른 캐릭터 */
   look: Look;
+  /** 고른 체형. null이면 포지션에 어울리는 체형이에요(draftBuild). 포지션을 바꾸면 다시 null이 돼요. */
+  build: Build | null;
   /** 고른 캐릭터에 입혀 본 유니폼 색. 생성 화면에서만 써요. */
   jersey: string;
   /** 고를 수 있게 늘어놓은 캐릭터 (무작위 조합)와 저마다 입혀 본 유니폼 색 */
@@ -86,6 +90,12 @@ export interface CreationDraft {
    */
   challenge: DailyChallenge | null;
 }
+
+/** 고른 체형. 고르지 않았으면 포지션(챌린지면 오늘의 포지션)에 어울리는 체형이에요. */
+export const draftBuild = (d: CreationDraft): Build => d.build ?? POS_BUILD[d.challenge?.pos ?? d.pos];
+
+/** 고른 캐릭터에 고른 체형을 입힌 모습 */
+export const draftLook = (d: CreationDraft): Look => ({ ...d.look, build: draftBuild(d) });
 
 /** 이 입력으로 시작하면 되는 선수: 챌린지 모드면 오늘의 챌린지 선수, 아니면 고른 포지션·국적·학교·후보예요. */
 export function draftStart(d: CreationDraft): { pos: PosKey; nat: string; school: string; cand: Candidate | undefined } {
@@ -193,6 +203,7 @@ const emptyDraft = (): CreationDraft => ({
   // 저장소를 읽기 전(서버 렌더링)에는 무작위 없이 정해 둬요. 화면에 나오기 전에 freshDraft가 새로 뽑아요.
   look: toLook({ kind: "asian", skin: LOOKS.asian.skins[1], hair: LOOKS.asian.hairs[0] }),
   jersey: "#2453A6",
+  build: null,
   looks: [],
   jerseys: [],
   nat: HOME_NATION,
@@ -401,7 +412,11 @@ export const gameActions = {
     const d = snapshot.draft;
     if (pos === d.pos) return;
     const candidates = d.pool[pos] ?? generateCandidates(pos);
-    set({ draft: { ...d, pos, candidates, pool: { ...d.pool, [pos]: candidates }, selected: 0, rerolls: REROLLS } });
+    set({ draft: { ...d, pos, build: null, candidates, pool: { ...d.pool, [pos]: candidates }, selected: 0, rerolls: REROLLS } });
+  },
+  /** 체형을 골라요. 그림에만 쓰고 능력치와는 상관없어요. */
+  chooseBuild(build: Build) {
+    set({ draft: { ...snapshot.draft, build } });
   },
   reroll() {
     const d = snapshot.draft;
@@ -411,11 +426,11 @@ export const gameActions = {
   },
   /** 오늘(한국 시간) 그 포지션의 챌린지 선수로 선수 만들기를 시작해요. 이름·등번호·캐릭터만 골라요. */
   enterChallenge(pos: PosKey) {
-    set({ draft: { ...snapshot.draft, challenge: dailyChallenge(kstDay(Date.now()), pos) } });
+    set({ draft: { ...snapshot.draft, build: null, challenge: dailyChallenge(kstDay(Date.now()), pos) } });
   },
   /** 챌린지 모드를 나가 일반 선수 만들기로 돌아가요. */
   leaveChallenge() {
-    if (snapshot.draft.challenge) set({ draft: { ...snapshot.draft, challenge: null } });
+    if (snapshot.draft.challenge) set({ draft: { ...snapshot.draft, build: null, challenge: null } });
   },
   startCareer() {
     const d = snapshot.draft;
@@ -428,7 +443,7 @@ export const gameActions = {
     // 이름은 반드시 지어야 해요. 화면에서 먼저 안내해요.
     if (!cand || !d.name.trim()) return;
     const c = createCareer(
-      { name: d.name, num: Number(d.num), nat, look: d.look, pos, path: d.path, school: school || undefined, challenge: ch ? { day: ch.day, pos: ch.pos } : undefined },
+      { name: d.name, num: Number(d.num), nat, look: draftLook(d), pos, path: d.path, school: school || undefined, challenge: ch ? { day: ch.day, pos: ch.pos } : undefined },
       cand,
     );
     saveCareer(c);

@@ -1,4 +1,4 @@
-import { bareArm, courtLegs, jersey, shorts, sleeve, travelShirt, trouserLegs } from "./athleteArt";
+import { bareArm, courtLegs, frameOf, fx, jersey, narrow, shorts, sleeve, travelShirt, trouserLegs, type Frame } from "./athleteArt";
 import type { Look } from "@/game";
 import { drawHead, shade, type Mood } from "@/shared/ui/sprite/Sprite";
 
@@ -107,7 +107,8 @@ interface Pose {
 const REST: Pick<Pose, "lh" | "rh"> = { lh: [42, 152], rh: [118, 152] };
 const BASE: Pose = { x: 0, y: 0, step: 0, bow: 0, tug: 0, tilt: 0, ...REST, le: [0, 0], re: [0, 0] };
 
-const SHOULDER = { l: [51, 100] as Pt, r: [109, 100] as Pt };
+/** 어깨 (체형이 좁을수록 가운데로 모여요) */
+const shoulders = (f: Frame): { l: Pt; r: Pt } => ({ l: [fx(f, 51), 100], r: [fx(f, 109), 100] });
 /** 위팔과 아래팔 길이. 손이 이보다 멀면 팔이 닿는 데까지만 뻗어요. */
 const UPPER = 30;
 const FORE = 27;
@@ -208,7 +209,7 @@ const FRAMES: Record<StageKey, [number, Pose][]> = {
 };
 
 /** 단계의 t초 자세. 걷기·손 흔들기처럼 되풀이하는 움직임을 더하고, 팔꿈치를 구해요. */
-function pose(stage: StageKey, t: number): Pose {
+function pose(stage: StageKey, t: number, f: Frame): Pose {
   const p = poseAt(FRAMES[stage], t);
   if (stage === "debut") {
     const walk = clamp01((t - 1.5) / 1.2);
@@ -217,8 +218,9 @@ function pose(stage: StageKey, t: number): Pose {
     p.y -= Math.abs(p.step) * 2;
   }
   if (stage === "champ" && t > 2.1) p.rh = [p.rh[0] + Math.sin((t - 2.1) * 9) * 4, p.rh[1]];
-  [p.le, p.lh] = arm(SHOULDER.l, p.lh);
-  [p.re, p.rh] = arm(SHOULDER.r, p.rh);
+  const sh = shoulders(f);
+  [p.le, p.lh] = arm(sh.l, p.lh);
+  [p.re, p.rh] = arm(sh.r, p.rh);
   return p;
 }
 
@@ -254,34 +256,37 @@ const OUTFIT: Record<StageKey, Outfit> = {
 /** 심판복의 검은 줄무늬와 바지 */
 const REF_INK = "#1B1D22";
 
-function drawArm(ctx: Ctx, skin: string, o: Outfit, s: Pt, e: Pt, h: Pt): void {
-  bareArm(ctx, skin, s, e, h);
+function drawArm(ctx: Ctx, skin: string, o: Outfit, f: Frame, s: Pt, e: Pt, h: Pt): void {
+  const w = f.limb;
+  bareArm(ctx, skin, s, e, h, w);
   if (o.kind === "jersey") return;
   if (o.kind === "suit") {
-    sleeve(ctx, s, e, o.color);
-    sleeve(ctx, e, [lerp(h[0], e[0], 0.18), lerp(h[1], e[1], 0.18)], o.color, true);
+    sleeve(ctx, s, e, o.color, false, w);
+    sleeve(ctx, e, [lerp(h[0], e[0], 0.18), lerp(h[1], e[1], 0.18)], o.color, true, w);
     return;
   }
-  sleeve(ctx, s, [lerp(s[0], e[0], 0.54), lerp(s[1], e[1], 0.54)], o.kind === "ref" ? REF_INK : o.color);
+  sleeve(ctx, s, [lerp(s[0], e[0], 0.54), lerp(s[1], e[1], 0.54)], o.kind === "ref" ? REF_INK : o.color, false, w);
 }
 
 /** 팔이 몸 앞에 오는지: 손이 몸통 앞에 있거나 어깨 위로 올라가면 몸 앞에 그려요. */
-const inFront = (h: Pt) => (h[0] > 50 && h[0] < 110) || h[1] < 95;
+const inFront = (f: Frame, h: Pt) => (h[0] > fx(f, 50) && h[0] < fx(f, 110)) || h[1] < 95;
 
 /** 서 있는 다리와 신발. 걸음(step)만큼 한쪽 발을 들어요. */
-function drawStandingLegs(ctx: Ctx, skin: string, o: Outfit, p: Pose): void {
+function drawStandingLegs(ctx: Ctx, skin: string, o: Outfit, f: Frame, p: Pose): void {
   ctx.save();
   ctx.translate(p.x, 0);
-  if (o.kind === "jersey") courtLegs(ctx, skin, o.color, p.step);
+  if (o.kind === "jersey") courtLegs(ctx, skin, o.color, p.step, f);
   else {
     const pants = o.kind === "suit" ? shade(o.color, -0.1) : o.kind === "ref" ? REF_INK : "#4b5c72";
-    trouserLegs(ctx, pants, o.kind !== "tee", p.step);
+    trouserLegs(ctx, pants, o.kind !== "tee", p.step, f);
   }
   ctx.restore();
 }
 
 /** 벤치에 앉은 다리: 허벅지는 앞으로 짧게 보이고, 무릎 아래가 바닥까지 내려와요. */
-function drawSittingLegs(ctx: Ctx, skin: string, o: Outfit): void {
+function drawSittingLegs(ctx: Ctx, skin: string, o: Outfit, f: Frame): void {
+  ctx.save();
+  narrow(ctx, f);
   for (const lx of [58, 86]) {
     ellipse(ctx, lx + 8, 212, 10, 7, skin);
     rrect(ctx, lx, 212, 16, 12, 5, skin);
@@ -290,11 +295,21 @@ function drawSittingLegs(ctx: Ctx, skin: string, o: Outfit): void {
     rrect(ctx, lx - 8, 220, 26, 10, 6, "#F4F4F4");
     rrect(ctx, lx - 9, 226, 28, 5, 2.5, "#2A2A2A");
   }
+  ctx.restore();
 }
 
-function drawTop(ctx: Ctx, o: Outfit, tug: number, num?: number): void {
+function drawTop(ctx: Ctx, o: Outfit, f: Frame, tug: number, num?: number): void {
+  if (o.kind === "jersey") return jersey(ctx, o.color, tug, num, f);
+  if (o.kind === "tee") return travelShirt(ctx, o.color, f);
+  ctx.save();
+  narrow(ctx, f);
+  drawDressTop(ctx, o);
+  ctx.restore();
+}
+
+/** 심판복과 양복 윗도리 (처음 그림 너비로 그려요. 체형 너비는 drawTop이 맞춰요) */
+function drawDressTop(ctx: Ctx, o: Outfit): void {
   const { color } = o;
-  if (o.kind === "jersey") return jersey(ctx, color, tug, num);
   if (o.kind === "ref") {
     // 심판복: 흰 셔츠에 검은 세로 줄무늬, 검은 깃
     const shirt: Pt[] = [
@@ -325,7 +340,6 @@ function drawTop(ctx: Ctx, o: Outfit, tug: number, num?: number): void {
     );
     return;
   }
-  if (o.kind === "tee") return travelShirt(ctx, color);
   // 양복: 재킷, 흰 셔츠와 빨간 넥타이, 깃
   poly(
     ctx,
@@ -405,25 +419,28 @@ export interface PosedExtra {
  */
 export function drawPosed(ctx: Ctx, look: Look, color: string, lh: Pt, rh: Pt, mood: Mood, extra: PosedExtra = {}): void {
   const p: Pose = { ...BASE, bow: extra.bow ?? 0, tilt: extra.tilt ?? 0 };
-  [p.le, p.lh] = arm(SHOULDER.l, lh);
-  [p.re, p.rh] = arm(SHOULDER.r, rh);
+  const sh = shoulders(frameOf(look.build));
+  [p.le, p.lh] = arm(sh.l, lh);
+  [p.re, p.rh] = arm(sh.r, rh);
   drawFigure(ctx, look, { kind: extra.outfit ?? "jersey", color }, false, p, mood, extra.num);
 }
 
 function drawFigure(ctx: Ctx, look: Look, o: Outfit, sitting: boolean, p: Pose, mood: Mood, num?: number): void {
   const { skin } = look;
-  if (sitting) drawSittingLegs(ctx, skin, o);
-  else drawStandingLegs(ctx, skin, o, p);
+  const f = frameOf(look.build);
+  const sh = shoulders(f);
+  if (sitting) drawSittingLegs(ctx, skin, o, f);
+  else drawStandingLegs(ctx, skin, o, f, p);
 
   ctx.save();
   ctx.translate(p.x, p.y);
-  if (o.kind === "jersey") shorts(ctx, o.color);
+  if (o.kind === "jersey") shorts(ctx, o.color, f);
   const arms: [Pt, Pt, Pt][] = [
-    [SHOULDER.l, p.le, p.lh],
-    [SHOULDER.r, p.re, p.rh],
+    [sh.l, p.le, p.lh],
+    [sh.r, p.re, p.rh],
   ];
-  for (const [s, e, h] of arms) if (!inFront(h)) drawArm(ctx, skin, o, s, e, h);
-  drawTop(ctx, o, p.tug, num);
+  for (const [s, e, h] of arms) if (!inFront(f, h)) drawArm(ctx, skin, o, f, s, e, h);
+  drawTop(ctx, o, f, p.tug, num);
   // 고개를 숙이면 머리가 내려오고 얼굴이 납작해 보여요. 기울이면 목을 축으로 돌아요.
   ctx.save();
   ctx.translate(p.tilt * 24, p.bow * 14);
@@ -433,7 +450,7 @@ function drawFigure(ctx: Ctx, look: Look, o: Outfit, sitting: boolean, p: Pose, 
   ctx.translate(-80, -90);
   drawHead(ctx, look, mood);
   ctx.restore();
-  for (const [s, e, h] of arms) if (inFront(h)) drawArm(ctx, skin, o, s, e, h);
+  for (const [s, e, h] of arms) if (inFront(f, h)) drawArm(ctx, skin, o, f, s, e, h);
   ctx.restore();
 }
 
@@ -701,8 +718,8 @@ const FLASHES: [number, number, number][] = [
 
 /** 한 단계 장면을 그려요. 캔버스는 VIEW 범위가 160x240 판 단위가 되게 맞춰 두고 불러요. */
 export function drawStage(ctx: Ctx, stage: StageKey, t: number, base: Look = COVER_LOOK): void {
-  const p = pose(stage, t);
   const look = { ...base, ...HAIR[stage] };
+  const p = pose(stage, t, frameOf(look.build));
   const mood = moodAt(stage, t, p);
   const { skin } = look;
   switch (stage) {

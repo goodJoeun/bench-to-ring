@@ -1,6 +1,39 @@
 /** 공유 선수 그림. 캐릭터 판은 160×240, 어깨와 손은 장면의 자세 좌표를 써요. */
+import type { Build } from "@/game";
+
 type Ctx = CanvasRenderingContext2D;
 type Point = [number, number];
+
+/**
+ * 체형. k는 몸통(유니폼·반바지·다리 간격) 너비를 가운데(x=80)에서 줄이는 비율, limb는 팔다리 굵기 비율이에요.
+ * 머리 크기는 그대로이고, 가드형으로 갈수록 어깨가 좁고 팔다리가 가늘어요. 빅맨형도 처음 그림(1)보다 조금 좁아요.
+ */
+export interface Frame {
+  k: number;
+  limb: number;
+}
+
+const FRAMES: Record<Build, Frame> = {
+  guard: { k: 0.68, limb: 0.8 },
+  forward: { k: 0.8, limb: 0.9 },
+  big: { k: 0.92, limb: 1 },
+};
+
+/** 처음 그림 그대로의 몸 (체형을 넘기지 않은 그림) */
+const FULL: Frame = { k: 1, limb: 1 };
+
+/** 체형을 정하지 않은 캐릭터(장면의 다른 선수, 체형이 없는 예전 기록)는 포워드형이에요. */
+export const frameOf = (build: Build = "forward"): Frame => FRAMES[build];
+
+/** 처음 그림의 x좌표를 이 체형의 x좌표로 (가운데 쪽으로 모아요) */
+export const fx = (f: Frame, x: number): number => 80 + (x - 80) * f.k;
+
+/** 이 뒤에 그리는 것을 체형 너비만큼 가운데(x=80) 쪽으로 좁혀요. save·restore는 부르는 쪽에서 해요. */
+export function narrow(ctx: Ctx, f: Frame): void {
+  ctx.translate(80, 0);
+  ctx.scale(f.k, 1);
+  ctx.translate(-80, 0);
+}
 
 const ink = "#242532";
 const outlines = new Map<string, Path2D>();
@@ -33,8 +66,9 @@ function shape(ctx: Ctx, d: string, color: string, contour = false) {
   }
 }
 
-export function jersey(ctx: Ctx, color: string, tug = 0, number?: number) {
+export function jersey(ctx: Ctx, color: string, tug = 0, number?: number, f: Frame = FULL) {
   ctx.save();
+  narrow(ctx, f);
   ctx.translate(0, 88);
   ctx.scale(1, 0.91 + tug / 66);
   const trim = shade(color, 0.80);
@@ -47,6 +81,8 @@ export function jersey(ctx: Ctx, color: string, tug = 0, number?: number) {
   if (number !== undefined) {
     ctx.save();
     ctx.translate(80, 35);
+    // 몸통을 좁혀도 번호 글자는 납작해지지 않게 되돌려요.
+    ctx.scale(1 / f.k, 1);
     // 좌우 반전해 그린 선수도 번호는 바로 읽히게 글자만 다시 뒤집어요.
     const m = ctx.getTransform();
     if (m.a * m.d - m.b * m.c < 0) ctx.scale(-1, 1);
@@ -63,8 +99,9 @@ export function jersey(ctx: Ctx, color: string, tug = 0, number?: number) {
   ctx.restore();
 }
 
-export function shorts(ctx: Ctx, color: string) {
+export function shorts(ctx: Ctx, color: string, f: Frame = FULL) {
   ctx.save();
+  narrow(ctx, f);
   ctx.translate(80, 141);
   ctx.scale(0.91, 0.85);
   ctx.translate(-80, -147);
@@ -75,19 +112,22 @@ export function shorts(ctx: Ctx, color: string) {
 }
 
 /** 티셔츠와 이동복. 어깨·목·손 위치는 경기 자세와 같은 좌표를 써요. */
-export function travelShirt(ctx: Ctx, color: string) {
+export function travelShirt(ctx: Ctx, color: string, f: Frame = FULL) {
+  ctx.save();
+  narrow(ctx, f);
   shape(ctx, "M49 96Q52 90 67 87Q80 99 93 87Q106 89 111 96L109 117L104 135L109 151Q79 156 51 151L54 137L49 119Z", color, true);
   shape(ctx, "M102 103L109 99L106 122L100 130L104 132L101 142L108 149L91 151L96 142L83 141L98 136Z M54 130L67 135L55 133Z", shade(color, -0.28));
   shape(ctx, "M56 100L65 94L72 99L64 97Z M59 116L73 112L84 114L69 115Z M54 144L73 146L64 148L53 147Z", shade(color, 0.2));
   shape(ctx, "M65 88L68 87Q80 97 92 87L95 88Q82 105 65 88Z", shade(color, -0.42));
   shape(ctx, "M55 149Q81 152 105 148L106 150Q81 154 55 151Z", shade(color, -0.23));
+  ctx.restore();
 }
 
-export function trouserLegs(ctx: Ctx, color: string, formal: boolean, step: number) {
+export function trouserLegs(ctx: Ctx, color: string, formal: boolean, step: number, f: Frame = FULL) {
   for (const side of [-1, 1]) {
     ctx.save();
-    ctx.translate(80 + side * 15, -Math.max(0, -side * step) * 7);
-    ctx.scale(side, 1);
+    ctx.translate(80 + side * 15 * f.k, -Math.max(0, -side * step) * 7);
+    ctx.scale(side * f.limb, 1);
     shape(ctx, "M-17 148L14 147Q17 160 13 175L10 191L9 210L6 218L-8 218L-8 202L-10 185L-8 173Z", color, true);
     shape(ctx, "M-14 152L-7 155L-2 173L-5 184L4 189L-3 191L-2 209L-7 216L-9 189L-8 170Z", shade(color, -0.35));
     shape(ctx, "M7 158L13 154L8 177L1 186L4 176Z M-2 211L8 207L7 211L0 213Z", shade(color, 0.16));
@@ -99,22 +139,22 @@ export function trouserLegs(ctx: Ctx, color: string, formal: boolean, step: numb
 }
 
 /** 자세가 바뀌어도 소매가 어깨에서 팔꿈치 방향으로 따라가요. */
-export function sleeve(ctx: Ctx, start: Point, end: Point, color: string, full = false) {
+export function sleeve(ctx: Ctx, start: Point, end: Point, color: string, full = false, thick = 1) {
   ctx.save();
   ctx.translate(...start);
   ctx.rotate(Math.atan2(end[1] - start[1], end[0] - start[0]));
-  ctx.scale(Math.hypot(end[0] - start[0], end[1] - start[1]) / 24, 1);
+  ctx.scale(Math.hypot(end[0] - start[0], end[1] - start[1]) / 24, thick);
   shape(ctx, "M-6 -5Q-4 -11 4 -10L24 -7L24 7L10 8L-3 8Z", color, true);
   shape(ctx, "M2 6L15 3L24 2L24 7L8 8Z", shade(color, -0.27));
   shape(ctx, "M20 -7L24 -7L24 7L21 7Z", full ? "#dedfda" : shade(color, 0.19));
   ctx.restore();
 }
 
-export function courtLegs(ctx: Ctx, skin: string, team: string, step = 0) {
+export function courtLegs(ctx: Ctx, skin: string, team: string, step = 0, f: Frame = FULL) {
   for (const side of [-1, 1]) {
     ctx.save();
-    ctx.translate(80 + side * 20, -Math.max(0, -side * step) * 7);
-    ctx.scale(side, 1);
+    ctx.translate(80 + side * 20 * f.k, -Math.max(0, -side * step) * 7);
+    ctx.scale(side * f.limb, 1);
     shape(ctx, "M-9 165Q-3 163 8 165L10 180Q11 186 8 190Q12 195 9 202L6 216L-3 216L-4 204Q-9 198 -7 189Z", skin, true);
     shape(ctx, "M6 184Q10 191 8 197L4 209L0 212L2 202L0 197Z", shade(skin, -0.20));
     shape(ctx, "M-7 178L5 178L1 184L-5 186Z M-4 192L3 189L0 196Z", shade(skin, 0.14));
@@ -141,9 +181,10 @@ function muscle(ctx: Ctx, start: Point, end: Point, width: number, skin: string)
   ctx.restore();
 }
 
-export function bareArm(ctx: Ctx, skin: string, shoulder: Point, elbow: Point, hand: Point) {
-  muscle(ctx, shoulder, elbow, 9, skin);
-  muscle(ctx, elbow, hand, 6.8, skin);
+/** thick는 팔 굵기 비율이에요(체형의 limb). 손 크기는 그대로예요. */
+export function bareArm(ctx: Ctx, skin: string, shoulder: Point, elbow: Point, hand: Point, thick = 1) {
+  muscle(ctx, shoulder, elbow, 9 * thick, skin);
+  muscle(ctx, elbow, hand, 6.8 * thick, skin);
   ctx.save();
   ctx.translate(...hand);
   ctx.rotate(Math.atan2(hand[1] - elbow[1], hand[0] - elbow[0]) - Math.PI / 2);

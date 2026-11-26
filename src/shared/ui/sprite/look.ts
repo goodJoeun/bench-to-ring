@@ -1,4 +1,4 @@
-import { LOOKS, LOOK_KEYS, teamColor, toLook, type Look, type LookRecord } from "@/game";
+import { LOOKS, LOOK_KEYS, teamColor, toLook, type Look, type LookRecord, type PosKey } from "@/game";
 import { NO_TEAM_COLOR } from "@/shared/lib/format";
 
 /** 기록 id로 늘 같은 값을 골라요. 캐릭터가 없는 예전 기록에 써요. */
@@ -8,11 +8,11 @@ function hash(s: string): number {
   return Math.abs(h);
 }
 
-/** 선수 캐릭터. 캐릭터를 고르기 전 기록은 피부색으로, 색도 없는 예전 기록은 id로 정해요. */
-export function lookOf(id: string, look: LookRecord | null | undefined): Look {
-  if (look) return toLook(look);
+/** 선수 캐릭터. 캐릭터를 고르기 전 기록은 피부색으로, 색도 없는 예전 기록은 id로 정해요. 체형이 없는 기록은 포지션으로 정해요. */
+export function lookOf(id: string, look: LookRecord | null | undefined, pos?: PosKey | null): Look {
+  if (look) return toLook(look, pos ?? undefined);
   const kind = LOOK_KEYS[hash(id) % LOOK_KEYS.length];
-  return toLook({ kind, skin: LOOKS[kind].skins[hash(id) % LOOKS[kind].skins.length], hair: LOOKS[kind].hairs[0] });
+  return toLook({ kind, skin: LOOKS[kind].skins[hash(id) % LOOKS[kind].skins.length], hair: LOOKS[kind].hairs[0] }, pos ?? undefined);
 }
 
 /** 마지막 소속팀 유니폼 색 */

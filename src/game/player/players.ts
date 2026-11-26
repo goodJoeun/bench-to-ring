@@ -1,5 +1,5 @@
 import { chance, pick, shuffle } from "../core/random";
-import type { Archetype, BeardStyle, HairStyle, Look, LookKey, LookRecord, Player, PosKey, Trait } from "../core/types";
+import type { Archetype, BeardStyle, Build, HairStyle, Look, LookKey, LookRecord, Player, PosKey, Trait } from "../core/types";
 
 /* 선수 생성 데이터: 플레이 유형, 숨은 특성, 외모 */
 
@@ -315,6 +315,17 @@ export const BEARDS: Record<BeardStyle, string> = {
   full: "턱수염",
 };
 
+export const BUILDS: Record<Build, { name: string; desc: string }> = {
+  guard: { name: "가드형", desc: "날렵한 몸" },
+  forward: { name: "포워드형", desc: "탄탄한 몸" },
+  big: { name: "빅맨형", desc: "두꺼운 몸" },
+};
+
+export const BUILD_KEYS = Object.keys(BUILDS) as Build[];
+
+/** 포지션에 어울리는 체형. 체형을 고르지 않으면 이걸로 정해요. */
+export const POS_BUILD: Record<PosKey, Build> = { PG: "guard", SG: "guard", SF: "forward", PF: "big", C: "big" };
+
 const BANDS = ["#FFFFFF", "#1B1B1B", "#D7263D", "#F2A900"];
 
 /** 캐릭터 하나를 무작위로 조합해요. 바탕을 정하지 않으면 네 가지 중에서 골라요. */
@@ -348,8 +359,11 @@ export function lookFromSkin(skin: string): LookKey {
   return i === 0 ? "white" : i === 1 ? "asian" : i === 2 ? "hispanic" : i >= 3 ? "black" : "asian";
 }
 
-/** 저장된 색과 얼굴(없을 수 있어요)로 그릴 캐릭터를 만들어요. 예전 선수·기록은 바탕에 맞는 기본 모양이에요. */
-export function toLook(l: LookRecord): Look {
+/**
+ * 저장된 색과 얼굴(없을 수 있어요)로 그릴 캐릭터를 만들어요. 예전 선수·기록은 바탕에 맞는 기본 모양이에요.
+ * 체형을 고르기 전에 만든 선수·기록은 포지션을 알면 그 포지션에 어울리는 체형이에요.
+ */
+export function toLook(l: LookRecord, pos?: PosKey): Look {
   const kind = l.kind ?? lookFromSkin(l.skin);
   return {
     kind,
@@ -359,8 +373,9 @@ export function toLook(l: LookRecord): Look {
     beard: l.beard ?? "none",
     eyes: l.eyes ?? LOOKS[kind].eyes[0],
     band: l.band,
+    build: l.build ?? (pos && POS_BUILD[pos]),
   };
 }
 
 /** 선수의 캐릭터 */
-export const playerLook = (p: Player): Look => toLook({ skin: p.skin, hair: p.hair, ...p.face });
+export const playerLook = (p: Player): Look => toLook({ skin: p.skin, hair: p.hair, ...p.face }, p.pos);

@@ -4,9 +4,10 @@ import { addTransitionType, startTransition, useMemo, useRef, useState, ViewTran
 import { useQuery } from "@tanstack/react-query";
 import { NAME_MAX, POS, fmtNum, pathHint, type CareerSummary } from "@/game";
 import { boardDaysQuery } from "@/shared/leaderboard/queries";
-import { gameActions, type CreationDraft } from "@/shared/store/game-store";
+import { draftLook, gameActions, type CreationDraft } from "@/shared/store/game-store";
 import { HallOfFame } from "@/features/hall-of-fame/HallOfFame";
 import { Segmented } from "@/shared/ui/ui";
+import { BuildPicker } from "./BuildPicker";
 import { CandidateCard } from "./CandidateCard";
 import { CareerPath } from "./CareerPath";
 import { ChallengeCard } from "./ChallengeCard";
@@ -28,7 +29,7 @@ function natHint(nat: string): string {
 
 const STEPS = {
   look: { name: "캐릭터", title: "선수의 모습을 선택하세요." },
-  pos: { name: "포지션", title: "포지션을 선택하세요." },
+  pos: { name: "포지션", title: "포지션과 체형을 선택하세요." },
   style: { name: "플레이 스타일", title: "플레이 스타일을 선택하세요." },
   today: { name: "오늘의 선수", title: "오늘의 챌린지 선수예요." },
   info: { name: "선수 정보", title: "이름을 지어 주세요" },
@@ -64,6 +65,8 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
   const flow = ch ? CHALLENGE_FLOW : FLOW;
   const last = flow.length - 1;
   const id = flow[Math.min(Math.max(step, 0), last)];
+  // 고른 캐릭터에 고른 체형(고르지 않았으면 포지션에 어울리는 체형)을 입혀서 보여줘요.
+  const look = draftLook(draft);
   // 포지션마다 온라인 랭킹에 오른 은퇴 선수 수. 불러오기 전이나 실패하면 수를 빼고 보여줘요.
   // 포지션을 고르는 일반 선수 만들기에서만 쓰니 표지에서는 부르지 않고, 시작을 누르면 미리 불러 둬요.
   const byPos = useQuery({ ...boardDaysQuery(), enabled: step >= 0 && !ch }).data?.byPos;
@@ -163,7 +166,7 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
 
               {id === "look" && (
                 <div className={styles.field}>
-                  <LookPicker look={draft.look} jersey={draft.jersey} looks={draft.looks} jerseys={draft.jerseys} />
+                  <LookPicker look={draft.look} build={look.build} jersey={draft.jersey} looks={draft.looks} jerseys={draft.jerseys} />
                   <p className="hint">유니폼은 고교 시절 색이에요. 프로에 가면 소속팀 색을 입어요.</p>
                 </div>
               )}
@@ -181,6 +184,9 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
                     {posHint(draft.pos)}
                     {byPos && " · 은퇴 수는 온라인 랭킹에 오른 모든 선수 기준이에요."}
                   </p>
+                  <span className={`label ${styles.buildLabel}`}>체형</span>
+                  <BuildPicker draft={draft} pos={draft.pos} />
+                  <p className="hint">체형은 캐릭터 그림에만 쓰여요. 능력치와 키는 포지션과 플레이 스타일로 정해져요.</p>
                 </div>
               )}
 
@@ -190,8 +196,10 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
                     {dayText(ch.day)} · {ch.pos} {POS[ch.pos].name} · 오늘 이 포지션은 누구나 이 선수로 시작해요
                   </span>
                   <div className={`${styles.cands} one`}>
-                    <CandidateCard cand={ch.cand} pos={ch.pos} look={draft.look} jersey={draft.jersey} index={0} selected fixed />
+                    <CandidateCard cand={ch.cand} pos={ch.pos} look={look} jersey={draft.jersey} index={0} selected fixed />
                   </div>
+                  <span className={`label ${styles.buildLabel}`}>체형</span>
+                  <BuildPicker draft={draft} pos={ch.pos} />
                   <p className="hint">
                     국적 {ch.nat} · {ch.school}. 능력치와 키는 물론, 뛰어봐야 알 수 있는 잠재력과 숨겨진 성장 특성까지 모두 같아요. 은퇴하면
                     일반 랭킹과 함께 오늘의 챌린지 랭킹에도 올라가요.
@@ -213,7 +221,7 @@ export function CreateScreen({ draft, hall, endings }: { draft: CreationDraft; h
                         key={`${draft.pos}-${i}-${c.arch}-${c.h}`}
                         cand={c}
                         pos={draft.pos}
-                        look={draft.look}
+                        look={look}
                         jersey={draft.jersey}
                         index={i}
                         selected={draft.selected === i}

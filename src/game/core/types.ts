@@ -182,6 +182,9 @@ export type HairStyle =
 
 export type BeardStyle = "none" | "stubble" | "goatee" | "mustache" | "full";
 
+/** 체형: 가드형(날렵한 몸), 포워드형(탄탄한 몸), 빅맨형(두꺼운 몸) */
+export type Build = "guard" | "forward" | "big";
+
 /** 캐릭터 생김새 가운데 피부색·머리색을 뺀 것 */
 export interface Face {
   kind: LookKey;
@@ -191,6 +194,8 @@ export interface Face {
   eyes: string;
   /** 헤어밴드 색. 없으면 안 써요. */
   band?: string;
+  /** 체형. 없으면 포워드형으로 그려요. 고르기 전에 만든 선수·기록은 포지션으로 정해요(toLook). */
+  build?: Build;
 }
 
 /** 그릴 캐릭터 전체 */

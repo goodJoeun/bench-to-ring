@@ -49,7 +49,7 @@ export function BestFiveCourt({ best5, mine }: { best5: { pos: PosKey; career: C
         <div className={styles.rkSpot} key={pos} style={{ left: `${SPOTS[pos].x}%`, top: `${SPOTS[pos].y}%` }}>
           {e ? (
             <>
-              <Sprite look={lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={3} className={styles.rkSprite} label={`${e.name} 캐릭터`} />
+              <Sprite look={lookOf(e.id, e.look, pos)} color={jerseyOf(e.team)} scale={3} className={styles.rkSprite} label={`${e.name} 캐릭터`} />
               <span className={styles.rkPlate} data-mine={mine?.has(e.id) || undefined}>
                 <b style={nameFit(e.name)}>{e.name}</b>
                 <span>

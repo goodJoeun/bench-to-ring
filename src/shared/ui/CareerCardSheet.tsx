@@ -63,7 +63,7 @@ export function CareerCardSheet({ career: e, ranks, mine = false, onClose }: Car
   return (
     <Sheet labelledBy="career-card-title" onClose={onClose}>
       <div className={styles.head}>
-        <Sprite look={lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={4} className={styles.sprite} label={`${e.name} 캐릭터`} />
+        <Sprite look={lookOf(e.id, e.look, e.pos)} color={jerseyOf(e.team)} scale={4} className={styles.sprite} label={`${e.name} 캐릭터`} />
         <div className={styles.who}>
           <span className="sheet-kicker">{ranks}</span>
           <h2 id="career-card-title">

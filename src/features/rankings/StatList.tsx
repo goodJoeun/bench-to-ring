@@ -26,7 +26,7 @@ export function StatList({ rows, stat, mine }: { rows: StatEntry[]; stat: StatKe
       {rows.map((e) => (
         <li key={e.id} data-mine={mine.has(e.id) || undefined}>
           <RankMark rank={e.rank} />
-          <Sprite look={lookOf(e.id, e.look)} color={jerseyOf(e.team)} scale={2} className="rk-mini" label={`${e.name} 캐릭터`} />
+          <Sprite look={lookOf(e.id, e.look, e.pos)} color={jerseyOf(e.team)} scale={2} className="rk-mini" label={`${e.name} 캐릭터`} />
           <span className="rk-who">
             <b style={nameFit(`${e.name} #${e.num}`)}>
               {e.name} <span className="num">#{e.num}</span>
