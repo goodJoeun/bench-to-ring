@@ -56,9 +56,14 @@ export function TournamentLoading({ career: c }: { career: Career }) {
   const w = visible.filter((g) => g.win).length;
 
   // 결과 이펙트는 화면 전체를 덮어야 해서 팝업 카드 밖에 그려요. 카드 안의 너비 규칙(.sim-card > *)을 받지 않고, 뒤에는 대회 진행 화면이 남아요.
+  // 결승이라 이기면 시그니처 세리머니까지 보여줘요.
   const overlay =
     stage === "effect" && t.clutch ? (
-      <ClutchResult result={{ ...t.clutch, finals: `${t.name} 결승`, gold: true }} cast={{ look: playerLook(c.p), color, oppColor: t.clutch.oppColor, seed: t.clutch.opp }} onDone={() => setStage(final ? "final" : "result")} />
+      <ClutchResult
+        result={{ ...t.clutch, finals: `${t.name} 결승`, gold: true, celebration: c.perks.celebration }}
+        cast={{ look: playerLook(c.p), color, oppColor: t.clutch.oppColor, seed: t.clutch.opp, num: c.p.num }}
+        onDone={() => setStage(final ? "final" : "result")}
+      />
     ) : null;
 
   return (

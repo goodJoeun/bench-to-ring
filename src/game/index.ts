@@ -30,7 +30,7 @@ export { ARMY, ENLIST_DEADLINE, SANGMU, militaryDecision, militaryUnit, owesServ
 export { formFloor, formLines, scoutTeam, teamForm } from "./world/team-form";
 export { BYE_SPOTS, PLAYOFF_SPOTS, seasonStandings, type SeasonStandings, type StandingRow, type StandingsTable } from "./world/standings";
 export { chooseOption, applyAction } from "./season/actions";
-export { CLUTCH_SCENES, boardScore, clutchScene, finalsPrize, type ClutchScene } from "./season/events";
+export { CELEBRATION_NAMES, CLUTCH_SCENES, boardScore, clutchScene, finalsPrize, type ClutchScene } from "./season/events";
 export {
   INVESTMENTS,
   INVEST_SLOTS,

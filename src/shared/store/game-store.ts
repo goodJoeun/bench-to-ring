@@ -152,8 +152,21 @@ export interface Outcome {
    * 결승 클러치면 결승 이름(finals)이 있어서 우승 세리머니로 보여줘요.
    * move와 play는 고른 플레이의 장면과 이름이에요. 성공 이펙트가 플레이마다 다른 장면을 그려요.
    * oppColor는 상대 유니폼 색이에요. 장면의 상대 선수가 입어요.
+   * celebration은 라이벌전이나 결승에서 이겼을 때 할 시그니처 세리머니예요. 결과 이펙트가 끝에 세리머니 장면을 보여줘요.
    */
-  clutch?: { win: boolean; us?: number; them?: number; opp?: string; ot?: boolean; finals?: string; gold?: boolean; move?: ClutchMove; play?: string; oppColor?: string };
+  clutch?: {
+    win: boolean;
+    us?: number;
+    them?: number;
+    opp?: string;
+    ot?: boolean;
+    finals?: string;
+    gold?: boolean;
+    move?: ClutchMove;
+    play?: string;
+    oppColor?: string;
+    celebration?: string;
+  };
 }
 
 const REROLLS = 5;
@@ -530,6 +543,9 @@ export const gameActions = {
         outcome.clutch.move = opt.act.move ?? (clutchScene(board) === "ahead" ? "lockdown" : "shot");
         outcome.clutch.play = opt.act.play;
         outcome.clutch.oppColor = board?.oppColor;
+        // 라이벌전(다음 경기가 라이벌전으로 걸린 클러치)이나 결승에서 이기면 시그니처 세리머니를 해요.
+        const celebration = after.perks.celebration;
+        if (celebration && outcome.clutch.win && (opt.act.finals || after.run.rival)) outcome.clutch.celebration = celebration;
       }
       return set({ outcome });
     }

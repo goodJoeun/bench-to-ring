@@ -5,6 +5,7 @@ import { CLUTCH_SCENES, boardScore, clutchScene, finalsPrize, type ClutchBoard, 
 import { reducedMotion } from "@/shared/lib/hooks";
 import { useTextOnly } from "@/shared/lib/text-only";
 import { TeamBadge } from "@/shared/ui/badge/TeamBadge";
+import { CelebrationArt } from "./CelebrationArt";
 import { ClutchMoveArt, MOVE_INFO, type ClutchCast } from "./ClutchMoveArt";
 import styles from "./career.module.css";
 
@@ -157,6 +158,10 @@ const MOVE_SCENE_MS = 1350;
 const SHOT_SCENE_MS = 900;
 const MOVE_RESULT_MS = 3100;
 const FINALS_RESULT_MS = 3400;
+/** 시그니처 세리머니: 결과(CLUTCH!·CHAMPIONS!)를 이만큼 보여준 뒤 세리머니 장면으로 바꾸고, 그 장면을 이만큼 보여줘요. */
+const CELEBRATE_AFTER_MS = 1300;
+const FINALS_CELEBRATE_AFTER_MS = 1700;
+export const CELEBRATION_MS = 3400;
 
 const CONFETTI = ["#ffd25a", "#ff5a4a", "#4fb3e8", "#7bd389", "#ffffff"];
 const GOLD_CONFETTI = ["#ffd25a", "#ffe9a3", "#f2b632", "#ffffff", "#ffd25a", "#e8a317"];
@@ -175,6 +180,8 @@ export interface ClutchResultInfo {
   play?: string;
   /** 상대 유니폼 색 (장면의 상대 선수) */
   oppColor?: string;
+  /** 라이벌전이나 결승에서 이겼을 때의 시그니처 세리머니 이름. 있으면 결과를 보여준 뒤 세리머니 장면으로 넘어가요. */
+  celebration?: string;
 }
 
 /**
@@ -182,25 +189,32 @@ export interface ClutchResultInfo {
  * 결승 클러치 성공은 트로피(메달)가 솟아오르고 축포가 터지는 우승 세리머니로 'CHAMPIONS!'('GOLD!')를,
  * 실패는 금 간 화면 위로 빛바랜 트로피와 '준우승'('은메달')을 보여줘요.
  * 장면에는 cast(내 캐릭터와 유니폼 색, 상대 유니폼 색)로 선수를 그려요.
+ * 라이벌전이나 결승에서 이겨 시그니처 세리머니(celebration)가 있으면, 결과를 잠깐 보여준 뒤 플레이 장면 자리에서 세리머니를 하고 끝나요.
  */
 export function ClutchResult({ result, cast, onDone }: { result: ClutchResultInfo; cast?: ClutchCast; onDone: () => void }) {
   const done = useEffectEvent(onDone);
   const [revealed, setRevealed] = useState(false);
+  const [celebrating, setCelebrating] = useState(false);
   const { win, us, them, opp, ot, finals, gold, play } = result;
   const move = cast ? result.move : undefined;
+  const celebration = win && cast ? result.celebration : undefined;
   // '텍스트만 보기'에서는 장면과 이펙트 없이 바로 넘어가요. 결과는 이어지는 결과 카드·대회 결과가 글로 알려줘요.
   const skip = useTextOnly();
+  const reduced = reducedMotion();
+  const shot = move === "shot" || move === "three";
+  const revealAt = move ? (reduced ? 400 : shot ? SHOT_SCENE_MS : MOVE_SCENE_MS) : 0;
+  const celebrateAt = celebration ? revealAt + (reduced ? 700 : finals ? FINALS_CELEBRATE_AFTER_MS : CELEBRATE_AFTER_MS) : null;
+  const doneAt =
+    celebrateAt !== null ? celebrateAt + (reduced ? 1600 : CELEBRATION_MS) : reduced ? 1100 : finals ? FINALS_RESULT_MS : move ? MOVE_RESULT_MS : RESULT_MS;
   useEffect(() => {
     if (skip) {
       const timer = setTimeout(() => done(), 0);
       return () => clearTimeout(timer);
     }
-    const reduced = reducedMotion();
-    const shot = move === "shot" || move === "three";
-    const revealTimer = setTimeout(() => setRevealed(true), move ? (reduced ? 400 : shot ? SHOT_SCENE_MS : MOVE_SCENE_MS) : 0);
-    const doneTimer = setTimeout(() => done(), reduced ? 1100 : finals ? FINALS_RESULT_MS : move ? MOVE_RESULT_MS : RESULT_MS);
-    return () => { clearTimeout(revealTimer); clearTimeout(doneTimer); };
-  }, [finals, move, skip]);
+    const timers = [setTimeout(() => setRevealed(true), revealAt), setTimeout(() => done(), doneAt)];
+    if (celebrateAt !== null) timers.push(setTimeout(() => setCelebrating(true), celebrateAt));
+    return () => timers.forEach(clearTimeout);
+  }, [revealAt, celebrateAt, doneAt, skip]);
   if (skip) return null;
   const score = us !== undefined && them !== undefined ? `${us} : ${them}` : null;
   const prize = gold ? ["금메달", "은메달"] : ["우승", "준우승"];
@@ -228,7 +242,11 @@ export function ClutchResult({ result, cast, onDone }: { result: ClutchResultInf
       data-finals={revealed && finals ? "" : undefined}
       data-move={move}
       data-revealed={revealed || undefined}
-      style={move ? ({ "--hit": `${MOVE_INFO[move].hit}s` } as React.CSSProperties) : undefined}
+      style={{
+        ...(move && ({ "--hit": `${MOVE_INFO[move].hit}s` } as React.CSSProperties)),
+        // 세리머니까지 보여주면 화면이 그만큼 늦게 사라져요.
+        ...(celebrateAt !== null && { animationDuration: `${doneAt}ms` }),
+      }}
       role="status"
       aria-live="assertive"
     >
@@ -259,7 +277,11 @@ export function ClutchResult({ result, cast, onDone }: { result: ClutchResultInf
         </svg>
       ))}
       <div className={styles.clResCore}>
-        {move && cast && <ClutchMoveArt move={move} cast={cast} win={win} revealed={revealed} />}
+        {celebrating && celebration && cast ? (
+          <CelebrationArt name={celebration} cast={cast} />
+        ) : (
+          move && cast && <ClutchMoveArt move={move} cast={cast} win={win} revealed={revealed} />
+        )}
         {revealed && <>
         {finals && (gold ? <MedalIcon className={styles.clResTrophy} /> : <TrophyIcon className={styles.clResTrophy} />)}
         <b className={styles.clResT}>{title}</b>

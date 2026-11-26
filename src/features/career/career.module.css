@@ -1043,6 +1043,30 @@ main.grid {
   color: #172235;
   box-shadow: 0 3px 0 #53647b;
 }
+/* 시그니처 세리머니: 플레이 장면 자리(같은 6:5 크기)에 금테 두른 경기장 그림이 떠요. 꼬리표에는 세리머니 이름이 붙어요. */
+.celArt {
+  display: block;
+  width: 100%;
+  aspect-ratio: 240 / 200;
+  border-radius: var(--r-md);
+  box-shadow:
+    0 0 0 2px rgba(255, 210, 90, 0.85),
+    0 0 28px rgba(255, 210, 90, 0.45);
+  animation: cel-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+}
+.celKick {
+  position: absolute;
+  left: 10px;
+  top: 9px;
+  padding: 2px 8px 1px;
+  border-radius: var(--r-xs);
+  background: rgba(8, 10, 22, 0.72);
+  color: #ffd25a;
+  font-family: var(--f-display);
+  font-size: var(--text-xs);
+  letter-spacing: 0.1em;
+  animation: mv-in 0.4s 0.2s ease-out both;
+}
 .mvFailBall {
   transform: translate(68px, 98px);
 }
@@ -2336,6 +2360,12 @@ main.grid:not([data-tab="season"]) .colL {
 @keyframes mv-in {
   from {
     opacity: 0;
+  }
+}
+@keyframes cel-in {
+  from {
+    opacity: 0;
+    scale: 0.86;
   }
 }
 @keyframes mv-tag {

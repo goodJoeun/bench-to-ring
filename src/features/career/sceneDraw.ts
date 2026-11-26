@@ -44,7 +44,7 @@ function band(p: Paint, y0: number, y1: number, fill: string | CanvasGradient): 
   p.ctx.fillRect(0, y0, p.w, y1 - y0);
 }
 
-function text(ctx: Ctx, s: string, x: number, y: number, size: number, color: string, weight = 800): void {
+export function text(ctx: Ctx, s: string, x: number, y: number, size: number, color: string, weight = 800): void {
   ctx.font = `${weight} ${size}px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif`;
   ctx.fillStyle = color;
   ctx.textAlign = "center";
@@ -53,7 +53,7 @@ function text(ctx: Ctx, s: string, x: number, y: number, size: number, color: st
 }
 
 /** 가장자리가 흐려지는 둥근 빛 */
-function glow(ctx: Ctx, x: number, y: number, r: number, color: string, alpha: number): void {
+export function glow(ctx: Ctx, x: number, y: number, r: number, color: string, alpha: number): void {
   const g = ctx.createRadialGradient(x, y, 0, x, y, r);
   g.addColorStop(0, color);
   g.addColorStop(1, "rgba(0,0,0,0)");
@@ -74,7 +74,7 @@ function heart(ctx: Ctx, x: number, y: number, r: number, color: string): void {
 }
 
 /** 정해진 자리에 흩뿌리는 점(별, 하트, 관중): 그릴 때마다 같은 자리에 나와요. */
-function scatter(n: number, seed: number): Pt[] {
+export function scatter(n: number, seed: number): Pt[] {
   const out: Pt[] = [];
   let s = seed;
   const next = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
@@ -110,7 +110,7 @@ const HANDS = {
 } satisfies Record<string, [Pt, Pt]>;
 type HandKey = keyof typeof HANDS;
 
-interface FigureOpt extends PosedExtra {
+export interface FigureOpt extends PosedExtra {
   scale?: number;
   /** 발끝 높이. 캔버스보다 아래면 다리가 잘린 클로즈업이 돼요. */
   feet?: number;
@@ -188,7 +188,7 @@ function withBall(p: Paint, x: number, cam: Cam, mood: Mood): { l: Pt; r: Pt; he
 }
 
 /** 머리 위 땀방울 */
-function sweat(ctx: Ctx, x: number, y: number): void {
+export function sweat(ctx: Ctx, x: number, y: number): void {
   poly(ctx, [[x, y - 7], [x + 4, y + 1], [x - 4, y + 1]], "#7EC8EE");
   ellipse(ctx, x, y + 2, 4, 4, "#7EC8EE");
   ellipse(ctx, x - 1.2, y + 1, 1.3, 1.3, "#FFFFFF");
@@ -262,13 +262,13 @@ function paper(ctx: Ctx, x: number, y: number, w: number, h: number, tilt = 0): 
   ctx.restore();
 }
 
-function speech(ctx: Ctx, x: number, y: number, w: number, h: number, fill: string, tailRight = false): void {
+export function speech(ctx: Ctx, x: number, y: number, w: number, h: number, fill: string, tailRight = false): void {
   rrect(ctx, x - w / 2, y - h / 2, w, h, h / 2, fill);
   const tx = tailRight ? x + w / 4 : x - w / 4;
   poly(ctx, [[tx - 5, y + h / 2 - 2], [tx + 5, y + h / 2 - 2], [tx + (tailRight ? 8 : -8), y + h / 2 + 8]], fill);
 }
 
-function flash(ctx: Ctx, x: number, y: number, r: number): void {
+export function flash(ctx: Ctx, x: number, y: number, r: number): void {
   ctx.save();
   ctx.globalAlpha = 0.35;
   ellipse(ctx, x, y, r * 1.6, r * 1.6, "#FFFFFF");
@@ -379,7 +379,7 @@ function skyBg(p: Paint, sky: [string, string], ground: [string, string], city =
  * 조명 색 3가지(따뜻한 빛, 차가운 빛, 우리 팀 색), 관중석 카메라 플래시를 섞어 그려요. 바닥 높이는 어느 앵글이든 같아서 소품 자리는 그대로예요.
  * crowd를 주면 관중 옷 색을 자리(x)마다 정해요. bright가 아니면 조명을 끄고 어둑하게 그려요.
  */
-function arenaBg(p: Paint, bright = true, crowd?: (x: number) => string[]): void {
+export function arenaBg(p: Paint, bright = true, crowd?: (x: number) => string[]): void {
   const { ctx, w, cx } = p;
   const angle = p.seed % 4;
   const tint = ["#FFF4C2", "#CFE6FF", shade(p.color, 0.6)][Math.floor(p.seed / 4) % 3];
@@ -1779,8 +1779,8 @@ const ERUPT: [number, number] = [0.7, 1.0];
 const BEAT = 1.9;
 /** 박자에 맞춰 0(바닥)과 1(가장 높이) 사이를 오가요. ph는 박자 어긋남(0~1)이에요. */
 const beat = (t: number, ph: number) => Math.abs(Math.sin(Math.PI * (t * BEAT + ph)));
-const mixPt = (a: Pt, b: Pt, k: number): Pt => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
-const smooth = (t: number, [a, b]: [number, number]) => {
+export const mixPt = (a: Pt, b: Pt, k: number): Pt => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+export const smooth = (t: number, [a, b]: [number, number]) => {
   const v = Math.max(0, Math.min(1, (t - a) / (b - a)));
   return v * v * (3 - 2 * v);
 };
@@ -1822,7 +1822,7 @@ function confetto(ctx: Ctx, x: number, y: number, spin: number, flip: number, co
 }
 
 /** 움직이는 장면 속 한 사람의 자리: 가운데 x, 크기, 발끝, 좌우 반전, 뛰는 높이(px)와 박자 어긋남 */
-interface Spot {
+export interface Spot {
   x: number;
   s: number;
   feet: number;
@@ -1835,15 +1835,15 @@ interface Spot {
 const airOf = (o: Spot, t: number, on: number) => (o.hop ?? 0) * beat(t, o.ph ?? 0) * on;
 
 /** 캐릭터 판의 점이 캔버스에서 오는 자리. up만큼 뛰어올라 있을 때예요. */
-const onCanvas = (o: Spot, [bx, by]: Pt, up = 0): Pt => [o.x + (bx - 80) * o.s * (o.flip ? -1 : 1), o.feet - up - 231 * o.s + by * o.s];
+export const onCanvas = (o: Spot, [bx, by]: Pt, up = 0): Pt => [o.x + (bx - 80) * o.s * (o.flip ? -1 : 1), o.feet - up - 231 * o.s + by * o.s];
 
 /** 한 사람을 손 위치대로 세우고, num이 있으면 유니폼 가슴에 등번호를 달아요(앞으로 든 팔이 번호를 가려요). */
-function standAt(p: Paint, o: Spot, up: number, hands: [Pt, Pt], mood: Mood, num: number | null, extra: FigureOpt = {}): void {
+export function standAt(p: Paint, o: Spot, up: number, hands: [Pt, Pt], mood: Mood, num: number | null, extra: FigureOpt = {}): void {
   figureAt(p, o.x, hands, mood, { ...extra, scale: o.s, feet: o.feet - up, flip: o.flip, num: num ?? undefined });
 }
 
 /** 발밑 그림자: 뛰어오르면(up) 작고 옅어져요. */
-function floorShadow(ctx: Ctx, o: Spot, up: number): void {
+export function floorShadow(ctx: Ctx, o: Spot, up: number): void {
   const k = 1 - (up / 14) * 0.35;
   ctx.save();
   ctx.globalAlpha = 0.32 * k;

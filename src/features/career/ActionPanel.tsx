@@ -276,7 +276,7 @@ export function ActionPanel({ career: c, playing, speed, busy, outcome, onAdvanc
         <ClutchResult
           key={outcome.id}
           result={outcome.clutch}
-          cast={{ look: playerLook(c.p), color: c.team?.color ?? "#2F5DB0", oppColor: outcome.clutch.oppColor, seed: outcome.clutch.opp }}
+          cast={{ look: playerLook(c.p), color: c.team?.color ?? "#2F5DB0", oppColor: outcome.clutch.oppColor, seed: outcome.clutch.opp, num: c.p.num }}
           onDone={() => setResultShown(outcome.id)}
         />
       </>

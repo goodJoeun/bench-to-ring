@@ -1010,6 +1010,10 @@ const CELEBRATIONS: [string, string][] = [
   ["보이지 않는 덤벨 들기", "득점 뒤 보이지 않는 덤벨을 들어 올리는 세리머니가 생겼어요."],
   ["관중에게 귀 기울이기", "손을 귀에 대고 관중의 함성을 더 크게 끌어내는 세리머니가 생겼어요."],
 ];
+/** 과감하게 고르면 생기는 세리머니 */
+const BENCH_CELEBRATION = "상대 벤치 앞 세리머니";
+/** 생길 수 있는 시그니처 세리머니 이름 전부. 화면이 이름마다 세리머니 장면을 그려요. */
+export const CELEBRATION_NAMES: readonly string[] = [...CELEBRATIONS.map(([name]) => name), BENCH_CELEBRATION];
 
 /** 시즌 도중에 생기는 일. 경기력(form)과 휴식(sit)은 남은 경기에만 영향을 줘요. */
 const SEASON_EVENTS: LifeEvent[] = [
@@ -1045,7 +1049,7 @@ const SEASON_EVENTS: LifeEvent[] = [
           risky(
             "상대 벤치 앞에서 과감하게",
             0.55,
-            { celebration: "상대 벤치 앞 세리머니", star: 8, form: 0.3, msg: "상대 벤치 앞에서 한 세리머니가 그 주 최고의 장면이 됐어요." },
+            { celebration: BENCH_CELEBRATION, star: 8, form: 0.3, msg: "상대 벤치 앞에서 한 세리머니가 그 주 최고의 장면이 됐어요." },
             { star: 3, form: -0.4, msg: "테크니컬 파울을 받았어요. 그래도 장면은 꽤 돌았어요.", t: "bad" },
           ),
         ],

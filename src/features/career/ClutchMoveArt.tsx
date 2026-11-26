@@ -56,12 +56,13 @@ const FAILURE_LABEL: Record<ClutchMove, string> = {
   charge: "몸을 부딪쳤지만 공격자 파울이 선언되지 않는 장면",
 };
 
-/** 장면에 나오는 사람들: 내 캐릭터와 유니폼 색, 상대 유니폼 색, 상대 생김새를 고르는 씨앗(상대 팀 이름) */
+/** 장면에 나오는 사람들: 내 캐릭터와 유니폼 색, 상대 유니폼 색, 상대 생김새를 고르는 씨앗(상대 팀 이름), 내 등번호(세리머니 장면) */
 export interface ClutchCast {
   look: Look;
   color: string;
   oppColor?: string;
   seed?: string;
+  num?: number;
 }
 
 /** 상대 선수 생김새. 상대 팀 이름으로 순서를 정해서 같은 팀이면 같은 얼굴이 나와요. */
@@ -85,18 +86,18 @@ function hash(s: string): number {
 }
 
 type Pt = [number, number];
-interface Who {
+export interface Who {
   look: Look;
   color: string;
 }
-interface Cast {
+export interface Cast {
   me: Who;
   mate: Who;
   decoy: Who;
   opp: (i: number) => Who;
 }
 
-function castOf(c: ClutchCast): Cast {
+export function castOf(c: ClutchCast): Cast {
   const oppColor = !c.oppColor || c.oppColor.toLowerCase() === c.color.toLowerCase() ? NAVY : c.oppColor;
   const base = hash(c.seed ?? "");
   return {
