@@ -61,9 +61,8 @@ export function CelebrationArt({ name, cast }: { name: string; cast: ClutchCast 
 /**
  * 캔버스를 화면 너비(width, CSS 픽셀)에 맞추고, t초의 세리머니 장면을 그리는 함수를 돌려줘요.
  * 움직이지 않는 경기장(상대 벤치 포함)은 여기서 한 장 그려 두고, 돌려준 함수가 매번 그 위에 선수를 그려요.
- * 세리머니 장면과 개발용 모션 확인 화면(/dev/celebrations)이 같이 써요.
  */
-export function celebrationPainter(cv: HTMLCanvasElement, width: number, kind: CelebrationKey, cast: ClutchCast): ((t: number) => void) | null {
+function celebrationPainter(cv: HTMLCanvasElement, width: number, kind: CelebrationKey, cast: ClutchCast): ((t: number) => void) | null {
   const ctx = cv.getContext("2d");
   if (!ctx) return null;
   const scale = (width / CEL_W) * Math.min(2, window.devicePixelRatio || 1);

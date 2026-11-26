@@ -161,7 +161,7 @@ const FINALS_RESULT_MS = 3400;
 /** 시그니처 세리머니: 결과(CLUTCH!·CHAMPIONS!)를 이만큼 보여준 뒤 세리머니 장면으로 바꾸고, 그 장면을 이만큼 보여줘요. */
 const CELEBRATE_AFTER_MS = 1300;
 const FINALS_CELEBRATE_AFTER_MS = 1700;
-export const CELEBRATION_MS = 3400;
+const CELEBRATION_MS = 3400;
 
 const CONFETTI = ["#ffd25a", "#ff5a4a", "#4fb3e8", "#7bd389", "#ffffff"];
 const GOLD_CONFETTI = ["#ffd25a", "#ffe9a3", "#f2b632", "#ffffff", "#ffd25a", "#e8a317"];
