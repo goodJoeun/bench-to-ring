@@ -53,6 +53,8 @@ export {
   SHOP_SIZE,
   boughtThisSeason,
   buy,
+  buyMany,
+  canAddToCart,
   canBuy,
   canDonate,
   describeDonationReward,
@@ -64,6 +66,8 @@ export {
   owns,
   shopItem,
   shopLineup,
+  shopTotal,
+  validCart,
   type ShopCategory,
   type ShopItem,
 } from "./economy/shop";

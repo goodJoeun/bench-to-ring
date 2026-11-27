@@ -259,6 +259,31 @@ export function buy(c: Career, key: ShopKey): boolean {
   return true;
 }
 
+/** 이 상품들의 값 합계 (억) */
+export const shopTotal = (keys: Iterable<ShopKey>): number => round2([...keys].reduce((t, k) => t + (shopItem(k)?.price ?? 0), 0));
+
+/**
+ * 한 번에 살 상품 목록(장바구니)에서 지금도 살 수 있는 것만 고른 순서대로 남겨요.
+ * 진열이 바뀌었거나 이미 샀거나, 앞의 것까지 사고 나면 돈이 모자란 상품은 빠져요.
+ */
+export function validCart(c: Career, cart: Iterable<ShopKey>): ShopKey[] {
+  const kept: ShopKey[] = [];
+  for (const key of cart) {
+    if (kept.includes(key) || !canBuy(c, key)) continue;
+    if (shopTotal([...kept, key]) <= c.earnings + 1e-9) kept.push(key);
+  }
+  return kept;
+}
+
+/** 장바구니에 이 상품을 더해도 모두 살 수 있는지 */
+export const canAddToCart = (c: Career, cart: ShopKey[], key: ShopKey): boolean =>
+  !cart.includes(key) && canBuy(c, key) && shopTotal([...cart, key]) <= c.earnings + 1e-9;
+
+/** 고른 상품을 순서대로 한꺼번에 사요. 실제로 산 상품만 돌려줘요. */
+export function buyMany(c: Career, keys: Iterable<ShopKey>): ShopKey[] {
+  return validCart(c, keys).filter((key) => buy(c, key));
+}
+
 /** 가진 상품 (산 순서) */
 export const ownedItems = (c: Career): ShopItem[] => c.owned.map(shopItem).filter((i): i is ShopItem => !!i);
 

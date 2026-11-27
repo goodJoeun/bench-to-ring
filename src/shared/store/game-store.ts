@@ -2,12 +2,15 @@ import { useSyncExternalStore } from "react";
 import {
   HOME_NATION,
   INVEST_SLOTS,
+  shopItem,
+  shopTotal,
+  money,
   LOOKS,
   BUILDS,
   POS_BUILD,
   clampBulk,
   achievementById,
-  buy,
+  buyMany,
   canRetire,
   checkAchievements,
   setBrowserRecord,
@@ -617,12 +620,19 @@ export const gameActions = {
     const msg = c && latestNewsSince(before, c);
     if (msg) set({ toast: toast(msg) });
   },
-  buy(key: ShopKey) {
+  /** 고른 상품을 한꺼번에 사요. 하나면 그 소식을, 여럿이면 이름과 합계를 알려요. */
+  buy(keys: ShopKey[]) {
+    let bought: ShopKey[] = [];
     mutate((c) => {
-      buy(c, key);
+      bought = buyMany(c, keys);
     });
-    const m = snapshot.career?.news[0]?.m;
-    if (m) set({ toast: toast(`구입 · ${m}`) });
+    if (bought.length === 1) {
+      const m = snapshot.career?.news[0]?.m;
+      if (m) set({ toast: toast(`구입 · ${m}`) });
+    } else if (bought.length > 1) {
+      const names = bought.map((k) => shopItem(k)?.name).join(", ");
+      set({ toast: toast(`${bought.length}개 구입 · ${names} · ${money(shopTotal(bought))}`) });
+    }
   },
   donate(amount: number) {
     mutate((c) => {

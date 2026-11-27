@@ -600,6 +600,72 @@ main.grid {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* 상점 장바구니: 고른 상품 수·합계와 한 번에 사는 단추 */
+.cartBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  border: 1.5px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel2));
+}
+.cartBar[data-empty] {
+  border-color: transparent;
+  background: none;
+  padding: 0;
+}
+.cartSum {
+  min-width: 0;
+  font-size: var(--text-md);
+  color: var(--muted);
+}
+.cartSum b {
+  color: var(--accent);
+}
+:global(.btn).cartGo {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+.cartList {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cartList li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--r-md);
+  background: var(--panel2);
+}
+.cartName {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.cartName b {
+  font-size: var(--text-md);
+}
+.cartName span {
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+.cartPrice {
+  flex: none;
+  font-weight: 700;
+  font-size: var(--text-md);
+}
 /* 상점 아이콘 */
 .shopIco {
   flex: none;

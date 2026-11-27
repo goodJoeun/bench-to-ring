@@ -5,6 +5,7 @@ import {
   DONATIONS,
   DONATION_STAT_AGE,
   boughtThisSeason,
+  canAddToCart,
   canBuy,
   canDonate,
   describeDonationReward,
@@ -15,6 +16,8 @@ import {
   owns,
   shopItem,
   shopLineup,
+  shopTotal,
+  validCart,
   type Career,
   type ShopCategory,
   type ShopItem,
@@ -25,7 +28,7 @@ import { Sheet } from "@/shared/ui/Sheet";
 import { Choice, Funds, Panel } from "@/shared/ui/ui";
 import styles from "./career.module.css";
 
-type Pending = { k: "buy"; key: ShopKey } | { k: "donate"; amount: number };
+type Pending = { k: "buy" } | { k: "donate"; amount: number };
 
 /** 보유 아이템 탭 순서. 일회성 상품은 보유 목록에 남지 않아 탭이 없어요. */
 const OWNED_TABS: ReadonlyArray<"전체" | ShopCategory> = ["전체", "장비", "회복·생활", "사치품", "유산"];
@@ -82,19 +85,25 @@ function OwnedItems({ owned }: { owned: ShopItem[] }) {
 
 /**
  * 홈 탭의 자금 쓰기. 시즌 사이에는 이번 시즌 상점(시즌마다 진열이 바뀌어요)과 기부를,
- * 언제든 보유 중인 아이템과 그 효과를 보여줘요. 사거나 기부하기 전에 확인 시트를 한 번 거쳐요.
+ * 언제든 보유 중인 아이템과 그 효과를 보여줘요. 상품은 여러 개를 골라 한 번에 사고, 사거나 기부하기 전에 확인 시트를 한 번 거쳐요.
  */
 export function ShopPanel({ career: c }: { career: Career }) {
   const [pending, setPending] = useState<Pending | null>(null);
   const [browsing, setBrowsing] = useState(false);
+  const [picked, setPicked] = useState<ShopKey[]>([]);
   if (c.stage === "retired") return null;
   const lineup = shopLineup(c);
   const owned = ownedItems(c);
   // 아무것도 살 수 없는 동안에는 흐린 상품을 늘어놓지 않고, 원하면 펼쳐 봐요.
   const usable = lineup.some((i) => boughtThisSeason(c, i.key) || canBuy(c, i.key)) || DONATIONS.some((d) => donatedThisSeason(c, d) || canDonate(c, d));
   const cheapest = lineup.length ? Math.min(...lineup.map((i) => i.price)) : 0;
-  const item = pending?.k === "buy" ? shopItem(pending.key) : null;
-  const price = item ? item.price : pending?.k === "donate" ? pending.amount : 0;
+  // 진열이 바뀌었거나 돈이 줄어 이제 못 사는 상품은 장바구니에서 빼고 봐요.
+  const cart = validCart(c, picked);
+  const cartTotal = shopTotal(cart);
+  const toggle = (key: ShopKey) => setPicked(cart.includes(key) ? cart.filter((k) => k !== key) : [...cart, key]);
+  const items = pending?.k === "buy" ? cart.map(shopItem).filter((i): i is ShopItem => !!i) : [];
+  const one = items.length === 1 ? items[0] : null;
+  const price = pending?.k === "buy" ? cartTotal : pending?.k === "donate" ? pending.amount : 0;
 
   return (
     <Panel title="자금 쓰기">
@@ -117,6 +126,7 @@ export function ShopPanel({ career: c }: { career: Career }) {
           <div className={`choices ${styles.investGrid}`}>
             {lineup.map((i) => {
               const done = boughtThisSeason(c, i.key) || (!i.repeat && owns(c, i.key));
+              const on = cart.includes(i.key);
               return (
                 <Choice
                   key={i.key}
@@ -126,14 +136,36 @@ export function ShopPanel({ career: c }: { career: Career }) {
                     </span>
                   }
                   label={i.name}
-                  tag={done ? "구입 완료" : money(i.price)}
+                  tag={done ? "구입 완료" : on ? `✓ ${money(i.price)}` : money(i.price)}
                   sub={`${i.cat} · ${i.effect}`}
-                  aria-pressed={done}
-                  disabled={!done && !canBuy(c, i.key)}
-                  onClick={() => !done && setPending({ k: "buy", key: i.key })}
+                  // 산 상품은 눌러도 아무 일이 없어요. 아직 안 산 상품은 눌러서 장바구니에 넣고 빼요.
+                  {...(done ? { "aria-pressed": true } : { role: "checkbox", "aria-checked": on })}
+                  disabled={!done && !on && !canAddToCart(c, cart, i.key)}
+                  onClick={() => !done && toggle(i.key)}
                 />
               );
             })}
+          </div>
+          <div className={styles.cartBar} data-empty={!cart.length || undefined}>
+            <span className={styles.cartSum} aria-live="polite">
+              {cart.length ? (
+                <>
+                  <b>{cart.length}개</b> · {money(cartTotal)} · 사면 {money(c.earnings - cartTotal)} 남아요
+                </>
+              ) : (
+                "사고 싶은 상품을 여러 개 골라 한 번에 살 수 있어요."
+              )}
+            </span>
+            {cart.length > 0 && (
+              <div className={styles.rowBtns}>
+                <button type="button" className="btn" onClick={() => setPicked([])}>
+                  선택 해제
+                </button>
+                <button type="button" className={`btn ${styles.cartGo}`} onClick={() => setPending({ k: "buy" })}>
+                  {cart.length}개 구입하기
+                </button>
+              </div>
+            )}
           </div>
           <div className="donate">
             <span className="label">유소년 농구 기부</span>
@@ -171,22 +203,50 @@ export function ShopPanel({ career: c }: { career: Career }) {
           <span className="sheet-kicker">
             보유 자금 {money(c.earnings)} → {money(c.earnings - price)}
           </span>
-          <h2 id="shop-title">{item ? `${item.name}, ${money(price)}에 살까요?` : `${money(price)}을 기부할까요?`}</h2>
-          <p className="sheet-desc">
-            {item
-              ? `${item.cat} · ${item.effect}`
-              : `기부한 돈은 은퇴 기록에 남아요. ${+(donationLuck(c, price) * 100).toFixed(1)}% 확률로 좋은 일이 생겨요: ${describeDonationReward(c, price)}`}
-          </p>
+          <h2 id="shop-title">
+            {pending.k === "donate"
+              ? `${money(price)}을 기부할까요?`
+              : one
+                ? `${one.name}, ${money(price)}에 살까요?`
+                : `상품 ${items.length}개를 ${money(price)}에 살까요?`}
+          </h2>
+          {pending.k === "donate" ? (
+            <p className="sheet-desc">
+              기부한 돈은 은퇴 기록에 남아요. {+(donationLuck(c, price) * 100).toFixed(1)}% 확률로 좋은 일이 생겨요: {describeDonationReward(c, price)}
+            </p>
+          ) : one ? (
+            <p className="sheet-desc">
+              {one.cat} · {one.effect}
+            </p>
+          ) : (
+            <ul className={styles.cartList}>
+              {items.map((i) => (
+                <li key={i.key}>
+                  <span className={styles.shopIco} aria-hidden="true">
+                    {i.icon}
+                  </span>
+                  <span className={styles.cartName}>
+                    <b>{i.name}</b>
+                    <span>{i.effect}</span>
+                  </span>
+                  <span className={styles.cartPrice}>{money(i.price)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
           <button
             type="button"
             className="sheet-go"
+            disabled={pending.k === "buy" && !items.length}
             onClick={() => {
-              if (pending.k === "buy") gameActions.buy(pending.key);
-              else gameActions.donate(pending.amount);
+              if (pending.k === "buy") {
+                gameActions.buy(cart);
+                setPicked([]);
+              } else gameActions.donate(pending.amount);
               setPending(null);
             }}
           >
-            {item ? "구입하기" : "기부하기"}
+            {pending.k === "donate" ? "기부하기" : one ? "구입하기" : `${items.length}개 구입하기`}
           </button>
           <button type="button" className="sheet-later" onClick={() => setPending(null)}>
             그만둘게요

@@ -152,7 +152,18 @@ import {
   saveHall,
   startLifetime,
 } from "@/game/career/storage";
-import { DONATION_STAT_AGE, canDonate, donatedThisSeason, donationLuck, donationReward, refreshShop, shopPerks } from "@/game/economy/shop";
+import {
+  DONATION_STAT_AGE,
+  buyMany,
+  canAddToCart,
+  canDonate,
+  donatedThisSeason,
+  donationLuck,
+  donationReward,
+  refreshShop,
+  shopPerks,
+  validCart,
+} from "@/game/economy/shop";
 import { DECLINE_FLOOR, declineFactor, finalsMvpOdds } from "@/game/season/season";
 
 afterEach(() => resetRandom());
@@ -1838,6 +1849,24 @@ describe("자금 쓰기", () => {
       expect(c.shop!.keys).not.toContain("parents");
       expect(c.shop!.keys).not.toContain("academy");
     }
+  });
+
+  it("여러 상품을 골라 한 번에 사고, 돈이 모자라거나 못 사는 상품은 장바구니에서 빠져요", () => {
+    setRandom(seeded(98));
+    const c = rich("cart");
+    c.earnings = 4;
+    c.health = 60;
+    stock(c, ["shoes", "parents", "familytrip", "watch", "court"]);
+    // 진열되지 않은 상품, 같은 상품 두 번, 앞의 것까지 사면 모자란 상품은 빠져요 (0.03 + 3 + 1 = 4.03 > 4).
+    expect(validCart(c, ["shoes", "jet", "parents", "shoes", "familytrip", "court"])).toEqual(["shoes", "parents"]);
+    expect(canAddToCart(c, ["shoes", "parents"], "familytrip")).toBe(false);
+    expect(canAddToCart(c, ["parents"], "familytrip")).toBe(true);
+    expect(canAddToCart(c, ["parents"], "parents")).toBe(false);
+    expect(buyMany(c, ["parents", "familytrip", "shoes"])).toEqual(["parents", "familytrip"]);
+    expect(c.earnings).toBe(0);
+    expect(c.health).toBe(78);
+    expect(c.owned).toEqual(["parents"]);
+    expect(buyMany(c, ["shoes"])).toEqual([]);
   });
 
   it("일회성 상품은 시즌마다 한 번 살 수 있고 보유 목록에 남지 않아요", () => {
