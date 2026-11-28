@@ -57,7 +57,8 @@ function dayOf(ms: number): string {
  * 상단 '업적'으로 여는 창: 이 브라우저에서 딴 업적과 아직 못 딴 업적. 따기 전에는 이름과 힌트만, 따면 조건까지 보여요.
  * 누적 기록 업적은 따기 전에도 모든 커리어를 더한 진행도를 보여줘요.
  * 위의 탭(4열 격자)으로 분류(고교·대학, 팀·우승, 스타성…)를 골라 볼 수 있어요. 분류마다 딴 업적이 먼저(먼저 딴 순서로) 와요. 탭마다 딴 수를 보여줘요. 전체 탭은 분류별로 나눠 다 보여줘요.
- * 업적마다 난이도 등급(동메달~MVP 트로피)과, 온라인 랭킹에 업적을 보낸 플레이어 가운데 딴 비율을 보여줘요. 달성률을 못 불러오면 등급만 보여요.
+ * 위에 난이도 등급(동메달~MVP 트로피)마다 딴 수를 보여주고, 딴 업적은 등급에 맞는 메달과 테두리 색으로 보여요.
+ * 업적마다 온라인 랭킹에 업적을 보낸 플레이어 가운데 딴 비율을 보여줘요. 달성률을 못 불러오면 빼요.
  */
 export function AchievementsDialog({ onClose }: { onClose: () => void }) {
   const [got] = useState(loadAchievements);
@@ -143,10 +144,7 @@ export function AchievementsDialog({ onClose }: { onClose: () => void }) {
                     <li key={a.id} data-done={r ? true : undefined} data-tier={a.tier}>
                       {r && <AchievedBadge tier={a.tier} />}
                       <b>{a.name}</b>
-                      <span className={styles.achvMeta}>
-                        <TierChip tier={a.tier} />
-                        {rate}
-                      </span>
+                      {rate && <span className={styles.achvMeta}>{rate}</span>}
                       {r ? (
                         <>
                           <span>{a.desc}</span>

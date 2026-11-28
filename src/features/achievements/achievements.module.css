@@ -81,12 +81,8 @@
 .achvTier[data-tier="mvp"] {
   --tier: var(--mvp);
 }
-/* 업적 이름 아래 한 줄: 등급과 달성률 */
+/* 업적 이름 아래 한 줄: 달성률 */
 :global(.achv-list) .achvMeta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
   font-size: var(--text-xs);
   color: var(--muted);
 }
