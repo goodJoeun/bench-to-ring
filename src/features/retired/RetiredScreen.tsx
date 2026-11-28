@@ -54,8 +54,8 @@ function CareerAchievements({ career: c, past }: { career: Career; past: boolean
       {list.length ? (
         <ul className="achv-list">
           {list.map((a) => (
-            <li key={a.id} data-done>
-              <AchievedBadge />
+            <li key={a.id} data-done data-tier={a.tier}>
+              <AchievedBadge tier={a.tier} />
               <b>{a.name}</b>
               <span>{a.desc}</span>
             </li>

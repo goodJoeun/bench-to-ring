@@ -1,9 +1,10 @@
 import type { CareerSummary, PosKey } from "@/game";
+import { loadAchievements } from "@/game/career/storage";
 import { getQueryClient } from "@/shared/query/query-client";
 import { FRESH_BYPASS_MS, FRESH_PARAM } from "./cdn";
 import { kstDay } from "./days";
 import { LEADERBOARD } from "./keys";
-import type { Board, BoardDay, BoardDays, BoardScope, ChallengeBoard, DeleteResult, MyAround, MyChallenge, MyRanks, PlayerCreated, StatBoard, StatKey, SubmitResult } from "./types";
+import type { AchievementRates, Board, BoardDay, BoardDays, BoardScope, ChallengeBoard, DeleteResult, MyAround, MyChallenge, MyRanks, PlayerCreated, StatBoard, StatKey, SubmitResult } from "./types";
 
 // 온라인 랭킹에 은퇴 기록을 올리고 지워요. 서버가 안 되면 조용히 실패하고, 보내지 못한 기록과 지우지 못한 기록은 다음에 다시 해요.
 
@@ -71,14 +72,17 @@ async function token(): Promise<string | null> {
 
 type Sent = { done: true; result: SubmitResult | null } | { done: false };
 
-/** 한 건을 보내요. 다시 보내도 소용없는 실패(형식 오류, 중복)는 끝난 것으로 쳐요. */
+/**
+ * 한 건을 보내요. 다시 보내도 소용없는 실패(형식 오류, 중복)는 끝난 것으로 쳐요.
+ * 업적 달성률을 세게, 보내는 때 이 브라우저에서 딴 업적 id를 함께 보내요(서버는 플레이어마다 한 번씩만 세요).
+ */
 async function send(s: CareerSummary, retried = false): Promise<Sent> {
   const t = await token();
   if (!t) return { done: false };
   const res = await fetch("/api/careers", {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${t}` },
-    body: JSON.stringify(s),
+    body: JSON.stringify({ ...s, achv: Object.keys(loadAchievements()) }),
   });
   if (res.status === 201) return { done: true, result: (await res.json()) as SubmitResult };
   // DB가 바뀌어 토큰을 모르면 새 플레이어로 한 번 더 보내요.
@@ -154,6 +158,11 @@ async function getJson<T>(url: string, headers?: HeadersInit): Promise<T> {
   const res = await fetch(url, { headers, signal: AbortSignal.timeout(BOARD_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`${url} → ${res.status}`);
   return (await res.json()) as T;
+}
+
+/** 업적 달성률. 업적 창을 열 때 불러요. 순위표처럼 CDN이 들고 있어요. */
+export function fetchAchievementRates(): Promise<AchievementRates> {
+  return getJson(`/api/achievements?${withFresh(new URLSearchParams())}`);
 }
 
 /** 기록을 올린 지 FRESH_BYPASS_MS가 안 됐으면 CDN 캐시 키가 달라지게 올린 때를 붙여요. 다른 사람은 늘 CDN이 들고 있는 것을 받아요. */

@@ -50,6 +50,13 @@
       "when": 1795148051880,
       "tag": "0006_challenge",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795767365190,
+      "tag": "0007_achievements",
+      "breakpoints": true
     }
   ]
 }

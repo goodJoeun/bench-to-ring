@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   ACHIEVEMENTS,
   ACHIEVEMENT_GROUPS,
+  ACHIEVEMENT_TIERS,
+  TIERS,
   EMPTY_LIFETIME,
   LEAGUES,
   PLAYOFF_SPOTS,
@@ -51,6 +53,28 @@ const toRetire = (c: Career) => {
   c.team = null;
   retire(c);
 };
+
+describe("업적 등급", () => {
+  it("모든 업적이 등급표에 있고, 등급표에는 없는 업적이 없어요", () => {
+    const ids = new Set(ACHIEVEMENTS.map((a) => a.id));
+    for (const a of ACHIEVEMENTS) expect(ACHIEVEMENT_TIERS.get(a.id), a.id).toBe(a.tier);
+    for (const id of ACHIEVEMENT_TIERS.keys()) expect(ids.has(id), id).toBe(true);
+  });
+
+  it("등급마다 업적이 있고, 역대 랭킹은 모두 MVP 트로피예요", () => {
+    for (const t of TIERS) expect(ACHIEVEMENTS.some((a) => a.tier === t), t).toBe(true);
+    expect(ACHIEVEMENTS.filter((a) => a.group === "rank").every((a) => a.tier === "mvp")).toBe(true);
+  });
+
+  it("업적 달성 축하에 그 업적의 등급이 실려요", () => {
+    const c = fresh("tier-cheer");
+    c.stage = "pro";
+    c.clutchWins = 10;
+    checkAchievements(c);
+    const cheer = c.cheers.find((x) => x.kind === "achv" && x.title === "클러치 귀재");
+    expect(cheer?.tier).toBe(ACHIEVEMENT_TIERS.get("clutch_master"));
+  });
+});
 
 describe("새 업적", () => {
   it("모든 업적에 있는 묶음이고, 클러치·역대 랭킹 묶음이 생겼어요", () => {
@@ -455,5 +479,120 @@ describe("플레이오프 업적", () => {
     // 유로리그는 단판이라 우승하면 늘 전승이에요.
     expect(champ("sw-euro", "euro", "레알 마드리드", { gp: 3, w: 3 })).toBe(false);
     expect(champ("sw-out", "nba", "보스턴 셀틱스", { gp: 0 })).toBe(false);
+  });
+});
+
+describe("수비 업적", () => {
+  const BOS = "보스턴 셀틱스";
+  const SK = "서울 SK 나이츠";
+  /** 그 해에 올해의 수비수 */
+  const dpoy = (c: Career, ...years: number[]) => {
+    for (const y of years) c.awardLog.push({ y, k: "dpoy", n: "올해의 수비수" });
+  };
+  const check = (c: Career, id: string) => {
+    checkAchievements(c);
+    return has(c, id);
+  };
+
+  it("수비 묶음이 개인상·기록 다음에 생겼어요", () => {
+    const keys = Object.keys(ACHIEVEMENT_GROUPS);
+    expect(keys[keys.indexOf("award") + 1]).toBe("defense");
+    expect(ACHIEVEMENTS.filter((a) => a.group === "defense").map((a) => a.name)).toEqual([
+      "자물쇠 수비", "믿고 맡기는 수비", "수비가 우승을 만든다", "철옹성", "코트 위의 소매치기", "노련한 방패", "수비에는 국경이 없다",
+      "만리장성", "공수겸장", "궂은일의 달인", "겁 없는 신인", "비행 금지 구역", "수비의 신",
+    ]);
+  });
+
+  it("올해의 수비수 3회는 자물쇠 수비, 3시즌 연속은 철옹성, 10회는 수비의 신이에요. 고교·대학 수비상은 치지 않아요", () => {
+    const c = fresh("def-count");
+    c.hist.push(season(2028, "휘문고", "hs", { result: "전국대회 우승" }));
+    dpoy(c, 2028);
+    for (let y = 2031; y < 2035; y++) c.hist.push(season(y, BOS, "nba"));
+    dpoy(c, 2031, 2032);
+    expect(check(c, "def_lock")).toBe(false);
+    // 2033년에 놓쳐서 연속 기록이 끊겨요.
+    dpoy(c, 2034);
+    expect(check(c, "def_lock")).toBe(true);
+    expect(check(c, "def_wall")).toBe(false);
+    c.hist.push(season(2035, BOS, "nba"), season(2036, BOS, "nba"));
+    dpoy(c, 2035);
+    expect(check(c, "def_wall")).toBe(false);
+    dpoy(c, 2036);
+    expect(check(c, "def_wall")).toBe(true);
+
+    // 2031·2032·2034~2040이면 9번이에요.
+    for (let y = 2037; y < 2042; y++) c.hist.push(season(y, BOS, "nba"));
+    dpoy(c, 2037, 2038, 2039, 2040);
+    expect(check(c, "def_god")).toBe(false);
+    dpoy(c, 2041);
+    expect(check(c, "def_god")).toBe(true);
+  });
+
+  it("믿고 맡기는 수비는 올-디펜시브 팀에 뽑힌 프로 시즌 8번이에요", () => {
+    const c = fresh("def-team");
+    for (let y = 2031; y < 2039; y++) c.hist.push(season(y, SK, "kbl"));
+    for (let y = 2031; y < 2038; y++) c.awardLog.push({ y, k: "alldef", n: "KBL 수비 5걸" });
+    expect(check(c, "def_team")).toBe(false);
+    c.awardLog.push({ y: 2038, k: "alldef", n: "KBL 수비 5걸" });
+    expect(check(c, "def_team")).toBe(true);
+  });
+
+  it("올해의 수비수를 받은 그 시즌의 조건: 우승, 35세 이상, 평균 10득점 미만, NBA MVP와 함께", () => {
+    const c = fresh("def-season");
+    // 2045년은 34세, 2046년은 35세예요.
+    c.hist.push(
+      season(2044, BOS, "nba", { pts: 10 }),
+      season(2045, BOS, "nba", { result: "리그 우승" }),
+      season(2046, BOS, "nba"),
+    );
+    dpoy(c, 2044);
+    c.awardLog.push({ y: 2044, k: "mvp_nba", n: "NBA MVP" });
+    checkAchievements(c);
+    expect(["def_title", "def_veteran", "def_specialist", "def_twoway"].map((id) => has(c, id))).toEqual([false, false, false, true]);
+    dpoy(c, 2045);
+    checkAchievements(c);
+    expect(["def_title", "def_veteran"].map((id) => has(c, id))).toEqual([true, false]);
+    dpoy(c, 2046);
+    expect(check(c, "def_veteran")).toBe(true);
+    c.hist.push(season(2047, BOS, "nba", { pts: 9.9 }));
+    dpoy(c, 2047);
+    expect(check(c, "def_specialist")).toBe(true);
+
+    // 공수겸장은 NBA에서만이에요.
+    const kbl = fresh("def-twoway-kbl");
+    kbl.hist.push(season(2031, SK, "kbl"));
+    dpoy(kbl, 2031);
+    kbl.awardLog.push({ y: 2031, k: "mvp", n: "KBL MVP" });
+    expect(check(kbl, "def_twoway")).toBe(false);
+  });
+
+  it("겁 없는 신인은 프로 데뷔 시즌, 수비에는 국경이 없다는 서로 다른 두 리그의 올해의 수비수예요", () => {
+    const rookie = fresh("def-rookie");
+    rookie.hist.push(season(2029, "휘문고", "hs", { result: "전국대회 우승" }), season(2031, SK, "kbl"), season(2032, BOS, "nba"));
+    dpoy(rookie, 2029, 2032);
+    checkAchievements(rookie);
+    expect(["def_rookie", "def_borderless"].map((id) => has(rookie, id))).toEqual([false, false]);
+    dpoy(rookie, 2031);
+    checkAchievements(rookie);
+    expect(["def_rookie", "def_borderless"].map((id) => has(rookie, id))).toEqual([true, true]);
+  });
+
+  it("소매치기·비행 금지 구역은 NBA 10경기 이상 시즌의 평균, 만리장성은 프로 정규시즌 통산 스틸·블록이에요", () => {
+    const c = fresh("def-stats");
+    c.hist.push(season(2031, SK, "kbl", { stl: 4, blk: 4 }), season(2032, BOS, "nba", { gp: 9, stl: 3.5, blk: 3 }));
+    checkAchievements(c);
+    expect(["def_thief", "def_swat"].map((id) => has(c, id))).toEqual([false, false]);
+    c.hist.push(season(2033, BOS, "nba", { gp: 10, stl: 3, blk: 2.4 }));
+    checkAchievements(c);
+    expect(["def_thief", "def_swat"].map((id) => has(c, id))).toEqual([true, false]);
+    c.hist.push(season(2034, BOS, "nba", { gp: 10, stl: 1, blk: 2.5 }));
+    expect(check(c, "def_swat")).toBe(true);
+
+    const wall = fresh("def-stops");
+    wall.hist.push(season(2028, "휘문고", "hs", { gp: 100, stl: 20, blk: 20 }));
+    for (let y = 2031; y < 2040; y++) wall.hist.push(season(y, BOS, "nba", { gp: 80, stl: 2, blk: 3 }));
+    expect(check(wall, "def_stops")).toBe(false);
+    wall.hist.push(season(2040, BOS, "nba", { gp: 80, stl: 2, blk: 3 }));
+    expect(check(wall, "def_stops")).toBe(true);
   });
 });

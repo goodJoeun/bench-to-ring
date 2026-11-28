@@ -10,7 +10,8 @@ import { shopItem } from "../economy/shop";
 import { madePlayoffs, sumPlayoffs } from "../career/playoffs";
 import { RETIRE_AGE } from "../season/offseason";
 import { EMPTY_LIFETIME, LIFETIME_PREFIX, addLifetime, fromCareer, subLifetime, type Lifetime } from "./lifetime";
-import type { AttrKey, AwardEntry, AwardKey, Career, LeagueKey, MilitaryKind, PosKey, SeasonRecord } from "../core/types";
+import type { AchievementTier, AttrKey, AwardEntry, AwardKey, Career, LeagueKey, MilitaryKind, PosKey, SeasonRecord } from "../core/types";
+import { ACHIEVEMENT_TIERS } from "./achievement-tiers";
 
 /**
  * 업적. 대부분 커리어 기록(시즌 기록, 수상, 드래프트, 국가대표, 기부, 산 것)으로 판정해요.
@@ -28,6 +29,7 @@ export type AchievementGroup =
   | "team"
   | "playoff"
   | "award"
+  | "defense"
   | "clutch"
   | "star"
   | "ability"
@@ -42,6 +44,7 @@ export const ACHIEVEMENT_GROUPS: Record<AchievementGroup, string> = {
   team: "팀·우승",
   playoff: "플레이오프",
   award: "개인상·기록",
+  defense: "수비",
   clutch: "클러치",
   star: "스타성",
   ability: "능력치",
@@ -110,7 +113,12 @@ export interface Achievement {
   goal?: { of: (l: LifeView) => number; n: number; unit: string };
   /** 역대 랭킹 업적: 온라인 역대 랭킹에서 이 순위 안에 들면 따요. pos가 있으면 그 포지션 순위예요. */
   rank?: { top: number; pos?: PosKey };
+  /** 난이도 등급: 동메달·은메달·금메달·MVP 트로피 (achievement-tiers.ts) */
+  tier: AchievementTier;
 }
+
+/** 등급을 붙이기 전의 업적 정의. 등급은 achievement-tiers.ts가 id로 정해요. */
+type AchievementDef = Omit<Achievement, "tier">;
 
 const PRO_LEAGUES: LeagueKey[] = ["nba", "euro", "gleague", "kbl"];
 /**
@@ -225,12 +233,26 @@ const poSeasons = (v: View) => v.pro.flatMap((h) => (h.po && h.po.gp >= PO_GAMES
 /** 7전 4선승제로 치르는 리그 */
 const BEST_OF_SEVEN: (LeagueKey | null)[] = ["nba", "kbl"];
 
+/**
+ * 수비 업적 기준. 올해의 수비수는 리그마다 이름이 달라도(KBL 최우수수비상, B.리그 베스트 디펜더…) 프로 리그 것은 모두 쳐요.
+ * 올-디펜시브는 퍼스트·세컨드 팀을 가리지 않고 선정된 시즌을 세요. 한 시즌 평균 기록은 STAT_GAMES 경기 이상 뛴 시즌만 쳐요.
+ */
+const DEF = { lock: 3, wall: 3, god: 10, team: 8, stl: 3, blk: 2.5, age: 35, pts: 10, stops: 4000 };
+const STAT_GAMES = 10;
+/** 프로 시즌에 올해의 수비수를 받은 시즌 */
+const dpoySeasons = (v: View) => {
+  const years = proYears(v, ["dpoy"]);
+  return v.pro.filter((h) => years.has(h.year));
+};
+/** 프로 정규시즌 통산 스틸·블록 합계. 시즌 기록(경기당 평균 × 경기 수)으로 세요. */
+const careerStops = (v: View) => Math.round(v.pro.reduce((t, h) => t + (h.stl + h.blk) * h.gp, 0));
+
 /** 누적 기록 업적: 모든 커리어를 더한 값이 목표 이상이면 따요. */
-function lifetime(key: string, name: string, hint: string, desc: string, of: (l: LifeView) => number, n: number, unit: string): Achievement {
+function lifetime(key: string, name: string, hint: string, desc: string, of: (l: LifeView) => number, n: number, unit: string): AchievementDef {
   return { id: LIFETIME_PREFIX + key, name, hint, desc, group: "lifetime", test: (v) => of(v.life) >= n, goal: { of, n, unit } };
 }
 
-export const ACHIEVEMENTS: Achievement[] = [
+const DEFS: AchievementDef[] = [
   // 고교·대학
   {
     id: "hs_king",
@@ -289,7 +311,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "journeyman", name: "저니맨", desc: "프로에서 서로 다른 7팀 이상 거치기", hint: "짐을 자주 싸게 될 거예요", group: "team", test: (v) => distinct(v.pro) >= 7 },
   { id: "mercenary", name: "우승청부사", desc: "서로 다른 4팀에서 우승", hint: "가는 팀마다 트로피를 남기세요", group: "team", test: (v) => distinct(v.pro.filter(champ)) >= 4 },
   ...PRO_LEAGUES.map(
-    (lg): Achievement => ({
+    (lg): AchievementDef => ({
       id: `dynasty_${lg}`,
       name: `${LEAGUES[lg].short} 왕조 건설`,
       desc: `${LEAGUES[lg].short}${noteOf(lg)}에서 3시즌 연속 우승`,
@@ -435,7 +457,7 @@ export const ACHIEVEMENTS: Achievement[] = [
 
   // 개인상
   ...PRO_LEAGUES.map(
-    (lg): Achievement => ({
+    (lg): AchievementDef => ({
       id: `ruler_${lg}`,
       name: `${LEAGUES[lg].short}의 지배자`,
       desc: `${LEAGUES[lg].short}${noteOf(lg)}에서 3시즌 연속 MVP`,
@@ -546,6 +568,102 @@ export const ACHIEVEMENTS: Achievement[] = [
     test: (v) => v.pro.filter(everyGame).length >= 8,
   },
 
+  // 수비: 쉬운 것부터. 기준은 DEF에 있어요.
+  {
+    id: "def_lock",
+    name: "자물쇠 수비",
+    desc: `프로 올해의 수비수 ${DEF.lock}회 이상`, hint: "상대 에이스를 꽁꽁 묶는 시즌이 쌓이면",
+    group: "defense",
+    test: (v) => dpoySeasons(v).length >= DEF.lock,
+  },
+  {
+    id: "def_team",
+    name: "믿고 맡기는 수비",
+    desc: `올-디펜시브 팀(KBL은 수비 5걸)에 ${DEF.team}시즌 이상 선정`, hint: "해마다 리그 최고의 수비수 명단에 이름을",
+    group: "defense",
+    test: (v) => proYears(v, ["alldef"]).size >= DEF.team,
+  },
+  {
+    id: "def_title",
+    name: "수비가 우승을 만든다",
+    desc: "올해의 수비수를 받은 시즌에 프로 우승", hint: "공격은 관중을 부르고, 수비는 트로피를 부른다",
+    group: "defense",
+    test: (v) => dpoySeasons(v).some(champ),
+  },
+  {
+    id: "def_wall",
+    name: "철옹성",
+    desc: `프로 올해의 수비수 ${DEF.wall}시즌 연속 수상`, hint: "누구도 넘보지 못하게, 해마다 리그 최고의 수비수로",
+    group: "defense",
+    test: (v) => {
+      const years = proYears(v, ["dpoy"]);
+      return longestRun(v.seasons, (h) => h.pro && years.has(h.year)) >= DEF.wall;
+    },
+  },
+  {
+    id: "def_thief",
+    name: "코트 위의 소매치기",
+    desc: `NBA 한 시즌 평균 스틸 ${DEF.stl}개 이상 (${STAT_GAMES}경기 이상)`, hint: "꿈의 무대에서 상대 손의 공이 자꾸 사라져요",
+    group: "defense",
+    test: (v) => v.pro.some((h) => h.lg === "nba" && h.gp >= STAT_GAMES && h.stl >= DEF.stl),
+  },
+  {
+    id: "def_veteran",
+    name: "노련한 방패",
+    desc: `${DEF.age}세 이상 시즌에 프로 올해의 수비수`, hint: "발은 느려져도 수비는 머리로",
+    group: "defense",
+    test: (v) => dpoySeasons(v).some((h) => h.age >= DEF.age),
+  },
+  {
+    id: "def_borderless",
+    name: "수비에는 국경이 없다",
+    desc: "서로 다른 두 프로 리그에서 올해의 수비수", hint: "어느 리그에 가든 내 수비는 통해요",
+    group: "defense",
+    test: (v) => new Set(dpoySeasons(v).map((h) => h.lg)).size >= 2,
+  },
+  {
+    id: "def_stops",
+    name: "만리장성",
+    desc: `프로 정규시즌 통산 스틸·블록 합계 ${DEF.stops.toLocaleString("en-US")}개`, hint: "막아 낸 공격을 하나하나 쌓아 성벽을",
+    group: "defense",
+    test: (v) => careerStops(v) >= DEF.stops,
+  },
+  {
+    id: "def_twoway",
+    name: "공수겸장",
+    desc: "한 시즌에 NBA MVP와 NBA 올해의 수비수를 함께 받기", hint: "꿈의 무대에서 공격도 수비도 최고로",
+    group: "defense",
+    test: (v) => dpoySeasons(v).some((h) => h.lg === "nba" && v.mvp.has(h.year)),
+  },
+  {
+    id: "def_specialist",
+    name: "궂은일의 달인",
+    desc: `평균 ${DEF.pts}득점 미만인 시즌에 프로 올해의 수비수`, hint: "득점이 없어도 코트를 지배할 수 있어요",
+    group: "defense",
+    test: (v) => dpoySeasons(v).some((h) => h.pts < DEF.pts),
+  },
+  {
+    id: "def_rookie",
+    name: "겁 없는 신인",
+    desc: "프로 데뷔 시즌에 올해의 수비수", hint: "첫 시즌부터 선배들의 공격을 막아 세우세요",
+    group: "defense",
+    test: (v) => !!v.pro[0] && proYears(v, ["dpoy"]).has(v.pro[0].year),
+  },
+  {
+    id: "def_swat",
+    name: "비행 금지 구역",
+    desc: `NBA 한 시즌 평균 블록 ${DEF.blk}개 이상 (${STAT_GAMES}경기 이상)`, hint: "꿈의 무대에서 내 앞으로는 아무도 날아오르지 못해요",
+    group: "defense",
+    test: (v) => v.pro.some((h) => h.lg === "nba" && h.gp >= STAT_GAMES && h.blk >= DEF.blk),
+  },
+  {
+    id: "def_god",
+    name: "수비의 신",
+    desc: `프로 올해의 수비수 ${DEF.god}회 이상`, hint: "수비수 트로피를 두 손으로 다 셀 수 없을 만큼",
+    group: "defense",
+    test: (v) => dpoySeasons(v).length >= DEF.god,
+  },
+
   // 클러치
   { id: "clutch_master", name: "클러치 귀재", desc: "클러치 상황에서 10번 이상 성공", hint: "경기 막판, 마지막 공은 내 손에", group: "clutch", test: (v) => v.c.clutchWins >= 10 },
   {
@@ -600,7 +718,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   },
 
   // 능력치
-  ...ATTR_KEYS.map((k): Achievement => {
+  ...ATTR_KEYS.map((k): AchievementDef => {
     const [name, label, hint] = MAXED[k];
     return { id: `max_${k}`, name, desc: `${label} ${ATTR_MAX} 달성`, hint, group: "ability", test: (v) => v.c.p.attrs[k] >= ATTR_MAX };
   }),
@@ -751,7 +869,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     test: () => false,
     rank: { top: RANK_TOP },
   },
-  ...POS_KEYS.map((pos): Achievement => {
+  ...POS_KEYS.map((pos): AchievementDef => {
     const [name, hint] = POS_LEGEND[pos];
     return { id: `legend_${pos}`, name, hint, desc: `온라인 역대 랭킹 ${POS[pos].name} TOP ${RANK_TOP} 진입`, group: "rank", test: () => false, rank: { top: RANK_TOP, pos } };
   }),
@@ -775,6 +893,9 @@ export const ACHIEVEMENTS: Achievement[] = [
   ),
   lifetime("hunter", "업적 사냥꾼", "업적 창을 차근차근 채워 보세요", "업적 30개 달성", (l) => l.achv, 30, "개"),
 ];
+
+/** 모든 업적. 등급표에 없는 업적은 은메달로 두고, 테스트가 빠진 업적을 잡아요. */
+export const ACHIEVEMENTS: Achievement[] = DEFS.map((a) => ({ ...a, tier: ACHIEVEMENT_TIERS.get(a.id) ?? "silver" }));
 
 const BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
 
@@ -821,7 +942,7 @@ export function checkAchievements(c: Career): string[] {
     for (const a of got) {
       c.achv.push(a.id);
       addNews(c, `${c.year - 1} 시즌`, "big", `업적 달성 · ${a.name}! ${a.desc}`);
-      if (!v.retired) cheer(c, { kind: "achv", title: a.name, sub: a.desc, year: c.year - 1, color: c.team?.color ?? null });
+      if (!v.retired) cheer(c, { kind: "achv", title: a.name, sub: a.desc, year: c.year - 1, color: c.team?.color ?? null, tier: a.tier });
     }
     all.push(...got);
   }

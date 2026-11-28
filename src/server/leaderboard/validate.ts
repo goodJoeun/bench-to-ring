@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AWARDS, BEARDS, BUILD_KEYS, BULK_MAX, BULK_MIN, HAIR_STYLES, LEAGUES, LOOK_KEYS, NAME_MAX, PERSONAL_AWARDS, POS_KEYS, RULESET_VERSION, START_YEAR, legacyOf, legacyOfV1, playedNba, type AwardKey, type CareerSummary, type ChallengeTag, type LeagueKey, type BeardStyle, type Build, type HairStyle, type LeagueShare, type LookKey, type PosKey } from "@/game";
+import { AWARDS, BEARDS, BUILD_KEYS, BULK_MAX, BULK_MIN, HAIR_STYLES, LEAGUES, LOOK_KEYS, NAME_MAX, PERSONAL_AWARDS, POS_KEYS, RULESET_VERSION, START_YEAR, achievementById, legacyOf, legacyOfV1, playedNba, type AwardKey, type CareerSummary, type ChallengeTag, type LeagueKey, type BeardStyle, type Build, type HairStyle, type LeagueShare, type LookKey, type PosKey } from "@/game";
 import { RETIRE_AGE } from "@/game/season/offseason";
 import { DAY_COUNT, challengeOpen, isDay, kstDay, shiftDay } from "@/shared/leaderboard/days";
 import { STAT_KEYS, type BoardDay, type BoardScope, type StatKey } from "@/shared/leaderboard/types";
@@ -164,6 +164,20 @@ export function cleanName(name: string): string {
 }
 
 export type CheckResult = { ok: true; summary: SubmittedSummary } | { ok: false; error: string };
+
+/** 한 번에 받는 업적 id 수의 상한. 업적 수보다 넉넉해요. */
+const ACHV_MAX = 500;
+
+/**
+ * 은퇴 기록과 함께 온 업적 id 목록(그 브라우저에서 딴 업적). 지금 있는 업적만 남기고 겹치는 것은 하나로 줄여요.
+ * 모양이 다르거나 없으면 빈 목록이에요. 업적은 덤이라, 목록이 이상해도 기록 제출은 그대로 받아요.
+ */
+export function parseAchievementIds(input: unknown): string[] {
+  if (!Array.isArray(input)) return [];
+  const ids = new Set<string>();
+  for (const x of input.slice(0, ACHV_MAX)) if (typeof x === "string" && achievementById(x)) ids.add(x);
+  return [...ids];
+}
 
 /** 모양과 범위, 값끼리 맞는지 봐요. 통과하면 이름을 걸러 낸 요약을 돌려줘요. */
 export function checkSummary(input: unknown): CheckResult {

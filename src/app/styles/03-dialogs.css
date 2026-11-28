@@ -63,12 +63,21 @@
   background: var(--panel2);
   opacity: 0.6;
 }
-/* 딴 업적: 금테에 오른쪽 위가 은은하게 빛나고, 그 모서리에 훈장을 달아요. 글자는 훈장 자리를 비워 둬요. */
+/* 딴 업적: 등급 색 테에 오른쪽 위가 은은하게 빛나고, 그 모서리에 훈장을 달아요. 글자는 훈장 자리를 비워 둬요. 등급을 모르면 금색이에요. */
 .achv-list li[data-done] {
   padding-right: 64px;
-  border-color: var(--gold);
-  background: linear-gradient(225deg, color-mix(in srgb, var(--gold) 16%, var(--panel2)), var(--panel2) 60%);
+  border-color: var(--tier, var(--gold));
+  background: linear-gradient(225deg, color-mix(in srgb, var(--tier, var(--gold)) 16%, var(--panel2)), var(--panel2) 60%);
   opacity: 1;
+}
+.achv-list li[data-tier="bronze"] {
+  --tier: var(--bronze);
+}
+.achv-list li[data-tier="silver"] {
+  --tier: var(--silver);
+}
+.achv-list li[data-tier="mvp"] {
+  --tier: var(--mvp);
 }
 .achv-list li:nth-child(3n + 2) .achv-badge::after {
   animation-delay: 1.6s;
@@ -80,7 +89,7 @@
   font-size: var(--text-md);
 }
 .achv-list li[data-done] b {
-  color: var(--gold);
+  color: var(--tier, var(--gold));
 }
 .achv-list li > span {
   font-size: var(--text-sm);

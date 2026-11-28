@@ -88,8 +88,8 @@ export const careers = pgTable(
     index("careers_donated").on(t.donated.desc(), t.createdAt).where(sql`${t.donated} is not null`),
     // 챌린지 순위표: 그날 그 포지션의 기록만 읽어요. 챌린지가 아닌 기록은 인덱스에 넣지 않아요.
     index("careers_challenge").on(t.challengeDay, t.challengePos).where(sql`${t.challengeDay} is not null`),
-    // 내 기록 목록과 제출 횟수 제한 (플레이어마다 최근 제출 시각)
-    index("careers_player").on(t.playerId, t.createdAt.desc()),
+    // 내 기록 목록과 제출 횟수 제한(플레이어마다 최근 제출 시각)은 위 careers_player_career 유니크 인덱스로 플레이어의 기록을 찾아요.
+    // 플레이어마다 기록이 몇 개뿐이라 따로 인덱스를 두지 않아요(0007에서 careers_player를 뺐어요).
   ],
 ).enableRLS();
 
@@ -120,3 +120,25 @@ export const careerTotals = pgTable(
   },
   (t) => [check("career_totals_one_row", sql`${t.id} = 1`)],
 ).enableRLS();
+
+/**
+ * 플레이어가 딴 업적. 은퇴 기록을 올릴 때 그 브라우저에서 딴 업적 id를 함께 받아 한 번씩만 넣어요.
+ * achv_id가 REPORTED_ACHV('*')인 줄은 업적 목록을 보낸 플레이어 표시라서, 그 수가 달성률의 분모예요.
+ * 트리거(drizzle/0007_achievements.sql)가 줄을 넣고 뺄 때 achievement_counts를 맞춰요.
+ */
+export const playerAchievements = pgTable(
+  "player_achievements",
+  {
+    playerId: uuid("player_id")
+      .notNull()
+      .references(() => players.id),
+    achvId: text("achv_id").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.playerId, t.achvId] })],
+).enableRLS();
+
+/** 업적마다 딴 플레이어 수. player_achievements 트리거가 맞춰 둬서, 달성률을 셀 때 player_achievements를 훑지 않아요. */
+export const achievementCounts = pgTable("achievement_counts", {
+  achvId: text("achv_id").primaryKey(),
+  players: integer("players").notNull().default(0),
+}).enableRLS();

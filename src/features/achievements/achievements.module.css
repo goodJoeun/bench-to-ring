@@ -60,3 +60,52 @@
   font-size: var(--text-xs);
   color: var(--muted);
 }
+/* 등급 이름표: 동·은·금은 메달 색, MVP 트로피는 보라 */
+.achvTier {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: var(--r-full);
+  background: var(--tier, var(--gold));
+  color: var(--medal-ink);
+  font-size: var(--text-micro);
+  font-weight: 800;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.achvTier[data-tier="bronze"] {
+  --tier: var(--bronze);
+}
+.achvTier[data-tier="silver"] {
+  --tier: var(--silver);
+}
+.achvTier[data-tier="mvp"] {
+  --tier: var(--mvp);
+}
+/* 업적 이름 아래 한 줄: 등급과 달성률 */
+:global(.achv-list) .achvMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+/* 진행 막대 아래 등급별 딴 수 */
+.achvTiers {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+  font-family: var(--f-num);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--muted);
+}
+.achvTiers li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}

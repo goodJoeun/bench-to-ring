@@ -17,6 +17,8 @@
   --silver: #6b7583;
   --bronze: #a2622e;
   --medal-ink: #ffffff;
+  /* 업적 MVP 트로피 등급 */
+  --mvp: #6a4be0;
   --wood1: #dab07a;
   --wood2: #d0a46c;
   --score-bg: #101828;
@@ -85,6 +87,7 @@
     --silver: #b9c2cd;
     --bronze: #cd8a52;
     --medal-ink: #1a1408;
+    --mvp: #a78bfa;
     --wood1: #7e5b33;
     --wood2: #74532e;
     --score-bg: #060a11;
@@ -112,6 +115,7 @@
   --silver: #b9c2cd;
   --bronze: #cd8a52;
   --medal-ink: #1a1408;
+  --mvp: #a78bfa;
   --wood1: #7e5b33;
   --wood2: #74532e;
   --score-bg: #060a11;

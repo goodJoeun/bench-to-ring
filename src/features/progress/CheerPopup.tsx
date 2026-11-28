@@ -1,6 +1,6 @@
 "use client";
 
-import { LEAGUES, natColor, playerLook, type Career, type Cheer } from "@/game";
+import { LEAGUES, TIER_NAME, natColor, playerLook, type AchievementTier, type Career, type Cheer } from "@/game";
 import { gameActions } from "@/shared/store/game-store";
 import { NO_TEAM_COLOR, keepTogether, nameFit } from "@/shared/lib/format";
 import { useAutoFocus } from "@/shared/lib/hooks";
@@ -45,8 +45,8 @@ const CONFETTI: [number, number, string][] = [
 /** 업적 달성 때 메달에서 퍼지는 별 조각: 방향(도), 날아가는 거리(px), 늦게 출발하는 정도(s) */
 const SPARKS: [number, number, number][] = Array.from({ length: 12 }, (_, i) => [i * 30 + (i % 2) * 12, i % 3 === 0 ? 118 : i % 3 === 1 ? 96 : 132, (i % 4) * 0.05]);
 
-/** 업적 달성의 메달: 번쩍임, 도는 빛줄기, 퍼지는 고리, 별 조각과 함께 찍히듯 나타나요. */
-function AchievementMedal() {
+/** 업적 달성의 메달: 번쩍임, 도는 빛줄기, 퍼지는 고리, 별 조각과 함께 찍히듯 나타나요. 등급마다 동·은·금 메달이나 MVP 트로피예요. */
+function AchievementMedal({ tier }: { tier?: AchievementTier }) {
   return (
     <div className="achv-medal-wrap" aria-hidden="true">
       <span className={styles.achvRays} />
@@ -55,7 +55,7 @@ function AchievementMedal() {
       {SPARKS.map(([deg, dist, delay], i) => (
         <i key={i} className={styles.achvSpark} style={{ "--a": `${deg}deg`, "--d": `${-dist}px`, animationDelay: `${0.2 + delay}s` } as React.CSSProperties} />
       ))}
-      <Medal className={styles.achvMedal} />
+      <Medal className={styles.achvMedal} tier={tier} />
     </div>
   );
 }
@@ -97,8 +97,9 @@ export function CheerPopup({ career: c, cheer }: { career: Career; cheer: Cheer 
         </>
       ) : achv ? (
         <>
-          <AchievementMedal />
-          <span className={styles.achvBanner}>업적 달성!</span>
+          <AchievementMedal tier={cheer.tier} />
+          {/* 등급을 모르는 예전 저장의 축하는 등급 없이 띄워요. */}
+          <span className={styles.achvBanner}>{cheer.tier ? `${TIER_NAME[cheer.tier]} 업적 달성!` : "업적 달성!"}</span>
           <span className="sim-team" style={nameFit(`${c.p.name} #${c.p.num}`)}>
             {c.p.name} #{c.p.num}
           </span>

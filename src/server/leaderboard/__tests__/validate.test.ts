@@ -17,7 +17,7 @@ import {
   type Career,
   type CareerSummary,
 } from "@/game";
-import { HIDDEN_NAME, acceptedChallenge, checkSummary, cleanName, isCareerId, parseBoardQuery, parseChallengeDay, parseStatQuery } from "@/server/leaderboard/validate";
+import { HIDDEN_NAME, acceptedChallenge, checkSummary, cleanName, isCareerId, parseAchievementIds, parseBoardQuery, parseChallengeDay, parseStatQuery } from "@/server/leaderboard/validate";
 import { challengeOpen, kstDay, shiftDay } from "@/shared/leaderboard/days";
 import { FRESH_PARAM } from "@/shared/leaderboard/cdn";
 
@@ -98,6 +98,18 @@ describe("은퇴 기록 검사", () => {
   it("선수 이름은 NAME_MAX(20)자까지 받아요", () => {
     expect(checkSummary({ ...summaries[0], name: "가".repeat(NAME_MAX) })).toMatchObject({ ok: true });
     expect(checkSummary({ ...summaries[0], name: "가".repeat(NAME_MAX + 1) })).toMatchObject({ ok: false });
+  });
+});
+
+describe("함께 온 업적 목록", () => {
+  it("지금 있는 업적 id만 남기고 겹치는 것은 하나로 줄여요", () => {
+    expect(parseAchievementIds(["rings", "clutch_master", "rings", "nope", 7, null])).toEqual(["rings", "clutch_master"]);
+  });
+  it("배열이 아니면 빈 목록이에요. 분모 표시(*)는 받지 않아요", () => {
+    expect(parseAchievementIds(undefined)).toEqual([]);
+    expect(parseAchievementIds("rings")).toEqual([]);
+    expect(parseAchievementIds({ rings: true })).toEqual([]);
+    expect(parseAchievementIds(["*"])).toEqual([]);
   });
 });
 

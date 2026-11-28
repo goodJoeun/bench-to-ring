@@ -121,6 +121,7 @@ export {
   type BrowserRecord,
   type LifeView,
 } from "./legacy/achievements";
+export { ACHIEVEMENT_TIERS, TIERS, TIER_NAME } from "./legacy/achievement-tiers";
 export { EMPTY_LIFETIME, LIFETIME_PREFIX, addLifetime, fromCareer, nbaTriple, subLifetime, type Lifetime } from "./legacy/lifetime";
 export {
   RECORD_BOARDS,

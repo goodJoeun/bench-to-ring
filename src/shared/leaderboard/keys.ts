@@ -10,6 +10,8 @@ export const leaderboardKeys = {
   board: (day: BoardDay, pos: PosKey | null) => [...LEADERBOARD, "board", day ?? "all", pos ?? "all"] as const,
   /** 스탯 랭킹: 날짜와 스탯마다 */
   stat: (day: BoardDay, stat: StatKey) => [...LEADERBOARD, "stat", day ?? "all", stat] as const,
+  /** 업적 달성률 */
+  achievements: () => [...LEADERBOARD, "achievements"] as const,
   /** 날짜별 등록 수 */
   days: () => [...LEADERBOARD, "days"] as const,
   /** 이 브라우저가 올린 기록의 순위 */

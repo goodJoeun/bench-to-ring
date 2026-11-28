@@ -155,6 +155,15 @@ export interface BoardCount {
   players: number;
 }
 
+/**
+ * GET /api/achievements: 업적 달성률. players는 은퇴 기록과 함께 업적 목록을 보낸 플레이어 수, counts는 업적 id마다 딴 플레이어 수예요.
+ * 아무도 따지 않은 업적은 counts에 없어요.
+ */
+export interface AchievementRates {
+  players: number;
+  counts: Record<string, number>;
+}
+
 /** GET /api/boards/days: 최근 날짜별(한국 시간)과 올타임 랭킹 등록 수. 기록이 없는 날은 빠져요. */
 export interface BoardDays {
   days: ({ day: string } & BoardCount)[];

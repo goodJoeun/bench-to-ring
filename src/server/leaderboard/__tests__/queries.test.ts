@@ -34,7 +34,8 @@ vi.mock("next/cache", () => ({ cacheTag: () => {}, cacheLife: () => {}, revalida
 vi.mock("../../db/db", () => ({ db: () => testDb }));
 
 const { getBoard, getBoardDays, myAround, myRanks } = await import("../boards");
-const { deleteCareer, insertCareer, ranksOf } = await import("../careers");
+const { deleteCareer, insertCareer, lastSubmittedAt, ranksOf } = await import("../careers");
+const { REPORTED_ACHV, getAchievementRates, recordAchievements } = await import("../achievements");
 const { getStatBoard } = await import("../stats");
 const { getChallengeBoard, myChallenge } = await import("../challenge");
 
@@ -319,12 +320,39 @@ describe("기록이 많을 때 실행 계획", () => {
     await capture("날짜 순위표", () => getBoard("all", null, kstDay(Date.now() - 3 * DAY_MS)), (q) => limited(q) && !q.includes(`"careers"."pos" = $`));
     await capture("스틸 랭킹", () => getStatBoard("all", "stl", null), limited);
     await capture("내 순위", () => myRanks(player), (q) => q.includes(`"careers"."player_id" = $`));
+    // careers_player 인덱스를 뺐어요(0007). 플레이어별 쿼리는 중복 제출을 막는 (player_id, career_id) 유니크 인덱스로 읽어요.
+    await capture("마지막 제출", () => lastSubmittedAt(player), (q) => q.includes(`"careers"."player_id" = $`));
     await capture("날짜별 등록 수", () => getBoardDays(), (q) => q.includes("group by"));
 
     for (const [name, plan] of Object.entries(plans)) expect(plan, `${name}\n${plan}`).not.toMatch(/Seq Scan on careers\b/);
     expect(plans["순위표"]).toMatch(/Index Scan using careers_rank on careers/);
     expect(plans["포지션 순위표"]).toMatch(/Index Scan using careers_pos_rank on careers/);
     expect(plans["스틸 랭킹"]).toMatch(/Index Scan using careers_stl on careers/);
+    expect(plans["마지막 제출"]).toMatch(/careers_player_career/);
+  });
+});
+
+describe("업적 달성률", () => {
+  it("플레이어마다 업적을 한 번씩 세고, 업적 목록을 보낸 플레이어 수가 분모예요", async () => {
+    await recordAchievements(PLAYERS[0], ["clutch_master", "rings"]);
+    await recordAchievements(PLAYERS[0], ["clutch_master", "royal_road"]);
+    await recordAchievements(PLAYERS[1], ["clutch_master"]);
+    await recordAchievements(PLAYERS[2], []);
+    const rates = await getAchievementRates();
+    expect(rates).toEqual({ players: 3, counts: { clutch_master: 2, rings: 1, royal_road: 1 } });
+    // 집계 표는 player_achievements를 센 것과 같아요.
+    const { rows } = await pg.query<{ achv_id: string; n: number }>(`select achv_id, count(*)::int n from player_achievements group by achv_id`);
+    const counts = await pg.query<{ achv_id: string; players: number }>(`select achv_id, players from achievement_counts`);
+    expect(new Map(counts.rows.map((r) => [r.achv_id, r.players]))).toEqual(new Map(rows.map((r) => [r.achv_id, r.n])));
+    expect(rows.find((r) => r.achv_id === REPORTED_ACHV)?.n).toBe(3);
+  });
+
+  it("줄을 지우면 집계도 줄고, 없어진 업적은 달성률에서 빠져요", async () => {
+    await pg.query(`insert into player_achievements (player_id, achv_id) values ($1, 'gone_achievement')`, [PLAYERS[1]]);
+    await pg.query(`delete from player_achievements where player_id = $1 and achv_id = 'rings'`, [PLAYERS[0]]);
+    const rates = await getAchievementRates();
+    expect(rates.counts).toEqual({ clutch_master: 2, royal_road: 1 });
+    expect((await one<{ players: number }>(`select players from achievement_counts where achv_id = 'rings'`)).players).toBe(0);
   });
 });
 

@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import type { PosKey } from "@/game";
-import { fetchAround, fetchBoard, fetchBoardDays, fetchChallenge, fetchMine, fetchMyChallenge, fetchStatBoard } from "./client";
+import { fetchAchievementRates, fetchAround, fetchBoard, fetchBoardDays, fetchChallenge, fetchMine, fetchMyChallenge, fetchStatBoard } from "./client";
 import { leaderboardKeys } from "./keys";
 import type { BoardDay, StatKey } from "./types";
 
@@ -13,6 +13,9 @@ export const boardQuery = (day: BoardDay = null, pos: PosKey | null = null) =>
 /** 스탯 랭킹(프로 통산 상위 50명) */
 export const statQuery = (day: BoardDay, stat: StatKey) =>
   queryOptions({ queryKey: leaderboardKeys.stat(day, stat), queryFn: () => fetchStatBoard(stat, "all", day) });
+
+/** 업적 달성률. 기록이 올라가면 다른 순위표와 함께 낡은 것으로 쳐요. */
+export const achievementRatesQuery = () => queryOptions({ queryKey: leaderboardKeys.achievements(), queryFn: fetchAchievementRates });
 
 /** 날짜별 랭킹 등록 수 */
 export const boardDaysQuery = () => queryOptions({ queryKey: leaderboardKeys.days(), queryFn: fetchBoardDays });

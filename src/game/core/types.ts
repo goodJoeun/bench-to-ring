@@ -531,7 +531,12 @@ export interface Cheer {
   team?: string;
   /** 입단한 리그, 또는 우승한 리그(팝업의 리그 로고). 예전 저장의 우승 축하에는 없어요. */
   lg?: LeagueKey;
+  /** 업적 달성 축하의 등급(메달 모양). 예전 저장의 업적 축하에는 없어요. */
+  tier?: AchievementTier;
 }
+
+/** 업적 난이도 등급: 동메달, 은메달, 금메달, MVP 트로피 (legacy/achievement-tiers.ts) */
+export type AchievementTier = "bronze" | "silver" | "gold" | "mvp";
 
 /** 병역. none: 아직, serving: 복무 중, served: 전역, exempt: 병역 특례 */
 export interface Military {

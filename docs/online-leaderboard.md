@@ -87,6 +87,11 @@ create table career_counts (                -- 룰셋·포지션마다 커리어
 );
 create table career_totals (id int primary key check (id = 1), players int); -- 기록을 올린 플레이어 수 (한 줄)
 
+-- 업적 달성률 (0007_achievements). 은퇴 기록을 올릴 때 그 브라우저에서 딴 업적 id를 함께 받아 플레이어마다 한 번씩 넣어요.
+-- achv_id '*'는 업적 목록을 보낸 플레이어 표시(달성률의 분모)예요. player_achievements 트리거가 achievement_counts를 맞춰요.
+create table player_achievements (player_id uuid references players(id), achv_id text, primary key (player_id, achv_id));
+create table achievement_counts (achv_id text primary key, players int);
+
 -- (2단계) 재생 검증용 행동 기록
 create table replays (
   career_id  text primary key references careers(id),
@@ -157,8 +162,9 @@ create table replays (
 | 메서드 · 경로 | 하는 일 |
 | --- | --- |
 | `POST /api/players` | 익명 플레이어 만들기. 토큰을 돌려주고 브라우저에 저장해요. |
-| `POST /api/careers` | 은퇴 기록 제출. 엔딩에 도달하면 자동으로 불러요. 선수 이름 욕설 필터. 응답에 전체 순위와 포지션 순위를 담아요. 챌린지 기록이 접수 기간 안이면 그날 챌린지 순위(`challenge`)도 담아요. |
+| `POST /api/careers` | 은퇴 기록 제출. 엔딩에 도달하면 자동으로 불러요. 선수 이름 욕설 필터. 응답에 전체 순위와 포지션 순위를 담아요. 챌린지 기록이 접수 기간 안이면 그날 챌린지 순위(`challenge`)도 담아요. 본문의 `achv`(그 브라우저에서 딴 업적 id)는 요약에서 떼어 업적 달성률에 넣어요. 넣지 못해도 기록 제출은 성공해요. |
 | `GET /api/boards?ruleset=&pos=&scope=current\|all` | 순위표. 기본은 현재 룰셋 전체 Top 100, `pos`를 주면 그 포지션 Top 50이에요. 화면은 `scope=all`(역대 전체)로 불러요. 역대 Best 5와 전체 통계(커리어 수, NBA 진출, NBA MVP)를 함께 담아요. 캐시해요. |
+| `GET /api/achievements` | 업적 달성률. 업적 목록을 보낸 플레이어 수와 업적마다 딴 플레이어 수예요(`achievement_counts`만 읽어요). 업적 창을 열 때만 불러요. `achievements` 태그로 캐시하고, 기록이 제출되면 `revalidateTag(…, "max")`로 묵은 값을 내주면서 다시 계산해요. CDN은 순위표와 같아요. |
 | `GET /api/boards/days` | 날짜별 등록 수. 최근 7일(한국 시간)마다, 그리고 올타임으로 기록 수와 그 기록을 올린 플레이어(기기) 수, 올타임 포지션별 기록 수예요. 역대 전체 범위이고, 순위표와 같은 태그로 캐시해요. |
 | `GET /api/challenge?day=YYYY-MM-DD` | 챌린지 순위표. 그날(한국 시간) 포지션 다섯 개의 상위 50명과 도전한 플레이어 수·기록 수를 한 번에 담아요. 최근 7일과 내일(브라우저 시계가 앞설 때)까지만 받아요. 순위표와 같은 태그로 캐시하고 CDN도 같아요. |
 | `GET /api/challenge/mine?day=YYYY-MM-DD` | 내 플레이어(토큰)의 그날 챌린지 성적. 도전한 포지션마다 가장 좋은 기록의 순위·도전 횟수예요. 캐시하지 않아요. |
