@@ -10,7 +10,8 @@ export async function GET() {
   try {
     // 순위표처럼 CDN이 잠깐 들고 있다가 내줘요(shared/leaderboard/cdn.ts).
     return Response.json((await getAchievementRates()) satisfies AchievementRates, { headers: { "cache-control": BOARD_CACHE_CONTROL } });
-  } catch {
+  } catch (e) {
+    console.error("업적 달성률을 불러오지 못했어요.", e);
     // 달성률 표가 아직 없는(마이그레이션 전) 배포에서도 업적 창은 달성률 없이 열려요.
     return Response.json({ error: "업적 달성률을 불러오지 못했어요." } satisfies ApiError, { status: 503 });
   }

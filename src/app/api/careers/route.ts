@@ -59,7 +59,8 @@ export async function POST(req: Request) {
   // 은퇴하고 바로 순위표를 열면 내 기록이 보이게, 묵은 순위표를 내주지 않고 바로 다시 계산해요.
   // 올린 브라우저는 CDN 캐시를 건너뛰어 불러요(shared/leaderboard/cdn.ts).
   revalidateTag(BOARDS_TAG, { expire: 0 });
-  await saveAchievements(playerId, parseAchievementIds(achv));
+  // 업적 목록을 보낸 제출만 달성률에 넣어요. 이 기능 전 화면을 띄워 둔 채 은퇴하면 목록이 없어서, 분모만 늘리지 않게 건너뛰어요.
+  if (Array.isArray(achv)) await saveAchievements(playerId, parseAchievementIds(achv));
   const ranks: SubmitResult = await ranksOf(id);
   const tag = acceptedChallenge(checked.summary, now);
   if (tag) {
